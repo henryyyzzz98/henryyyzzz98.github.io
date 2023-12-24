@@ -43,6 +43,129 @@
         cursor: pointer;
     }
 
+    .result-grid{
+        display: grid;
+        grid-gap: 0.2cm 0.05cm;
+        grid-template-columns: repeat(7, 1fr);
+        grid-template-areas:
+            ".   .   .   r1  .   .   ."
+            ".   .   r2  .   r3  .   ."
+            ".   r4  r5  r6  r7  r8  ."
+            ".   r9  r10 r11 r12 r13 ."
+            "r14 r15 r16 r17 r18 r19 r20";
+        /*zoom: .85;*/
+    }
+
+    .result-grid > li {
+        counter-increment: number;
+        list-style-type: none;
+        transition: all 0.3s linear;
+        opacity: 0.9;
+        filter: alpha(opacity=100);
+    }
+    
+    .result-grid > li > div {
+        position: relative;
+    }
+    
+    .result-grid > li > div {
+        width:95%;
+        margin: auto;
+        text-align:center;
+        padding-top: 5px;
+        padding-bottom: 5px;
+        border-radius: 15px 15px;
+        font-family: 'Nunito';
+        text-shadow: 0 1px 4px #000000;
+    }
+        
+    .rank-grid > li > div:after {
+        position: absolute;
+        top: 0px;
+        right: auto;
+        bottom: auto;
+        left: 0px;
+        font-size: 1em;
+        font-weight: 700;
+        content: counter(number);
+        background: #ffffff;
+        border-radius: 0px 0px 10px;
+        color: #000000;
+        text-align: center;
+        width: 20px;
+        height: 20px;
+        padding-top: 2px;
+        font-family: 'Nunito';
+        text-shadow: none;
+    }
+
+    .rank-grid > li:hover {
+        opacity: 1;
+        filter: alpha(opacity=100);
+        transform:scaleX(1.04) scaleY(1.04);
+    }
+
+    .rank-grid > li:nth-child(1) {
+        grid-area: r1;
+    }
+    .rank-grid > li:nth-child(2) {
+        grid-area: r2;
+    }
+    .rank-grid > li:nth-child(3) {
+        grid-area: r3;
+    }
+    .rank-grid > li:nth-child(4) {
+        grid-area: r4;
+    }
+    .rank-grid > li:nth-child(5) {
+        grid-area: r5;
+    }
+    .rank-grid > li:nth-child(6) {
+        grid-area: r6;
+    }
+    .rank-grid > li:nth-child(7) {
+        grid-area: r7;
+    }
+    .rank-grid > li:nth-child(8) {
+        grid-area: r8;
+    }
+    .rank-grid > li:nth-child(9) {
+        grid-area: r9;
+    }
+    .rank-grid > li:nth-child(10) {
+        grid-area: r10;
+    }
+    .rank-grid > li:nth-child(11) {
+        grid-area: r11;
+    }
+    .rank-grid > li:nth-child(12) {
+        grid-area: r12;
+    }
+    .rank-grid > li:nth-child(13) {
+        grid-area: r13;
+    }
+    .rank-grid > li:nth-child(14) {
+        grid-area: r14;
+    }
+    .rank-grid > li:nth-child(15) {
+        grid-area: r15;
+    }
+    .rank-grid > li:nth-child(16) {
+        grid-area: r16;
+    }
+    .rank-grid > li:nth-child(17) {
+        grid-area: r17;
+    }
+    .rank-grid > li:nth-child(18) {
+        grid-area: r18;
+    }
+    .rank-grid > li:nth-child(19) {
+        grid-area: r19;
+    }
+    .rank-grid > li:nth-child(20) {
+        grid-area: r20;
+    }
+
     A {
       text-decoration: none;
     }
@@ -243,14 +366,17 @@
         function showResult() {
             var ranking = 1;
             var sameRank = 1;
-            var str = "";
+            /*var str = "";*/
+            var str = "<div class=\"rank-grid\">";
             var i;
 
-            str += "<table style=\"width:320px; font-size:15px; line-height:120%; margin-left:auto; margin-right:auto; border:1px solid #888888; border-collapse:collapse; font-family:'Nunito',sans-serif;\" align=\"center\">";
-            str += "<tr><td style=\"color:#ffffff; background-color:#888888; text-align:center;\">Rank<\/td><td style=\"color:#ffffff; background-color:#888888; text-align:center; font-family:'Nunito',sans-serif;\">Name<\/td><\/tr>";
+            /*str += "<table style=\"width:320px; font-size:15px; line-height:120%; margin-left:auto; margin-right:auto; border:1px solid #888888; border-collapse:collapse; font-family:'Nunito',sans-serif;\" align=\"center\">";
+            str += "<tr><td style=\"color:#ffffff; background-color:#888888; text-align:center;\">Rank<\/td><td style=\"color:#ffffff; background-color:#888888; text-align:center; font-family:'Nunito',sans-serif;\">Name<\/td><\/tr>";*/
 
             for (i=0; i<namMember.length; i++) {
-                str += "<tr><td style=\"border:1px solid #888888; width:25px; text-align:center; padding-right:5px; font-family:'Nunito',sans-serif;\">"+ranking+"<\/td><td style=\"border:1px solid #888888; width:175px; text-align:center; padding-left:5px; font-family:'Nunito',sans-serif;\">"+namMember[lstMember[0][i]]+"<\/td><\/tr>";
+                /*str += "<tr><td style=\"border:1px solid #888888; width:25px; text-align:center; padding-right:5px; font-family:'Nunito',sans-serif;\">"+ranking+"<\/td><td style=\"border:1px solid #888888; width:175px; text-align:center; padding-left:5px; font-family:'Nunito',sans-serif;\">"+namMember[lstMember[0][i]]+"<\/td><\/tr>";*/
+                str += "<li style=\"border: 1px solid #888888; margin: 5px; list-style-type: none; padding: 5px; font-size: 15px; line-height: 120%; font-family: 'Nunito', sans-serif;\">Rank: " + ranking + "<br>Name: " + namMember[lstMember[0][i]] + "</li>";
+                
                 if (i<namMember.length-1) {
                     if (equal[lstMember[0][i]]==lstMember[0][i+1]) {
                         sameRank++;
@@ -260,7 +386,8 @@
                     }
                 }
             }
-            str += "<\/table>";
+            /*str += "<\/table>";*/
+            str += "</div>";
 
             document.getElementById("resultField").innerHTML = str;
         }
