@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bias Sorter</title>
+  <title>TripleS Bias Sorter</title>
   <style type="text/css">
     @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@600&display=swap');
 
@@ -25,7 +25,6 @@
         height: 208px;
         border: 10px solid #FF0000;
         cursor: pointer;
-        object-fit: contain;
     }
 
     #rightField{
@@ -34,7 +33,6 @@
         height: 208px;
         border: 10px solid #0000FF;
         cursor: pointer;
-        object-fit: contain;
     }
 
     .middleField{
@@ -59,14 +57,26 @@
     <div id="603446273904584399" align="left" style="width: 100%; overflow-y: hidden;" class="wcustomhtml">
       <script type="text/javascript">
         var namMember = new Array(
-            "<img src='https://cdnimg.melon.co.kr/cm2/artistcrop/images/031/39/877/3139877_20230817145359_500.jpg?42fbd473f1ad52ffa40dbe604e748f13/melon/resize/416/quality/80/optimize'><br>S1 윤서연 (Seoyeon)", 
-            "<img src='https://cdnimg.melon.co.kr/cm2/artistcrop/images/031/37/705/3137705_20230817150154_500.jpg?631524f06c0f4bc7bab47d1c35cc3053/melon/resize/416/quality/80/optimize'><br>S2 정혜린 (Hyerin)",
-            "<img src='http://musicmeta.phinf.naver.net/artist/000/362/362235.jpg?type=r300&v=20160425002201/'><br>지수 (Jisoo)",
-            "<img src='http://musicmeta.phinf.naver.net/artist/000/362/362236.jpg?type=r300&v=20160425002401/'><br>미주 (Mijoo)",
-            "<img src='http://musicmeta.phinf.naver.net/artist/000/362/362233.jpg?type=r300&v=20160525144653/'><br>Kei",
-            "<img src='http://musicmeta.phinf.naver.net/artist/000/299/299055.jpg?type=r300&v=20160425002001/'><br>Jin",
-            "<img src='http://musicmeta.phinf.naver.net/artist/000/362/362234.jpg?type=r300&v=20160425002201/'><br>수정 (Sujeong)",
-            "<img src='http://musicmeta.phinf.naver.net/artist/000/362/362237.jpg?type=r300&v=20160425002401/'><br>예인 (Yein)"
+            "<img src='https://cdnimg.melon.co.kr/cm2/artistcrop/images/031/39/877/3139877_20230817145359_500.jpg?42fbd473f1ad52ffa40dbe604e748f13/melon/resize/208/quality/80/optimize'><br>S1 윤서연 (Seoyeon)", 
+            "<img src='https://cdnimg.melon.co.kr/cm2/artistcrop/images/031/37/705/3137705_20230817150154_500.jpg?631524f06c0f4bc7bab47d1c35cc3053/melon/resize/208/quality/80/optimize'><br>S2 정혜린 (Hyerin)",
+            "<img src='https://cdnimg.melon.co.kr/cm2/artistcrop/images/031/39/880/3139880_20231011121612_500.jpg?71928e77b4f993cf3bd122e21554c975/melon/resize/208/quality/80/optimize'><br>S3 이지우 (Jiwoo)",
+            "<img src='https://cdnimg.melon.co.kr/cm2/artistcrop/images/031/39/881/3139881_20231011121750_500.jpg?4e8623ead1de0b688e7762702e865263/melon/resize/208/quality/80/optimize'><br>S4 김채연 (Chaeyeon)",
+            "<img src='https://cdnimg.melon.co.kr/cm2/artistcrop/images/031/37/706/3137706_20231011121531_500.jpg?9156280507c2f594d63c1905e4c18b24/melon/resize/208/quality/80/optimize'><br>S5 김유연 (Yooyeon)",
+            "<img src='https://cdnimg.melon.co.kr/cm2/artistcrop/images/031/39/883/3139883_20231011121402_500.jpg?521e02b535c40838d5f4886a7e70af9d/melon/resize/208/quality/80/optimize'><br>S6 김수민 (Soomin)",
+            "<img src='https://cdnimg.melon.co.kr/cm2/artistcrop/images/031/37/707/3137707_20231011121217_500.jpg?f79e52fedfc3d573fa71e4fdc0deb058/melon/resize/208/quality/80/optimize'><br>S7 김나경 (Nakyoung)",
+            "<img src='https://cdnimg.melon.co.kr/cm2/artistcrop/images/031/37/708/3137708_20230817150515_500.jpg?63360ba8b7c85cb0b962c5d3b79fd189/melon/resize/208/quality/80/optimize'><br>S8 공유빈 (Yubin)",
+            "<img src='https://cdnimg.melon.co.kr/cm2/artistcrop/images/031/99/290/3199290_20230817150553_500.jpg?9e365f6ec06ef976d74548b4188dae4e/melon/resize/208/quality/80/optimize'><br>S9 카에데 (Kaede)",
+            "<img src='https://cdnimg.melon.co.kr/cm2/artistcrop/images/031/76/273/3176273_20230817150626_500.jpg?ff15931a9cd2157991ce1d9f2f676880/melon/resize/208/quality/80/optimize'><br>S10 서다현 (Dahyun)",
+            "<img src='https://cdnimg.melon.co.kr/cm2/artistcrop/images/035/74/812/3574812_20231011121839_500.jpg?f7e7370b88ad2a8bce72ec96c9442c71/melon/resize/208/quality/80/optimize'><br>S11 코토네 (Kotone)",
+            "<img src='https://cdnimg.melon.co.kr/cm2/artistcrop/images/035/74/813/3574813_20231011121445_500.jpg?80d21b2a1621cd0ec16bb3b1a4cd81d9/melon/resize/208/quality/80/optimize'><br>S12 곽연지 (Yeonji)",
+            "<img src='https://cdnimg.melon.co.kr/cm2/artistcrop/images/034/84/648/3484648_20230817150957_500.jpg?4207207b3a3c83bdc6ecb8ebd8f0bcc4/melon/resize/208/quality/80/optimize'><br>S13 니엔 (Nien)",
+            "<img src='https://cdnimg.melon.co.kr/cm2/artistcrop/images/034/84/660/3484660_20230817151036_500.jpg?2dffcc5721eda6367e9b1a24771a6846/melon/resize/208/quality/80/optimize'><br>S14 박소현 (Sohyun)",
+            "<img src='https://cdnimg.melon.co.kr/cm2/artistcrop/images/034/84/677/3484677_20230817151123_500.jpg?280416ef4f596ba43bc2a628018e01f0/melon/resize/208/quality/80/optimize'><br>S15 신위 (Xinyu)",
+            "<img src='https://cdnimg.melon.co.kr/cm2/artistcrop/images/035/74/811/3574811_20231011121321_500.jpg?be25c9af613d47bf114b8edd5195b211/melon/resize/208/quality/80/optimize'><br>S16 마유 (Mayu)",
+            "S17 Lynn",
+            "S18 Joobin",
+            "S19 Hayeon",
+            "S20 Sion"
         );
         
         var lstMember = new Array();
@@ -276,7 +286,8 @@
       <div class="instructions">
         <center>
           <br /><br />
-          <b>Bias Sorter</b><br /><br>Pick who you like better in each round to get an accurate list of your favorite members from the group.<br />Note: Hitting 'No Opinion' or 'I Like Both' frequently will affect your results negatively.<br />All images seen here are credited to Melon.<br /><br />
+          <b>Hi tripleS! 안녕하세요, '트리플에스'입니다!</b>
+          <b>TripleS Bias Sorter</b><br /><br>Pick who you like better in each round to get an accurate list of your favorite members from the group.<br />Note: Hitting 'No Opinion' or 'I Like Both' frequently will affect your results negatively.<br />All images seen here are credited to Melon.<br /><br />
         </center>
 
         <table id="mainTable" align="center">
