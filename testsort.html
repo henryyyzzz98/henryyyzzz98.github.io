@@ -250,7 +250,6 @@
             str += "<tr><td style=\"color:#ffffff; background-color:#888888; text-align:center;\">Rank<\/td><td style=\"color:#ffffff; background-color:#888888; text-align:center; font-family:'Nunito',sans-serif;\">Name<\/td><\/tr>";
 
             for (i=0; i<namMember.length; i++) {
-                var memberName = namMember[lstMember[0][i]].replace(/<img[^>]*>/g, '');
                 str += "<tr><td style=\"border:1px solid #888888; width:25px; text-align:center; padding-right:5px; font-family:'Nunito',sans-serif;\">"+ranking+"<\/td><td style=\"border:1px solid #888888; width:175px; text-align:center; padding-left:5px; font-family:'Nunito',sans-serif;\">"+namMember[lstMember[0][i]]+"<\/td><\/tr>";
                 if (i<namMember.length-1) {
                     if (equal[lstMember[0][i]]==lstMember[0][i+1]) {
