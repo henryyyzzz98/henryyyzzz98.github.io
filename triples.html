@@ -443,9 +443,9 @@
 
             function saveAsImage() {
                 html2canvas(document.getElementById("resultField")).then(function(canvas) {
-                    var link = document.createElement('div');
-                    link.href = canvas.toDataURL('image/png');
-                    link.download = 'sorter_result.png';
+                    var link = document.createElement('a');
+                    link.href = canvas.toDataURL('image/jpeg');
+                    link.download = 'sort_result.jpg';
                     link.click();
                 });
             }
@@ -473,6 +473,8 @@
           </tbody>
         </table>
         <br><br>
+        <button onclick="saveAsImage()">Save Result as Image</button>
+        <br><br>
         <div id="resultField" style="text-align: center;">
           <br><br>
         </div>
@@ -480,7 +482,6 @@
           initList();
           showImage();
         </script>
-        <button onclick="saveAsImage()">Save Result as Image</button>
       </div>
     </div>
   </div>
