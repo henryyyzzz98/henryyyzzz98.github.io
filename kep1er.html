@@ -396,13 +396,13 @@
                 return str;
             }
 
-            function download(event){
-                let canvas = document.getElementById("resultField");
-
-                let link = document.createElement("a");
-                link.href = canvas.toDataURL("image/png");
-                link.download = `sorter_${new Date().getTime()}.jpg`;
-                link.click();
+            function saveAsImage(event) {
+                html2canvas(document.getElementById("resultField")).then(function(canvas) {
+                    var link = document.createElement('a');
+                    link.href = canvas.toDataURL('image/png');
+                    link.download = `sorter_${new Date().getTime()}.jpg`;
+                    link.click();
+                });
             }
         </script>
       <div class="instructions" style="font-family: 'Nunito', sans-serif;">
@@ -434,7 +434,7 @@
           initList();
           showImage();
         </script>
-        <button onclick="download()">Save Result as Image</button>
+        <button onclick="saveAsImage()">Save Result as Image</button>
       </div>
     </div>
   </div>
