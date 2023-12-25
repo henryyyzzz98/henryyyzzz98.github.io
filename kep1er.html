@@ -395,15 +395,6 @@
                 var str = namMember[n];
                 return str;
             }
-
-            function saveAsImage(event) {
-                html2canvas(document.getElementById("sorted-canvas")).then(function(canvas) {
-                    var link = document.createElement('a');
-                    link.href = canvas.toDataURL('image/png');
-                    link.download = `sorter_${new Date().getTime()}.jpg`;
-                    link.click();
-                });
-            }
         </script>
       <div class="instructions" style="font-family: 'Nunito', sans-serif;">
         <center>
@@ -434,7 +425,6 @@
           initList();
           showImage();
         </script>
-        <button onclick="saveAsImage()">Save Result as Image</button>
       </div>
     </div>
   </div>

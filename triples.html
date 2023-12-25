@@ -440,15 +440,6 @@
                 var str = namMember[n];
                 return str;
             }
-
-            function saveAsImage() {
-                html2canvas(document.getElementById("sorted-canvas")).then(function(canvas) {
-                    var link = document.createElement('a');
-                    link.href = canvas.toDataURL('image/jpeg');
-                    link.download = 'sort_result.jpg';
-                    link.click();
-                });
-            }
         </script>
       <div class="instructions" style="font-family: 'Nunito', sans-serif;">
         <center>
@@ -474,10 +465,6 @@
         </table>
         <br><br>
         <div id="resultField" style="text-align: center;">
-            <canvas id="sorted-canvas" width="1210" height="1080">
-                Sorry, your browser is not supported...
-            </canvas>
-            <button onclick="saveAsImage()">Save Result as Image</button>
         </div>
         <script type="text/javascript">
           initList();
