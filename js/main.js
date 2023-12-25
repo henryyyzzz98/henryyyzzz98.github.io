@@ -224,7 +224,7 @@ function generateImage() {
 
 function generateTextList() {
     const data = namMember.reduce((str) => {
-        str += `${ranking}. ${namMember[lstMember[0][i]]}<br>`;
+        str += ranking. namMember[lstMember[0][i]] + "</br>";
         return str;
     }, '');
     const oWindow = window.open("", "", "height=640,width=480");
