@@ -6,10 +6,9 @@
     <title>Kep1er Bias Sorter</title>
     
     <link rel="stylesheet" type="text/css" href="/css/style.css">
-    <script src="/js/html2canvas.min.js"></script>
     <script src="/js/main.js"></script>
 </head>
-<body text="#000000" bgcolor="#ffffff" link="#0099ff" vlink="#0099ff" alink="#0099ff" class="css-selector">
+<body text="#000000" bgcolor="#ffffff" link="#0099ff" vlink="#0099ff" alink="#0099ff" class="css-selector-kep1er">
   <div>
     <div align="left" style="width: 100%; overflow-y: hidden;" class="wcustomhtml">
         <script type="text/javascript">
@@ -37,6 +36,35 @@
             var totalSize;
             var finishSize;
             var finishFlag;
+
+            function showResult() {
+                var ranking = 1;
+                var sameRank = 1;
+                /*var str = "";*/
+                var str = "<div class=\"rank-grid-t9\">";
+                var i;
+
+                /*str += "<table style=\"width:320px; font-size:15px; line-height:120%; margin-left:auto; margin-right:auto; border:1px solid #888888; border-collapse:collapse; font-family:'Nunito',sans-serif;\" align=\"center\">";
+                str += "<tr><td style=\"color:#ffffff; background-color:#888888; text-align:center;\">Rank<\/td><td style=\"color:#ffffff; background-color:#888888; text-align:center; font-family:'Nunito',sans-serif;\">Name<\/td><\/tr>";*/
+
+                for (i=0; i<namMember.length; i++) {
+                    /*str += "<tr><td style=\"border:1px solid #888888; width:25px; text-align:center; padding-right:5px; font-family:'Nunito',sans-serif;\">"+ranking+"<\/td><td style=\"border:1px solid #888888; width:175px; text-align:center; padding-left:5px; font-family:'Nunito',sans-serif;\">"+namMember[lstMember[0][i]]+"<\/td><\/tr>";*/
+                    str += "<li style=\"list-style-type: none; padding: 5px; font-size: 15px; line-height: 120%; font-family: 'Nunito', sans-serif; font-weight: bold;\">" + ranking + "<br>" + namMember[lstMember[0][i]] + "</li>";
+                    
+                    if (i<namMember.length-1) {
+                        if (equal[lstMember[0][i]]==lstMember[0][i+1]) {
+                            sameRank++;
+                        } else {
+                            ranking += sameRank;
+                            sameRank = 1;
+                        }
+                    }
+                }
+                /*str += "<\/table>";*/
+                str += "</div>";
+
+                document.getElementById("resultField").innerHTML = str;
+            }
         </script>
       <div class="instructions" style="font-family: 'Nunito', sans-serif;">
         <center>
@@ -63,7 +91,6 @@
         <br><br>
         <div id="resultField" style="text-align: center;">
         </div>
-        <button onclick="generateTextList()">Call generateTextList</button>
         <script type="text/javascript">
             initList();
             showImage();

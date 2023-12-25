@@ -1,9 +1,3 @@
-function init() {
-    /** Define button behavior. */
-    document.querySelector('.finished.getimg.button').addEventListener('click', generateImage);
-    document.querySelector('.finished.list.button').addEventListener('click', generateTextList);
-}
-
 function initList(){
     var n = 0;
     var mid;
@@ -196,37 +190,4 @@ function showImage() {
 function toNameFace(n){
     var str = namMember[n];
     return str;
-}
-
-function generateImage() {
-    const timeFinished = timestamp + timeTaken;
-    const tzoffset = (new Date()).getTimezoneOffset() * 60000;
-    const filename = 'sort-' + (new Date(timeFinished - tzoffset)).toISOString().slice(0, -5).replace('T', '(') + ').png';
-
-    html2canvas(document.querySelector('.resultField')).then(canvas => {
-        const dataURL = canvas.toDataURL();
-        const imgButton = document.querySelector('.finished.getimg.button');
-        const resetButton = document.createElement('a');
-
-        imgButton.removeEventListener('click', generateImage);
-        imgButton.innerHTML = '';
-        imgButton.insertAdjacentHTML('beforeend', `<a href="${dataURL}" download="${filename}">Download Image</a><br><br>`);
-
-        resetButton.insertAdjacentText('beforeend', 'Reset');
-        resetButton.addEventListener('click', (event) => {
-        imgButton.addEventListener('click', generateImage);
-        imgButton.innerHTML = 'Generate Image';
-        event.stopPropagation();
-        });
-        imgButton.insertAdjacentElement('beforeend', resetButton);
-    });
-}
-
-function generateTextList() {
-    const data = showResult.reduce((str) => {
-        str += ranking. namMember[lstMember[0][i]] + "</br>";
-        return str;
-    }, '');
-    const oWindow = window.open("", "", "height=640,width=480");
-    oWindow.document.write(data);
 }
