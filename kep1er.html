@@ -76,14 +76,14 @@
 
         .rank-grid{
             display: grid;
-            grid-gap: 0.2cm 0.05cm;
-            grid-template-columns: repeat(7, 1fr);
+            width: 1200px;
+            grid-gap: 1em;
+            grid-template-columns: repeat(5, 1fr);
             grid-template-areas:
-                ".   .   .   r1  .   .   ."
-                ".   .   r2  .   r3  .   ."
-                ".   .   r4  r5  r6  .   ."
-                ".   .   r7  r8  r9  .   .";
-            zoom: .85;
+                ".  .   r1  .   ."
+                ".  r2  r3  r4  ."
+                "r5 r6  r7  r8  r9";
+            /*zoom: .85;*/
         }
 
         .rank-grid > li {
@@ -176,6 +176,9 @@
   <div>
     <div id="603446273904584399" align="left" style="width: 100%; overflow-y: hidden;" class="wcustomhtml">
         <script type="text/javascript">
+            document.querySelector('.finished.getimg.button').addEventListener('click', generateImage);
+            document.querySelector('.finished.list.button').addEventListener('click', generateTextList);
+            
             var namMember = new Array(
                 "<img src='https://cdnimg.melon.co.kr/cm2/artistcrop/images/008/68/646/868646_20230414105748_500.jpg?eed300998683f916cd167344c07650cc/melon/resize/208/quality/80/optimize'><br>최유진 (Yujin)", 
                 "<img src='https://cdnimg.melon.co.kr/cm2/artistcrop/images/030/58/257/3058257_20230414105938_500.jpg?80f3410f7ed2852e53eb1d1670672698/melon/resize/208/quality/80/optimize'><br>샤오팅 (Xiaoting)",
@@ -393,6 +396,39 @@
             function toNameFace(n){
                 var str = namMember[n];
                 return str;
+            }
+
+            function generateImage() {
+                const timeFinished = timestamp + timeTaken;
+                const tzoffset = (new Date()).getTimezoneOffset() * 60000;
+                const filename = 'sort-' + (new Date(timeFinished - tzoffset)).toISOString().slice(0, -5).replace('T', '(') + ').png';
+
+                html2canvas(document.querySelector('.resultField')).then(canvas => {
+                    const dataURL = canvas.toDataURL();
+                    const imgButton = document.querySelector('.finished.getimg.button');
+                    const resetButton = document.createElement('a');
+
+                    imgButton.removeEventListener('click', generateImage);
+                    imgButton.innerHTML = '';
+                    imgButton.insertAdjacentHTML('beforeend', `<a href="${dataURL}" download="${filename}">Download Image</a><br><br>`);
+
+                    resetButton.insertAdjacentText('beforeend', 'Reset');
+                    resetButton.addEventListener('click', (event) => {
+                    imgButton.addEventListener('click', generateImage);
+                    imgButton.innerHTML = 'Generate Image';
+                    event.stopPropagation();
+                    });
+                    imgButton.insertAdjacentElement('beforeend', resetButton);
+                });
+            }
+
+            function generateTextList() {
+                const data = finalCharacters.reduce((str, char) => {
+                    str += `${char.rank}. ${char.name}<br>`;
+                    return str;
+                }, '');
+                const oWindow = window.open("", "", "height=640,width=480");
+                oWindow.document.write(data);
             }
         </script>
       <div class="instructions" style="font-family: 'Nunito', sans-serif;">
