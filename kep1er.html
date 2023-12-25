@@ -397,7 +397,7 @@
             }
 
             function saveAsImage(event) {
-                html2canvas(document.getElementById("resultField")).then(function(canvas) {
+                html2canvas(document.getElementById("sorted-canvas")).then(function(canvas) {
                     var link = document.createElement('a');
                     link.href = canvas.toDataURL('image/png');
                     link.download = `sorter_${new Date().getTime()}.jpg`;
