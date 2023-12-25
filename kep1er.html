@@ -396,13 +396,13 @@
                 return str;
             }
 
-            function saveAsImage() {
-                html2canvas(document.querySelector("#resultField")).then(function(canvas) {
-                    var link = document.body.appendChild(canvas);
-                    link.href = canvas.toDataURL('image/jpeg');
-                    link.download = 'sort_result.jpg';
-                    link.click();
-                });
+            function download(event){
+                let canvas = document.getElementById("resultField");
+
+                let link = document.createElement("a");
+                link.href = canvas.toDataURL("image/png");
+                link.download = `sorter_${new Date().getTime()}.jpg`;
+                link.click();
             }
         </script>
       <div class="instructions" style="font-family: 'Nunito', sans-serif;">
@@ -430,7 +430,7 @@
         <br><br>
         <div id="resultField" style="text-align: center;">
         </div>
-        <button onclick="saveAsImage()">Save Result as Image</button>
+        <button onclick="download()">Save Result as Image</button>
         <script type="text/javascript">
           initList();
           showImage();
