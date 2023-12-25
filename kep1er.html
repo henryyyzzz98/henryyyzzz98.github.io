@@ -37,6 +37,154 @@
             var finishSize;
             var finishFlag;
 
+            function initList(){
+                var n = 0;
+                var mid;
+                var i;
+
+                lstMember[n] = new Array();
+                for (i=0; i<namMember.length; i++) {
+                    lstMember[n][i] = i;
+                }
+                parent[n] = -1;
+                totalSize = 0;
+                n++;
+
+                for (i=0; i<lstMember.length; i++) {
+                    if(lstMember[i].length>=2) {
+                        mid = Math.ceil(lstMember[i].length/2);
+                        lstMember[n] = new Array();
+                        lstMember[n] = lstMember[i].slice(0,mid);
+                        totalSize += lstMember[n].length;
+                        parent[n] = i;
+                        n++;
+                        lstMember[n] = new Array();
+                        lstMember[n] = lstMember[i].slice(mid,lstMember[i].length);
+                        totalSize += lstMember[n].length;
+                        parent[n] = i;
+                        n++;
+                    }
+                }
+
+                for (i=0; i<namMember.length; i++) {
+                    rec[i] = 0;
+                }
+                nrec = 0;
+
+                for (i=0; i<=namMember.length; i++) {
+                    equal[i] = -1;
+                }
+
+                cmp1 = lstMember.length-2;
+                cmp2 = lstMember.length-1;
+                head1 = 0;
+                head2 = 0;
+                numQuestion = 1;
+                finishSize = 0;
+                finishFlag = 0;
+            }
+
+            function sortList(flag){
+                var i;
+                var str;
+
+                if (flag<0) {
+                    rec[nrec] = lstMember[cmp1][head1];
+                    head1++;
+                    nrec++;
+                    finishSize++;
+                    while (equal[rec[nrec-1]]!=-1) {
+                        rec[nrec] = lstMember[cmp1][head1];
+                        head1++;
+                        nrec++;
+                        finishSize++;
+                    }
+                }
+                else if (flag>0) {
+                    rec[nrec] = lstMember[cmp2][head2];
+                    head2++;
+                    nrec++;
+                    finishSize++;
+                    while (equal[rec[nrec-1]]!=-1) {
+                        rec[nrec] = lstMember[cmp2][head2];
+                        head2++;
+                        nrec++;
+                        finishSize++;
+                    }
+                }
+                else {
+                    rec[nrec] = lstMember[cmp1][head1];
+                    head1++;
+                    nrec++;
+                    finishSize++;
+                    while (equal[rec[nrec-1]]!=-1) {
+                        rec[nrec] = lstMember[cmp1][head1];
+                        head1++;
+                        nrec++;
+                        finishSize++;
+                    }
+                    equal[rec[nrec-1]] = lstMember[cmp2][head2];
+                    rec[nrec] = lstMember[cmp2][head2];
+                    head2++;
+                    nrec++;
+                    finishSize++;
+                    while (equal[rec[nrec-1]]!=-1) {
+                        rec[nrec] = lstMember[cmp2][head2];
+                        head2++;
+                        nrec++;
+                        finishSize++;
+                    }
+                }
+
+                if (head1<lstMember[cmp1].length && head2==lstMember[cmp2].length) {
+                    while (head1<lstMember[cmp1].length){
+                        rec[nrec] = lstMember[cmp1][head1];
+                        head1++;
+                        nrec++;
+                        finishSize++;
+                    }
+                }
+                else if (head1==lstMember[cmp1].length && head2<lstMember[cmp2].length) {
+                    while (head2<lstMember[cmp2].length){
+                        rec[nrec] = lstMember[cmp2][head2];
+                        head2++;
+                        nrec++;
+                        finishSize++;
+                    }
+                }
+
+                if (head1==lstMember[cmp1].length && head2==lstMember[cmp2].length) {
+                    for (i=0; i<lstMember[cmp1].length+lstMember[cmp2].length; i++) {
+                        lstMember[parent[cmp1]][i] = rec[i];
+                    }
+                    lstMember.pop();
+                    lstMember.pop();
+                    cmp1 = cmp1-2;
+                    cmp2 = cmp2-2;
+                    head1 = 0;
+                    head2 = 0;
+
+                    //Initialize the rec before performing the new comparison
+                    if (head1==0 && head2==0) {
+                        for (i=0; i<namMember.length; i++) {
+                            rec[i] = 0;
+                        }
+                        nrec = 0;
+                    }
+                }
+
+                if (cmp1<0) {
+                    str = "Choice "+(numQuestion-1)+"<br>"+Math.floor(finishSize*100/totalSize)+"% done.";
+                    document.getElementById("battleNumber").innerHTML = str;
+
+                    showResult();
+                    finishFlag = 1;
+                }
+                else {
+                    showImage();
+                }
+            }
+
             function showResult() {
                 var ranking = 1;
                 var sameRank = 1;
@@ -64,6 +212,23 @@
                 str += "</div>";
 
                 document.getElementById("resultField").innerHTML = str;
+            }
+
+            function showImage() {
+                var str0 = "Choice "+numQuestion+"<br>"+Math.floor(finishSize*100/totalSize)+"%<br>";
+                var str1 = ""+toNameFace(lstMember[cmp1][head1]);
+                var str2 = ""+toNameFace(lstMember[cmp2][head2]);
+
+                document.getElementById("battleNumber").innerHTML = str0;
+                document.getElementById("leftField").innerHTML = str1;
+                document.getElementById("rightField").innerHTML = str2;
+
+                numQuestion++;
+            }
+
+            function toNameFace(n){
+                var str = namMember[n];
+                return str;
             }
         </script>
       <div class="instructions" style="font-family: 'Nunito', sans-serif;">
