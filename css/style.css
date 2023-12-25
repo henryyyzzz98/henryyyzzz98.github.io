@@ -67,6 +67,16 @@
     cursor: pointer;
 }
 
+.button {
+    font-family: "Nunito", sans-serif;
+    background-color: #c5bafc;
+    border-radius: 1em;
+    text-align: center;
+    padding: 10%;
+    grid-column: 2 / 3;
+    cursor: pointer;
+}
+
 .rank-grid{
     display: grid;
     /*width: 1200px;*/
