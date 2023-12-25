@@ -223,7 +223,7 @@ function generateImage() {
 }
 
 function generateTextList() {
-    const data = namMember.reduce((str) => {
+    const data = showResult.reduce((str) => {
         str += ranking. namMember[lstMember[0][i]] + "</br>";
         return str;
     }, '');
