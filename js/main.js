@@ -223,8 +223,8 @@ function generateImage() {
 }
 
 function generateTextList() {
-    const data = finalCharacters.reduce((str, char) => {
-        str += `${char.rank}. ${char.name}<br>`;
+    const data = finalCharacters.reduce((str) => {
+        str += `${ranking}. ${namMember[lstMember[0][i]]}<br>`;
         return str;
     }, '');
     const oWindow = window.open("", "", "height=640,width=480");
