@@ -20,6 +20,16 @@
     animation: gradbg 4s ease infinite;
 }
 
+.css-selector-nmixx {
+    background: linear-gradient(325deg, #809ecb, #c1cfe6, #FFFFFF);
+    background-size: 400% 400%;
+
+    -webkit-animation: gradbg 4s ease infinite;
+    -moz-animation: gradbg 4s ease infinite;
+    -o-animation: gradbg 4s ease infinite;
+    animation: gradbg 4s ease infinite;
+}
+
 @-webkit-keyframes gradbg {
     0%{background-position:0% 50%}
     50%{background-position:100% 50%}
