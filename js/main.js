@@ -6,7 +6,7 @@ var app = (function () {
     
     const HEARDLE_GLITCH_NAME = "kep1er-heardle";
     
-    const HEARDLE_URL = "https://"+HEARDLE_GLITCH_NAME+".glitch.me/";
+    const HEARDLE_URL = "https://henryyyzzz98.github.io/kep1er_heardle.html";
     
     const HEARDLE_ARTIST = "Kep1er";
     
