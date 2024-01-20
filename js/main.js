@@ -3863,7 +3863,7 @@ var app = (function () {
               "kofi-button py-2 px-3 rounded-lg items-center flex  svelte-1d3p4dy"
             ),
             M(r, "href", "https://ko-fi.com/itsderek"),
-            M(r, "title", "Support me on Ko-Fi"),
+            M(r, "title", "Support the original creator on Ko-Fi"),
             M(
               n,
               "class",
