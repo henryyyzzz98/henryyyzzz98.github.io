@@ -25,6 +25,7 @@ var app = (function () {
         "You deserved a Grade E!" // Sixth try
       ]; 
     
+    const HEARDLE_GOOGLE_ANALYTICS = "G-XXXXXXXXXX";
     
   //   STOP EDITING NOW
     
