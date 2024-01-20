@@ -1,4 +1,4 @@
-[
+let songs = [
     {
       "url": "https://soundcloud.com/kep1er-music/giddy-japanese-version",
       "answer": "Kep1er - Giddy (Japanese version)"
@@ -183,4 +183,4 @@
       "url": "https://soundcloud.com/kep1er-music/wa-da-da",
       "answer": "Kep1er - WA DA DA"
     }
-  ]
+];
