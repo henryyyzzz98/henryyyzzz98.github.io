@@ -1,15 +1,7 @@
 let songs = [
     {
-      "url": "https://soundcloud.com/kep1er-music/giddy-japanese-version",
-      "answer": "Kep1er - Giddy (Japanese version)"
-    },
-    {
       "url": "https://soundcloud.com/kep1er-music/sugar",
       "answer": "Kep1er - Sugar"
-    },
-    {
-      "url": "https://soundcloud.com/kep1er-music/galileo-japanese-version",
-      "answer": "Kep1er - Galileo (Japanese version)"
     },
     {
       "url": "https://soundcloud.com/kep1er-music/grand-prix",
@@ -40,10 +32,6 @@ let songs = [
       "answer": "Kep1er - RESCUE TAYO"
     },
     {
-      "url": "https://soundcloud.com/kep1er-music/rescue-tayo-instrumental",
-      "answer": "Kep1er - RESCUE TAYO (Instrumental)"
-    },
-    {
       "url": "https://soundcloud.com/kep1er-music/happy-ending",
       "answer": "Kep1er - Happy Ending"
     },
@@ -64,16 +52,8 @@ let songs = [
       "answer": "Kep1er - LVLY"
     },
     {
-      "url": "https://soundcloud.com/kep1er-music/we-fresh-japanese-version",
-      "answer": "Kep1er - We Fresh (Japanese version)"
-    },
-    {
       "url": "https://soundcloud.com/kep1er-music/together-forever",
       "answer": "Kep1er - tOgether fOrever"
-    },
-    {
-      "url": "https://soundcloud.com/kep1er-music/mvsk-japanese-version",
-      "answer": "Kep1er - MVSK (Japanese version)"
     },
     {
       "url": "https://soundcloud.com/kep1er-music/i-do-do-you",
@@ -97,27 +77,11 @@ let songs = [
     },
     {
       "url": "https://soundcloud.com/kep1er-music/the-girls-cant-turn-me-down",
-      "answer": "Kep1er - THE GIRLS (Can’t turn me down) (2022 Remastered)"
+      "answer": "Kep1er - THE GIRLS (Canâ€™t turn me down) (2022 Remastered)"
     },
     {
       "url": "https://soundcloud.com/kep1er-music/dreams",
       "answer": "Kep1er - Dreams"
-    },
-    {
-      "url": "https://soundcloud.com/kep1er-music/wing-wing-from-the-first-take",
-      "answer": "Kep1er - Wing Wing - From THE FIRST TAKE"
-    },
-    {
-      "url": "https://soundcloud.com/kep1er-music/wa-da-da-japanese-version-from",
-      "answer": "Kep1er - WA DA DA (Japanese version) - From THE FIRST TAKE"
-    },
-    {
-      "url": "https://soundcloud.com/kep1er-music/wa-da-da-japanese-version",
-      "answer": "Kep1er - WA DA DA (Japanese version)"
-    },
-    {
-      "url": "https://soundcloud.com/kep1er-music/up-japanese-version",
-      "answer": "Kep1er - Up! (Japanese version)"
     },
     {
       "url": "https://soundcloud.com/kep1er-music/daisy",
@@ -148,16 +112,8 @@ let songs = [
       "answer": "Kep1er - LE VOYA9E"
     },
     {
-      "url": "https://soundcloud.com/kep1er-music/the-girls-cant-turn-me-down-1",
-      "answer": "Kep1er - THE GIRLS (Can’t turn me down)"
-    },
-    {
       "url": "https://soundcloud.com/kep1er-music/pool-party-rollin-right-now",
-      "answer": "Kep1er - Pool Party (Rollin’ right now)"
-    },
-    {
-      "url": "https://soundcloud.com/kep1er-music/wa-da-da-queendom2-version",
-      "answer": "Kep1er - WA DA DA (QUEENDOM2 Version)"
+      "answer": "Kep1er - Pool Party (Rollin' right now)"
     },
     {
       "url": "https://soundcloud.com/kep1er-music/see-the-light",
