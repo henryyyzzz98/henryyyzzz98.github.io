@@ -5217,7 +5217,7 @@ var app = (function () {
     }
   
     function Dn(e, t, n) {
-      let { userStats: r } = t,
+      let { userStats_Nmixx: r } = t,
         { config: s } = t,
         { todaysScore: i } = t,
         { hasFinished: o } = t,
@@ -5249,7 +5249,7 @@ var app = (function () {
       }
       return (
         (e.$$set = (e) => {
-          "userStats" in e && n(11, (r = e.userStats)),
+          "userStats_Nmixx" in e && n(11, (r = e.userStats_Nmixx)),
             "config" in e && n(0, (s = e.config)),
             "todaysScore" in e && n(1, (i = e.todaysScore)),
             "hasFinished" in e && n(2, (o = e.hasFinished)),
@@ -5264,7 +5264,7 @@ var app = (function () {
       constructor(e) {
         super(),
           re(this, e, Dn, $n, i, {
-            userStats: 11,
+            userStats_Nmixx: 11,
             config: 0,
             todaysScore: 1,
             hasFinished: 2,
@@ -9180,7 +9180,7 @@ var app = (function () {
       return (
         (t = new Tn({
           props: {
-            userStats: e[4],
+            userStats_Nmixx: e[4],
             config: Vt,
             isPrime: e[8].isPrime,
             daysSince: e[11],
@@ -9198,7 +9198,7 @@ var app = (function () {
           },
           p(e, n) {
             const r = {};
-            16 & n[0] && (r.userStats = e[4]),
+            16 & n[0] && (r.userStats_Nmixx = e[4]),
               256 & n[0] && (r.isPrime = e[8].isPrime),
               64 & n[0] && (r.todaysScore = e[6].length),
               96 & n[0] && (r.guessRef = e[5].gotCorrect ? e[6].length + 1 : 0),
@@ -9640,14 +9640,14 @@ var app = (function () {
       P(() => {
         p();
       });
-      null == localStorage.getItem("userStats")
-        ? ((h = []), localStorage.setItem("userStats", JSON.stringify(h)))
-        : (h = JSON.parse(localStorage.getItem("userStats"))),
+      null == localStorage.getItem("userStats_Nmixx")
+        ? ((h = []), localStorage.setItem("userStats_Nmixx", JSON.stringify(h)))
+        : (h = JSON.parse(localStorage.getItem("userStats_Nmixx"))),
         (f = h.find((e) => e.id === l.id)),
         void 0 === f &&
           ((f = l),
           h.push(f),
-          localStorage.setItem("userStats", JSON.stringify(h)));
+          localStorage.setItem("userStats_Nmixx", JSON.stringify(h)));
       let g,
         y,
         v = f.guessList,
@@ -9755,14 +9755,14 @@ var app = (function () {
               }))
             ),
             n(5, (f.guessList = v), f),
-            localStorage.setItem("userStats", JSON.stringify(h)),
+            localStorage.setItem("userStats_Nmixx", JSON.stringify(h)),
             (v.length != Vt.maxAttempts && 1 != s) ||
               ((o = s),
               n(8, (w.gameIsActive = !1), w),
               n(5, (f.hasFinished = !0), f),
               n(5, (f.gotCorrect = o), f),
               n(5, (f.score = v.length), f),
-              localStorage.setItem("userStats", JSON.stringify(h)),
+              localStorage.setItem("userStats_Nmixx", JSON.stringify(h)),
               i.resetAndPlay(),
               o
                 ? (pe("wonGame", {
