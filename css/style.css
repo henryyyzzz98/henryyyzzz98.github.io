@@ -1,8 +1,10 @@
 @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@600&display=swap');
 
 .css-selector-kep1er {
-    background: linear-gradient(325deg, #C1A7E2, #E0D3F1, #FFFFFF);
-    background-size: 400% 400%;
+    background: linear-gradient(to right, #C1A7E2, #E0D3F1, #FFFFFF);
+    z-index: 1000;
+    transition: background-color 0.3s;
+    background-color: rgba(255, 255, 255, 1);
 
     -webkit-animation: gradbg 4s ease infinite;
     -moz-animation: gradbg 4s ease infinite;
@@ -11,8 +13,10 @@
 }
 
 .css-selector-triples {
-    background: linear-gradient(325deg, #f9d4c5, #FCE6D9, #fff8ed);
-    background-size: 400% 400%;
+    background: linear-gradient(to right, #f9d4c5, #FCE6D9, #fff8ed);
+    z-index: 1000;
+    transition: background-color 0.3s;
+    background-color: rgba(255, 255, 255, 1);
 
     -webkit-animation: gradbg 4s ease infinite;
     -moz-animation: gradbg 4s ease infinite;
@@ -21,8 +25,10 @@
 }
 
 .css-selector-nmixx {
-    background: linear-gradient(325deg, #809ecb, #c1cfe6, #FFFFFF);
-    background-size: 400% 400%;
+    background: linear-gradient(to right, #809ecb, #c1cfe6, #FFFFFF);
+    z-index: 1000;
+    transition: background-color 0.3s;
+    background-color: rgba(255, 255, 255, 1);
 
     -webkit-animation: gradbg 4s ease infinite;
     -moz-animation: gradbg 4s ease infinite;
