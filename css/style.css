@@ -247,6 +247,18 @@
 .rank-grid > li:nth-child(20) {
     grid-area: r20;
 }
+.rank-grid > li:nth-child(21) {
+    grid-area: r21;
+}
+.rank-grid > li:nth-child(22) {
+    grid-area: r22;
+}
+.rank-grid > li:nth-child(23) {
+    grid-area: r23;
+}
+.rank-grid > li:nth-child(24) {
+    grid-area: r24;
+}
 
 A {
     text-decoration: none;
