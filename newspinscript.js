@@ -13,8 +13,8 @@ async function fetchCards() {
         const jsonData = JSON.parse(text.substring(47, text.length - 2));
         const rows = jsonData.table.rows;
 
-        // Ensure we're getting data from row 5 onward (index 4)
-        let rawCards = rows.slice(4).map(row => row.c[2]?.v || "Unknown").filter(name => name !== "Unknown");
+        // Ensure we're getting data from row 7 onward (index 6)
+        let rawCards = rows.slice(6).map(row => row.c[2]?.v || "Unknown").filter(name => name !== "Unknown");
 
         // Shuffle the card list for randomness
         cards = rawCards.sort(() => Math.random() - 0.5);
