@@ -140,6 +140,26 @@
             }
         }
 
+        // Manual card selection (Click a card)
+        function handleManualSelection(index) {
+            if (!isRandomSelecting) {
+                selectedIndex = index;
+        
+                // Remove previous selection and highlight only clicked card
+                document.querySelectorAll(".card").forEach(card => card.classList.remove("selected"));
+                document.querySelectorAll(".card")[index].classList.add("selected");
+        
+                document.getElementById("confirm-btn").style.display = "block";
+            }
+        }
+
+        // Random Selection (Button Click)
+        document.getElementById("random-btn").onclick = () => {
+            if (!isRandomSelecting) {
+                startSelectionAnimation();
+            }
+        };
+        
         // Animation for selecting a card
         function startSelectionAnimation() {
             isRandomSelecting = true;
@@ -185,25 +205,25 @@
                 }
             });
         }
-
-        document.getElementById("random-btn").onclick = () => {
-            if (!isRandomSelecting) {
-                startSelectionAnimation();
+        
+        // Reveal selected card
+        document.getElementById("confirm-btn").onclick = () => {
+            if (selectedIndex !== null) {
+                document.querySelectorAll(".card")[selectedIndex].innerText = cards[selectedIndex]; 
+                document.getElementById("confirm-btn").style.display = "none";
+                document.getElementById("reveal-btn").style.display = "block";
             }
         };
         
-        // Confirm selection and reveal the winning card
-        document.getElementById("confirm-btn").onclick = () => {
-            if (selectedIndex !== null) {
-                revealSelectedCard();
-            }
-        };
-
-        // Reveal all unchosen cards
+        // Reveal all remaining cards
         document.getElementById("reveal-btn").onclick = () => {
-            revealAllCards();
+            document.querySelectorAll(".card").forEach((card, index) => {
+                if (index !== selectedIndex) {
+                    card.innerText = cards[index];
+                }
+            });
         };
-
+        
         // Close the popup
         function closePopup() {
             document.getElementById("popup").style.display = "none";
