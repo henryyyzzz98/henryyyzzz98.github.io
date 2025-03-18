@@ -72,9 +72,10 @@
 
     <h1>Select an Objekt</h1>
     <div class="grid" id="card-container"></div>
-    <button id="confirm-btn">Confirm Selection</button>
-    <button id="reveal-btn">Reveal All</button>
-
+    <button id="random-btn">Random Select</button>
+    <button id="confirm-btn" style="display:none;">Confirm Choice</button>
+    <button id="reveal-btn" style="display:none;">Reveal All</button>
+    
     <div class="popup" id="popup">
         <h2>You Won:</h2>
         <p id="winner-name"></p>
@@ -86,7 +87,8 @@
     <script>
         const sheetURL = "https://docs.google.com/spreadsheets/d/1bSt-Ou4QycD3USl1hf59jEcpPQ18B8WJ660CBOnpS-0/gviz/tq?tqx=out:json";
         let cards = [];
-        let selectedCardIndex = null;
+        let selectedIndex = null;
+        let isRandomSelecting = false;
 
         // Mapping card names to image URLs
         const cardImages = {
@@ -110,11 +112,11 @@
                 console.log("Sheet Rows:", rows);  // Debugging
         
                 cards = rows.map(row => {
-                    if (!row.c || !row.c[0] || !row.c[0].v) {
+                    if (!row.c || !row.c[2] || !row.c[2].v) {
                         console.warn("Skipping row due to missing data:", row);
                         return "Unknown"; // Prevents crashing on empty rows
                     }
-                    return row.c[0].v; // Extract card names
+                    return row.c[2].v; // Extract card names
                 });
         
                 console.log("Extracted Cards:", cards);
@@ -123,7 +125,7 @@
                 console.error("Error fetching Google Sheets data:", error);
             }
         }
-
+        
         // Generate card elements in the grid
         function generateCards() {
             const container = document.getElementById("card-container");
@@ -139,46 +141,67 @@
         }
 
         // Animation for selecting a card
-        function startSelectionAnimation(finalIndex) {
-            let index = 0;
-            const cards = document.querySelectorAll(".card");
+        function startSelectionAnimation() {
+            isRandomSelecting = true;
+            let currentIndex = 0;
+            const totalCards = 16;
             const interval = setInterval(() => {
-                cards.forEach(card => card.classList.remove("selected"));
-                cards[index].classList.add("selected");
-                index = (index + 1) % cards.length;
+                document.querySelectorAll(".card").forEach((card, index) => {
+                    card.classList.toggle("highlight", index === currentIndex);
+                });
+                currentIndex = (currentIndex + 1) % totalCards;
             }, 100);
-
+        
             setTimeout(() => {
                 clearInterval(interval);
-                selectedCardIndex = finalIndex;
-                cards.forEach(card => card.classList.remove("selected"));
-                cards[selectedCardIndex].classList.add("selected");
+                selectedIndex = Math.floor(Math.random() * totalCards);
+                document.querySelectorAll(".card")[selectedIndex].classList.add("selected");
+                isRandomSelecting = false;
                 document.getElementById("confirm-btn").style.display = "block";
-            }, 2000); // Stops after 2 seconds
+            }, 2000);
         }
 
+        function handleManualSelection(index) {
+            if (!isRandomSelecting) {
+                selectedIndex = index;
+                document.querySelectorAll(".card").forEach(card => card.classList.remove("selected"));
+                document.querySelectorAll(".card")[index].classList.add("selected");
+                document.getElementById("confirm-btn").style.display = "block";
+            }
+        }
+
+        function revealSelectedCard() {
+            if (selectedIndex !== null) {
+                document.querySelectorAll(".card")[selectedIndex].innerText = cards[selectedIndex]; // Show card name
+                document.getElementById("confirm-btn").style.display = "none";
+                document.getElementById("reveal-btn").style.display = "block";
+            }
+        }
+
+        function revealAllCards() {
+            document.querySelectorAll(".card").forEach((card, index) => {
+                if (index !== selectedIndex) {
+                    card.innerText = cards[index]; // Show all card names
+                }
+            });
+        }
+
+        document.getElementById("random-btn").onclick = () => {
+            if (!isRandomSelecting) {
+                startSelectionAnimation();
+            }
+        };
+        
         // Confirm selection and reveal the winning card
         document.getElementById("confirm-btn").onclick = () => {
-            if (selectedCardIndex !== null) {
-                const selectedCardName = cards[selectedCardIndex] || "Unknown";
-                const selectedCardImage = cardImages[selectedCardName] || "https://example.com/default-card.jpg";
-
-                document.getElementById("winner-name").innerText = selectedCardName;
-                document.getElementById("winner-image").src = selectedCardImage;
-                document.getElementById("popup").style.display = "block";
-                document.getElementById("reveal-btn").style.display = "block";
+            if (selectedIndex !== null) {
+                revealSelectedCard();
             }
         };
 
         // Reveal all unchosen cards
         document.getElementById("reveal-btn").onclick = () => {
-            const cards = document.querySelectorAll(".card");
-            cards.forEach((card, index) => {
-                if (index !== selectedCardIndex) {
-                    const cardName = cards[index] || "Unknown";
-                    card.innerText = cardName;
-                }
-            });
+            revealAllCards();
         };
 
         // Close the popup
