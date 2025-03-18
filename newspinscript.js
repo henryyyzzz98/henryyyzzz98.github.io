@@ -13,11 +13,16 @@ async function fetchCards() {
         const jsonData = JSON.parse(text.substring(47, text.length - 2));
         const rows = jsonData.table.rows;
 
-        // Skip first 4 rows (start from row 5)
-        let rawCards = rows.slice(4).map(row => row.c[2]?.v || "Unknown"); 
+        // Ensure we're getting data from row 5 onward (index 4)
+        let rawCards = rows.slice(4).map(row => row.c[2]?.v || "Unknown").filter(name => name !== "Unknown");
 
         // Shuffle the card list for randomness
-        cards = rawCards.sort(() => Math.random() - 0.5); 
+        cards = rawCards.sort(() => Math.random() - 0.5);
+
+        // Ensure we always have 16 cards (pad if necessary)
+        while (cards.length < 16) {
+            cards.push("Unknown");
+        }
 
         generateCards();
     } catch (error) {
