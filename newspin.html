@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lucky Draw</title>
+    <style>
+        body { text-align: center; background-color: black; color: white; }
+        .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; width: 60%; margin: auto; }
+        .card { width: 100px; height: 150px; background: url('card_back.png') no-repeat center/cover; border: 3px solid transparent; }
+        .selected { border: 3px solid yellow; }
+        .revealed { background-size: cover !important; }
+        .popup { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; color: black; padding: 20px; }
+    </style>
+</head>
+<body>
+    <h2>Select an Objekt</h2>
+    <div class="grid" id="cardGrid"></div>
+    <button onclick="startSelection()">Start Selection</button>
+    <button id="confirmBtn" onclick="revealCard()" disabled>Confirm</button>
+    <div id="popup" class="popup"></div>
+    
+    <script>
+        let cards = [];
+        let selectedCard = null;
+
+        async function fetchCards() {
+            const response = await fetch('YOUR_GOOGLE_SHEET_API_URL');
+            const data = await response.json();
+            cards = data.map(item => ({ name: item.card_name, image: item.image_url }));
+            generateGrid();
+        }
+
+        function generateGrid() {
+            let grid = document.getElementById('cardGrid');
+            grid.innerHTML = '';
+            for (let i = 0; i < 16; i++) {
+                let div = document.createElement('div');
+                div.classList.add('card');
+                div.setAttribute('data-index', i);
+                grid.appendChild(div);
+            }
+        }
+
+        function startSelection() {
+            let index = 0;
+            let interval = setInterval(() => {
+                document.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
+                let cards = document.querySelectorAll('.card');
+                cards[index].classList.add('selected');
+                index = (index + 1) % 16;
+            }, 100);
+            
+            setTimeout(() => {
+                clearInterval(interval);
+                let finalIndex = Math.floor(Math.random() * 16);
+                selectedCard = cards[finalIndex];
+                document.querySelectorAll('.card')[finalIndex].classList.add('selected');
+                document.getElementById('confirmBtn').disabled = false;
+            }, 2000);
+        }
+
+        function revealCard() {
+            if (!selectedCard) return;
+            let selectedElement = document.querySelector('.selected');
+            selectedElement.style.background = `url('${selectedCard.image}')`;
+            selectedElement.classList.add('revealed');
+            document.getElementById('popup').innerHTML = `You won: ${selectedCard.name} <br><img src="${selectedCard.image}" width="100">`;
+            document.getElementById('popup').style.display = 'block';
+        }
+
+        fetchCards();
+    </script>
+</body>
+</html>
