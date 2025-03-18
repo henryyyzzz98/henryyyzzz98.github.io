@@ -68,21 +68,36 @@ document.getElementById("random-btn").onclick = () => {
 function startSelectionAnimation() {
     isRandomSelecting = true;
     let currentIndex = 0;
-    const totalCards = 16;
+    let totalCards = 16;
+    let highlightInterval = 100; // Start with fast switching
+    let iterations = 0;
+    const maxIterations = 30; // Control animation length
+
     const interval = setInterval(() => {
+        // Remove previous highlights
         document.querySelectorAll(".card").forEach((card, index) => {
             card.classList.toggle("highlight", index === currentIndex);
         });
-        currentIndex = (currentIndex + 1) % totalCards;
-    }, 100);
 
-    setTimeout(() => {
-        clearInterval(interval);
-        selectedIndex = Math.floor(Math.random() * totalCards);
-        document.querySelectorAll(".card")[selectedIndex].classList.add("selected");
-        isRandomSelecting = false;
-        document.getElementById("confirm-btn").style.display = "block";
-    }, 2000);
+        currentIndex = (currentIndex + 1) % totalCards;
+        iterations++;
+
+        // Gradually slow down animation over time
+        if (iterations > maxIterations - 10) highlightInterval += 20;
+        if (iterations > maxIterations) {
+            clearInterval(interval);
+            selectedIndex = Math.floor(Math.random() * totalCards);
+
+            // Ensure the highlight stops on the selected card
+            document.querySelectorAll(".card").forEach((card, index) => {
+                card.classList.toggle("highlight", index === selectedIndex);
+            });
+            
+            document.querySelectorAll(".card")[selectedIndex].classList.add("selected");
+            isRandomSelecting = false;
+            document.getElementById("confirm-btn").style.display = "block";
+        }
+    }, highlightInterval);
 }
 
 // Reveal the selected card
