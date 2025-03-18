@@ -101,10 +101,23 @@
             try {
                 const response = await fetch(sheetURL);
                 const text = await response.text();
-                const jsonData = JSON.parse(text.substring(47, text.length - 2)); // Parse Google Sheets JSON
+                console.log("Raw Response:", text);  // Debugging
+        
+                const jsonData = JSON.parse(text.substring(47, text.length - 2));
+                console.log("Parsed JSON:", jsonData);  // Debugging
+        
                 const rows = jsonData.table.rows;
-
-                cards = rows.map(row => row.c[0].v); // Extract card names
+                console.log("Sheet Rows:", rows);  // Debugging
+        
+                cards = rows.map(row => {
+                    if (!row.c || !row.c[0] || !row.c[0].v) {
+                        console.warn("Skipping row due to missing data:", row);
+                        return "Unknown"; // Prevents crashing on empty rows
+                    }
+                    return row.c[0].v; // Extract card names
+                });
+        
+                console.log("Extracted Cards:", cards);
                 generateCards();
             } catch (error) {
                 console.error("Error fetching Google Sheets data:", error);
