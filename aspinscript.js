@@ -3,6 +3,7 @@ let firstGroup = [];
 let specialGroup = [];
 let selectedCardName = null;
 let selectedIndex = null;
+let hasSelected = false;
 
 // Load card data from JSON file
 async function loadCards() {
@@ -89,13 +90,20 @@ function displayCards() {
 
 // Function to handle manual selection
 function selectCard(index) {
+    if (hasSelected) return; // Prevent further selection
+
     document.querySelectorAll(".card").forEach(card => card.classList.remove("selected"));
     selectedCardName = cards[index].name;
     selectedIndex = index;
     document.querySelectorAll(".card")[index].classList.add("selected");
 
-    // Show confirm button
+    // Disable further selections
+    hasSelected = true;
+    document.querySelectorAll(".card").forEach(card => card.classList.add("disabled"));
+
+    // Show confirm & reveal-all buttons
     document.getElementById("confirm-btn").style.display = "block";
+    document.getElementById("reveal-all-btn").style.display = "block";
 }
 
 // Function to reveal the selected card
@@ -108,6 +116,13 @@ function revealCard() {
     } else {
         alert(`Congratulations! You won: ${selectedCardName}`);
     }
+}
+
+// Function to reveal all remaining cards
+function revealAll() {
+    document.querySelectorAll(".card").forEach((card, index) => {
+        card.textContent = cards[index].name; // Show the actual card name
+    });
 }
 
 // Load cards when the page starts
