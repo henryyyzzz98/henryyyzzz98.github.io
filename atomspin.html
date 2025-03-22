@@ -25,9 +25,7 @@
             justify-content: center;
             border: 2px solid black;
             cursor: pointer;
-        }
-        .highlight {
-            border: 4px solid yellow;
+            font-size: 24px;
         }
         .selected {
             border: 4px solid green;
@@ -42,10 +40,9 @@
 </head>
 <body>
     <h1>Lucky Draw</h1>
-    <button onclick="startSelectionAnimation()">Spin Randomly</button>
-    <button id="confirm-btn" onclick="revealCard()">Confirm</button>
-
+    <p>Select a card:</p>
     <div class="container" id="card-container"></div>
+    <button id="confirm-btn" onclick="revealCard()">Confirm Selection</button>
 
     <script src="aspinscript.js"></script>
 </body>
