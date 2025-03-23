@@ -5,6 +5,8 @@ let selectedCard = null;
 let selectedIndex = null;
 let hasConfirmed = false;
 
+document.getElementById("reveal-all-btn").disabled = true; // Initially disable "Reveal All"
+
 // Load card data from JSON file
 async function loadCards() {
     try {
@@ -118,6 +120,9 @@ function selectCard(index) {
 
 // Function to reveal the selected card
 function revealCard() {
+    document.getElementById("reveal-all-btn").disabled = false; // Enable "Reveal All"
+    document.getElementById("confirm-btn").disabled = true; // Disable "Confirm Selection"
+    
     if (selectedIndex === null) return; // Prevent accidental clicks if no card was selected
 
     hasConfirmed = true; // Lock further selections
@@ -143,6 +148,8 @@ function revealCard() {
 
 // Function to reveal all remaining cards
 function revealAll() {
+    document.getElementById("confirm-btn").disabled = true; // Ensure "Confirm Selection" stays disabled
+    
     document.querySelectorAll(".card").forEach(card => {
         card.querySelector(".placeholder").style.display = "none"; // Hide placeholder
         card.querySelector(".card-image").style.display = "block"; // Show actual card image
