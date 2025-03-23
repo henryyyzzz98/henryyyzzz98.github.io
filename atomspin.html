@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Atom</title>
+    <title>Lucky Draw</title>
     <style>
         body {
-            font-family: Helvetica Neue, sans-serif;
+            font-family: Helvetica, sans-serif;
             text-align: center;
         }
         .container {
@@ -26,6 +26,16 @@
             border: 2px solid black;
             cursor: pointer;
             font-size: 24px;
+        }
+        .card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: none; /* Hidden until revealed */
+        }
+        .card .placeholder {
+            font-size: 32px;
+            font-weight: bold;
         }
         .selected {
             border: 4px solid green;
