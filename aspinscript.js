@@ -92,8 +92,10 @@ function displayCards() {
 
         // Hidden Card Image
         let image = document.createElement("img");
+        image.classList.add("card-image"); // Add a class for easy selection
         image.src = card.image;
         image.alt = card.name;
+        image.style.display = "none"; // Keep it hidden initially
 
         cardElement.appendChild(placeholder);
         cardElement.appendChild(image);
@@ -116,11 +118,13 @@ function selectCard(index) {
 
 // Function to reveal the selected card
 function revealCard() {
+    if (selectedIndex === null) return; // Prevent accidental clicks if no card was selected
+
     hasConfirmed = true; // Lock further selections
 
     const selectedCardElement = document.querySelectorAll(".card")[selectedIndex];
     selectedCardElement.querySelector(".placeholder").style.display = "none"; // Hide placeholder
-    selectedCardElement.querySelector("img").style.display = "block"; // Show actual card image
+    selectedCardElement.querySelector(".card-image").style.display = "block"; // Show actual card image
 
     if (selectedCard.name === "Fail") {
         alert("Unfortunately, you didn't win a card.");
@@ -130,13 +134,18 @@ function revealCard() {
 
     // Show "Reveal All" button
     document.getElementById("reveal-all-btn").style.display = "block";
+
+    // Disable selection for all other cards
+    document.querySelectorAll(".card").forEach(card => {
+        card.classList.add("disabled");
+    });
 }
 
 // Function to reveal all remaining cards
 function revealAll() {
-    document.querySelectorAll(".card").forEach((card, index) => {
+    document.querySelectorAll(".card").forEach(card => {
         card.querySelector(".placeholder").style.display = "none"; // Hide placeholder
-        card.querySelector("img").style.display = "block"; // Show actual card image
+        card.querySelector(".card-image").style.display = "block"; // Show actual card image
     });
 }
 
