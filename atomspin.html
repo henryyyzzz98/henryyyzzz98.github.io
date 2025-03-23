@@ -56,7 +56,8 @@
         .button-container {
             display: flex;
             justify-content: center; /* Centers buttons horizontally */
-            gap: 10px; /* Adds space between buttons */
+            text-align: center;
+            /*gap: 10px;  Adds space between buttons */
             margin-top: 20px; /* Adds some spacing from the cards */
         }
         button {
@@ -73,6 +74,53 @@
         button:hover {
             background-color: #925FFF;
         }
+
+        /* Specific Colors for Each Button */
+        #atom-btn {
+            background-color: #ffdd00;
+            color: black;
+        }
+
+        #binary-btn {
+            background-color: #75fb4c;
+            color: black;
+        }
+
+        #cream-btn {
+            background-color: #ff7477;
+            color: black;
+        }
+
+        #divine-btn {
+            background-color: #b400ff;
+            color: black;
+        }
+
+        #ever-btn {
+            background-color: #33ecfd;
+            color: black;
+        }
+
+        /* Hover Effects */
+        #atom-btn:hover {
+            background-color: #FFE433;
+        }
+
+        #binary-btn:hover {
+            background-color: #9BFC7E;
+        }
+
+        #cream-btn:hover {
+            background-color: #FF4145;
+        }
+
+        #divine-btn:hover {
+            background-color: #C333FF;
+        }
+
+        #ever-btn:hover {
+            background-color: #66F1FD;
+        }
     </style>
 </head>
 <body>
@@ -84,6 +132,15 @@
         <button id="confirm-btn" onclick="revealCard()">Select</button>
         <button id="reveal-all-btn" onclick="revealAll()" disabled>Reveal unchosen Objekts</button>
         <button id="try-again-btn" onclick="tryAgain()" disabled>Try again</button>
+    </div>
+
+    <!-- Navigation Buttons -->
+    <div class="button-container">
+        <button id="atom-btn" onclick="location.href='atomspin.html'">Atom</button>
+        <button id="binary-btn" onclick="location.href='binaryspin.html'">Binary</button>
+        <button id="cream-btn" onclick="location.href='creamspin.html'">Cream</button>
+        <button id="divine-btn" onclick="location.href='divinespin.html'">Divine</button>
+        <button id="ever-btn" onclick="location.href='everspin.html'">Ever</button>
     </div>
 
     <script src="aspinscript.js"></script>
