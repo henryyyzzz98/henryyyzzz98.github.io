@@ -62,6 +62,11 @@ function generateRandomSet() {
         selectedCards.push(...shuffleAndPick(specialGroup, selectedOption.special));
     }
 
+    // Pick "Special" group cards (if applicable)
+    if (selectedOption.premier > 0) {
+        selectedCards.push(...shuffleAndPick(premierGroup, selectedOption.special));
+    }
+
     // Add "Fail" cards (if applicable)
     for (let i = 0; i < selectedOption.fail; i++) {
         selectedCards.push({ name: "Fail", group: "Fail", image: "images/fail.png" });
