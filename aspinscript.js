@@ -127,9 +127,9 @@ function revealCard() {
     selectedCardElement.querySelector(".card-image").style.display = "block"; // Show actual card image
 
     if (selectedCard.name === "Fail") {
-        alert("Unfortunately, you didn't win a card.");
+        alert("Spin failed! Please try again next time.");
     } else {
-        alert(`Congratulations! You won: ${selectedCard.name}`);
+        alert(`Spin was successful! You have chosen the ${selectedCard.name} Objekt.`);
     }
 
     // Show "Reveal All" button
