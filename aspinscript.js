@@ -49,7 +49,7 @@ function generateRandomSet() {
 
     // Add "Fail" cards (if applicable)
     for (let i = 0; i < selectedOption.fail; i++) {
-        selectedCards.push({ name: "Fail", group: "Fail", image: "fail.png" });
+        selectedCards.push({ name: "Fail", group: "Fail", image: "images/fail.png" });
     }
 
     // Shuffle the final 16 cards
