@@ -6,7 +6,12 @@
     <title>Atom Spin Simulator</title>
     <style>
         @import url('https://fonts.cdnfonts.com/css/helvetica-neue-55');
-
+        h1 {
+            text-shadow: none; /* Remove glow effect */
+            outline: none; /* Remove outline */
+            color: white; /* Set normal text color */
+            font-weight: normal; /* Ensure default weight */
+        }
         body {
             font-family: 'Helvetica Neue', sans-serif;
             text-align: center;
@@ -71,7 +76,7 @@
     </style>
 </head>
 <body>
-    <h1>Atom Spin Simulator</h1>
+    <p>Atom Spin Simulator</p>
     <p>Select an Objekt</p>
     <div class="container" id="card-container"></div>
     
