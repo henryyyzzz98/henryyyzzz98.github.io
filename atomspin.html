@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lucky Draw</title>
+    <title>Atom Spin Simulator</title>
     <style>
         body {
             font-family: Helvetica, sans-serif;
@@ -19,13 +19,8 @@
         .card {
             width: 100px;
             height: 140px;
-            background-color: lightgray;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: 2px solid black;
             cursor: pointer;
-            font-size: 24px;
+            position: relative;
         }
         .card img {
             width: 100%;
@@ -34,11 +29,13 @@
             display: none; /* Hidden until revealed */
         }
         .card .placeholder {
-            font-size: 32px;
-            font-weight: bold;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
         }
         .selected {
-            border: 4px solid green;
+            outline: 4px solid green; /* Highlight selected card */
         }
         .disabled {
             pointer-events: none;
@@ -56,7 +53,7 @@
     </style>
 </head>
 <body>
-    <h1>Lucky Draw</h1>
+    <h1>Atom Spin Simulator</h1>
     <p>Select a card:</p>
     <div class="container" id="card-container"></div>
     

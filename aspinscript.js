@@ -3,7 +3,7 @@ let firstGroup = [];
 let specialGroup = [];
 let selectedCard = null;
 let selectedIndex = null;
-let hasSelected = false;
+let hasConfirmed = false;
 
 // Load card data from JSON file
 async function loadCards() {
@@ -84,12 +84,13 @@ function displayCards() {
         cardElement.classList.add("card");
         cardElement.onclick = () => selectCard(index);
 
-        // Placeholder (?)
-        let placeholder = document.createElement("div");
+        // Placeholder Image
+        let placeholder = document.createElement("img");
         placeholder.classList.add("placeholder");
-        placeholder.textContent = "?";
+        placeholder.src = "images/spincard.png"; // Replace with your provided image
+        placeholder.alt = "?";
 
-        // Hidden Image
+        // Hidden Card Image
         let image = document.createElement("img");
         image.src = card.image;
         image.alt = card.name;
@@ -100,18 +101,14 @@ function displayCards() {
     });
 }
 
-// Function to handle manual selection
+// Function to handle manual selection (allows re-selection)
 function selectCard(index) {
-    if (hasSelected) return; // Prevent further selection
+    if (hasConfirmed) return; // Prevent selection after confirmation
 
     document.querySelectorAll(".card").forEach(card => card.classList.remove("selected"));
     selectedCard = cards[index];
     selectedIndex = index;
     document.querySelectorAll(".card")[index].classList.add("selected");
-
-    // Disable further selections
-    hasSelected = true;
-    document.querySelectorAll(".card").forEach(card => card.classList.add("disabled"));
 
     // Show confirm button
     document.getElementById("confirm-btn").style.display = "block";
@@ -119,9 +116,11 @@ function selectCard(index) {
 
 // Function to reveal the selected card
 function revealCard() {
+    hasConfirmed = true; // Lock further selections
+
     const selectedCardElement = document.querySelectorAll(".card")[selectedIndex];
-    selectedCardElement.querySelector(".placeholder").style.display = "none"; // Hide "?"
-    selectedCardElement.querySelector("img").style.display = "block"; // Show Image
+    selectedCardElement.querySelector(".placeholder").style.display = "none"; // Hide placeholder
+    selectedCardElement.querySelector("img").style.display = "block"; // Show actual card image
 
     if (selectedCard.name === "Fail") {
         alert("Unfortunately, you didn't win a card.");
@@ -136,8 +135,8 @@ function revealCard() {
 // Function to reveal all remaining cards
 function revealAll() {
     document.querySelectorAll(".card").forEach((card, index) => {
-        card.querySelector(".placeholder").style.display = "none"; // Hide "?"
-        card.querySelector("img").style.display = "block"; // Show Image
+        card.querySelector(".placeholder").style.display = "none"; // Hide placeholder
+        card.querySelector("img").style.display = "block"; // Show actual card image
     });
 }
 
