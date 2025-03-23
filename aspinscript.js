@@ -29,16 +29,22 @@ async function loadCards() {
     }
 }
 
+// Function to select a combination based on weighted probability
+function getCombination() {
+    let rand = Math.random(); // Generates a number between 0 and 1
+
+    if (rand < 0.60) {
+        return { first: 14, special: 1, fail: 1 }; // 60% chance
+    } else if (rand < 0.90) {
+        return { first: 14, special: 0, fail: 2 }; // 30% chance
+    } else {
+        return { first: 14, special: 2, fail: 0 }; // 10% chance
+    }
+}
+
 // Function to generate 16 cards based on probability
 function generateRandomSet() {
-    const probabilityOptions = [
-        { first: 14, special: 1, fail: 1 },
-        { first: 14, special: 0, fail: 2 },
-        { first: 14, special: 2, fail: 0 }
-    ];
-
-    // Randomly pick one of the three probability options
-    let selectedOption = probabilityOptions[Math.floor(Math.random() * probabilityOptions.length)];
+    let selectedOption = getCombination(); // Get a weighted combination
 
     let selectedCards = [];
 
