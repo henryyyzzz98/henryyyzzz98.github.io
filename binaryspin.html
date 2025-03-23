@@ -73,6 +73,62 @@
         button:hover {
             background-color: #925FFF;
         }
+        .button-container {
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .button-container button {
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            border-radius: 5px;
+        }
+
+        /* Specific Colors for Each Button */
+        #atom-btn {
+            background-color: #ffdd00;
+        }
+
+        #binary-btn {
+            background-color: #75fb4c;
+        }
+
+        #cream-btn {
+            background-color: #ff7477;
+        }
+
+        #divine-btn {
+            background-color: #b400ff;
+        }
+
+        #ever-btn {
+            background-color: #33ecfd;
+        }
+
+        /* Hover Effects */
+        #atom-btn:hover {
+            background-color: #FFE433;
+        }
+
+        #binary-btn:hover {
+            background-color: #9BFC7E;
+        }
+
+        #cream-btn:hover {
+            background-color: #FF4145;
+        }
+
+        #divine-btn:hover {
+            background-color: #C333FF;
+        }
+
+        #ever-btn:hover {
+            background-color: #66F1FD;
+        }
     </style>
 </head>
 <body>
@@ -84,6 +140,15 @@
         <button id="confirm-btn" onclick="revealCard()">Select</button>
         <button id="reveal-all-btn" onclick="revealAll()" disabled>Reveal unchosen Objekts</button>
         <button id="try-again-btn" onclick="tryAgain()" disabled>Try again</button>
+    </div>
+
+    <!-- Navigation Buttons -->
+    <div class="button-container">
+        <button id="atom-btn" onclick="location.href='atomspin.html'">Atom Spin</button>
+        <button id="binary-btn" onclick="location.href='binaryspin.html'">Binary Spin</button>
+        <button id="cream-btn" onclick="location.href='creamspin.html'">Cream Spin</button>
+        <button id="divine-btn" onclick="location.href='divinespin.html'">Divine Spin</button>
+        <button id="ever-btn" onclick="location.href='everspin.html'">Ever Spin</button>
     </div>
 
     <script src="bspinscript.js"></script>
