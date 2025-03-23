@@ -6,6 +6,7 @@ let selectedIndex = null;
 let hasConfirmed = false;
 
 document.getElementById("reveal-all-btn").disabled = true; // Initially disable "Reveal All"
+document.getElementById("try-again-btn").disabled = true; // Disable "Try Again" initially
 
 // Load card data from JSON file
 async function loadCards() {
@@ -122,6 +123,7 @@ function selectCard(index) {
 function revealCard() {
     document.getElementById("reveal-all-btn").disabled = false; // Enable "Reveal All"
     document.getElementById("confirm-btn").disabled = true; // Disable "Confirm Selection"
+    document.getElementById("try-again-btn").disabled = false; // Enable "Try Again"
     
     if (selectedIndex === null) return; // Prevent accidental clicks if no card was selected
 
@@ -154,6 +156,10 @@ function revealAll() {
         card.querySelector(".placeholder").style.display = "none"; // Hide placeholder
         card.querySelector(".card-image").style.display = "block"; // Show actual card image
     });
+}
+
+function tryAgain() {
+    location.reload(); // Refresh the page to restart the game
 }
 
 // Load cards when the page starts
