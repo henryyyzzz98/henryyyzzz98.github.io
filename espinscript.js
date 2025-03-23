@@ -62,9 +62,9 @@ function generateRandomSet() {
         selectedCards.push(...shuffleAndPick(specialGroup, selectedOption.special));
     }
 
-    // Pick "Special" group cards (if applicable)
+    // Pick "Premier" group cards (if applicable)
     if (selectedOption.premier > 0) {
-        selectedCards.push(...shuffleAndPick(premierGroup, selectedOption.special));
+        selectedCards.push(...shuffleAndPick(premierGroup, selectedOption.premier));
     }
 
     // Add "Fail" cards (if applicable)
