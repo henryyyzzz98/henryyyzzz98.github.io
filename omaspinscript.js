@@ -36,9 +36,9 @@ function getCombination() {
     let rand = Math.random(); // Generates a number between 0 and 1
 
     if (rand < 0.99) {
-        return { first: 14, second: 1, third: 1 };
+        return { first: 12, second: 1, third: 1, fail: 2 };
     } else {
-        return { first: 14, second: 1, third: 1 };
+        return { first: 12, second: 1, third: 1, fail: 2 };
     }
 }
 
@@ -59,6 +59,11 @@ function generateRandomSet() {
     // Pick "Premier" group cards (if applicable)
     if (selectedOption.third > 0) {
         selectedCards.push(...shuffleAndPick(thirdGroup, selectedOption.third));
+    }
+
+    // Add "Fail" cards (if applicable)
+    for (let i = 0; i < selectedOption.fail; i++) {
+        selectedCards.push({ name: "Fail", group: "Fail", image: "images/fail.png" });
     }
 
     // Shuffle the final 16 cards
