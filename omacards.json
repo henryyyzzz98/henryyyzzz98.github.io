@@ -1,0 +1,17 @@
+[
+  {
+    "name": "1x OMA",
+    "group": "First",
+    "image": "images/1xoma.png"
+  },
+  {
+    "name": "2x OMA",
+    "group": "Second",
+    "image": "images/2xoma.png"
+  },
+  {
+    "name": "3x OMA",
+    "group": "Third",
+    "image": "images/2xoma.png"
+  }
+ ]
