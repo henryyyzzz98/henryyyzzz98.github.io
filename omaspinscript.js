@@ -144,6 +144,12 @@ function revealCard() {
     selectedCardElement.querySelector(".placeholder").style.display = "none"; // Hide placeholder
     selectedCardElement.querySelector(".card-image").style.display = "block"; // Show actual card image
 
+    // Add "GET" tag
+    const getTag = document.createElement("div");
+    getTag.classList.add("get-tag");
+    getTag.textContent = "Get";
+    selectedCardElement.appendChild(getTag);
+
     if (selectedCard.name === "Fail") {
         alert("Spin failed! Please try again next time.");
     } else {
