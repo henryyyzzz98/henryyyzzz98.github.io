@@ -153,7 +153,7 @@ function revealCard() {
     // Add "GET" tag
     const getTag = document.createElement("div");
     getTag.classList.add("get-tag");
-    getTag.textContent = "GET";
+    getTag.textContent = "Get";
     selectedCardElement.appendChild(getTag);
 
     if (selectedCard.name === "Fail") {
