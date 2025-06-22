@@ -7,12 +7,23 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Gabarito:wght@400..900&display=swap" rel="stylesheet">
   <style>
+        /* Global box-sizing for easier sizing */
+        * {
+          box-sizing: border-box;
+        }
+
         body {
             background-color: #000;
             color: #fff;
             font-family: "Gabarito", sans-serif;
             margin: 0;
             padding: 20px;
+        }
+
+        .container {
+          max-width: 1000px;  /* Set max width */
+          margin: 0 auto;     /* Center horizontally */
+          padding: 0 20px;    /* Side padding */
         }
 
         h1 {
@@ -63,16 +74,18 @@
         </style>
 </head>
 <body>
-  <h1>COSMO LIVE Stats</h1>
+  <div class="container">
+    <h1>COSMO LIVE Dashboard</h1>
 
-  <h2>Summary</h2>
-  <table id="table1"></table>
+    <h2>Summary</h2>
+    <table id="table1"></table>
 
-  <h2>Cosmo Live Ranking</h2>
-  <table id="table2"></table>
+    <h2>Cosmo Live Ranking</h2>
+    <table id="table2"></table>
 
-  <h2>(Sorted by Total Duration)</h2>
-  <table id="table3"></table>
+    <h2>(Sorted by Total Duration)</h2>
+    <table id="table3"></table>
+  </div>
   
   <script>
     const nameColorMap = {
