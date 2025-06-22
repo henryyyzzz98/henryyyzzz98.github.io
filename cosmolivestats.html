@@ -116,7 +116,8 @@
     </div>
     <table id="table1"></table>
 
-    <h2>Cosmo Live Ranking</h2>
+    <h2>Ranking Leaderboard</h2>
+    <h2>(Sorted by No. of Lives)</h2>
     <table id="table2"></table>
 
     <h2>(Sorted by Total Duration)</h2>
@@ -171,7 +172,7 @@
           const header = table.insertRow();
           colIndexes.forEach(i => {
             const th = document.createElement('th');
-            th.innerText = json.table.cols[i]?.label || `Col ${i+1}`;
+            th.innerText = json.table.cols[i]?.label || ``;
             header.appendChild(th);
           });
 
@@ -204,10 +205,10 @@
         buildTable("table1", [0,1,2,3,4], table1AllRows);
 
         // Table 2: L to R → Index 11–17, limit 24 rows
-        buildTable("table2", [11, 13, 14, 15, 16, 17], rows, 24);
+        buildTable("table2", [11, 12, 13, 14, 15, 17], rows, 24);
 
         // Table 3: T to X → Index 19,21,22,23, limit 24 rows
-        buildTable("table3", [19, 21, 22, 23], rows, 24);
+        buildTable("table3", [19, 20, 21, 22, 23], rows, 24);
 
         // Add search functionality for table1 column 2 (index 1)
         document.getElementById('searchBox').addEventListener('input', function() {
