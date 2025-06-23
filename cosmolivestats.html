@@ -13,15 +13,16 @@
         }
 
         body {
-            background-color: #000;
-            color: #fff;
-            font-family: "Gabarito", sans-serif;
-            margin: 0;
-            padding: 20px;
+          background: linear-gradient(160deg, #0d0d0d, #1a1a1a);
+          color: #fff;
+          font-family: "Gabarito", sans-serif;
+          margin: 0;
+          padding: 20px;
+          font-size: 16px;
         }
 
         .container {
-          max-width: 600px;  /* Set max width */
+          max-width: 800px;  /* Set max width */
           margin: 0 auto;     /* Center horizontally */
           padding: 0 20px;    /* Side padding */
         }
@@ -35,46 +36,69 @@
           text-align: center;
         }
 
+        .table-container {
+          overflow-x: auto;
+          margin-top: 20px;
+          border-radius: 12px;
+        }
+
         table {
-            width: 100%;
-            border-collapse: collapse;
-            background-color: #111;
-            color: #fff;
-            margin-top: 20px;
+          width: 100%;
+          border-collapse: separate;
+          border-spacing: 0;
+          background-color: #111;
+          border-radius: 12px;
+          overflow: hidden;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
         }
 
         th, td {
-            border: 1px solid #333;
-            padding: 10px;
-            text-align: left;
+          padding: 12px 16px;
+          text-align: left;
         }
 
         th {
-            background-color: #222;
-            color: #FFE433;
+          background-color: #1c1c1c;
+          color: #FFE433;
+          text-transform: uppercase;
+          font-size: 13px;
+          letter-spacing: 0.5px;
+          border-bottom: 2px solid #333;
+        }
+
+        td {
+          font-size: 15px;
+          border-bottom: 1px solid #222;
+          vertical-align: middle;
+          transition: background-color 0.3s ease;
         }
 
         tr:nth-child(even) {
-            background-color: #1a1a1a;
+          background-color: #151515;
         }
 
         tr:hover {
-            background-color: #333;
+          background-color: #222;
         }
 
-        #table2 th:nth-child(2),
-        #table2 td:nth-child(2) {
-          width: 5px;
+        #table3 th:nth-child(1),
+        #table3 td:nth-child(1) {
+          width: 100px;
         }
 
-        #table3 th:nth-child(2),
-        #table3 td:nth-child(2) {
-          width: 5px;
+        .color-dot {
+          display: inline-block;
+          width: 12px;
+          height: 12px;
+          border-radius: 50%;
+          margin-right: 8px;
+          vertical-align: middle;
         }
 
         .search-container {
           text-align: center;
           margin: 30px 0;
+          position: relative;
         }
 
         .search-input {
@@ -99,6 +123,43 @@
           color: #cccccc;
           opacity: 0.7;
         }
+
+        .suggestion-box {
+          background: #222;
+          color: white;
+          max-width: 400px;
+          margin: 0 auto;
+          border: 1px solid #444;
+          border-radius: 8px;
+          padding: 5px;
+          position: absolute;
+          left: 0;
+          right: 0;
+          top: 100%;
+          z-index: 1;
+        }
+
+        .suggestion-box div {
+          padding: 8px 12px;
+          cursor: pointer;
+        }
+
+        .suggestion-box div:hover {
+          background-color: #333;
+        }
+
+        .show-more {
+          display: block;
+          text-align: center;
+          margin: 10px auto;
+          padding: 8px 16px;
+          border: none;
+          border-radius: 20px;
+          background-color: #FFE433;
+          color: black;
+          font-weight: bold;
+          cursor: pointer;
+        }
         </style>
 </head>
 <body>
@@ -113,15 +174,23 @@
         class="search-input"
         placeholder="🔍 When has your bias done her live?"
       />
+      <div id="suggestions" class="suggestion-box"></div>
     </div>
-    <table id="table1"></table>
+    <div class="table-container">
+      <table id="table1"></table>
+      <button id="showMoreBtn" class="show-more">Show More</button>
+    </div>
 
     <h2>Ranking Leaderboard</h2>
     <h2>(Sorted by No. of Lives)</h2>
-    <table id="table2"></table>
+    <div class="table-container">
+      <table id="table2"></table>
+    </div>
 
     <h2>(Sorted by Total Duration)</h2>
-    <table id="table3"></table>
+    <div class="table-container">
+      <table id="table3"></table>
+    </div>
   </div>
   
   <script>
@@ -152,11 +221,13 @@
       JiYeon: "#ffab61"
     };
 
+    const memberNames = Object.keys(nameColorMap);
+    let table1AllRows = [], filteredRows = [];
+    let showingAll = false;
+
     function getColorForName(name) {
       return nameColorMap[name] || '';
     }
-
-    let table1AllRows = []; // global storage of all rows for table1 search
 
     fetch("https://docs.google.com/spreadsheets/d/1jXjnPCKMrbGBhk0wUBLv66YAhcIWO2xZ2yTTL1-LMIM/gviz/tq?tqx=out:json")
       .then(res => res.text())
@@ -183,16 +254,15 @@
             colIndexes.forEach(i => {
               const cell = row.insertCell();
               const text = r.c[i]?.f || r.c[i]?.v || '';
-              cell.innerText = text;
 
-              if (elementId === "table2" && i === 12) {
-                const name = r.c[13]?.v || '';
-                cell.style.backgroundColor = getColorForName(name);
-              }
-
-              if (elementId === "table3" && i === 20) {
-                const name = r.c[21]?.v || '';
-                cell.style.backgroundColor = getColorForName(name);
+              if ((elementId === "table1" && i === 2) || (elementId === "table2" && i === 13) || (elementId === "table3" && i === 21)) {
+                const dot = document.createElement('span');
+                dot.className = 'color-dot';
+                dot.style.backgroundColor = getColorForName(text);
+                cell.appendChild(dot);
+                cell.appendChild(document.createTextNode(text));
+              } else {
+                cell.innerText = text;
               }
             });
           });
@@ -205,19 +275,37 @@
         buildTable("table1", [0,1,2,3,4], table1AllRows);
 
         // Table 2: L to R → Index 11–17, limit 24 rows
-        buildTable("table2", [11, 12, 13, 14, 15, 17], rows, 24);
+        buildTable("table2", [11, 13, 14, 15, 17], rows, 24);
 
         // Table 3: T to X → Index 19,21,22,23, limit 24 rows
-        buildTable("table3", [19, 20, 21, 22, 23], rows, 24);
+        buildTable("table3", [19, 21, 22, 23], rows, 24);
 
-        // Add search functionality for table1 column 2 (index 1)
+        document.getElementById('showMoreBtn').addEventListener('click', () => {
+          showingAll = !showingAll;
+          buildTable("table1", [0,1,2,3,4], filteredRows, showingAll ? null : 24);
+          document.getElementById('showMoreBtn').innerText = showingAll ? 'Show Less' : 'Show More';
+        });
+
         document.getElementById('searchBox').addEventListener('input', function() {
           const query = this.value.toLowerCase();
-          const filteredRows = table1AllRows.filter(r => {
-            const cellValue = (r.c[2]?.v || '').toString().toLowerCase();
-            return cellValue.includes(query);
+          filteredRows = table1AllRows.filter(r => {
+            const val = (r.c[2]?.v || '').toString().toLowerCase();
+            return val.includes(query);
           });
-          buildTable("table1", [0,1,2,3,4], filteredRows);
+          buildTable("table1", [0,1,2,3,4], filteredRows, showingAll ? null : 24);
+
+          const suggestionsBox = document.getElementById('suggestions');
+          if (!query) return suggestionsBox.innerHTML = '';
+          const matches = memberNames.filter(name => name.toLowerCase().includes(query));
+          suggestionsBox.innerHTML = matches.map(name => `<div>${name}</div>`).join('');
+        });
+
+        document.getElementById('suggestions').addEventListener('click', function(e) {
+          if (e.target.tagName === 'DIV') {
+            document.getElementById('searchBox').value = e.target.textContent;
+            document.getElementById('searchBox').dispatchEvent(new Event('input'));
+            this.innerHTML = '';
+          }
         });
       });
   </script>
