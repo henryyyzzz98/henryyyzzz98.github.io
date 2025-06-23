@@ -22,9 +22,9 @@
         }
 
         .container {
-          max-width: 800px;  /* Set max width */
-          margin: 0 auto;     /* Center horizontally */
-          padding: 0 20px;    /* Side padding */
+          max-width: 800px;
+          margin: 0 auto;
+          padding: 0 20px;
         }
 
         h1 {
@@ -127,7 +127,7 @@
         .suggestion-box {
           background: #222;
           color: white;
-          max-width: 400px;
+          max-width: 300px;
           margin: 0 auto;
           border: 1px solid #444;
           border-radius: 8px;
@@ -137,6 +137,11 @@
           right: 0;
           top: 100%;
           z-index: 1;
+          display: none;
+        }
+
+        .suggestion-box.active {
+          display: block;
         }
 
         .suggestion-box div {
@@ -270,9 +275,10 @@
 
         // Store all rows for table1 to enable search filtering
         table1AllRows = rows;
+        filteredRows = table1AllRows;
 
         // Initial render for table1 with all rows
-        buildTable("table1", [0,1,2,3,4], table1AllRows);
+        buildTable("table1", [0,1,2,3,4], filteredRows, 24);
 
         // Table 2: L to R → Index 11–17, limit 24 rows
         buildTable("table2", [11, 13, 14, 15, 17], rows, 24);
@@ -281,30 +287,46 @@
         buildTable("table3", [19, 21, 22, 23], rows, 24);
 
         document.getElementById('showMoreBtn').addEventListener('click', () => {
-          showingAll = !showingAll;
-          buildTable("table1", [0,1,2,3,4], filteredRows, showingAll ? null : 24);
-          document.getElementById('showMoreBtn').innerText = showingAll ? 'Show Less' : 'Show More';
-        });
+        showingAll = !showingAll;
+        buildTable("table1", [0,1,2,3,4], filteredRows, showingAll ? null : 24);
+        document.getElementById('showMoreBtn').innerText = showingAll ? 'Show Less' : 'Show More';
+      });
 
-        document.getElementById('searchBox').addEventListener('input', function() {
+      const searchBox = document.getElementById('searchBox');
+      const suggestionsBox = document.getElementById('suggestions');
+
+        searchBox.addEventListener('input', function () {
           const query = this.value.toLowerCase();
           filteredRows = table1AllRows.filter(r => {
             const val = (r.c[2]?.v || '').toString().toLowerCase();
             return val.includes(query);
           });
-          buildTable("table1", [0,1,2,3,4], filteredRows, showingAll ? null : 24);
+          buildTable("table1", [0,1,2,3,4], filteredRows, 24);
 
-          const suggestionsBox = document.getElementById('suggestions');
-          if (!query) return suggestionsBox.innerHTML = '';
+          if (!query) {
+            suggestionsBox.classList.remove('active');
+            suggestionsBox.innerHTML = '';
+            return;
+          }
+
           const matches = memberNames.filter(name => name.toLowerCase().includes(query));
           suggestionsBox.innerHTML = matches.map(name => `<div>${name}</div>`).join('');
+          suggestionsBox.classList.toggle('active', matches.length > 0);
         });
 
-        document.getElementById('suggestions').addEventListener('click', function(e) {
+        suggestionsBox.addEventListener('click', function(e) {
           if (e.target.tagName === 'DIV') {
-            document.getElementById('searchBox').value = e.target.textContent;
-            document.getElementById('searchBox').dispatchEvent(new Event('input'));
-            this.innerHTML = '';
+            const selectedName = e.target.textContent;
+            searchBox.value = selectedName;
+            searchBox.dispatchEvent(new Event('input'));
+            suggestionsBox.innerHTML = '';
+            suggestionsBox.classList.remove('active');
+          }
+        });
+
+        document.addEventListener('click', (e) => {
+          if (!suggestionsBox.contains(e.target) && e.target !== searchBox) {
+            suggestionsBox.classList.remove('active');
           }
         });
       });
