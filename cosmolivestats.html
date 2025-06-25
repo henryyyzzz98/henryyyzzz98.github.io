@@ -148,10 +148,14 @@
           background-color: #333;
         }
 
-        .show-more {
-          display: block;
-          text-align: center;
-          margin: 10px auto;
+        .pagination {
+          display: flex;
+          justify-content: center;
+          margin-top: 10px;
+          gap: 12px;
+        }
+
+        .pagination button {
           padding: 8px 16px;
           border: none;
           border-radius: 20px;
@@ -159,6 +163,11 @@
           color: black;
           font-weight: bold;
           cursor: pointer;
+          transition: background 0.3s;
+        }
+
+        .pagination button:hover {
+          background-color: #ffd000;
         }
         </style>
 </head>
@@ -178,7 +187,10 @@
     </div>
     <div class="table-container">
       <table id="table1"></table>
-      <button id="showMoreBtn" class="show-more">Show More</button>
+      <div class="pagination">
+        <button id="prevBtn">Previous</button>
+        <button id="nextBtn">Next</button>
+      </div>
     </div>
 
     <h2>Ranking Leaderboard</h2>
@@ -222,81 +234,130 @@
     };
 
     const memberNames = Object.keys(nameColorMap);
-    let table1AllRows = [], filteredRows = [];
-    let showingAll = false;
+    let table1AllRows = [], filteredRows = [], currentPage = 0, rowsPerPage = 24;
 
     function getColorForName(name) {
       return nameColorMap[name] || '';
     }
+
+    function buildTable(elementId, colIndexes, allRows, page = 0, limit = null) {
+      const table = document.getElementById(elementId);
+      table.innerHTML = '';
+
+      const header = table.insertRow();
+      colIndexes.forEach(i => {
+        const th = document.createElement('th');
+        th.innerText = jsonCols[i] || `Col ${i+1}`;
+        header.appendChild(th);
+      });
+
+      const start = page * limit;
+      const sliced = limit ? allRows.slice(start, start + limit) : allRows;
+
+      sliced.forEach(r => {
+        const row = table.insertRow();
+        row.style.transition = "all 0.3s ease";
+
+        colIndexes.forEach(i => {
+          const cell = row.insertCell();
+          const text = r.c[i]?.f || r.c[i]?.v || '';
+
+          if ((elementId === "table1" && i === 2) || (elementId === "table2" && i === 13) || (elementId === "table3" && i === 21)) {
+            const dot = document.createElement('span');
+            dot.className = 'color-dot';
+            dot.style.backgroundColor = getColorForName(text);
+            cell.appendChild(dot);
+            cell.appendChild(document.createTextNode(text));
+          } else {
+            cell.innerText = text;
+          }
+        });
+      });
+    }
+
+    let jsonCols = [];
 
     fetch("https://docs.google.com/spreadsheets/d/1jXjnPCKMrbGBhk0wUBLv66YAhcIWO2xZ2yTTL1-LMIM/gviz/tq?tqx=out:json")
       .then(res => res.text())
       .then(text => {
         const json = JSON.parse(text.substr(47).slice(0, -2));
         const rows = json.table.rows;
+        jsonCols = json.table.cols.map(col => col.label);
 
-        function buildTable(elementId, colIndexes, allRows, rowLimit = null) {
-          const table = document.getElementById(elementId);
-          table.innerHTML = ''; // clear previous content
+      function buildTable(elementId, colIndexes, allRows, page = 0, limit = null) {
+        const table = document.getElementById(elementId);
+        table.innerHTML = ''; // clear previous content
 
-          // Create header row
-          const header = table.insertRow();
+        // Create header row
+        const header = table.insertRow();
+        colIndexes.forEach(i => {
+          const th = document.createElement('th');
+          th.innerText = json.table.cols[i]?.label || ``;
+          header.appendChild(th);
+        });
+
+        const start = page * limit;
+        const sliced = limit ? allRows.slice(start, start + limit) : allRows;
+
+        sliced.forEach(r => {
+          const row = table.insertRow();
           colIndexes.forEach(i => {
-            const th = document.createElement('th');
-            th.innerText = json.table.cols[i]?.label || ``;
-            header.appendChild(th);
+            const cell = row.insertCell();
+            const text = r.c[i]?.f || r.c[i]?.v || '';
+
+            if ((elementId === "table1" && i === 2) || (elementId === "table2" && i === 13) || (elementId === "table3" && i === 21)) {
+              const dot = document.createElement('span');
+              dot.className = 'color-dot';
+              dot.style.backgroundColor = getColorForName(text);
+              cell.appendChild(dot);
+              cell.appendChild(document.createTextNode(text));
+            } else {
+              cell.innerText = text;
+            }
           });
-
-          const slicedRows = rowLimit ? allRows.slice(0, rowLimit) : allRows;
-
-          slicedRows.forEach(r => {
-            const row = table.insertRow();
-            colIndexes.forEach(i => {
-              const cell = row.insertCell();
-              const text = r.c[i]?.f || r.c[i]?.v || '';
-
-              if ((elementId === "table1" && i === 2) || (elementId === "table2" && i === 13) || (elementId === "table3" && i === 21)) {
-                const dot = document.createElement('span');
-                dot.className = 'color-dot';
-                dot.style.backgroundColor = getColorForName(text);
-                cell.appendChild(dot);
-                cell.appendChild(document.createTextNode(text));
-              } else {
-                cell.innerText = text;
-              }
-            });
-          });
-        }
+        });
+      }
 
         // Store all rows for table1 to enable search filtering
         table1AllRows = rows;
-        filteredRows = table1AllRows;
+        filteredRows = rows;
 
         // Initial render for table1 with all rows
-        buildTable("table1", [0,1,2,3,4], filteredRows, 24);
+        buildTable("table1", [0,1,2,3,4], filteredRows, currentPage, rowsPerPage);
 
         // Table 2: L to R → Index 11–17, limit 24 rows
-        buildTable("table2", [11, 13, 14, 15, 17], rows, 24);
+        buildTable("table2", [11, 13, 14, 15, 17], rows, 0, 24);
 
         // Table 3: T to X → Index 19,21,22,23, limit 24 rows
-        buildTable("table3", [19, 21, 22, 23], rows, 24);
-
-        document.getElementById('showMoreBtn').addEventListener('click', () => {
-        showingAll = !showingAll;
-        buildTable("table1", [0,1,2,3,4], filteredRows, showingAll ? null : 24);
-        document.getElementById('showMoreBtn').innerText = showingAll ? 'Show Less' : 'Show More';
+        buildTable("table3", [19, 21, 22, 23], rows, 0, 24);
       });
 
-      const searchBox = document.getElementById('searchBox');
-      const suggestionsBox = document.getElementById('suggestions');
+      document.getElementById("nextBtn").addEventListener("click", () => {
+        const maxPage = Math.floor(filteredRows.length / rowsPerPage);
+        if (currentPage < maxPage) {
+          currentPage++;
+          buildTable("table1", [0,1,2,3,4], filteredRows, currentPage, rowsPerPage);
+        }
+      });
+      
+      document.getElementById("prevBtn").addEventListener("click", () => {
+        if (currentPage > 0) {
+          currentPage--;
+          buildTable("table1", [0,1,2,3,4], filteredRows, currentPage, rowsPerPage);
+        }
+      });
+
+        const searchBox = document.getElementById('searchBox');
+        const suggestionsBox = document.getElementById('suggestions');
 
         searchBox.addEventListener('input', function () {
           const query = this.value.toLowerCase();
+          currentPage = 0;
           filteredRows = table1AllRows.filter(r => {
             const val = (r.c[2]?.v || '').toString().toLowerCase();
             return val.includes(query);
           });
-          buildTable("table1", [0,1,2,3,4], filteredRows, 24);
+          buildTable("table1", [0,1,2,3,4], filteredRows, currentPage, rowsPerPage);
 
           if (!query) {
             suggestionsBox.classList.remove('active');
@@ -324,7 +385,6 @@
             suggestionsBox.classList.remove('active');
           }
         });
-      });
   </script>
 </body>
 </html>
