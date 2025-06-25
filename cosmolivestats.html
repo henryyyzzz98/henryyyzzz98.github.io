@@ -188,8 +188,8 @@
     <div class="table-container">
       <table id="table1"></table>
       <div class="pagination">
-        <button id="prevBtn">Previous</button>
-        <button id="nextBtn">Next</button>
+        <button id="prevBtn">Previous Page</button>
+        <button id="nextBtn">Next Page</button>
       </div>
     </div>
 
@@ -234,7 +234,7 @@
     };
 
     const memberNames = Object.keys(nameColorMap);
-    let table1AllRows = [], filteredRows = [], currentPage = 0, rowsPerPage = 24;
+    let table1AllRows = [], filteredRows = [], currentPage = 0, rowsPerPage = 12;
 
     function getColorForName(name) {
       return nameColorMap[name] || '';
