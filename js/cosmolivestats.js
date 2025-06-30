@@ -32,6 +32,12 @@ const nameColorMap = {
       return nameColorMap[name] || '';
     }
 
+    function updatePageIndicator() {
+      const pageIndicator = document.getElementById('pageIndicator');
+      const totalPages = Math.ceil(filteredRows.length / rowsPerPage);
+      pageIndicator.textContent = totalPages > 0 ? `Page ${currentPage + 1} of ${totalPages}` : 'No results found';
+    }
+
     function buildTable(elementId, colIndexes, allRows, page = 0, limit = null) {
       const table = document.getElementById(elementId);
       table.innerHTML = '';
@@ -65,6 +71,10 @@ const nameColorMap = {
           }
         });
       });
+      if (elementId === "table1") {
+        const totalPages = Math.ceil(allRows.length / limit);
+        document.getElementById("pageDisplay").innerText = `Page ${page + 1} of ${totalPages}`;
+      }
     }
 
     let jsonCols = [];
@@ -114,6 +124,9 @@ const nameColorMap = {
         table1AllRows = rows;
         filteredRows = rows;
 
+        // Jump to last page containing last row
+        currentPage = Math.floor((filteredRows.length - 1) / rowsPerPage);
+
         // Initial render for table1 with all rows
         buildTable("table1", [0,1,2,3,4], filteredRows, currentPage, rowsPerPage);
 
@@ -149,6 +162,7 @@ const nameColorMap = {
             const val = (r.c[2]?.v || '').toString().toLowerCase();
             return val.includes(query);
           });
+
           buildTable("table1", [0,1,2,3,4], filteredRows, currentPage, rowsPerPage);
 
           if (!query) {
