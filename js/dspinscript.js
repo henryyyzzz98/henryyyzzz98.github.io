@@ -144,11 +144,15 @@ function revealCard() {
     getTag.classList.add("get-tag");
     getTag.textContent = "Get";
     selectedCardElement.appendChild(getTag);
+    const spinStatus = document.getElementById("spinStatus");
+    const spinResult = document.getElementById("spinResult");
 
     if (selectedCard.name === "Fail") {
-        alert("Spin failed! Please try again next time.");
+        spinStatus.textContent = "Spin failed"; 
+        spinResult.textContent = "Please try again next time.";
     } else {
-        alert(`Spin was successful! You have chosen the ${selectedCard.name} Objekt.`);
+        spinStatus.textContent = "Spin was successful!";
+        spinResult.innerHTML = `Chosen the <span style="color: #B09EF8;">${selectedCard.name}</span> Objekt.`;
     }
 
     // Show "Reveal All" button
