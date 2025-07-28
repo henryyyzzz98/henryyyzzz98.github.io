@@ -204,12 +204,16 @@
         }
 
         .ranking-card {
-          background: #000;
-          border: 3px solid;
-          border-radius: 12px;
+          border: 2px solid #ccc;
+          border-radius: 8px;
+          padding: 12px;
           text-align: center;
-          padding: 10px;
-          box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+          background: #000;
+          transition: box-shadow 0.3s ease;
+        }
+
+        .ranking-card:hover {
+          box-shadow: 0 0 8px rgba(0,0,0,0.2);
         }
 
         .ranking-rank {
