@@ -118,7 +118,12 @@ function buildRankingGrid(containerId, rows, memberColIndex, extraIndexes = []) 
 
     const extras = document.createElement('div');
     extras.className = 'ranking-extras';
-    extras.innerHTML = extraIndexes.map(i => `<div>${r.c[i]?.f || r.c[i]?.v || ''}</div>`).join('');
+    extras.innerHTML = extraIndexes.map(i => {
+      let val = r.c[i]?.f || r.c[i]?.v || '';
+      if (i === 14) val += ' Lives';       // Append "lives" for column 14
+      if (i === 17) val = 'Avg ' + val;    // Prepend "AVG" for column 17
+      return `<div>${val}</div>`;
+    }).join('');
 
     card.appendChild(rank);
     card.appendChild(img);
