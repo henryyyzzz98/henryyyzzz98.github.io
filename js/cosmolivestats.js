@@ -26,7 +26,7 @@ const nameColorMap = {
     };
 
     const memberNames = Object.keys(nameColorMap);
-    let table1AllRows = [], filteredRows = [], currentPage = 0, rowsPerPage = 12;
+    let table1AllRows = [], filteredRows = [], currentPage = 0, rowsPerPage = 10;
 
     function getColorForName(name) {
       return nameColorMap[name] || '';
@@ -137,18 +137,28 @@ const nameColorMap = {
         buildTable("table3", [19, 21, 22, 23], rows, 0, 24);
       });
 
-      document.getElementById("nextBtn").addEventListener("click", () => {
-        const maxPage = Math.floor(filteredRows.length / rowsPerPage);
+      const nextBtn = document.getElementById("nextBtn");
+
+      nextBtn.addEventListener("click", () => {
+        const maxPage = Math.floor((filteredRows.length - 1) / rowsPerPage); // adjust for zero-indexing
         if (currentPage < maxPage) {
           currentPage++;
           buildTable("table1", [0,1,2,3,4], filteredRows, currentPage, rowsPerPage);
+          updateButtonStates();
         }
       });
+
+      function updateButtonStates() {
+        const maxPage = Math.floor((filteredRows.length - 1) / rowsPerPage);
+        document.getElementById("prevBtn").disabled = currentPage === 0;
+        document.getElementById("nextBtn").disabled = currentPage >= maxPage;
+      }
       
       document.getElementById("prevBtn").addEventListener("click", () => {
         if (currentPage > 0) {
           currentPage--;
           buildTable("table1", [0,1,2,3,4], filteredRows, currentPage, rowsPerPage);
+          updateButtonStates();
         }
       });
 
@@ -164,6 +174,7 @@ const nameColorMap = {
           });
 
           buildTable("table1", [0,1,2,3,4], filteredRows, currentPage, rowsPerPage);
+          updateButtonStates();
 
           if (!query) {
             suggestionsBox.classList.remove('active');
