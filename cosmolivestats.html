@@ -2,11 +2,13 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>COSMO LIVE Stats</title>
+  <title>COSMO LIVE stats</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Gabarito:wght@400..900&display=swap" rel="stylesheet">
   <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+
         /* Global box-sizing for easier sizing */
         * {
           box-sizing: border-box;
@@ -15,10 +17,12 @@
         body {
           background: linear-gradient(160deg, #0d0d0d, #1a1a1a);
           color: #fff;
-          font-family: "Gabarito", sans-serif;
+          /*font-family: "Gabarito", sans-serif;*/
+          font-family: "Inter", sans-serif;
           margin: 0;
           padding: 20px;
           font-size: 16px;
+          font-weight: 400;
         }
 
         .container {
@@ -164,7 +168,8 @@
           font-weight: bold;
           cursor: pointer;
           transition: background 0.3s;
-          font-family: 'Gabarito';
+          /*font-family: 'Gabarito';*/
+          font-family: "Inter", sans-serif;
         }
 
         .pagination button:hover {
@@ -177,11 +182,53 @@
           font-size: 14px;
           color: #ccc;
         }
+
+        .ranking-grid {
+          display: grid;
+          grid-template-columns: repeat(6, 1fr);
+          gap: 16px;
+          padding: 16px;
+        }
+
+        .ranking-card {
+          background: #000;
+          border: 3px solid;
+          border-radius: 12px;
+          text-align: center;
+          padding: 10px;
+          box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .ranking-rank {
+          font-weight: bold;
+          color: #fff;
+          margin-bottom: 5px;
+        }
+
+        .ranking-avatar {
+          width: 70px;
+          height: 70px;
+          border-radius: 50%;
+          object-fit: cover;
+          margin-bottom: 8px;
+        }
+
+        .ranking-name {
+          font-size: 0.95em;
+          font-weight: 600;
+          color: #fff;
+        }
+
+        .ranking-extras {
+          font-size: 0.85em;
+          color: #fff;
+          margin-top: 4px;
+        }
         </style>
 </head>
 <body>
   <div class="container">
-    <h1>tripleS COSMO LIVE Stats</h1>
+    <h1>tripleS COSMO LIVE stats</h1>
 
     <h2>Summary</h2>
     <div class="search-container">
