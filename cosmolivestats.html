@@ -190,6 +190,19 @@
           padding: 16px;
         }
 
+        /* Responsive: on smaller screens, reduce columns */
+        @media (max-width: 900px) {
+          .ranking-grid {
+            grid-template-columns: repeat(4, 1fr);
+          }
+        }
+
+        @media (max-width: 600px) {
+          .ranking-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+        }
+
         .ranking-card {
           background: #000;
           border: 3px solid;
