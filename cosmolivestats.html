@@ -38,6 +38,18 @@
           text-align: center;
         }
 
+        @media (max-width: 900px) {
+          h1, h2 {
+            font-size: 26px;
+          }
+        }
+
+        @media (max-width: 600px) {
+          h1, h2 {
+            font-size: 20px;
+          }
+        }
+
         .table-container {
           overflow-x: auto;
           margin-top: 20px;
@@ -122,6 +134,22 @@
           transition: border 0.3s, box-shadow 0.3s;
         }
 
+        @media (max-width: 900px) {
+          .search-input {
+            font-size: 14px;
+            max-width: 300px;
+            width: 80%;
+          }
+        }
+
+        @media (max-width: 600px) {
+          .search-input {
+            font-size: 12px;
+            max-width: 300px;
+            width: 100%;
+          }
+        }
+
         .search-input:focus {
           outline: none;
           border-color: #22aeff;
@@ -147,6 +175,20 @@
           top: 100%;
           z-index: 1;
           display: none;
+        }
+
+        @media (max-width: 900px) {
+          .suggestion-box {
+            font-size: 14px;
+            max-width: 200px;
+          }
+        }
+
+        @media (max-width: 600px) {
+          .suggestion-box {
+            font-size: 12px;
+            max-width: 200px;
+          }
         }
 
         .suggestion-box.active {
@@ -263,7 +305,7 @@
         type="text"
         id="searchBox"
         class="search-input"
-        placeholder="🔍 When has your bias done her live?"
+        placeholder="Search by Member here"
       />
       <div id="suggestions" class="suggestion-box"></div>
     </div>
