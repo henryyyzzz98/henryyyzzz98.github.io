@@ -70,11 +70,18 @@ function buildTable(elementId, colIndexes, allRows, page = 0, limit = null) {
       const text = r.c[i]?.f || r.c[i]?.v || '';
 
       if ((elementId === "table1" && i === 2)) {
-        const dot = document.createElement('span');
-        dot.className = 'color-dot';
-        dot.style.backgroundColor = getColorForName(text);
-        cell.appendChild(dot);
-        cell.appendChild(document.createTextNode(text));
+        const nameTextColorMap = {
+          SeoYeon: "#000000", HyeRin: "#ffffff", JiWoo: "#000000", ChaeYeon: "#ffffff", YooYeon: "#ffffff", SooMin: "#ffffff", NaKyoung: "#ffffff", YuBin: "#000000", Kaede: "#000000", DaHyun: "#000000", Kotone: "#000000", YeonJi: "#000000", Nien: "#000000", SoHyun: "#ffffff", Xinyu: "#000000", Mayu: "#000000", Lynn: "#000000", JooBin: "#000000", HaYeon: "#000000", ShiOn: "#000000", ChaeWon: "#000000", Sullin: "#000000", SeoAh: "#000000", JiYeon: "#000000"
+        };
+        const badge = document.createElement('span');
+        const bgColor = getColorForName(text);
+        const textColor = nameTextColorMap[text];
+
+        badge.className = 'color-badge';
+        badge.style.backgroundColor = bgColor;
+        badge.style.color = textColor;
+        badge.textContent = text;
+        cell.appendChild(badge);
       } else {
         cell.innerText = text;
       }
