@@ -12,6 +12,34 @@
           box-sizing: border-box;
         }
 
+        .header-container {
+          display: flex;
+          align-items: center; /* vertical centering */
+          gap: 10px;
+        }
+
+        .header-container h1 {
+          margin: 0;
+          font-size: 1.5rem;
+          color: #FFE433;
+        }
+
+        .header-container button {
+          background-color: #555;
+          border: none;
+          padding: 3px 10px;
+          border-radius: 10px;
+          font-size: 16px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+        }
+
+        .header-container button:hover {
+          background-color: #888888;
+        }
+
         body {
           background: linear-gradient(160deg, #0d0d0d, #1a1a1a);
           color: #fff;
@@ -297,9 +325,15 @@
 </head>
 <body>
   <div class="container">
-    <h1>tripleS COSMO LIVE stats</h1>
+    <div style="display: flex; justify-content: center;">
+      <div class="header-container">
+        <h1>tripleS COSMO LIVE stats</h1>
+        <button onclick="location.href='index.html'">🏠</button>
+      </div>
+    </div>
 
     <h2>Summary</h2>
+    
     <div class="search-container">
       <input
         type="text"
