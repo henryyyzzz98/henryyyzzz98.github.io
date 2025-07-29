@@ -14,8 +14,10 @@
 
         .header-container {
           display: flex;
-          align-items: center; /* vertical centering */
+          align-items: center;
           gap: 10px;
+          flex-wrap: wrap;
+          padding: 10px 16px;
         }
 
         .header-container h1 {
@@ -37,7 +39,24 @@
         }
 
         .header-container button:hover {
-          background-color: #888888;
+          background-color: #888;
+        }
+
+        /* Inject a line break before .breakpoint when screen is small */
+        @media (max-width: 600px) {
+          .breakpoint::before {
+            content: "\A"; /* Line break */
+            white-space: pre;
+          }
+
+          .header-container h1 {
+            font-size: 1.2rem;
+          }
+
+          .header-container button {
+            font-size: 14px;
+            padding: 2px 8px;
+          }
         }
 
         body {
@@ -327,7 +346,9 @@
   <div class="container">
     <div style="display: flex; justify-content: center;">
       <div class="header-container">
-        <h1>tripleS COSMO LIVE stats</h1>
+        <h1>
+          tripleS COSMO LIVE <span class="breakpoint">Stats Dashboard</span>
+        </h1>
         <button onclick="location.href='index.html'">🏠</button>
       </div>
     </div>
