@@ -1,7 +1,8 @@
 let cards = [];
 let firstGroup = [];
 let specialGroup = [];
-let doubleGroup = [];
+let shopGroup = [];
+let eventGroup = [];
 let premierGroup = [];
 let selectedCard = null;
 let selectedIndex = null;
@@ -20,7 +21,8 @@ async function loadCards() {
         // Categorize cards
         firstGroup = cards.filter(card => card.group === "First");
         specialGroup = cards.filter(card => card.group === "Special");
-        doubleGroup = cards.filter(card => card.group === "Double");
+        shopGroup = cards.filter(card => card.group === "Shop");
+        eventGroup = cards.filter(card => card.group === "Event");
         premierGroup = cards.filter(card => card.group === "Premier");
 
         // Generate a set of 16 cards based on probability rules
@@ -38,15 +40,17 @@ function getCombination() {
     let rand = Math.random(); // Generates a number between 0 and 1
 
     if (rand < 0.60) {
-        return { first: 12, special: 1, double: 2, premier: 0, fail: 1 }; // 60% chance
+        return { first: 12, special: 1, shop: 1, event: 1, premier: 0, fail: 1 }; // 60% chance
     } else if (rand < 0.90) {
-        return { first: 12, special: 0, double: 2, premier: 0, fail: 2 }; // 30% chance
+        return { first: 12, special: 0, shop: 1, event: 1, premier: 0, fail: 2 }; // 30% chance
+    } else if (rand < 0.97) {
+        return { first: 12, special: 0, shop: 0, event: 2, premier: 0, fail: 2 }; // 7% chance
     } else if (rand < 0.98) {
-        return { first: 12, special: 2, double: 2, premier: 0, fail: 0 }; // 8% chance
+        return { first: 12, special: 0, shop: 2, event: 0, premier: 1, fail: 1 }; // 1% chance
     } else if (rand < 0.99) {
-        return { first: 12, special: 1, double: 1, premier: 1, fail: 1 }; // 1% chance
+        return { first: 12, special: 0, shop: 1, event: 1, premier: 1, fail: 1 }; // 1% chance
     } else {
-        return { first: 12, special: 0, double: 2, premier: 1, fail: 1 }; // 1% chance
+        return { first: 12, special: 0, shop: 0, event: 2, premier: 1, fail: 1 }; // 1% chance
     }
 }
 
@@ -64,9 +68,14 @@ function generateRandomSet() {
         selectedCards.push(...shuffleAndPick(specialGroup, selectedOption.special));
     }
 
-    // Pick "Special" group cards (if applicable)
-    if (selectedOption.double > 0) {
-        selectedCards.push(...shuffleAndPick(doubleGroup, selectedOption.double));
+    // Pick "Event" group cards (if applicable)
+    if (selectedOption.event > 0) {
+        selectedCards.push(...shuffleAndPick(eventGroup, selectedOption.event));
+    }
+
+    // Pick "Shop" group cards (if applicable)
+    if (selectedOption.shop > 0) {
+        selectedCards.push(...shuffleAndPick(shopGroup, selectedOption.shop));
     }
 
     // Pick "Premier" group cards (if applicable)
@@ -162,11 +171,15 @@ function revealCard() {
     getTag.classList.add("get-tag");
     getTag.textContent = "Get";
     selectedCardElement.appendChild(getTag);
+    const spinStatus = document.getElementById("spinStatus");
+    const spinResult = document.getElementById("spinResult");
 
     if (selectedCard.name === "Fail") {
-        alert("Spin failed! Please try again next time.");
+        spinStatus.textContent = "Spin failed"; 
+        spinResult.textContent = "Please try again next time.";
     } else {
-        alert(`Spin was successful! You have chosen the ${selectedCard.name} Objekt.`);
+        spinStatus.textContent = "Spin was successful!";
+        spinResult.innerHTML = `Chosen the <span style="color: #B09EF8;">${selectedCard.name}</span> Objekt.`;
     }
 
     // Show "Reveal All" button
