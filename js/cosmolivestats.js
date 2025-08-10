@@ -127,8 +127,8 @@ function buildRankingGrid(containerId, rows, memberColIndex, extraIndexes = []) 
     extras.className = 'ranking-extras';
     extras.innerHTML = extraIndexes.map(i => {
       let val = r.c[i]?.f || r.c[i]?.v || '';
-      if (i === 14) val += ' Lives';       // Append "lives" for column 14
-      if (i === 17) val = 'Avg ' + val;    // Prepend "AVG" for column 17
+      if (i === 16) val += ' Lives';       // Append "lives" for column 14
+      if (i === 19) val = 'Avg ' + val;    // Prepend "AVG" for column 17
       return `<div>${val}</div>`;
     }).join('');
 
@@ -155,8 +155,8 @@ fetch("https://docs.google.com/spreadsheets/d/1jXjnPCKMrbGBhk0wUBLv66YAhcIWO2xZ2
     currentPage = Math.floor((filteredRows.length - 1) / rowsPerPage);
 
     buildTable("table1", [0,1,2,3,4], filteredRows, currentPage, rowsPerPage);
-    buildRankingGrid("table2", rows, 13, [14,15,17]);
-    buildRankingGrid("table3", rows, 21, [22,23]);
+    buildRankingGrid("table2", rows, 15, [16,17,19]);
+    buildRankingGrid("table3", rows, 23, [24,25]);
   });
 
 document.getElementById("nextBtn").addEventListener("click", () => {
