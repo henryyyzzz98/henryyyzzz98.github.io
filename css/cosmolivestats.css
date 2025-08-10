@@ -63,7 +63,7 @@
   }
 
   .container {
-    max-width: 900px;
+    max-width: 800px;
     margin: 0 auto;
     padding: 0 20px;
   }
@@ -71,11 +71,15 @@
   h1 {
     text-align: center;
     color: #FFE433;
-    margin-bottom: 0.2em;
   }
 
   h2 {
     text-align: center;
+  }
+
+  h3 {
+    text-align: center;
+    margin-bottom: 0.2em;
   }
 
   @media (max-width: 900px) {
@@ -91,9 +95,10 @@
   }
 
   .table-container {
-    overflow-x: auto;
-    margin-top: 20px;
-    border-radius: 12px;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 20px;
+    box-sizing: border-box;
   }
 
   table {
@@ -154,11 +159,6 @@
     border-radius: 50%;
     margin-right: 8px;
     vertical-align: middle;
-  }
-
-  h3 {
-    text-align: center;
-    margin-bottom: 0.2em;
   }
 
   .search-container {
@@ -287,7 +287,18 @@
     display: grid;
     grid-template-columns: repeat(6, 1fr);
     gap: 16px;
-    padding: 16px 0;
+    /*padding: 16px;*/
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .ranking-grid2 {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    /*padding: 16px;*/
+    width: 100%;
+    box-sizing: border-box;
   }
 
   /* Responsive grid columns */
@@ -299,6 +310,10 @@
 
   @media (max-width: 600px) {
     .ranking-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .ranking-grid2 {
       grid-template-columns: repeat(2, 1fr);
     }
   }
@@ -314,7 +329,7 @@
   }
 
   .ranking-card:hover {
-    box-shadow: 0 0 8px rgba(255, 228, 51, 0.8);
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
   }
 
   .ranking-rank {
@@ -332,7 +347,7 @@
   }
 
   .ranking-name {
-    font-size: 1.1em;
+    font-size: 0.95em;
     font-weight: 600;
     color: #fff;
     margin-bottom: 8px;

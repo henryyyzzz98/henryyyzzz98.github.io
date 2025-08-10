@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>COSMO LIVE Dashboard</title>
   <link rel="stylesheet" href="css/cosmolivestats.css">
 </head>
@@ -26,7 +26,9 @@
       <div id="suggestions" class="suggestion-box"></div>
     </div>
 
-    <div id="table1" class="ranking-grid"></div>
+    <div class="table-container" style="max-width: 900px; margin: 0 auto;">
+      <div id="table1" class="ranking-grid2"></div>
+    </div>
 
     <div class="pagination">
       <button id="prevBtn" disabled>Previous Page</button>
@@ -52,13 +54,13 @@
 
   <h2>Ranking Leaderboard</h2>
   <h2>(Sorted by No. of Lives)</h2>
-  <div class="table-container">
-    <table id="table2"></table>
+  <div class="table-container" style="max-width: 900px; margin: 0 auto;">
+    <div id="table2"></div>
   </div>
 
   <h2>(Sorted by Total Duration)</h2>
-  <div class="table-container">
-    <table id="table3"></table>
+  <div class="table-container" style="max-width: 900px; margin: 0 auto;">
+    <div id="table3"></div>
   </div>
 
   <script src="js/cosmolivestats.js"></script>

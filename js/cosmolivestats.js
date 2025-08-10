@@ -34,7 +34,7 @@ const profileImageUrl = {
 };
 
 let table1AllRows = [], filteredRows = [], currentPage = 0;
-const rowsPerPage = 12;
+const rowsPerPage = 8;
 
 const youtubeModal = document.getElementById("youtubeModal");
 const modalContent = document.getElementById("youtubeFrame");
