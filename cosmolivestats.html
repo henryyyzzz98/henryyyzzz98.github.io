@@ -1,368 +1,21 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>COSMO LIVE stats</title>
-  <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
-
-        /* Global box-sizing for easier sizing */
-        * {
-          box-sizing: border-box;
-        }
-
-        .header-container {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          flex-wrap: wrap;
-          padding: 10px 16px;
-        }
-
-        .header-container h1 {
-          margin: 0;
-          font-size: 1.5rem;
-          color: #FFE433;
-        }
-
-        .header-container button {
-          background-color: #555;
-          border: none;
-          padding: 3px 10px;
-          border-radius: 10px;
-          font-size: 16px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-        }
-
-        .header-container button:hover {
-          background-color: #888;
-        }
-
-        /* Inject a line break before .breakpoint when screen is small */
-        @media (max-width: 600px) {
-          .breakpoint::before {
-            content: "\A"; /* Line break */
-            white-space: pre;
-          }
-
-          .header-container h1 {
-            font-size: 1.2rem;
-          }
-
-          .header-container button {
-            font-size: 14px;
-            padding: 2px 8px;
-          }
-        }
-
-        body {
-          background: linear-gradient(160deg, #0d0d0d, #1a1a1a);
-          color: #fff;
-          /*font-family: "Gabarito", sans-serif;*/
-          font-family: "Inter", sans-serif;
-          margin: 0;
-          padding: 20px;
-          font-size: 16px;
-          font-weight: 400;
-        }
-
-        .container {
-          max-width: 800px;
-          margin: 0 auto;
-          padding: 0 20px;
-        }
-
-        h1 {
-            text-align: center;
-            color: #FFE433;
-        }
-
-        h2 {
-          text-align: center;
-        }
-
-        @media (max-width: 900px) {
-          h1, h2 {
-            font-size: 26px;
-          }
-        }
-
-        @media (max-width: 600px) {
-          h1, h2 {
-            font-size: 20px;
-          }
-        }
-
-        .table-container {
-          overflow-x: auto;
-          margin-top: 20px;
-          border-radius: 12px;
-        }
-
-        table {
-          width: 100%;
-          border-collapse: separate;
-          border-spacing: 0;
-          background-color: #111;
-          border-radius: 12px;
-          overflow: hidden;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-        }
-
-        th, td {
-          padding: 8px 2px;
-          text-align: center;
-        }
-
-        @media (max-width: 900px) {
-          table td, table th {
-            font-size: 14px;
-          }
-        }
-
-        @media (max-width: 600px) {
-          table td, table th {
-            font-size: 12px;
-          }
-        }
-
-        th {
-          background-color: #1c1c1c;
-          color: #FFE433;
-          text-transform: uppercase;
-          font-size: 13px;
-          letter-spacing: 0.5px;
-          border-bottom: 2px solid #333;
-        }
-
-        td {
-          font-size: 15px;
-          border-bottom: 1px solid #222;
-          vertical-align: middle;
-          transition: background-color 0.3s ease;
-        }
-
-        tr:nth-child(even) {
-          background-color: #151515;
-        }
-
-        tr:hover {
-          background-color: #222;
-        }
-
-        .color-dot {
-          display: inline-block;
-          width: 12px;
-          height: 12px;
-          border-radius: 50%;
-          margin-right: 8px;
-          vertical-align: middle;
-        }
-
-        .search-container {
-          text-align: center;
-          margin: 30px 0;
-          position: relative;
-        }
-
-        .search-input {
-          padding: 12px 20px;
-          font-size: 16px;
-          width: 60%;
-          max-width: 400px;
-          border: 2px solid #ffffff44;
-          border-radius: 30px;
-          background-color: #1e1e1e;
-          color: white;
-          transition: border 0.3s, box-shadow 0.3s;
-        }
-
-        @media (max-width: 900px) {
-          .search-input {
-            font-size: 14px;
-            max-width: 300px;
-            width: 80%;
-          }
-        }
-
-        @media (max-width: 600px) {
-          .search-input {
-            font-size: 12px;
-            max-width: 300px;
-            width: 100%;
-          }
-        }
-
-        .search-input:focus {
-          outline: none;
-          border-color: #22aeff;
-          box-shadow: 0 0 8px #22aeff66;
-        }
-
-        ::placeholder {
-          color: #cccccc;
-          opacity: 0.7;
-        }
-
-        .suggestion-box {
-          background: #222;
-          color: white;
-          max-width: 300px;
-          margin: 0 auto;
-          border: 1px solid #444;
-          border-radius: 8px;
-          padding: 5px;
-          position: absolute;
-          left: 0;
-          right: 0;
-          top: 100%;
-          z-index: 1;
-          display: none;
-        }
-
-        @media (max-width: 900px) {
-          .suggestion-box {
-            font-size: 14px;
-            max-width: 200px;
-          }
-        }
-
-        @media (max-width: 600px) {
-          .suggestion-box {
-            font-size: 12px;
-            max-width: 200px;
-          }
-        }
-
-        .suggestion-box.active {
-          display: block;
-        }
-
-        .suggestion-box div {
-          padding: 8px 12px;
-          cursor: pointer;
-        }
-
-        .suggestion-box div:hover {
-          background-color: #333;
-        }
-
-        .pagination {
-          display: flex;
-          justify-content: center;
-          margin-top: 10px;
-          gap: 12px;
-        }
-
-        .pagination button {
-          padding: 8px 16px;
-          border: none;
-          border-radius: 20px;
-          background-color: #FFE433;
-          color: black;
-          font-weight: bold;
-          cursor: pointer;
-          transition: background 0.3s;
-          /*font-family: 'Gabarito';*/
-          font-family: "Inter", sans-serif;
-        }
-
-        .pagination button:hover {
-          background-color: #ffd000;
-        }
-
-        #pageDisplay {
-          text-align: center;
-          margin-top: 10px;
-          font-size: 14px;
-          color: #ccc;
-        }
-
-        .ranking-grid {
-          display: grid;
-          grid-template-columns: repeat(6, 1fr);
-          gap: 16px;
-          padding: 16px;
-        }
-
-        /* Responsive: on smaller screens, reduce columns */
-        @media (max-width: 900px) {
-          .ranking-grid {
-            grid-template-columns: repeat(4, 1fr);
-          }
-        }
-
-        @media (max-width: 600px) {
-          .ranking-grid {
-            grid-template-columns: repeat(2, 1fr);
-          }
-        }
-
-        .ranking-card {
-          border: 2px solid #ccc;
-          border-radius: 8px;
-          padding: 12px;
-          text-align: center;
-          background: #000;
-          transition: box-shadow 0.3s ease;
-        }
-
-        .ranking-card:hover {
-          box-shadow: 0 0 8px rgba(0,0,0,0.2);
-        }
-
-        .ranking-rank {
-          font-weight: bold;
-          color: #fff;
-          margin-bottom: 5px;
-        }
-
-        .ranking-avatar {
-          width: 70px;
-          height: 70px;
-          border-radius: 50%;
-          object-fit: cover;
-          margin-bottom: 8px;
-        }
-
-        .ranking-name {
-          font-size: 0.95em;
-          font-weight: 600;
-          color: #fff;
-        }
-
-        .ranking-extras {
-          font-size: 0.85em;
-          color: #fff;
-          margin-top: 4px;
-        }
-
-        .color-badge {
-          display: inline-block;
-          padding: 1px 8px;
-          border-radius: 12px;
-          color: #fff; /* or adjust based on background */
-          font-size: 0.8rem;
-          font-weight: 500;
-          white-space: nowrap;
-          font-family: "Inter", sans-serif;
-        }
-        </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>COSMO LIVE Dashboard</title>
+  <link rel="stylesheet" href="css/cosmolivestats.css">
 </head>
 <body>
   <div class="container">
-    <div style="display: flex; justify-content: center;">
-      <div class="header-container">
+    <div style="display: flex; justify-content: center;" class="header-container">
         <h1>
-          tripleS COSMO LIVE <span class="breakpoint">Stats Dashboard</span>
+          tripleS COSMO LIVE <span class="breakpoint"> Dashboard</span>
         </h1>
         <button onclick="location.href='index.html'">🏠</button>
-      </div>
     </div>
+
+    <h3>Webpage made by jyuubin318. All videos compiled in this fanmade website here credits to MangoNim Team for their hard work at subbing these contents for WAVs.</h3>
     <div class="search-container">
       <input
         type="text"
@@ -372,27 +25,42 @@
       />
       <div id="suggestions" class="suggestion-box"></div>
     </div>
-    <div class="table-container">
-      <table id="table1"></table>
-      <div class="pagination">
-        <button id="prevBtn">Previous Page</button>
-        <button id="nextBtn">Next Page</button>
-      </div>
-      <div id="pageDisplay">Page 00 of 00</div>
-    </div>
 
-    <h2>Ranking Leaderboard</h2>
-    <h2>(Sorted by No. of Lives)</h2>
-    <div class="table-container">
-      <table id="table2"></table>
-    </div>
+    <div id="table1" class="ranking-grid"></div>
 
-    <h2>(Sorted by Total Duration)</h2>
-    <div class="table-container">
-      <table id="table3"></table>
+    <div class="pagination">
+      <button id="prevBtn" disabled>Previous Page</button>
+      <button id="nextBtn" disabled>Next Page</button>
+    </div>
+    <div id="pageDisplay">Page 0 of 0</div>
+  </div>
+
+  <!-- YouTube Modal -->
+  <div id="youtubeModal">
+    <div class="youtube-modal-content">
+      <iframe
+        id="youtubeFrame"
+        frameborder="0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowfullscreen
+        src=""
+      ></iframe>
+      <button id="closeModalBtn">Close</button>
+      <div id="modalInfoPanel"></div>
     </div>
   </div>
-  
+
+  <h2>Ranking Leaderboard</h2>
+  <h2>(Sorted by No. of Lives)</h2>
+  <div class="table-container">
+    <table id="table2"></table>
+  </div>
+
+  <h2>(Sorted by Total Duration)</h2>
+  <div class="table-container">
+    <table id="table3"></table>
+  </div>
+
   <script src="js/cosmolivestats.js"></script>
 </body>
 </html>
