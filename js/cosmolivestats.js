@@ -107,14 +107,14 @@ function buildTable1Grid(rows, page = 0) {
     const avatar = profileImageUrl[name] || "";
     const color = getColorForName(name);
 
-    // Video ID in column 5 (index 5)
-    const videoId = c[6]?.v || "";
+    // Video ID in column H
+    const videoId = c[7]?.v || "";
 
-    const colA = c[0]?.f || c[0]?.v || "";
     const colB = c[1]?.f || c[1]?.v || "";
     const colC = c[2]?.f || c[2]?.v || "";
     const colD = c[3]?.f || c[3]?.v || "";
-    const colE = c[4]?.f || c[4]?.v || "";
+    const colE = c[5]?.f || c[5]?.v || "";
+    const colF = c[4]?.f || c[4]?.v || "";
 
     const card = document.createElement("div");
     card.className = "ranking-card";
@@ -153,10 +153,8 @@ function buildTable1Grid(rows, page = 0) {
         youtubeModal.classList.add("show");
 
         modalInfoPanel.innerHTML = `
-          <div><strong>Date:</strong> ${colB}</div>
-          <div><strong>Member:</strong> ${colC}</div>
-          <div><strong>LIVE:</strong> ${colD}</div>
-          <div><strong>Duration:</strong> ${colE}</div>
+          <h2>${colF}</h2>
+          ${colB} - ${colC}
         `;
       });
     }
@@ -206,8 +204,8 @@ function buildRankingGrid(containerId, rows, memberColIndex, extraIndexes = []) 
     extras.className = 'ranking-extras';
     extras.innerHTML = extraIndexes.map(i => {
       let val = r.c[i]?.f || r.c[i]?.v || '';
-      if (i === 16) val += ' Lives';       // Append "lives" for column 14
-      if (i === 19) val = 'Avg ' + val;    // Prepend "AVG" for column 17
+      if (i === 17) val += ' Lives';       // Append "lives" for column 14
+      if (i === 20) val = 'Avg ' + val;    // Prepend "AVG" for column 17
       return `<div>${val}</div>`;
     }).join('');
 
@@ -235,8 +233,8 @@ fetch("https://docs.google.com/spreadsheets/d/1jXjnPCKMrbGBhk0wUBLv66YAhcIWO2xZ2
     currentPage = Math.floor((filteredRows.length - 1) / rowsPerPage);
     
     buildTable1Grid(filteredRows, currentPage);
-    buildRankingGrid("table2", rows, 15, [16,17,19]);
-    buildRankingGrid("table3", rows, 23, [24,25]);
+    buildRankingGrid("table2", rows, 16, [17,18,20]);
+    buildRankingGrid("table3", rows, 24, [25,26]);
   })
   .catch(e => {
     console.error("Failed to load Google Sheet data:", e);

@@ -322,6 +322,7 @@
     border: 2px solid #ccc;
     border-radius: 8px;
     padding: 12px;
+    font-size: 12px;
     text-align: center;
     background: #000;
     transition: box-shadow 0.3s ease;
@@ -333,6 +334,7 @@
   }
 
   .ranking-rank {
+    font-size: 1.25em;
     font-weight: bold;
     color: #fff;
     margin-bottom: 5px;
@@ -347,7 +349,7 @@
   }
 
   .ranking-name {
-    font-size: 0.95em;
+    font-size: 1.25em;
     font-weight: 600;
     color: #fff;
     margin-bottom: 8px;
