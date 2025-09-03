@@ -3,36 +3,155 @@
 <head>
   <title>MSNZ Draft Planner</title>
   <style>
-    body { font-family: Arial, sans-serif; background: #f9f9f9; padding: 20px; }
-    h1, h2 { text-align: center; }
-    .container { display: flex; justify-content: space-around; margin-top: 20px; }
-    .team { border: 2px solid #333; border-radius: 10px; padding: 10px; width: 20%; background: white; }
-    .team h3 { text-align: center; margin-bottom: 10px; }
-    .leader { font-weight: bold; color: darkblue; list-style-type: "⭐ "; }
-    .player { cursor: pointer; padding: 5px; margin: 3px 0; border-bottom: 1px solid #ddd; }
-    .player:hover { background: #eee; }
-    #turn { text-align: center; margin: 20px; font-size: 18px; font-weight: bold; }
-    #controls { text-align: center; margin-top: 20px; }
-    button { padding: 8px 15px; margin: 5px; border: none; border-radius: 5px; cursor: pointer; }
-    button:hover { background: #ddd; }
+    @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+
+    body { 
+        font-family: "Inter", sans-serif; 
+        background: #f9f9f9; 
+        padding: 20px; 
+    }
+    
+    h1, h2 { 
+        text-align: center;
+    }
+    
+    #controls { 
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    
+    button { 
+        padding: 8px 15px;
+        margin: 5px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+    
+    button:hover { 
+        background: #ddd;
+    }
+
+    /* Available Players Grid */
+    #playerList { 
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 10px;
+      list-style: none;
+      list-style-type: none;
+      padding: 0;
+      margin: 20px auto;
+      max-width: 600px;
+    }
+    
+    .player {
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 10px;
+      text-align: center;
+      cursor: grab;
+      transition: all 0.2s ease-in-out;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      list-style: none;
+    }
+
+    .player:hover {
+        background: #f0f0f0;
+        transform: scale(1.05);
+    }
+    
+    .picked { 
+        background: #ddd;
+        color: #666;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    /* Tierlist Style Teams */
+    .tierlist { 
+        margin-top: 30px;
+    }
+    
+    .team-row {
+      display: flex;
+      align-items: center;
+      border: 2px solid #333;
+      border-radius: 10px;
+      padding: 10px;
+      margin-bottom: 15px;
+      background: white;
+      min-height: 60px;
+    }
+    
+    .team-label {
+      width: 120px;
+      font-weight: bold;
+      font-size: 18px;
+      text-align: center;
+      margin-right: 15px;
+    }
+    
+    .team-slot {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      flex: 1;
+      min-height: 40px;
+    }
+    
+    .leader {
+      font-weight: bold;
+      color: darkblue;
+      list-style-type: none;
+      background: #ffe680;
+      border: 2px solid #ccaa00;
+      border-radius: 8px;
+      padding: 8px;
+      cursor: not-allowed;
+    }
+    
+    .drag-over {
+      border: 2px dashed #666;
+      background: #f9f9f9;
+    }
   </style>
 </head>
 <body>
   <h1>MSNZ Draft Planner</h1>
+
   <h2>Available Members</h2>
   <ul id="playerList"></ul>
-
-  <div id="turn">Turn: <span id="currentTeam">Moon</span></div>
 
   <div id="controls">
     <button onclick="undoLastPick()">Undo Last Pick</button>
   </div>
 
-  <div class="container">
-    <div class="team"><h3>Moon</h3><ul id="Moon"><li class="leader">Leader: Sullin</li></ul></div>
-    <div class="team"><h3>Sun</h3><ul id="Sun"><li class="leader">Leader: Xinyu</li></ul></div>
-    <div class="team"><h3>Neptune</h3><ul id="Neptune"><li class="leader">Leader: SeoYeon</li></ul></div>
-    <div class="team"><h3>Zenith</h3><ul id="Zenith"><li class="leader">Leader: HaYeon</li></ul></div>
+  <div class="tierlist">
+    <div class="team-row" data-team="Moon">
+      <div class="team-label">Moon</div>
+      <div class="team-slot" id="Moon">
+        <div class="leader">Leader: Sullin</div>
+      </div>
+    </div>
+    <div class="team-row" data-team="Sun">
+      <div class="team-label">Sun</div>
+      <div class="team-slot" id="Sun">
+        <div class="leader">Leader: Xinyu</div>
+      </div>
+    </div>
+    <div class="team-row" data-team="Neptune">
+      <div class="team-label">Neptune</div>
+      <div class="team-slot" id="Neptune">
+        <div class="leader">Leader: SeoYeon</div>
+      </div>
+    </div>
+    <div class="team-row" data-team="Zenith">
+      <div class="team-label">Zenith</div>
+      <div class="team-slot" id="Zenith">
+        <div class="leader">Leader: HaYeon</div>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -44,43 +163,58 @@
       "JooBin","ShiOn","ChaeWon","SeoAh","JiYeon"
     ];
 
-    // Teams in draft order
-    const teams = ["Moon", "Sun", "Neptune", "Zenith"];
-    let currentIndex = 0; // track which team's turn it is
-    const pickHistory = []; // stack of past picks
-
     const playerList = document.getElementById("playerList");
-    const currentTeamSpan = document.getElementById("currentTeam");
+    const pickHistory = [];
 
-    // Populate player list
+    // Populate available players
     players.forEach(p => {
       const li = document.createElement("li");
       li.textContent = p;
       li.classList.add("player");
-      li.onclick = () => draftPlayer(p, li);
+      li.draggable = true;
+      li.liststyle = "none";
+      addDragEvents(li);
       playerList.appendChild(li);
     });
 
-    function draftPlayer(player, li) {
-      const team = teams[currentIndex];
-      document.getElementById(team).appendChild(li);
-      li.onclick = null; // prevent re-pick
-      pickHistory.push({ team, li }); // save history
-      nextTurn();
+    function addDragEvents(el) {
+      el.addEventListener("dragstart", e => {
+        e.dataTransfer.setData("text/plain", e.target.textContent);
+        e.dataTransfer.dropEffect = "move";
+        e.target.classList.add("dragging");
+      });
+      el.addEventListener("dragend", e => {
+        e.target.classList.remove("dragging");
+      });
     }
 
-    function nextTurn() {
-      currentIndex = (currentIndex + 1) % teams.length;
-      currentTeamSpan.textContent = teams[currentIndex];
-    }
+    // Enable drop on team slots + available pool
+    const dropZones = document.querySelectorAll(".team-slot, #playerList");
+    dropZones.forEach(zone => {
+      zone.addEventListener("dragover", e => {
+        e.preventDefault();
+        zone.classList.add("drag-over");
+      });
+      zone.addEventListener("dragleave", () => {
+        zone.classList.remove("drag-over");
+      });
+      zone.addEventListener("drop", e => {
+        e.preventDefault();
+        zone.classList.remove("drag-over");
+        const name = e.dataTransfer.getData("text/plain");
+        const dragged = document.querySelector(".dragging");
+        if (dragged) {
+          zone.appendChild(dragged);
+          pickHistory.push({ parent: zone.id, el: dragged });
+        }
+      });
+    });
 
+    // Undo button
     function undoLastPick() {
-      if (pickHistory.length === 0) return; // nothing to undo
+      if (pickHistory.length === 0) return;
       const lastPick = pickHistory.pop();
-      playerList.appendChild(lastPick.li); // move back to available list
-      lastPick.li.onclick = () => draftPlayer(lastPick.li.textContent, lastPick.li);
-      currentIndex = teams.indexOf(lastPick.team); // restore turn
-      currentTeamSpan.textContent = teams[currentIndex];
+      playerList.appendChild(lastPick.el);
     }
   </script>
 </body>
