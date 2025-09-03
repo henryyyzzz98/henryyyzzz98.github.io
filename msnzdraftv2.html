@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>MSNZ Draft Planner</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+
+    body {
+      font-family: "Inter", sans-serif;
+      background: #f4f4f4;
+      text-align: center;
+    }
+    h1 {
+      margin: 20px 0;
+    }
+
+    /* Layout */
+    #draft-area {
+      display: flex;
+      justify-content: space-between;
+      margin: 20px;
+    }
+    #available {
+      flex: 1;
+      margin-right: 20px;
+    }
+    #teams {
+      flex: 2;
+    }
+
+    /* Player list */
+    #playerList {
+      list-style: none;
+      padding: 0;
+    }
+    .player {
+      display: flex;
+      align-items: center;
+      margin: 3px auto;
+      padding: 3px;
+      background: #acacac;
+      border-radius: 6px;
+      cursor: grab;
+      border: 1px solid #ccc;
+    }
+    .player-photo {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      margin-right: 10px;
+      object-fit: cover;
+      border: 2px solid #ccc;
+    }
+
+    /* Team rows (tierlist style) */
+    .team-row {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      border: 2px solid #333;
+      border-radius: 25px;
+      padding: 10px;
+      margin: 10px auto;
+      background: white;
+      min-height: 60px;
+      width: 60%;
+    }
+    .team-name {
+      font-weight: bold;
+      width: 70px;
+      margin-right: 10px;
+    }
+    .team-slot {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    /* Drag target highlighting */
+    .team-slot.drag-over {
+      border: 2px dashed #007bff;
+      background: #e9f5ff;
+    }
+
+    /* Buttons */
+    button {
+      margin: 10px;
+      padding: 8px 14px;
+      border: none;
+      border-radius: 6px;
+      background: #007bff;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+
+    /* Leaders */
+    .player.leader {
+      background: #ffeeba;
+      border: 2px solid #ff9800;
+      cursor: default;
+    }
+  </style>
+</head>
+<body>
+  <h1>MSNZ Draft Planner</h1>
+
+  <div id="draft-area">
+    <!-- Available players -->
+    <div id="available">
+      <h2>Available Members</h2>
+      <ul id="playerList"></ul>
+    </div>
+
+    <!-- Teams (tierlist format) -->
+    <div id="teams">
+      <h2>Teams</h2>
+      <div class="team-row">
+        <div class="team-name">Moon</div>
+        <ul id="team-Moon" class="team-slot"></ul>
+      </div>
+      <div class="team-row">
+        <div class="team-name">Sun</div>
+        <ul id="team-Sun" class="team-slot"></ul>
+      </div>
+      <div class="team-row">
+        <div class="team-name">Neptune</div>
+        <ul id="team-Neptune" class="team-slot"></ul>
+      </div>
+      <div class="team-row">
+        <div class="team-name">Zenith</div>
+        <ul id="team-Zenith" class="team-slot"></ul>
+      </div>
+    </div>
+  </div>
+
+  <button id="undoBtn">Undo Last Pick</button>
+  <button id="autoFillBtn">Auto Fill Leftovers</button>
+
+  <script>
+    // Player images
+    const profileImageUrl = {
+      SeoYeon: "https://static.cosmo.fans/uploads/member-profile/2025-05-01/S1.jpg",
+      HyeRin: "https://static.cosmo.fans/uploads/member-profile/2025-05-01/S2.jpg",
+      JiWoo: "https://static.cosmo.fans/uploads/member-profile/2025-05-01/S3.jpg",
+      ChaeYeon: "https://static.cosmo.fans/uploads/member-profile/2025-05-01/S4.jpg",
+      YooYeon: "https://static.cosmo.fans/uploads/member-profile/2025-05-01/S5.jpg",
+      SooMin: "https://static.cosmo.fans/uploads/member-profile/2025-05-01/S6.jpg",
+      NaKyoung: "https://static.cosmo.fans/uploads/member-profile/2025-05-01/S7.jpg",
+      YuBin: "https://static.cosmo.fans/uploads/member-profile/2025-05-01/S8.jpg",
+      Kaede: "https://static.cosmo.fans/uploads/member-profile/2025-05-01/S9.jpg",
+      DaHyun: "https://static.cosmo.fans/uploads/member-profile/2025-05-01/S10.jpg",
+      Kotone: "https://static.cosmo.fans/uploads/member-profile/2025-05-01/S11.jpg",
+      YeonJi: "https://static.cosmo.fans/uploads/member-profile/2025-05-01/S12.jpg",
+      Nien: "https://static.cosmo.fans/uploads/member-profile/2025-05-01/S13.jpg",
+      SoHyun: "https://static.cosmo.fans/uploads/member-profile/2025-05-01/S14.jpg",
+      Xinyu: "https://static.cosmo.fans/uploads/member-profile/2025-05-01/S15.jpg",
+      Mayu: "https://static.cosmo.fans/uploads/member-profile/2025-05-01/S16.jpg",
+      Lynn: "https://static.cosmo.fans/uploads/member-profile/2025-05-01/S17.jpg",
+      JooBin: "https://static.cosmo.fans/uploads/member-profile/2025-05-01/S18.jpg",
+      HaYeon: "https://static.cosmo.fans/uploads/member-profile/2025-05-01/S19.jpg",
+      ShiOn: "https://static.cosmo.fans/uploads/member-profile/2025-05-01/S20.jpg",
+      ChaeWon: "https://static.cosmo.fans/uploads/member-profile/2025-05-01/S21.jpg",
+      Sullin: "https://static.cosmo.fans/uploads/member-profile/2025-05-01/S22.jpg",
+      SeoAh: "https://static.cosmo.fans/uploads/member-profile/2025-05-01/S23.jpg",
+      JiYeon: "https://static.cosmo.fans/uploads/member-profile/2025-05-01/S24.jpg"
+    };
+
+    // Leaders
+    const leaders = {
+      Moon: "Sullin",
+      Sun: "Xinyu",
+      Neptune: "SeoYeon",
+      Zenith: "HaYeon"
+    };
+
+    let players = Object.keys(profileImageUrl).filter(
+      p => !Object.values(leaders).includes(p)
+    );
+
+    let history = [];
+    const availableList = document.getElementById("playerList");
+    const teamNames = ["Moon", "Sun", "Neptune", "Zenith"];
+
+    // Render available players
+    function renderAvailablePlayers() {
+      availableList.innerHTML = "";
+      players.forEach(p => {
+        const li = document.createElement("li");
+        li.className = "player";
+        li.draggable = true;
+        li.dataset.name = p;
+
+        const img = document.createElement("img");
+        img.src = profileImageUrl[p];
+        img.alt = p;
+        img.className = "player-photo";
+
+        const span = document.createElement("span");
+        span.textContent = p;
+
+        li.appendChild(img);
+        li.appendChild(span);
+
+        li.addEventListener("dragstart", e => {
+          e.dataTransfer.setData("text/plain", p);
+        });
+
+        availableList.appendChild(li);
+      });
+    }
+
+    // Add leaders to each team
+    function addLeaders() {
+      Object.entries(leaders).forEach(([team, leader]) => {
+        const slot = document.getElementById("team-" + team);
+        const li = document.createElement("li");
+        li.className = "player leader";
+        li.innerHTML = `<img src="${profileImageUrl[leader]}" class="player-photo"><span>${leader}</span>`;
+        slot.appendChild(li);
+      });
+    }
+
+    // Draft a player into a slot
+    function draftPlayer(player, slot) {
+      if (!players.includes(player)) return; // already drafted
+
+      const li = document.createElement("li");
+      li.className = "player";
+      li.innerHTML = `<img src="${profileImageUrl[player]}" class="player-photo"><span>${player}</span>`;
+
+      slot.appendChild(li);
+
+      history.push({ player, slot });
+
+      players = players.filter(p => p !== player);
+      renderAvailablePlayers();
+    }
+
+    // Setup drop zones
+    teamNames.forEach(team => {
+      const slot = document.getElementById("team-" + team);
+
+      slot.addEventListener("dragover", e => {
+        e.preventDefault();
+        slot.classList.add("drag-over");
+      });
+      slot.addEventListener("dragleave", () => slot.classList.remove("drag-over"));
+      slot.addEventListener("drop", e => {
+        e.preventDefault();
+        slot.classList.remove("drag-over");
+        const player = e.dataTransfer.getData("text/plain");
+        draftPlayer(player, slot);
+      });
+    });
+
+    // Undo button
+    document.getElementById("undoBtn").addEventListener("click", () => {
+      const last = history.pop();
+      if (!last) return;
+      const { player, slot } = last;
+
+      [...slot.children].forEach(child => {
+        if (child.textContent.includes(player)) child.remove();
+      });
+
+      players.push(player);
+      renderAvailablePlayers();
+    });
+
+    // Auto-fill remaining players
+    document.getElementById("autoFillBtn").addEventListener("click", () => {
+    let remaining = [...players];
+
+    // Shuffle remaining players
+    for (let i = remaining.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [remaining[i], remaining[j]] = [remaining[j], remaining[i]];
+    }
+
+    // Fill teams until each has 6 members (including leader)
+    let teamIndex = 0;
+    remaining.forEach(player => {
+        const teamName = teamNames[teamIndex];
+        const slot = document.getElementById("team-" + teamName);
+
+        if (slot.children.length < 6) {  // leader already counted
+        draftPlayer(player, slot);
+        }
+
+        // Move to next team
+        teamIndex = (teamIndex + 1) % teamNames.length;
+    });
+
+    // Remove drafted players from available list
+    players = players.filter(player => {
+        return !teamNames.some(team => 
+        document.getElementById("team-" + team).textContent.includes(player)
+        );
+    });
+    renderAvailablePlayers();
+    });
+
+    // Initialize
+    addLeaders();
+    renderAvailablePlayers();
+  </script>
+</body>
+</html>
