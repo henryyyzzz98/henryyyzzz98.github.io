@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>MSNZ Draft Planner</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f9f9f9; padding: 20px; }
+    h1, h2 { text-align: center; }
+    .container { display: flex; justify-content: space-around; margin-top: 20px; }
+    .team { border: 2px solid #333; border-radius: 10px; padding: 10px; width: 20%; background: white; }
+    .team h3 { text-align: center; margin-bottom: 10px; }
+    .leader { font-weight: bold; color: darkblue; list-style-type: "⭐ "; }
+    .player { cursor: pointer; padding: 5px; margin: 3px 0; border-bottom: 1px solid #ddd; }
+    .player:hover { background: #eee; }
+    #turn { text-align: center; margin: 20px; font-size: 18px; font-weight: bold; }
+    #controls { text-align: center; margin-top: 20px; }
+    button { padding: 8px 15px; margin: 5px; border: none; border-radius: 5px; cursor: pointer; }
+    button:hover { background: #ddd; }
+  </style>
+</head>
+<body>
+  <h1>MSNZ Draft Planner</h1>
+  <h2>Available Members</h2>
+  <ul id="playerList"></ul>
+
+  <div id="turn">Turn: <span id="currentTeam">Moon</span></div>
+
+  <div id="controls">
+    <button onclick="undoLastPick()">Undo Last Pick</button>
+  </div>
+
+  <div class="container">
+    <div class="team"><h3>Moon</h3><ul id="Moon"><li class="leader">Leader: Sullin</li></ul></div>
+    <div class="team"><h3>Sun</h3><ul id="Sun"><li class="leader">Leader: Xinyu</li></ul></div>
+    <div class="team"><h3>Neptune</h3><ul id="Neptune"><li class="leader">Leader: SeoYeon</li></ul></div>
+    <div class="team"><h3>Zenith</h3><ul id="Zenith"><li class="leader">Leader: HaYeon</li></ul></div>
+  </div>
+
+  <script>
+    // 20 players excluding leaders
+    const players = [
+      "HyeRin","JiWoo","ChaeYeon","YooYeon","SooMin",
+      "NaKyoung","YuBin","Kaede","DaHyun","Kotone",
+      "YeonJi","Nien","SoHyun","Mayu","Lynn",
+      "JooBin","ShiOn","ChaeWon","SeoAh","JiYeon"
+    ];
+
+    // Teams in draft order
+    const teams = ["Moon", "Sun", "Neptune", "Zenith"];
+    let currentIndex = 0; // track which team's turn it is
+    const pickHistory = []; // stack of past picks
+
+    const playerList = document.getElementById("playerList");
+    const currentTeamSpan = document.getElementById("currentTeam");
+
+    // Populate player list
+    players.forEach(p => {
+      const li = document.createElement("li");
+      li.textContent = p;
+      li.classList.add("player");
+      li.onclick = () => draftPlayer(p, li);
+      playerList.appendChild(li);
+    });
+
+    function draftPlayer(player, li) {
+      const team = teams[currentIndex];
+      document.getElementById(team).appendChild(li);
+      li.onclick = null; // prevent re-pick
+      pickHistory.push({ team, li }); // save history
+      nextTurn();
+    }
+
+    function nextTurn() {
+      currentIndex = (currentIndex + 1) % teams.length;
+      currentTeamSpan.textContent = teams[currentIndex];
+    }
+
+    function undoLastPick() {
+      if (pickHistory.length === 0) return; // nothing to undo
+      const lastPick = pickHistory.pop();
+      playerList.appendChild(lastPick.li); // move back to available list
+      lastPick.li.onclick = () => draftPlayer(lastPick.li.textContent, lastPick.li);
+      currentIndex = teams.indexOf(lastPick.team); // restore turn
+      currentTeamSpan.textContent = teams[currentIndex];
+    }
+  </script>
+</body>
+</html>
