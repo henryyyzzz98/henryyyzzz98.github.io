@@ -1,6 +1,7 @@
 let cards = [];
-let firstGroup = [];
+let basicGroup = [];
 let specialGroup = [];
+let unitGroup = [];
 let selectedCard = null;
 let selectedIndex = null;
 let hasConfirmed = false;
@@ -11,13 +12,14 @@ document.getElementById("try-again-btn").disabled = true; // Disable "Try Again"
 // Load card data from JSON file
 async function loadCards() {
     try {
-        const response = await fetch('json/divinecards.json'); // Load from JSON file
+        const response = await fetch('json/s25idntt.json'); // Load from JSON file
         const data = await response.json();
         cards = data;
 
         // Categorize cards
-        firstGroup = cards.filter(card => card.group === "First");
+        basicGroup = cards.filter(card => card.group === "Basic");
         specialGroup = cards.filter(card => card.group === "Special");
+        unitGroup = cards.filter(card => card.group === "Unit");
 
         // Generate a set of 16 cards based on probability rules
         generateRandomSet();
@@ -34,11 +36,15 @@ function getCombination() {
     let rand = Math.random(); // Generates a number between 0 and 1
 
     if (rand < 0.60) {
-        return { first: 14, special: 1, fail: 1 }; // 60% chance
+        return { basic: 14, special: 1, unit: 0, fail: 1 }; // 60% chance
     } else if (rand < 0.90) {
-        return { first: 14, special: 0, fail: 2 }; // 30% chance
+        return { basic: 14, special: 0, unit: 0, fail: 2 }; // 30% chance
+    } else if (rand < 0.98) {
+        return { basic: 14, special: 2, unit: 0, fail: 0 }; // 8% chance
+    } else if (rand < 0.99) {
+        return { basic: 14, special: 1, unit: 1, fail: 0 }; // 1% chance
     } else {
-        return { first: 14, special: 2, fail: 0 }; // 10% chance
+        return { basic: 14, special: 0, unit: 1, fail: 1 }; // 1% chance
     }
 }
 
@@ -49,11 +55,16 @@ function generateRandomSet() {
     let selectedCards = [];
 
     // Pick "First" group cards
-    selectedCards.push(...shuffleAndPick(firstGroup, selectedOption.first));
+    selectedCards.push(...shuffleAndPick(basicGroup, selectedOption.basic));
 
     // Pick "Special" group cards (if applicable)
     if (selectedOption.special > 0) {
         selectedCards.push(...shuffleAndPick(specialGroup, selectedOption.special));
+    }
+
+    // Pick "Premier" group cards (if applicable)
+    if (selectedOption.unit > 0) {
+        selectedCards.push(...shuffleAndPick(unitGroup, selectedOption.unit));
     }
 
     // Add "Fail" cards (if applicable)
