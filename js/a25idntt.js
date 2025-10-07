@@ -12,7 +12,7 @@ document.getElementById("try-again-btn").disabled = true; // Disable "Try Again"
 // Load card data from JSON file
 async function loadCards() {
     try {
-        const response = await fetch('json/s25idntt.json'); // Load from JSON file
+        const response = await fetch('json/a25idntt.json'); // Load from JSON file
         const data = await response.json();
         cards = data;
 
