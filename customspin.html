@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Custom Spin Simulator</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+
+        h1 {
+            text-shadow: none; /* Remove glow effect */
+            outline: none; /* Remove outline */
+            color: white; /* Set normal text color */
+            font-weight: 600; /* Ensure default weight */
+            font-size: 28px;
+        }
+        body {
+            font-family: "Inter", sans-serif;
+            text-align: center;
+            background-color: black;
+            color: white;
+            font-weight: 500;
+        }
+        p {
+            color: #AEB7BE
+        }
+        .container {
+            display: grid;
+            grid-template-columns: repeat(4, 90px);
+            gap: 10px;
+            justify-content: center;
+            /*margin-top: 20px;*/
+        }
+        .card {
+            width: 90px;
+            cursor: pointer;
+            position: relative;
+            border-radius: 5px;
+        }
+        .card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: none; /* Hidden until revealed */
+        }
+        .card .placeholder {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        .selected {
+            outline: 4px solid #6F2CFF; /* Highlight selected card */
+        }
+        .disabled {
+            pointer-events: none;
+            opacity: 0.9;
+        }
+        .get-tag {
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            background-color: #7647FF;
+            color: white;
+            font-size: 14px;
+            padding: 2px 8px;
+            border-radius: 8px;
+            z-index: 10;
+        }
+        .button-container {
+            margin-top: 10px;
+        }
+        .button-container {
+            display: flex;
+            justify-content: center; /* Centers buttons horizontally */
+            text-align: center;
+        }
+        button {
+            padding: 8px 16px;
+            font-size: 14px;
+            border: none;
+            cursor: pointer;
+            background-color: #6F2CFF;
+            color: white;
+            border-radius: 20px;
+            transition: 0.3s;
+            font-weight: 600;
+            font-family: "Inter", sans-serif;
+        }
+        button:hover {
+            background-color: #925FFF;
+        }
+
+        /* Specific Colors for Each Button */
+        #grey-btn {
+            background-color: #545A77;
+            color: white;
+        }
+
+        /* Hover Effects */
+        #grey-btn:hover {
+            background-color: #697195;
+            color: white;
+        }
+
+        /* Custom panel styling */
+        #custom-toggle-btn {
+            background-color: #333;
+            border: 1px solid #555;
+            margin-bottom: 10px;
+        }
+
+        #custom-toggle-btn:hover {
+            background-color: #444;
+        }
+
+        #custom-combination {
+            margin-bottom: 20px;
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 10px;
+            color: #fff;
+            max-width: 420px;
+            margin-left: auto;
+            margin-right: auto;
+            transition: all 0.3s ease-in-out;
+            overflow: hidden;
+        }
+
+        #custom-combination.hidden {
+            max-height: 0;
+            opacity: 0;
+            padding: 0;
+            margin: 0 auto 0;
+            pointer-events: none;
+        }
+
+        #custom-combination input[type="number"] {
+            width: 60px;
+            background: #222;
+            color: white;
+            border: 1px solid #333;
+            border-radius: 5px;
+            padding: 3px;
+            text-align: center;
+        }
+
+        #custom-combination h3 {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1 id="spinStatus">Custom Spin Simulator</h1>
+    <p id="spinResult">Select an Objekt</p>
+    
+    <!-- ⚙️ Toggle Button -->
+    <button id="custom-toggle-btn">⚙️ Customize Spin Settings</button>
+
+    <!-- 🧩 Customization Panel -->
+    <div id="custom-combination" class="hidden">
+        <h3>🎴 Customize Combination</h3>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+            <label>First: <input type="number" id="firstCount" value="12" min="0" max="16"></label>
+            <label>Special: <input type="number" id="specialCount" value="1" min="0" max="16"></label>
+            <label>Shop: <input type="number" id="shopCount" value="1" min="0" max="16"></label>
+            <label>Event: <input type="number" id="eventCount" value="1" min="0" max="16"></label>
+            <label>Premier: <input type="number" id="premierCount" value="0" min="0" max="16"></label>
+            <label>Fail: <input type="number" id="failCount" value="1" min="0" max="16"></label>
+        </div>
+
+        <div style="margin-top: 10px; font-weight: bold;">
+            Total Cards: <span id="totalCount">16</span>/16
+            <span id="totalStatus" style="margin-left: 8px; font-weight: bold;"></span>
+        </div>
+
+        <div style="margin-top: 10px;">
+            <label>
+                <input type="checkbox" id="useCustomCheckbox">
+                Use Custom Settings
+            </label>
+        </div>
+
+        <button id="apply-custom-btn" style="margin-top: 10px;">💾 Save Custom Combination</button>
+    </div>
+    
+    <div class="container" id="card-container"></div>
+    
+    <div class="button-container">
+        <button id="confirm-btn" onclick="revealCard()">Select</button>
+        <button id="reveal-all-btn" onclick="revealAll()" disabled>Reveal All</button>
+        <button id="try-again-btn" onclick="tryAgain()" disabled>Try Again</button>
+    </div>
+
+    <!-- Navigation Buttons -->
+    <div class="button-container">
+        <button id="grey-btn" onclick="location.href='index.html'">Home</button>
+    </div>
+
+    <!-- 📜 Custom Settings Script -->
+    <script>
+        let customCombination = null;
+        let useCustomSettings = false;
+
+        // Load saved settings and UI states
+        window.addEventListener("DOMContentLoaded", () => {
+            const savedCombo = localStorage.getItem("customCombination");
+            const savedUseCustom = localStorage.getItem("useCustomSettings") === "true";
+            const savedPanelState = localStorage.getItem("customPanelVisible") === "true";
+
+            if (savedCombo) {
+                customCombination = JSON.parse(savedCombo);
+                document.getElementById("firstCount").value = customCombination.first;
+                document.getElementById("specialCount").value = customCombination.special;
+                document.getElementById("shopCount").value = customCombination.shop;
+                document.getElementById("eventCount").value = customCombination.event;
+                document.getElementById("premierCount").value = customCombination.premier;
+                document.getElementById("failCount").value = customCombination.fail;
+            }
+
+            document.getElementById("useCustomCheckbox").checked = savedUseCustom;
+            useCustomSettings = savedUseCustom;
+
+            // Restore panel visibility
+            const panel = document.getElementById("custom-combination");
+            if (savedPanelState) {
+                panel.classList.remove("hidden");
+            }
+
+            updateTotalDisplay();
+        });
+
+        // Live total tracker
+        const inputIds = ["firstCount", "specialCount", "shopCount", "eventCount", "premierCount", "failCount"];
+        inputIds.forEach(id => {
+            document.getElementById(id).addEventListener("input", updateTotalDisplay);
+        });
+
+        function updateTotalDisplay() {
+            const total = inputIds.reduce((sum, id) => sum + (parseInt(document.getElementById(id).value) || 0), 0);
+            const totalCount = document.getElementById("totalCount");
+            const totalStatus = document.getElementById("totalStatus");
+
+            totalCount.textContent = total;
+
+            if (total === 16) {
+                totalStatus.textContent = "✅ Perfect!";
+                totalStatus.style.color = "#00ff88";
+            } else if (total < 16) {
+                totalStatus.textContent = "⬇️ Add more";
+                totalStatus.style.color = "#ffaa00";
+            } else {
+                totalStatus.textContent = "⬆️ Too many!";
+                totalStatus.style.color = "#ff5555";
+            }
+        }
+
+        document.getElementById("apply-custom-btn").addEventListener("click", () => {
+            const combo = {
+                first: parseInt(document.getElementById("firstCount").value) || 0,
+                special: parseInt(document.getElementById("specialCount").value) || 0,
+                shop: parseInt(document.getElementById("shopCount").value) || 0,
+                event: parseInt(document.getElementById("eventCount").value) || 0,
+                premier: parseInt(document.getElementById("premierCount").value) || 0,
+                fail: parseInt(document.getElementById("failCount").value) || 0
+            };
+
+            const total = Object.values(combo).reduce((a, b) => a + b, 0);
+            if (total !== 16) {
+                alert(`⚠️ The total must equal 16 cards (currently ${total}).`);
+                return;
+            }
+
+            customCombination = combo;
+            useCustomSettings = document.getElementById("useCustomCheckbox").checked;
+
+            localStorage.setItem("customCombination", JSON.stringify(combo));
+            localStorage.setItem("useCustomSettings", useCustomSettings);
+
+            updateTotalDisplay();
+            alert("✅ Custom combination saved and applied!");
+        });
+
+        // 🔁 Toggle visibility of the custom panel
+        document.getElementById("custom-toggle-btn").addEventListener("click", () => {
+            const panel = document.getElementById("custom-combination");
+            panel.classList.toggle("hidden");
+
+            const isVisible = !panel.classList.contains("hidden");
+            localStorage.setItem("customPanelVisible", isVisible);
+        });
+    </script>
+
+    <script src="js/customspin.js"></script>
+</body>
+</html>
