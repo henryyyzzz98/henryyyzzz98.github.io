@@ -94,7 +94,7 @@ function generateRandomSet() {
 
     // Validate total
     if (selectedCards.length !== 16) {
-        alert(`⚠️ Invalid total card count (${selectedCards.length}). Must equal 16.`);
+        alert(`⚠️ Invalid total objekt count (${selectedCards.length}). Must equal 16.`);
         return;
     }
 

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Custom Spin Simulator</title>
+    <title>Your Spin Simulator</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
 
@@ -151,7 +151,7 @@
     </style>
 </head>
 <body>
-    <h1 id="spinStatus">Custom Spin Simulator</h1>
+    <h1 id="spinStatus">Your Spin Simulator</h1>
     <p id="spinResult">Customize your combination or select an objekt :)</p>
     
     <!-- ⚙️ Toggle Button -->
@@ -162,16 +162,16 @@
         <h3>🎴 Customize Combination</h3>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
-            <label>First: <input type="number" id="firstCount" value="12" min="0" max="16"></label>
-            <label>Special: <input type="number" id="specialCount" value="1" min="0" max="16"></label>
-            <label>Shop: <input type="number" id="shopCount" value="1" min="0" max="16"></label>
-            <label>Event: <input type="number" id="eventCount" value="1" min="0" max="16"></label>
-            <label>Premier: <input type="number" id="premierCount" value="0" min="0" max="16"></label>
+            <label>FCO: <input type="number" id="firstCount" value="12" min="0" max="16"></label>
+            <label>SCO: <input type="number" id="specialCount" value="1" min="0" max="16"></label>
+            <label>Shop DCO: <input type="number" id="shopCount" value="1" min="0" max="16"></label>
+            <label>Event DCO: <input type="number" id="eventCount" value="1" min="0" max="16"></label>
+            <label>PCO: <input type="number" id="premierCount" value="0" min="0" max="16"></label>
             <label>Fail: <input type="number" id="failCount" value="1" min="0" max="16"></label>
         </div>
 
         <div style="margin-top: 10px; font-weight: bold;">
-            Total Cards: <span id="totalCount">16</span>/16
+            Total Objekts: <span id="totalCount">16</span>/16
             <span id="totalStatus" style="margin-left: 8px; font-weight: bold;"></span>
         </div>
 
@@ -265,7 +265,7 @@
 
             const total = Object.values(combo).reduce((a, b) => a + b, 0);
             if (total !== 16) {
-                alert(`⚠️ The total must equal 16 cards (currently ${total}).`);
+                alert(`⚠️ The total must equal 16 objekts (currently ${total}).`);
                 return;
             }
 
