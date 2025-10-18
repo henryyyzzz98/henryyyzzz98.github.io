@@ -11,18 +11,27 @@ let hasConfirmed = false;
 document.getElementById("reveal-all-btn").disabled = true;
 document.getElementById("try-again-btn").disabled = true;
 
-// Load saved settings from localStorage
+// 🧠 Load saved settings
 let customCombination = JSON.parse(localStorage.getItem("customCombination") || "null");
 let useCustomSettings = localStorage.getItem("useCustomSettings") === "true";
 
-// Load card data from JSON file
+// 🧠 Load member filter
+let useMemberFilter = localStorage.getItem("useMemberFilter") === "true";
+let selectedMembers = JSON.parse(localStorage.getItem("selectedMembers") || "[]");
+
+// 🧩 Load all cards
 async function loadCards() {
     try {
-        const response = await fetch("json/allcards.json");
+        const response = await fetch("json/allcustom.json");
         const data = await response.json();
         cards = data;
 
-        // Categorize cards
+        // Apply member filter if enabled
+        if (useMemberFilter && selectedMembers.length > 0) {
+            cards = cards.filter(card => selectedMembers.includes(card.member));
+        }
+
+        // Categorize
         firstGroup = cards.filter(card => card.group === "First");
         specialGroup = cards.filter(card => card.group === "Special");
         shopGroup = cards.filter(card => card.group === "Shop");
@@ -37,7 +46,7 @@ async function loadCards() {
     }
 }
 
-// Weighted default combination
+// ⚙️ Weighted default combination
 function getCombination() {
     if (useCustomSettings && customCombination) {
         return customCombination;
@@ -52,14 +61,20 @@ function getCombination() {
     else return { first: 12, special: 0, shop: 0, event: 2, premier: 1, fail: 1 };
 }
 
+// 🎴 Generate cards based on filters and combination
 function generateRandomSet() {
     const useCustom = localStorage.getItem("useCustomSettings") === "true";
     const savedCombo = JSON.parse(localStorage.getItem("customCombination") || "null");
-    const selectedOption = (useCustom && savedCombo) ? savedCombo : getCombination();
+    let selectedOption = (useCustom && savedCombo) ? savedCombo : getCombination();
 
     if (!selectedOption) {
         alert("Invalid settings — reverting to default combination.");
         return;
+    }
+
+    // ✅ Enforce Premier limit if one member selected
+    if (useMemberFilter && selectedMembers.length === 1 && selectedOption.premier > 2) {
+        selectedOption.premier = 2;
     }
 
     let selectedCards = [];
@@ -94,7 +109,7 @@ function generateRandomSet() {
 
     // Validate total
     if (selectedCards.length !== 16) {
-        alert(`⚠️ Invalid total objekt count (${selectedCards.length}). Must equal 16.`);
+        alert("⚠️ Invalid total object count (" + selectedCards.length + "). Must equal 16.");
         return;
     }
 
@@ -102,6 +117,7 @@ function generateRandomSet() {
     cards = selectedCards;
 }
 
+// 🔀 Utility functions
 function shuffleAndPick(array, count) {
     let shuffled = [...array];
     shuffleArray(shuffled);
@@ -115,6 +131,7 @@ function shuffleArray(array) {
     }
 }
 
+// 🖼️ Display cards
 function displayCards() {
     const container = document.getElementById("card-container");
     container.innerHTML = "";
@@ -141,6 +158,7 @@ function displayCards() {
     });
 }
 
+// 🎯 Select a card
 function selectCard(index) {
     if (hasConfirmed) return;
     document.querySelectorAll(".card").forEach(card => card.classList.remove("selected"));
@@ -149,6 +167,7 @@ function selectCard(index) {
     document.querySelectorAll(".card")[index].classList.add("selected");
 }
 
+// 🎁 Reveal the selected card
 function revealCard() {
     document.getElementById("reveal-all-btn").disabled = false;
     document.getElementById("confirm-btn").disabled = true;
@@ -180,6 +199,7 @@ function revealCard() {
     document.querySelectorAll(".card").forEach(card => card.classList.add("disabled"));
 }
 
+// 👀 Reveal all cards
 function revealAll() {
     document.getElementById("confirm-btn").disabled = true;
     document.querySelectorAll(".card").forEach(card => {
@@ -188,6 +208,7 @@ function revealAll() {
     });
 }
 
+// 🔁 Try again (reload)
 function tryAgain() {
     location.reload();
 }
