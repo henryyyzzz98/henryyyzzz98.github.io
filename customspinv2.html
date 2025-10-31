@@ -1,52 +1,175 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Collection Only Spin</title>
-<style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Collection Only Spin</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
 
-    body {
-        font-family: "Inter", sans-serif;
-        background-color: black;
-        color: white;
-        text-align: center;
-        font-weight: 500;
-    }
+        h1 {
+            text-shadow: none; /* Remove glow effect */
+            outline: none; /* Remove outline */
+            color: white; /* Set normal text color */
+            font-weight: 600; /* Ensure default weight */
+            font-size: 28px;
+        }
+
+        body {
+            font-family: "Inter", sans-serif;
+            text-align: center;
+            background-color: black;
+            color: white;
+            font-weight: 500;
+        }
+
+        p {
+            color: #AEB7BE
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: repeat(4, 90px);
+            gap: 10px;
+            justify-content: center;
+            margin-top: 12px;
+        }
+
+        .card {
+            width: 90px;
+            cursor: pointer;
+            position: relative;
+            border-radius: 5px;
+        }
+
+        .card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: none;
+        }
+
+        .card .placeholder {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .selected {
+            outline: 4px solid #6F2CFF;
+        }
+
+        .disabled {
+            pointer-events: none;
+            opacity: 0.9;
+        }
+
+        .get-tag {
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            background-color: #7647FF;
+            color: white;
+            font-size: 14px;
+            padding: 2px 8px;
+            border-radius: 8px;
+            z-index: 10;
+        }
+
+        .button-container {
+            margin-top: 10px;
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: center;
+            text-align: center;
+        }
+
+        button {
+            padding: 8px 16px;
+            font-size: 14px;
+            border: none;
+            cursor: pointer;
+            background-color: #6F2CFF;
+            color: white;
+            border-radius: 20px;
+            transition: 0.3s;
+            font-weight: 600;
+            font-family: "Inter", sans-serif;
+        }
+
+        button:hover {
+            background-color: #925FFF;
+        }
+
+        .collection-tab { 
+            padding:5px 10px; 
+            margin:2px; 
+            border-radius:6px; 
+            border:1px solid #444; 
+            background:#222; 
+            color:white; 
+            cursor:pointer; 
+            font-weight:600; 
+            transition:0.2s;
+            font-family: "Inter", sans-serif; 
+        }
+        
+        .collection-tab.active { 
+            background:#6F2CFF; 
+            border-color:#6F2CFF;
+            font-family: "Inter", sans-serif; 
+        }
+        
+        .collection-btn { 
+            padding:5px 8px; 
+            margin:2px; 
+            border-radius:6px; 
+            border:1px solid #555; 
+            background:#333; 
+            color:white; 
+            cursor:pointer; 
+            font-size:13px; 
+            transition:0.2s;
+            font-family: "Inter", sans-serif; 
+        }
     
-    h1 { font-weight: 600; font-size: 28px; }
-    p { color: #AEB7BE; }
+        .collection-btn.selected { 
+            background:#6F2CFF; 
+        }
+        
+        #collectionGrid, #collectionTabs { 
+            display:flex; 
+            flex-wrap:wrap; 
+            justify-content:center; 
+            margin-top:10px; 
+            gap:4px; 
+        }
 
-    .container { display: grid; grid-template-columns: repeat(4,90px); gap:10px; justify-content:center; margin-top:15px;}
-    .card { width:90px; cursor:pointer; position:relative; border-radius:5px; }
-    .card img { width:100%; height:100%; object-fit:cover; display:none; }
-    .card .placeholder { display:block; }
-    .selected { outline:4px solid #6F2CFF; }
-    .disabled { pointer-events:none; opacity:0.9; }
-    .get-tag { position:absolute; top:6px; left:6px; background-color:#7647FF; color:white; font-size:14px; padding:2px 8px; border-radius:8px; z-index:10; }
+        .button-container { 
+            margin-top:15px; 
+            display:flex; 
+            justify-content:center; 
+            gap:6px; 
+        }
+        
+        #saveCollectionBtn { 
+            background:#6F2CFF; 
+            color:white; 
+        }
 
-    button { padding:8px 16px; font-size:14px; border:none; cursor:pointer; border-radius:20px; font-weight:600; transition:0.3s;}
-    button:hover { background-color:#925FFF; }
-    .collection-tab { padding:5px 10px; margin:2px; border-radius:6px; border:1px solid #444; background:#222; color:white; cursor:pointer; font-weight:600; transition:0.2s;font-family: "Inter", sans-serif; }
-    .collection-tab.active { background:#6F2CFF; border-color:#6F2CFF;font-family: "Inter", sans-serif; }
-    .collection-btn { padding:5px 8px; margin:2px; border-radius:6px; border:1px solid #555; background:#333; color:white; cursor:pointer; font-size:13px; transition:0.2s;font-family: "Inter", sans-serif; }
-    .collection-btn.selected { background:#6F2CFF; }
-    #collectionGrid, #collectionTabs { display:flex; flex-wrap:wrap; justify-content:center; margin-top:10px; gap:4px; }
-
-    .button-container { margin-top:15px; display:flex; justify-content:center; gap:6px; }
-    #saveCollectionBtn { background:#6F2CFF; color:white; }
-
-    #collectionsContainer {
-        margin-top: 10px;
-        transition: max-height 0.3s ease, opacity 0.3s ease;
-        overflow: hidden;
-    }
-</style>
+        #collectionsContainer {
+            margin-top: 10px;
+            transition: max-height 0.3s ease, opacity 0.3s ease;
+            overflow: hidden;
+        }
+    </style>
 </head>
 <body>
     <h1 id="spinStatus">Customizable Spin</h1>
-    <p id="spinResult">Select collections to generate cards.</p>
+    <p id="spinResult">Select collections below to generate spin.</p>
 
     <!-- Toggle Button -->
     <div class="button-container" style="margin-top:10px;">
@@ -84,238 +207,6 @@
         <button id="grey-btn" onclick="location.href='index.html'">Home</button>
     </div>
 
-    <script>
-        let allCards = [];
-        let cards = [];
-        let selectedCard = null;
-        let selectedIndex = null;
-        let hasConfirmed = false;
-        let selectedCollections = JSON.parse(localStorage.getItem("selectedCollections") || "[]");
-
-        document.getElementById("reveal-all-btn").disabled = true;
-        document.getElementById("try-again-btn").disabled = true;
-
-        const toggleBtn = document.getElementById("toggleCollectionsBtn");
-        const collectionsContainer = document.getElementById("collectionsContainer");
-
-        toggleBtn.addEventListener("click", () => {
-            const isVisible = collectionsContainer.style.display === "block";
-            collectionsContainer.style.display = isVisible ? "none" : "block";
-            toggleBtn.textContent = isVisible ? "📂 Show Collections" : "📂 Hide Collections";
-        });
-
-        // --- Load collections and render tabs ---
-        async function loadCollections() {
-            try {
-                const res = await fetch("json/allcustomv2.json");
-                allCards = await res.json();
-
-                // Extract unique collections
-                const collections = [...new Set(allCards.map(c=>c.collection).filter(Boolean))];
-
-                // Group by prefix
-                const groups = {};
-                collections.forEach(c=>{
-                    const prefix = c.startsWith("AA") ? "AA" : c[0].toUpperCase();
-                    if(!groups[prefix]) groups[prefix] = [];
-                    groups[prefix].push(c);
-                });
-
-                // Render tabs
-                const tabContainer = document.getElementById("collectionTabs");
-                tabContainer.innerHTML = "";
-                Object.keys(groups).forEach(prefix => {
-                    const tab = document.createElement("button");
-                    tab.textContent = prefix;
-                    tab.className = "collection-tab";
-                    tab.onclick = ()=>{renderCollectionGroup(prefix, groups[prefix]);};
-                    tabContainer.appendChild(tab);
-                });
-
-                // Auto click first tab
-                const firstKey = Object.keys(groups)[0];
-                if(firstKey) renderCollectionGroup(firstKey, groups[firstKey]);
-
-            } catch(e){ console.error(e); }
-        }
-
-        // --- Render collection buttons for a tab ---
-        function renderCollectionGroup(prefix, collectionList){
-            const grid = document.getElementById("collectionGrid");
-            grid.innerHTML = "";
-
-            collectionList.forEach(c=>{
-                const btn = document.createElement("button");
-                btn.textContent = c;
-                btn.className = "collection-btn" + (selectedCollections.includes(c)?" selected":"");
-                btn.onclick = ()=>{ btn.classList.toggle("selected"); };
-                grid.appendChild(btn);
-            });
-
-            // Highlight active tab if any selected in tab
-            updateTabHighlights();
-        }
-
-        function updateSelectedCollectionsMessage() {
-            const msgBar = document.getElementById("selectedCollectionsMsg");
-            if(selectedCollections.length === 0){
-                msgBar.textContent = "No collections selected.";
-            } else {
-                msgBar.textContent = "Selected collections: " + selectedCollections.join(", ");
-            }
-        }
-
-        // --- Update tab highlights ---
-        function updateTabHighlights(){
-            const tabs = document.querySelectorAll(".collection-tab");
-            tabs.forEach(tab=>{
-                const prefix = tab.textContent;
-                const collectionButtons = Array.from(document.querySelectorAll(".collection-btn"))
-                    .filter(btn => btn.textContent.startsWith(prefix));
-                const anySelected = collectionButtons.some(btn => btn.classList.contains("selected"));
-                tab.classList.toggle("active", anySelected);
-            });
-        }
-
-        // --- Save button ---
-        document.getElementById("saveCollectionBtn").addEventListener("click", ()=>{
-            const currentlySelected = Array.from(document.querySelectorAll(".collection-btn.selected"))
-                .map(btn => btn.textContent);
-
-            selectedCollections = currentlySelected;
-            localStorage.setItem("selectedCollections", JSON.stringify(selectedCollections));
-
-            generateRandomSet();
-            displayCards();
-            updateTabHighlights();
-            updateSelectedCollectionsMessage();
-            alert("✅ Collection selections saved!");
-            location.reload();
-        });
-
-        function shuffleAndPick(array, count) {
-            const shuffled = [...array];
-            shuffleArray(shuffled);  // shuffle the array first
-            return shuffled.slice(0, count);  // pick the first 'count' items
-        }
-
-        function shuffleArray(array) {
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
-            }
-        }
-
-        // --- Card generation ---
-        function generateRandomSet() {
-            if (!selectedCollections.length) {
-                cards = [];
-                return;
-            }
-
-            // Filter from allCards, not cards
-            const filteredCards = allCards.filter(c => 
-                c.collection && selectedCollections.some(sel => sel.trim().toLowerCase() === c.collection.trim().toLowerCase())
-            );
-
-            let selectedCards = [];
-
-            if (filteredCards.length >= 16) {
-                selectedCards = shuffleAndPick(filteredCards, 16);
-            } else {
-                selectedCards = [...filteredCards];
-                const missing = 16 - selectedCards.length;
-                for (let i = 0; i < missing; i++) {
-                    selectedCards.push({ name: "Fail", group: "Fail", image: "images/fail.png" });
-                }
-            }
-
-            shuffleArray(selectedCards); // Shuffle Fail cards too
-            cards = selectedCards;
-
-            console.log("Selected Collections:", selectedCollections);
-            console.log("Available Collections in JSON:", [...new Set(cards.map(c => c.collection))]);
-        }
-
-        function shuffleArray(arr){ for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; } }
-
-        function displayCards(){
-            const container = document.getElementById("card-container");
-            container.innerHTML = "";
-            cards.forEach((card,i)=>{
-                const div = document.createElement("div");
-                div.className="card"; div.onclick=()=>selectCard(i);
-
-                const placeholder = document.createElement("img");
-                placeholder.src="images/spincard.png"; placeholder.className="placeholder";
-
-                const img = document.createElement("img");
-                img.src=card.image; img.alt=card.name; img.className="card-image";
-
-                div.appendChild(placeholder); div.appendChild(img);
-                container.appendChild(div);
-            });
-        }
-
-        // --- Card selection ---
-        function selectCard(i){
-            if(hasConfirmed) return;
-            document.querySelectorAll(".card").forEach(c=>c.classList.remove("selected"));
-            selectedCard = cards[i]; selectedIndex = i;
-            document.querySelectorAll(".card")[i].classList.add("selected");
-        }
-
-        // --- Reveal selected card ---
-        function revealCard(){
-            if(selectedIndex===null) return;
-            hasConfirmed = true;
-            document.getElementById("reveal-all-btn").disabled=false;
-            document.getElementById("confirm-btn").disabled=true;
-            document.getElementById("try-again-btn").disabled=false;
-
-            const el = document.querySelectorAll(".card")[selectedIndex];
-            el.querySelector(".placeholder").style.display="none";
-            el.querySelector(".card-image").style.display="block";
-            const tag = document.createElement("div"); tag.className="get-tag"; tag.textContent="Get";
-            el.appendChild(tag);
-
-            const spinStatus = document.getElementById("spinStatus");
-            const spinResult = document.getElementById("spinResult");
-            if(selectedCard.name==="Fail"){ spinStatus.textContent="Spin failed"; spinResult.textContent="Please try again next time."; }
-            else { spinStatus.textContent="Spin successful!"; spinResult.innerHTML=`Chosen <span style="color:#B09EF8;">${selectedCard.name}</span> Objekt.`; }
-
-            document.querySelectorAll(".card").forEach(c=>c.classList.add("disabled"));
-        }
-
-        function revealAll(){
-            document.getElementById("confirm-btn").disabled=true;
-            document.querySelectorAll(".card").forEach(c=>{
-                c.querySelector(".placeholder").style.display="none";
-                c.querySelector(".card-image").style.display="block";
-            });
-        }
-
-        function tryAgain() {
-            selectedCard = null;
-            selectedIndex = null;
-            hasConfirmed = false;
-            document.getElementById("reveal-all-btn").disabled = true;
-            document.getElementById("confirm-btn").disabled = false;
-            document.getElementById("try-again-btn").disabled = true;
-            generateRandomSet(); // regenerate random cards
-            displayCards();      // redraw the grid
-            location.reload();
-        }
-
-        window.onload = async () => {
-            await loadCollections();
-            // Only generate grid if saved selections exist
-            if(selectedCollections.length > 0){
-                generateRandomSet();
-                displayCards();
-            }
-            updateSelectedCollectionsMessage();
-        };
-    </script>
+    <script src="js/customspinv2.js"></script>
 </body>
 </html>
