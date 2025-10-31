@@ -20,7 +20,7 @@ toggleBtn.textContent = isVisible ? "📂 Show Collections" : "📂 Hide Collect
 // --- Load collections & render tabs ---
 async function loadCollections() {
     try {
-        const res = await fetch("json/allcustomv2.json");
+        const res = await fetch("json/allcards.json");
         allCards = await res.json();
 
         const collections = [...new Set(allCards.map(c => c.collection).filter(Boolean))];
