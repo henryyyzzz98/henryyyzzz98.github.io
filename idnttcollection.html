@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>idntt Collections Spin</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+
+        h1 {
+            text-shadow: none; /* Remove glow effect */
+            outline: none; /* Remove outline */
+            color: white; /* Set normal text color */
+            font-weight: 600; /* Ensure default weight */
+            font-size: 28px;
+        }
+
+        body {
+            font-family: "Inter", sans-serif;
+            text-align: center;
+            background-color: black;
+            color: white;
+            font-weight: 500;
+        }
+
+        p {
+            color: #AEB7BE
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: repeat(4, 90px);
+            gap: 10px;
+            justify-content: center;
+            margin-top: 12px;
+        }
+
+        .card {
+            width: 90px;
+            cursor: pointer;
+            position: relative;
+            border-radius: 5px;
+        }
+
+        .card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: none;
+        }
+
+        .card .placeholder {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .selected {
+            outline: 4px solid #6F2CFF;
+        }
+
+        .disabled {
+            pointer-events: none;
+            opacity: 0.9;
+        }
+
+        .get-tag {
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            background-color: #7647FF;
+            color: white;
+            font-size: 14px;
+            padding: 2px 8px;
+            border-radius: 8px;
+            z-index: 10;
+        }
+
+        .button-container {
+            margin-top: 10px;
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: center;
+            text-align: center;
+        }
+
+        button {
+            padding: 8px 16px;
+            font-size: 14px;
+            border: none;
+            cursor: pointer;
+            background-color: #6F2CFF;
+            color: white;
+            border-radius: 20px;
+            transition: 0.3s;
+            font-weight: 600;
+            font-family: "Inter", sans-serif;
+        }
+
+        button:hover {
+            background-color: #925FFF;
+        }
+
+        .collection-tab { 
+            padding:5px 10px; 
+            margin:2px; 
+            border-radius:6px; 
+            border:1px solid #444; 
+            background:#222; 
+            color:white; 
+            cursor:pointer; 
+            font-weight:600; 
+            transition:0.2s;
+            font-family: "Inter", sans-serif; 
+        }
+        
+        .collection-tab.active { 
+            background:#6F2CFF; 
+            border-color:#6F2CFF;
+            font-family: "Inter", sans-serif; 
+        }
+        
+        .collection-btn { 
+            padding:5px 8px; 
+            margin:2px; 
+            border-radius:6px; 
+            border:1px solid #555; 
+            background:#333; 
+            color:white; 
+            cursor:pointer; 
+            font-size:13px; 
+            transition:0.2s;
+            font-family: "Inter", sans-serif; 
+        }
+    
+        .collection-btn.selected { 
+            background:#6F2CFF; 
+        }
+        
+        #collectionGrid, #collectionTabs { 
+            display:flex; 
+            flex-wrap:wrap; 
+            justify-content:center; 
+            margin-top:10px; 
+            gap:4px; 
+        }
+
+        .button-container { 
+            margin-top:15px; 
+            display:flex; 
+            justify-content:center; 
+            gap:6px; 
+        }
+        
+        #saveCollectionBtn { 
+            background:#6F2CFF; 
+            color:white; 
+        }
+
+        #collectionsContainer {
+            margin-top: 10px;
+            transition: max-height 0.3s ease, opacity 0.3s ease;
+            overflow: hidden;
+        }
+
+        #grey-btn {
+            background-color: #545A77;
+            color: white;
+        }
+
+        #grey-btn:hover {
+            background-color: #697195;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1 id="spinStatus">idntt Collections Spin</h1>
+    <p id="spinResult">Select collections below to generate spin.</p>
+
+    <!-- Toggle Button -->
+    <div class="button-container" style="margin-top:10px;">
+    <button id="toggleCollectionsBtn">📂 Show Collections</button>
+    </div>
+
+    <!-- Collapsible Collections Container -->
+    <div id="collectionsContainer" style="display:none;">
+    <div id="collectionTabs"></div>
+    <div id="collectionGrid"></div>
+    <div class="button-container">
+        <button id="saveCollectionBtn">💾 Save Selections</button>
+    </div>
+    </div>
+
+    <!-- Selected Collections Message -->
+    <div id="selectedCollectionsMsg" style="
+        margin-top: 10px;
+        font-size: 14px;
+        color: #B09EF8;
+        min-height: 18px;
+    "></div>
+
+    <!-- Card Grid -->
+    <div class="container" id="card-container"></div>
+
+    <!-- Control Buttons -->
+    <div class="button-container">
+        <button id="confirm-btn" onclick="revealCard()">Select</button>
+        <button id="reveal-all-btn" onclick="revealAll()" disabled>Reveal All</button>
+        <button id="try-again-btn" onclick="tryAgain()" disabled>Try Again</button>
+    </div>
+
+    <div class="button-container">
+        <button id="grey-btn" onclick="location.href='index.html'">Home</button>
+    </div>
+
+    <script src="js/idnttcollection.js"></script>
+</body>
+</html>

@@ -22,7 +22,7 @@ let selectedMembers = JSON.parse(localStorage.getItem("selectedMembers") || "[]"
 // 🧩 Load all cards
 async function loadCards() {
     try {
-        const response = await fetch("json/allcards.json");
+        const response = await fetch("json/alltriples.json");
         const data = await response.json();
         cards = data;
 

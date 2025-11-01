@@ -21,7 +21,7 @@ toggleBtn.textContent = isVisible ? "📂 Show Collections" : "📂 Hide Collect
 // --- Load collections ---
 async function loadCollections() {
     try {
-        const res = await fetch("json/allcards.json");
+        const res = await fetch("json/alltriples.json");
         allCards = await res.json();
 
         // Group collections by first letter
