@@ -110,6 +110,7 @@ function buildTable1Grid(rows, page = 0) {
     // Video ID in column H
     const videoId = c[7]?.v || "";
 
+    const colA = c[0]?.f || c[0]?.v || "";
     const colB = c[1]?.f || c[1]?.v || "";
     const colC = c[2]?.f || c[2]?.v || "";
     const colD = c[3]?.f || c[3]?.v || "";
@@ -154,7 +155,8 @@ function buildTable1Grid(rows, page = 0) {
 
         modalInfoPanel.innerHTML = `
           <h2>${colF}</h2>
-          ${colB} - ${colC}
+          ${colB} - ${colC}<br>
+          <small>Live Session ID: ${colA}</small>
         `;
       });
     }
