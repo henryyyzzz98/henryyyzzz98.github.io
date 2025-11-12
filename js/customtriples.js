@@ -73,8 +73,8 @@ function generateRandomSet() {
     }
 
     // ✅ Enforce Premier limit if one member selected
-    if (useMemberFilter && selectedMembers.length === 1 && selectedOption.premier > 2) {
-        selectedOption.premier = 2;
+    if (useMemberFilter && selectedMembers.length === 1 && selectedOption.premier > 3) {
+        selectedOption.premier = 3;
     }
 
     let selectedCards = [];

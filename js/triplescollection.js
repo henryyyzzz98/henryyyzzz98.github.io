@@ -27,10 +27,15 @@ async function loadCollections() {
         // Group collections by first letter
         const collections = [...new Set(allCards.map(c => c.collection).filter(Boolean))];
         const groups = {};
+
         collections.forEach(c => {
-        const prefix = c.startsWith("AA") ? "AA" : c[0].toUpperCase();
-        if (!groups[prefix]) groups[prefix] = [];
-        groups[prefix].push(c);
+            let prefix;
+            if (c.startsWith("AA")) prefix = "AA";
+            else if (c.startsWith("BB")) prefix = "BB";
+            else prefix = c[0].toUpperCase();
+
+            if (!groups[prefix]) groups[prefix] = [];
+            groups[prefix].push(c);
         });
 
         // Render tabs
@@ -95,11 +100,11 @@ function updateTabHighlights() {
     const tabs = document.querySelectorAll(".collection-tab");
     tabs.forEach(tab => {
         const prefix = tab.textContent;
-        // AA should not trigger A
         const anySelected = selectedCollections.some(c => {
-        if (prefix === "AA") return c.startsWith("AA");
-        // exclude AA from A check
-        return c.startsWith(prefix) && !c.startsWith("AA");
+            if (prefix === "AA") return c.startsWith("AA");
+            if (prefix === "BB") return c.startsWith("BB");
+            // exclude AA and BB from other prefix checks
+            return c.startsWith(prefix) && !c.startsWith("AA") && !c.startsWith("BB");
         });
         tab.classList.toggle("active", anySelected);
     });
