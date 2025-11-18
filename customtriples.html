@@ -64,10 +64,11 @@
             border-radius: 8px;
             z-index: 10;
         }
-        .button-container {
-            margin-top: 10px;
-            display: flex;
-            justify-content: center;
+        .button-container { 
+            margin-top:15px; 
+            display:flex; 
+            justify-content:center; 
+            gap:6px; 
         }
         button {
             padding: 8px 16px;
@@ -144,11 +145,9 @@
     <h1 id="spinStatus">Customizable Spin</h1>
     <p id="spinResult">Customize the way you like.</p>
 
-    <!-- ⚙️ Toggle Buttons -->
     <button id="custom-toggle-btn">⚙️ Customize Spin Settings</button>
     <button id="member-toggle-btn">👤 Member Filter Settings</button>
 
-    <!-- 🧩 Customization Panel -->
     <div id="custom-combination" class="hidden">
         <h3>🎴 Customize Combination</h3>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
@@ -169,7 +168,6 @@
         <button id="apply-custom-btn" style="margin-top: 10px;">💾 Save Custom Combination</button>
     </div>
 
-    <!-- 👤 Member Filter Panel -->
     <div id="member-filter" class="hidden">
         <h3>👤 Select Members</h3>
         <div class="member-grid" id="memberGrid"></div>
@@ -192,14 +190,12 @@
     </div>
 
     <script>
-        // ✅ Member list
         const members = [
             'SeoYeon', 'HyeRin', 'JiWoo', 'ChaeYeon', 'YooYeon', 'SooMin', 'NaKyoung', 'YuBin',
             'Kaede', 'DaHyun', 'Kotone', 'YeonJi', 'Nien', 'SoHyun', 'Xinyu', 'Mayu',
             'Lynn', 'JooBin', 'HaYeon', 'ShiOn', 'ChaeWon', 'Sullin', 'SeoAh', 'JiYeon'
         ];
 
-        // 🧠 Load saved settings
         window.addEventListener("DOMContentLoaded", () => {
             const savedCombo = localStorage.getItem("customCombination");
             const savedUseCustom = localStorage.getItem("useCustomSettings") === "true";
@@ -224,7 +220,6 @@
             updateTotalDisplay();
         });
 
-        // Generate member selection checkboxes
         function generateMemberGrid() {
             const grid = document.getElementById("memberGrid");
             const savedMembers = JSON.parse(localStorage.getItem("selectedMembers") || "[]");
@@ -244,7 +239,6 @@
             document.getElementById("useMemberFilterCheckbox").checked = useMemberFilter;
         }
 
-        // Update total counter
         const inputIds = ["firstCount", "specialCount", "shopCount", "eventCount", "premierCount", "failCount"];
         inputIds.forEach(id => {
             document.getElementById(id).addEventListener("input", updateTotalDisplay);
@@ -267,7 +261,6 @@
             }
         }
 
-        // 💾 Save Custom Combination
         document.getElementById("apply-custom-btn").addEventListener("click", () => {
             const combo = {
                 first: parseInt(document.getElementById("firstCount").value) || 0,
@@ -287,7 +280,7 @@
                 return;
             }
 
-            // ✅ PCO limit when only one member selected
+            
             if (useMemberFilter && selectedMembers.length === 1 && combo.premier > 3) {
                 alert("⚠️ Since only one member is selected, PCO cannot exceed 3.");
                 return;
@@ -299,7 +292,6 @@
             location.reload();
         });
 
-        // 💾 Save Member Filter
         document.getElementById("save-member-filter").addEventListener("click", () => {
             const selected = Array.from(document.querySelectorAll("#memberGrid input:checked")).map(i => i.value);
             localStorage.setItem("selectedMembers", JSON.stringify(selected));
@@ -308,12 +300,12 @@
             location.reload();
         });
 
-        // Toggle panels
         document.getElementById("custom-toggle-btn").addEventListener("click", () => {
             const panel = document.getElementById("custom-combination");
             panel.classList.toggle("hidden");
             localStorage.setItem("customPanelVisible", !panel.classList.contains("hidden"));
         });
+
         document.getElementById("member-toggle-btn").addEventListener("click", () => {
             const panel = document.getElementById("member-filter");
             panel.classList.toggle("hidden");

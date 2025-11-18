@@ -8,10 +8,10 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
 
         h1 {
-            text-shadow: none; /* Remove glow effect */
-            outline: none; /* Remove outline */
-            color: white; /* Set normal text color */
-            font-weight: 600; /* Ensure default weight */
+            text-shadow: none;
+            outline: none;
+            color: white;
+            font-weight: 600;
             font-size: 28px;
         }
 
@@ -181,12 +181,10 @@
     <h1 id="spinStatus">ARTMS Collections Spin</h1>
     <p id="spinResult">Select collections below to generate spin.</p>
 
-    <!-- Toggle Button -->
     <div class="button-container" style="margin-top:10px;">
     <button id="toggleCollectionsBtn">📂 Show Collections</button>
     </div>
 
-    <!-- Collapsible Collections Container -->
     <div id="collectionsContainer" style="display:none;">
     <div id="collectionTabs"></div>
     <div id="collectionGrid"></div>
@@ -195,7 +193,6 @@
     </div>
     </div>
 
-    <!-- Selected Collections Message -->
     <div id="selectedCollectionsMsg" style="
         margin-top: 10px;
         font-size: 14px;
@@ -203,10 +200,8 @@
         min-height: 18px;
     "></div>
 
-    <!-- Card Grid -->
     <div class="container" id="card-container"></div>
 
-    <!-- Control Buttons -->
     <div class="button-container">
         <button id="confirm-btn" onclick="revealCard()">Select</button>
         <button id="reveal-all-btn" onclick="revealAll()" disabled>Reveal All</button>

@@ -8,10 +8,10 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
 
         h1 {
-            text-shadow: none; /* Remove glow effect */
-            outline: none; /* Remove outline */
-            color: white; /* Set normal text color */
-            font-weight: 600; /* Ensure default weight */
+            text-shadow: none;
+            outline: none;
+            color: white;
+            font-weight: 600;
             font-size: 28px;
         }
         body {
@@ -41,7 +41,7 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
-            display: none; /* Hidden until revealed */
+            display: none;
         }
         .card .placeholder {
             width: 100%;
@@ -50,7 +50,7 @@
             display: block;
         }
         .selected {
-            outline: 4px solid #6F2CFF; /* Highlight selected card */
+            outline: 4px solid #6F2CFF;
         }
         .disabled {
             pointer-events: none;
@@ -67,13 +67,11 @@
             border-radius: 8px;
             z-index: 10;
         }
-        .button-container {
-            margin-top: 10px;
-        }
-        .button-container {
-            display: flex;
-            justify-content: center; /* Centers buttons horizontally */
-            text-align: center;
+        .button-container { 
+            margin-top:15px; 
+            display:flex; 
+            justify-content:center; 
+            gap:6px; 
         }
         button {
             padding: 8px 16px;
@@ -90,14 +88,10 @@
         button:hover {
             background-color: #925FFF;
         }
-
-        /* Specific Colors for Each Button */
         #ever-btn {
             background-color: #33ecfd;
             color: black;
         }
-
-        /* Hover Effects */
         #ever-btn:hover {
             background-color: #66F1FD;
         }
@@ -114,7 +108,6 @@
         <button id="try-again-btn" onclick="tryAgain()" disabled>Try Again</button>
     </div>
 
-    <!-- Navigation Buttons -->
     <div class="button-container">
         <button id="ever-btn" onclick="location.href='index.html'">Home</button>
     </div>
