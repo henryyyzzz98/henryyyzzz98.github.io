@@ -1,9 +1,9 @@
-let allCards = []; // Loaded from JSON
-let cards = []; // Current set of 16 cards
-let selectedCard = null; // Currently selected card
-let selectedIndex = null; // Index of selected card
-let hasConfirmed = false; // Whether user has confirmed selection
-let selectedCollections = JSON.parse(localStorage.getItem("selectedCollections") || "[]"); // Load from localStorage
+let allCards = [];
+let cards = [];
+let selectedCard = null;
+let selectedIndex = null;
+let hasConfirmed = false;
+let selectedCollections = JSON.parse(localStorage.getItem("selectedCollections") || "[]");
 
 // --- Initial button states ---
 document.getElementById("reveal-all-btn").disabled = true;
@@ -13,9 +13,9 @@ document.getElementById("try-again-btn").disabled = true;
 const toggleBtn = document.getElementById("toggleCollectionsBtn");
 const collectionsContainer = document.getElementById("collectionsContainer");
 toggleBtn.addEventListener("click", () => {
-const isVisible = collectionsContainer.style.display === "block";
-collectionsContainer.style.display = isVisible ? "none" : "block";
-toggleBtn.textContent = isVisible ? "📂 Show Collections" : "📂 Hide Collections";
+    const isVisible = collectionsContainer.style.display === "block";
+    collectionsContainer.style.display = isVisible ? "none" : "block";
+    toggleBtn.textContent = isVisible ? "📂 Show Collections" : "📂 Hide Collections";
 });
 
 // --- Load collections ---
@@ -24,7 +24,6 @@ async function loadCollections() {
         const res = await fetch("json/alltriples.json");
         allCards = await res.json();
 
-        // Group collections by first letter
         const collections = [...new Set(allCards.map(c => c.collection).filter(Boolean))];
         const groups = {};
 
@@ -38,18 +37,16 @@ async function loadCollections() {
             groups[prefix].push(c);
         });
 
-        // Render tabs
         const tabContainer = document.getElementById("collectionTabs");
         tabContainer.innerHTML = "";
         Object.keys(groups).forEach(prefix => {
-        const tab = document.createElement("button");
-        tab.textContent = prefix;
-        tab.className = "collection-tab";
-        tab.onclick = () => renderCollectionGroup(prefix, groups[prefix]);
-        tabContainer.appendChild(tab);
+            const tab = document.createElement("button");
+            tab.textContent = prefix;
+            tab.className = "collection-tab";
+            tab.onclick = () => renderCollectionGroup(prefix, groups[prefix]);
+            tabContainer.appendChild(tab);
         });
 
-        // Render first group by default
         const firstKey = Object.keys(groups)[0];
         if (firstKey) renderCollectionGroup(firstKey, groups[firstKey]);
     } catch (e) {
@@ -69,15 +66,15 @@ function renderCollectionGroup(prefix, collectionList) {
         if (selectedCollections.includes(c)) btn.classList.add("selected");
 
         btn.onclick = () => {
-        if (selectedCollections.includes(c)) {
-            selectedCollections = selectedCollections.filter(x => x !== c);
-            btn.classList.remove("selected");
-        } else {
-            selectedCollections.push(c);
-            btn.classList.add("selected");
-        }
-        updateTabHighlights();
-        updateSelectedCollectionsMessage();
+            if (selectedCollections.includes(c)) {
+                selectedCollections = selectedCollections.filter(x => x !== c);
+                btn.classList.remove("selected");
+            } else {
+                selectedCollections.push(c);
+                btn.classList.add("selected");
+            }
+            updateTabHighlights();
+            updateSelectedCollectionsMessage();
         };
         grid.appendChild(btn);
     });
@@ -115,8 +112,10 @@ function shuffleAndPick(array, count) {
     const shuffled = [...array];
     shuffleArray(shuffled);
     return shuffled.slice(0, count);
-    }
-    function shuffleArray(array) {
+}
+
+// --- Shuffle array helper ---
+function shuffleArray(array) {
     for (let i = array.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [array[i], array[j]] = [array[j], array[i]];
@@ -139,17 +138,28 @@ function generateRandomSet() {
     );
 
     let selectedCards = [];
+
     if (filteredCards.length >= 16) {
-        selectedCards = shuffleAndPick(filteredCards, 16);
+        const failCount = Math.floor(Math.random() * 2) + 1;
+        const normalCount = 16 - failCount;
+        const pickedNormal = shuffleAndPick(filteredCards, normalCount);
+        const failCards = Array.from({ length: failCount }, () => ({
+            name: "Fail",
+            group: "Fail",
+            image: "images/fail.png"
+        }));
+
+        selectedCards = shuffleAndPick([...pickedNormal, ...failCards], 16);
+
     } else {
         selectedCards = [...filteredCards];
         const missing = 16 - selectedCards.length;
         for (let i = 0; i < missing; i++) {
-        selectedCards.push({ name: "Fail", group: "Fail", image: "images/fail.png" });
+            selectedCards.push({ name: "Fail", group: "Fail", image: "images/fail.png" });
         }
     }
 
-    shuffleArray(selectedCards); // randomize fail card positions
+    shuffleArray(selectedCards);
     cards = selectedCards;
 }
 
@@ -167,13 +177,11 @@ function displayCards() {
 
         div.onclick = () => selectCard(i);
 
-        // Placeholder
         const placeholder = document.createElement("img");
         placeholder.src = "images/spincard.png";
         placeholder.className = "placeholder";
         div.appendChild(placeholder);
 
-        // Static image (hidden)
         const img = document.createElement("img");
         img.src = card.image;
         img.alt = card.name;
@@ -228,7 +236,6 @@ function revealCard() {
 
     el.dataset.revealed = "true";
 
-    // Spin status
     const spinStatus = document.getElementById("spinStatus");
     const spinResult = document.getElementById("spinResult");
 
@@ -261,7 +268,6 @@ function revealAll() {
         const card = cards[i];
 
         if (i === selectedIndex && card.video) {
-            // Selected card → show video
             const video = document.createElement("video");
             video.src = card.video;
             video.className = "card-video";
@@ -272,13 +278,11 @@ function revealAll() {
             el.appendChild(video);
             video.play().catch(() => {});
 
-            // Add "Get" tag only to selected
             const tag = document.createElement("div");
             tag.className = "get-tag";
             tag.textContent = "Get";
             el.appendChild(tag);
         } else {
-            // Other cards → reveal preloaded image
             const img = el.querySelector(".card-image");
             if (img) img.style.display = "block";
         }
