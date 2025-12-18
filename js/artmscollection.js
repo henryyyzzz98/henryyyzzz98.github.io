@@ -27,8 +27,13 @@ async function loadCollections() {
 
         const collections = [...new Set(allCards.map(c => c.collection).filter(Boolean))];
         const groups = {};
+        
         collections.forEach(c => {
-            const prefix = c.startsWith("AA") ? "AA" : c[0].toUpperCase();
+            let prefix;
+            if (c.startsWith("AA")) prefix = "AA";
+            else if (c.startsWith("BB")) prefix = "BB";
+            else prefix = c[0].toUpperCase();
+
             if (!groups[prefix]) groups[prefix] = [];
             groups[prefix].push(c);
         });
@@ -95,7 +100,9 @@ function updateTabHighlights() {
         const prefix = tab.textContent;
         const anySelected = selectedARTMSCollections.some(c => {
             if (prefix === "AA") return c.startsWith("AA");
-            return c.startsWith(prefix) && !c.startsWith("AA");
+            if (prefix === "BB") return c.startsWith("BB");
+            // exclude AA and BB from other prefix checks
+            return c.startsWith(prefix) && !c.startsWith("AA") && !c.startsWith("BB");
         });
         tab.classList.toggle("active", anySelected);
     });
@@ -160,22 +167,28 @@ function generateRandomSet() {
 function displayCards() {
     const container = document.getElementById("card-container");
     container.innerHTML = "";
+
     cards.forEach((card, i) => {
         const div = document.createElement("div");
         div.className = "card";
+        div.dataset.revealed = "false";
+        if (selectedIndex === i) div.classList.add("selected");
+        if (hasConfirmed) div.classList.add("disabled");
+
         div.onclick = () => selectCard(i);
 
         const placeholder = document.createElement("img");
         placeholder.src = "images/spincard.png";
         placeholder.className = "placeholder";
+        div.appendChild(placeholder);
 
         const img = document.createElement("img");
         img.src = card.image;
         img.alt = card.name;
         img.className = "card-image";
-
-        div.appendChild(placeholder);
+        img.style.display = "none";
         div.appendChild(img);
+
         container.appendChild(div);
     });
 }
@@ -192,38 +205,89 @@ function selectCard(i) {
 // --- Confirm selection ---
 function revealCard() {
     if (selectedIndex === null) return;
-    hasConfirmed = true;
-    document.getElementById("reveal-all-btn").disabled = false;
-    document.getElementById("confirm-btn").disabled = true;
-    document.getElementById("try-again-btn").disabled = false;
 
     const el = document.querySelectorAll(".card")[selectedIndex];
-    el.querySelector(".placeholder").style.display = "none";
-    el.querySelector(".card-image").style.display = "block";
+    if (el.dataset.revealed === "true") return;
+
+    const card = selectedCard;
+
+    const placeholder = el.querySelector(".placeholder");
+    if (placeholder) placeholder.style.display = "none";
+
+    if (card.video) {
+        const video = document.createElement("video");
+        video.src = card.video;
+        video.className = "card-video";
+        video.muted = true;
+        video.loop = true;
+        video.autoplay = true;
+        video.playsInline = true;
+        el.appendChild(video);
+        video.play().catch(() => {});
+    } else {
+        const img = el.querySelector(".card-image");
+        img.style.display = "block";
+    }
+
     const tag = document.createElement("div");
     tag.className = "get-tag";
     tag.textContent = "Get";
     el.appendChild(tag);
 
+    el.dataset.revealed = "true";
+
     const spinStatus = document.getElementById("spinStatus");
     const spinResult = document.getElementById("spinResult");
-    if (selectedCard.name === "Fail") {
+
+    if (card.name === "Fail") {
         spinStatus.textContent = "Spin failed";
         spinResult.textContent = "Please try again next time.";
     } else {
         spinStatus.textContent = "Spin was successful!";
-        spinResult.innerHTML = `Chosen the <span style="color:#B09EF8;">${selectedCard.name}</span> Objekt.`;
+        spinResult.innerHTML = `Chosen the <span style="color:#B09EF8;">${card.name}</span> Objekt.`;
     }
 
     document.querySelectorAll(".card").forEach(c => c.classList.add("disabled"));
+
+    hasConfirmed = true;
+    document.getElementById("reveal-all-btn").disabled = false;
+    document.getElementById("confirm-btn").disabled = true;
+    document.getElementById("try-again-btn").disabled = false;
 }
 
 // --- Reveal all ---
 function revealAll() {
     document.getElementById("confirm-btn").disabled = true;
-    document.querySelectorAll(".card").forEach(c => {
-        c.querySelector(".placeholder").style.display = "none";
-        c.querySelector(".card-image").style.display = "block";
+
+    document.querySelectorAll(".card").forEach((el, i) => {
+        if (el.dataset.revealed === "true") return;
+
+        const placeholder = el.querySelector(".placeholder");
+        if (placeholder) placeholder.style.display = "none";
+
+        const card = cards[i];
+
+        if (i === selectedIndex && card.video) {
+            const video = document.createElement("video");
+            video.src = card.video;
+            video.className = "card-video";
+            video.muted = true;
+            video.loop = true;
+            video.autoplay = true;
+            video.playsInline = true;
+            el.appendChild(video);
+            video.play().catch(() => {});
+
+            const tag = document.createElement("div");
+            tag.className = "get-tag";
+            tag.textContent = "Get";
+            el.appendChild(tag);
+        } else {
+            const img = el.querySelector(".card-image");
+            if (img) img.style.display = "block";
+        }
+
+        el.dataset.revealed = "true";
     });
 }
 

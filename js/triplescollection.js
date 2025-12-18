@@ -12,6 +12,7 @@ document.getElementById("try-again-btn").disabled = true;
 // --- Toggle collections panel ---
 const toggleBtn = document.getElementById("toggleCollectionsBtn");
 const collectionsContainer = document.getElementById("collectionsContainer");
+
 toggleBtn.addEventListener("click", () => {
     const isVisible = collectionsContainer.style.display === "block";
     collectionsContainer.style.display = isVisible ? "none" : "block";
@@ -150,7 +151,6 @@ function generateRandomSet() {
         }));
 
         selectedCards = shuffleAndPick([...pickedNormal, ...failCards], 16);
-
     } else {
         selectedCards = [...filteredCards];
         const missing = 16 - selectedCards.length;
