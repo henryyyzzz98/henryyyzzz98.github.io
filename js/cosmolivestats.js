@@ -117,6 +117,8 @@ function buildTable1Grid(rows, page = 0) {
     const colE = c[5]?.f || c[5]?.v || "";
     const colF = c[4]?.f || c[4]?.v || "";
 
+    const bgImageUrl = c[9]?.v || "";
+
     const card = document.createElement("div");
     card.className = "ranking-card";
     card.style.borderColor = color;
@@ -206,8 +208,8 @@ function buildRankingGrid(containerId, rows, memberColIndex, extraIndexes = []) 
     extras.className = 'ranking-extras';
     extras.innerHTML = extraIndexes.map(i => {
       let val = r.c[i]?.f || r.c[i]?.v || '';
-      if (i === 17) val += ' Lives';       // Append "lives" for column 14
-      if (i === 20) val = 'Avg ' + val;    // Prepend "AVG" for column 17
+      if (i === 18) val += ' Lives';
+      if (i === 21) val = 'Avg ' + val;  
       return `<div>${val}</div>`;
     }).join('');
 
@@ -235,8 +237,8 @@ fetch("https://docs.google.com/spreadsheets/d/1jXjnPCKMrbGBhk0wUBLv66YAhcIWO2xZ2
     currentPage = Math.floor((filteredRows.length - 1) / rowsPerPage);
     
     buildTable1Grid(filteredRows, currentPage);
-    buildRankingGrid("table2", rows, 16, [17,18,20]);
-    buildRankingGrid("table3", rows, 24, [25,26]);
+    buildRankingGrid("table2", rows, 17, [18,19,21]);
+    buildRankingGrid("table3", rows, 25, [26,27]);
   })
   .catch(e => {
     console.error("Failed to load Google Sheet data:", e);
