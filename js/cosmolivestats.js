@@ -201,18 +201,6 @@ function buildRankingGrid(containerId, rows, memberColIndex, extraIndexes = []) 
     card.className = 'ranking-card';
     card.style.borderColor = color;
 
-    const bgImageUrl = r.c[9]?.v || "";
-
-    if (bgImageUrl) {
-      card.style.backgroundImage = `
-        linear-gradient(rgba(0,0,0,0.65), rgba(0,0,0,0.65)),
-        url('${bgImageUrl}')
-      `;
-      card.style.backgroundSize = "cover";
-      card.style.backgroundPosition = "center";
-      card.style.backgroundRepeat = "no-repeat";
-    }
-
     const img = document.createElement('img');
     img.src = avatar;
     img.alt = name;
