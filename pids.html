@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Bus Display Simulator</title>
+
+<style>
+body {
+  margin: 0;
+  background: #111;
+  font-family: "Asta Sans", sans-serif;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.display {
+  width: 900px;
+  height: 520px;
+  background: #000;
+  color: white;
+  padding: 20px;
+  position: relative;
+}
+
+/* Header */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.route {
+  background: #067c06;
+  color: white;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  font-size: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.status {
+  background: rgb(0, 0, 0);
+  padding: 10px 25px;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.time {
+  font-size: 24px;
+}
+
+/* Terminal (TOP now) */
+.terminal {
+  margin-top: 20px;
+  font-size: 30px;
+  font-weight: bold;
+  border-bottom: 2px solid #000000;
+  padding-bottom: 10px;
+}
+
+/* Stops */
+.stops {
+  margin-top: 20px;
+}
+
+.stop {
+  font-size: 28px;
+  padding: 6px 0;
+  opacity: 0.5;
+}
+
+.stop.active {
+  font-size: 34px;
+  font-weight: bold;
+  opacity: 1;
+}
+
+.stop.next {
+  color: #ffffff;
+  opacity: 1;
+}
+
+/* Controls */
+.controls {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+}
+
+button, select {
+  padding: 10px;
+  margin-right: 10px;
+  font-size: 16px;
+  cursor: pointer;
+}
+</style>
+</head>
+
+<body>
+
+<div class="display">
+
+  <div class="header">
+    <div class="route" id="routeNum">S37A</div>
+    <div class="status" id="status">FAKE PIDS U/C</div>
+    <div class="time" id="time"></div>
+  </div>
+
+  <div class="terminal" id="terminal"></div>
+  <div class="stops" id="stops"></div>
+
+  <div class="controls">
+    <select id="routeSelect">
+      <option value="demo">Demo Route</option>
+    </select>
+
+    <button onclick="busStopping()">BUS STOPPING</button>
+    <button onclick="nextStop()">NEXT STOP</button>
+    <button onclick="resetRoute()">RESET</button>
+  </div>
+
+</div>
+
+<script>
+const routes = {
+  "demo": [
+    "S'GOON STN EXIT B",
+    "AFT TAI SENG STN EXIT C",
+    "MACPHERSON STN EXIT B",
+    "PAYA LEBAR STN EXIT B"
+  ]
+};
+
+let currentIndex = 0;
+let currentRoute = "demo";
+let isStopping = false;
+
+/* Clock */
+function updateTime() {
+  const now = new Date();
+  document.getElementById("time").innerText =
+    now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+}
+setInterval(updateTime, 1000);
+updateTime();
+
+/* Render stops */
+function renderStops() {
+  const container = document.getElementById("stops");
+  const terminal = document.getElementById("terminal");
+
+  container.innerHTML = "";
+
+  const routeStops = routes[currentRoute];
+  const lastStop = routeStops[routeStops.length - 1];
+
+  // Terminal at top
+  terminal.innerText = lastStop;
+
+  // Show next 4 stops
+  const visibleStops = routeStops.slice(currentIndex, currentIndex + 4);
+
+  visibleStops.forEach((stop, i) => {
+    const div = document.createElement("div");
+    div.classList.add("stop");
+
+    // If stopping, replace first stop text
+    if (i === 0 && isStopping) {
+      div.classList.add("active");
+      div.innerText = "BUS STOPPING";
+    } else {
+      if (i === 0) div.classList.add("active");
+      if (i === 1) div.classList.add("next");
+      div.innerText = stop;
+    }
+
+    container.appendChild(div);
+  });
+}
+
+/* BUS STOPPING behavior */
+function busStopping() {
+  isStopping = true;
+  document.getElementById("status").innerText = "BUS STOPPING";
+  renderStops();
+
+  setTimeout(() => {
+    isStopping = false;
+    document.getElementById("status").innerText = "NEXT STOP";
+    renderStops();
+  }, 2000);
+}
+
+/* Move to next stop */
+function nextStop() {
+  const routeStops = routes[currentRoute];
+
+  if (currentIndex < routeStops.length - 1) {
+    currentIndex++;
+  }
+
+  document.getElementById("status").innerText = "NEXT STOP";
+  renderStops();
+}
+
+/* Reset */
+function resetRoute() {
+  currentIndex = 0;
+  document.getElementById("status").innerText = "FAKE PIDS U/C";
+  renderStops();
+}
+
+/* Route selector */
+document.getElementById("routeSelect").onchange = (e) => {
+  currentRoute = e.target.value;
+  document.getElementById("routeNum").innerText = currentRoute;
+  resetRoute();
+};
+
+/* Init */
+renderStops();
+</script>
+
+</body>
+</html>
