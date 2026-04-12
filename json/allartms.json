@@ -10832,6 +10832,46 @@
    "video": ""
  },
  {
+   "name": "Ever01 HeeJin 302Z",
+   "member": "HeeJin",
+   "collection": "E302Z",
+   "group": "Event",
+   "image": "https://imagedelivery.net/qQuMkbHJ-0s6rwu8vup_5w/eedab844-ba18-4264-5b56-93881599b100/original",
+   "video": ""
+ },
+ {
+   "name": "Ever01 HaSeul 302Z",
+   "member": "HaSeul",
+   "collection": "E302Z",
+   "group": "Event",
+   "image": "https://imagedelivery.net/qQuMkbHJ-0s6rwu8vup_5w/8c664116-34c6-4a5d-bf0c-c0bf3c021b00/original",
+   "video": ""
+ },
+ {
+   "name": "Ever01 KimLip 302Z",
+   "member": "KimLip",
+   "collection": "E302Z",
+   "group": "Event",
+   "image": "https://imagedelivery.net/qQuMkbHJ-0s6rwu8vup_5w/f4ed97f3-2cd0-4dd4-7d32-d09e658d4700/original",
+   "video": ""
+ },
+ {
+   "name": "Ever01 JinSoul 302Z",
+   "member": "JinSoul",
+   "collection": "E302Z",
+   "group": "Event",
+   "image": "https://imagedelivery.net/qQuMkbHJ-0s6rwu8vup_5w/a7cb1d52-e3cd-41f3-08e0-81fc291a2f00/original",
+   "video": ""
+ },
+ {
+   "name": "Ever01 Choerry 302Z",
+   "member": "Choerry",
+   "collection": "E302Z",
+   "group": "Event",
+   "image": "https://imagedelivery.net/qQuMkbHJ-0s6rwu8vup_5w/5ca8e0d2-114e-461f-14d4-c1da68799400/original",
+   "video": ""
+ },
+ {
    "name": "Ever01 Choerry 303A",
    "member": "Choerry",
    "collection": "E303A",
@@ -11819,7 +11859,7 @@
    "name": "Ever01 Choerry 330Z",
    "member": "Choerry",
    "collection": "E330Z",
-   "group": "Double",
+   "group": "Shop",
    "image": "https://imagedelivery.net/qQuMkbHJ-0s6rwu8vup_5w/8365280d-071c-43a3-64f3-c2d3da56d400/original",
    "video": ""
  },
@@ -11827,7 +11867,7 @@
    "name": "Ever01 HaSeul 330Z",
    "member": "HaSeul",
    "collection": "E330Z",
-   "group": "Double",
+   "group": "Shop",
    "image": "https://imagedelivery.net/qQuMkbHJ-0s6rwu8vup_5w/703319fc-750e-4e90-7fd6-f2808e6c9300/original",
    "video": ""
  },
@@ -11835,7 +11875,7 @@
    "name": "Ever01 HeeJin 330Z",
    "member": "HeeJin",
    "collection": "E330Z",
-   "group": "Double",
+   "group": "Shop",
    "image": "https://imagedelivery.net/qQuMkbHJ-0s6rwu8vup_5w/cddf226a-f825-4404-6f99-f0ee72397500/original",
    "video": ""
  },
@@ -11843,7 +11883,7 @@
    "name": "Ever01 JinSoul 330Z",
    "member": "JinSoul",
    "collection": "E330Z",
-   "group": "Double",
+   "group": "Shop",
    "image": "https://imagedelivery.net/qQuMkbHJ-0s6rwu8vup_5w/d04e046a-49f7-439d-91e0-5482bfbfa200/original",
    "video": ""
  },
@@ -11851,7 +11891,7 @@
    "name": "Ever01 KimLip 330Z",
    "member": "KimLip",
    "collection": "E330Z",
-   "group": "Double",
+   "group": "Shop",
    "image": "https://imagedelivery.net/qQuMkbHJ-0s6rwu8vup_5w/757f3027-cc5e-4159-9ac5-f91dd4241600/original",
    "video": ""
  },
