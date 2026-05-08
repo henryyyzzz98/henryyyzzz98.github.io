@@ -271,7 +271,7 @@ function revealAll() {
             const video = document.createElement("video");
             video.src = card.video;
             video.className = "card-video";
-            video.muted = true;
+            video.muted = false;
             video.loop = true;
             video.autoplay = true;
             video.playsInline = true;
