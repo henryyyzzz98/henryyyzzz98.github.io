@@ -32,6 +32,7 @@ async function loadCollections() {
             let prefix;
             if (c.startsWith("AA")) prefix = "AA";
             else if (c.startsWith("BB")) prefix = "BB";
+            else if (c.startsWith("CC")) prefix = "CC";
             else prefix = c[0].toUpperCase();
 
             if (!groups[prefix]) groups[prefix] = [];
@@ -101,8 +102,9 @@ function updateTabHighlights() {
         const anySelected = selectedCollections.some(c => {
             if (prefix === "AA") return c.startsWith("AA");
             if (prefix === "BB") return c.startsWith("BB");
-            // exclude AA and BB from other prefix checks
-            return c.startsWith(prefix) && !c.startsWith("AA") && !c.startsWith("BB");
+            if (prefix === "CC") return c.startsWith("CC");
+            // exclude AA, BB, and CC from other prefix checks
+            return c.startsWith(prefix) && !c.startsWith("AA") && !c.startsWith("BB") && !c.startsWith("CC");
         });
         tab.classList.toggle("active", anySelected);
     });
