@@ -1,0 +1,123 @@
+.game-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.game-main h1 {
+    font-size: 30px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    text-align: center;
+}
+
+.game-main p {
+    color: #AEB7BE;
+    margin-bottom: 32px;
+    text-align: center;
+}
+
+.game-panel {
+    background: rgba(29, 34, 49, 0.95);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 28px;
+    padding: 28px;
+    box-shadow:
+        0 20px 60px rgba(0,0,0,.45),
+        inset 0 1px 0 rgba(255,255,255,.05);
+}
+
+.container {
+    display: grid;
+    grid-template-columns: repeat(4, 90px);
+    gap: 14px;
+    justify-content: center;
+}
+
+.card {
+    width: 90px;
+    cursor: pointer;
+    position: relative;
+    border-radius: 5px;
+    overflow: hidden;
+    transition: .2s;
+}
+
+.card:hover {
+    transform: translateY(-3px);
+}
+
+.card img {
+    width: 100%;
+    display: block;
+}
+
+.card .placeholder {
+    display: block;
+}
+
+.selected {
+    outline: 4px solid #6F2CFF;
+}
+
+.disabled {
+    pointer-events: none;
+}
+
+.get-tag {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    background-color: #7647FF;
+    color: white;
+    font-size: 13px;
+    padding: 3px 8px;
+    border-radius: 8px;
+    z-index: 10;
+}
+
+button {
+    padding: 8px 16px;
+    font-size: 14px;
+    border: none;
+    cursor: pointer;
+    background-color: #6F2CFF;
+    color: white;
+    border-radius: 20px;
+    transition: 0.3s;
+    font-weight: 600;
+    font-family: "Inter", sans-serif;
+}
+
+button:hover {
+    background-color: #925FFF;
+}
+
+.button-container {
+    margin-top: 24px;
+    display: flex;
+    gap: 12px;
+}
+
+.button-container button {
+    min-width: 130px;
+}
+
+@media (max-width: 768px) {
+    .container {
+        grid-template-columns: repeat(4, 72px);
+        gap: 10px;
+    }
+
+    .card {
+        width: 72px;
+    }
+
+    .button-container {
+        flex-direction: column;
+        width: 100%;
+        max-width: 320px;
+    }
+}

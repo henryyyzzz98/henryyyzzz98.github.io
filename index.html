@@ -1,156 +1,68 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>jyuubin318 Index</title>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
-        
-        h1 {
-            text-shadow: none;
-            outline: none;
-            color: white;
-            font-weight: 600;
-            font-size: 28px;
-        }
-        body {
-            font-family: "Inter", sans-serif;
-            text-align: center;
-            background-color: black;
-            color: white;
-            font-weight: 500;
-            max-width: 500px;
-            margin: auto;
-        }
-        .button-container {
-            width: 100%;
-            margin: 10px auto;
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 5px; 
-            justify-items: center; 
-        }
-        .button-container2 {
-            justify-items: center;
-        }
-        button {
-            padding: 8px 16px;
-            font-size: 16px;
-            border: none;
-            cursor: pointer;
-            background-color: #6F2CFF;
-            color: white;
-            border-radius: 20px;
-            transition: 0.3s;
-            font-weight: 600;
-            font-family: "Inter", sans-serif;
-        }
-        button:hover {
-            background-color: #925FFF;
-        }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>jyuubin318 Spin Simulator 2.0</title>
 
-        #atom-btn {
-            background-color: #ffdd00;
-            color: black;
-        }
+    <link rel="stylesheet" href="css/main.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div class="bg-glow"></div>
 
-        #binary-btn {
-            background-color: #75fb4c;
-            color: black;
-        }
+    <div class="page">
+      <header class="header">
+        <button class="back-btn" onclick="location.href='oldindex.html'">
+            Old Index Page
+        </button>
 
-        #cream-btn {
-            background-color: #ff7477;
-            color: black;
-        }
+        <div class="currency">
+          <div class="pill">
+            <img src="images/spin-ticket.png" class="pill-icon" />
+            <span>999</span>
+          </div>
+        </div>
+      </header>
 
-        #divine-btn {
-            background-color: #b400ff;
-            color: black;
-        }
+      <main>
+        <h1>Select an Objekt to spin</h1>
 
-        #ever-btn {
-            background-color: #33ecfd;
-            color: black;
-        }
+        <div class="spin-area">
+          <div class="track"></div>
 
-        #grey-btn {
-            background-color: #545A77;
-            color: white;
-        }
+          <div class="selector">
+            <div class="selector-inner">
+              <button id="selectButton" class="plus">+</button>
 
-        #atom-btn:hover {
-            background-color: #FFE433;
-        }
+              <img id="selectedObjekt" class="selected-image" hidden />
+            </div>
+          </div>
+        </div>
 
-        #binary-btn:hover {
-            background-color: #9BFC7E;
-        }
+        <button id="spinButton" class="spin-button">Spin</button>
+      </main>
 
-        #cream-btn:hover {
-            background-color: #FF4145;
-        }
+      <footer>
+        <div class="notice">
+          <div class="notice-icon">i</div>
 
-        #divine-btn:hover {
-            background-color: #C333FF;
-        }
+          <div>
+            <strong>jyuubin318 Spin Simulator 2.0</strong>
 
-        #ever-btn:hover {
-            background-color: #66F1FD;
-        }
-
-        #grey-btn:hover {
-            background-color: #697195;
-            color: white;
-        }
-    </style>
-</head>
-<body>
-    <h1>jyuubin318 Spin Simulators</h1>
-
-    <p>tripleS SPIN SIMULATORS</p>
-    <p>Click on any season to start:<br>Note: Starting from Binary02, there<br>will be no more SCOs in Spin.</p>
-    <div class="button-container">
-        <button id="atom-btn" onclick="location.href='a1triples.html'">Atom01</button>
-        <button id="binary-btn" onclick="location.href='b1triples.html'">Binary01</button>
-    </div>
-    <div class="button-container">
-        <button id="cream-btn" onclick="location.href='c1triples.html'">Cream01</button>
-        <button id="divine-btn" onclick="location.href='d1triples.html'">Divine01</button>
-    </div>
-    <div class="button-container">
-        <button id="ever-btn" onclick="location.href='e1triples.html'">Ever01</button>
-        <button id="atom-btn" onclick="location.href='a2triples.html'">Atom02</button>
-    </div>
-    <div class="button-container">
-        <button id="binary-btn" onclick="location.href='b2triples.html'">Binary02</button>
-        <button id="cream-btn" onclick="location.href='c2triples.html'">Cream02</button>
-    </div>
-    <p>For other MODHAUS groups spin simulators,<br>click below:</p>
-    <div class="button-container2">
-        <button id="grey-btn" onclick="location.href='index2.html'">ARTMS and IDNTT Simulators</button>
-    </div>
-    <p>Custom Made tripleS SPIN SIMULATORS:</p>
-    <div class="button-container">
-        <button id="grey-btn" onclick="location.href='triplescollection.html'">tripleS Collections</button>
-        <button id="grey-btn" onclick="location.href='broken.html'">Spin (Broken Edition)</button>
-    </div>
-    <div class="button-container">
-        <button id="grey-btn" onclick="location.href='allspin.html'">Entire tripleS Objekts</button>
-        <button id="grey-btn" onclick="location.href='extremespin.html'">Extreme Spin</button>
-    </div>
-    <div class="button-container">
-        
-        <button id="grey-btn" onclick="location.href='fcoscospin.html'">Mixed FCOs & SCOs</button>
-        <button id="grey-btn" onclick="location.href='customtriples.html'">Customizable Spin</button>
+            <p>
+              Fanmade spin simulator by jyuubin318. Not affiliated with MODHAUS
+              / COSMO. No real objekts will be generated.
+            </p>
+          </div>
+        </div>
+      </footer>
     </div>
 
-    <p>TO SEE tripleS COSMO Live Stats:</p>
-    <div class="button-container2">
-        <button id="grey-btn" onclick="location.href='cosmolivestats.html'">COSMO Live Dashboard</button>
-    </div>
-
-    <p>Credit goes to Apollo for the<br>MCO videos used in the simulator(s)</p>
-</body>
+    <script src="js/app.js"></script>
+    <script src="js/main.js"></script>
+  </body>
 </html>
