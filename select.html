@@ -1,93 +1,49 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Objekt Selection Page</title>
-
-    <link rel="stylesheet" href="css/select.css">
-
+    <link rel="stylesheet" href="css/select.css" />
     <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
-        rel="stylesheet">
-</head>
-<body>
-
-<div class="page">
-
-    <!-- Header -->
-    <header class="topbar">
-
-        <button id="backButton" class="back-button">
-            <
-        </button>
-
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div class="page">
+      <header class="topbar">
+        <button id="backButton" class="back-button"><</button>
         <h1>Select Objekt</h1>
-
-        <!-- spacer to center title -->
         <div class="header-spacer"></div>
+      </header>
 
-    </header>
+      <div class="tabs">
+        <button class="tab active" data-group="artms">ARTMS</button>
+        <button class="tab" data-group="idntt">idntt</button>
+        <button class="tab" data-group="triples">tripleS</button>
+      </div>
 
-    <!-- Tabs -->
-    <div class="tabs">
+      <div class="search-wrapper">
+        <input id="search" type="text" placeholder="Search collection no." />
+      </div>
 
-        <button
-            class="tab active"
-            data-group="artms">
-            ARTMS
-        </button>
-
-        <button
-            class="tab"
-            data-group="idntt">
-            idntt
-        </button>
-
-        <button
-            class="tab"
-            data-group="triples">
-            tripleS
-        </button>
-
-    </div>
-
-    <!-- Search -->
-    <div class="search-wrapper">
-        <input
-            id="search"
-            type="text"
-            placeholder="Search collection no.">
-    </div>
-
-    <!-- Filters -->
-    <div class="filters">
-
+      <div class="filters">
         <select id="memberFilter">
-            <option value="">Select Member</option>
+          <option value="">Select Member</option>
         </select>
 
         <select id="seasonFilter">
-            <option value="">Select Season</option>
+          <option value="">Select Season</option>
         </select>
+      </div>
 
+      <div id="loading" class="loading">Loading Objekts...</div>
+
+      <div id="grid" class="grid"></div>
     </div>
 
-    <!-- Loading -->
-    <div id="loading" class="loading">
-        Loading Objekts...
-    </div>
-
-    <!-- Grid -->
-    <div
-        id="grid"
-        class="grid">
-    </div>
-
-</div>
-
-<script src="js/app.js"></script>
-<script src="js/select.js"></script>
-
-</body>
+    <script src="js/app.js"></script>
+    <script src="js/select.js"></script>
+  </body>
 </html>

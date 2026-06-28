@@ -5,9 +5,6 @@ let selectedCard = null;
 let selectedIndex = null;
 let hasConfirmed = false;
 
-document.getElementById("reveal-all-btn").disabled = true; // Initially disable "Reveal All"
-document.getElementById("try-again-btn").disabled = true; // Disable "Try Again" initially
-
 // Load card data from JSON file
 async function loadCards() {
     try {
@@ -127,7 +124,6 @@ function selectCard(index) {
 
 // Function to reveal the selected card
 function revealCard() {
-    document.getElementById("reveal-all-btn").disabled = false; // Enable "Reveal All"
     document.getElementById("confirm-btn").disabled = true; // Disable "Confirm Selection"
     document.getElementById("try-again-btn").disabled = false; // Enable "Try Again"
     
@@ -136,27 +132,20 @@ function revealCard() {
     hasConfirmed = true; // Lock further selections
 
     const selectedCardElement = document.querySelectorAll(".card")[selectedIndex];
-    selectedCardElement.querySelector(".placeholder").style.display = "none"; // Hide placeholder
-    selectedCardElement.querySelector(".card-image").style.display = "block"; // Show actual card image
+    RevealEngine.reveal(
+        selectedCard,
+        document.getElementById("spinStatus"),
+        document.getElementById("spinResult"),
+        {
+            revealAllFn: revealAll
+        }
+    );
 
     // Add "GET" tag
     const getTag = document.createElement("div");
     getTag.classList.add("get-tag");
     getTag.textContent = "Get";
     selectedCardElement.appendChild(getTag);
-    const spinStatus = document.getElementById("spinStatus");
-    const spinResult = document.getElementById("spinResult");
-
-    if (selectedCard.name === "Fail") {
-        spinStatus.textContent = "Spin failed"; 
-        spinResult.textContent = "Please try again next time.";
-    } else {
-        spinStatus.textContent = "Spin was successful!";
-        spinResult.innerHTML = `Chosen the <span style="color: #B09EF8;">${selectedCard.name}</span> Objekt.`;
-    }
-
-    // Show "Reveal All" button
-    document.getElementById("reveal-all-btn").style.display = "block";
 
     // Disable selection for all other cards
     document.querySelectorAll(".card").forEach(card => {
@@ -166,7 +155,9 @@ function revealCard() {
 
 // Function to reveal all remaining cards
 function revealAll() {
-    document.getElementById("confirm-btn").disabled = true; // Ensure "Confirm Selection" stays disabled
+    const confirmBtn = document.getElementById("confirm-btn");
+    confirmBtn.disabled = true;
+    confirmBtn.style.display = "none";
     
     document.querySelectorAll(".card").forEach(card => {
         card.querySelector(".placeholder").style.display = "none"; // Hide placeholder

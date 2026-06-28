@@ -106,6 +106,84 @@ button:hover {
     min-width: 100px;
 }
 
+.reveal-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    background: rgba(0,0,0,0.82);
+    backdrop-filter: blur(10px);
+
+    opacity: 1;
+    transition: opacity .85s ease;
+}
+
+.reveal-modal.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.reveal-card {
+    width: 280px;
+    height: 420px;
+    perspective: 1260px;
+}
+
+.reveal-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+
+    transform-style: preserve-3d;
+    transition: transform .85s cubic-bezier(.2,.8,.2,1);
+}
+
+.reveal-inner.flipped {
+    transform: rotateY(180deg);
+}
+
+.reveal-front,
+.reveal-back {
+    position: absolute;
+    inset: 0;
+
+    border-radius: 10px;
+    overflow: hidden;
+
+    backface-visibility: hidden;
+
+    box-shadow:
+        0 30px 90px rgba(0,0,0,.5);
+}
+
+.reveal-front img,
+.reveal-back img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.reveal-back {
+    transform: rotateY(180deg);
+}
+
+.reveal-back::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,.08),
+        0 0 40px rgba(111,44,255,.55);
+}
+
+body.modal-open {
+    overflow: hidden;
+}
+
 @media (max-width: 768px) {
     .container {
         grid-template-columns: repeat(4, 72px);

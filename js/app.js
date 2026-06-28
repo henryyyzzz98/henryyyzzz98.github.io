@@ -11,9 +11,7 @@ const App = {
     try {
       const [artms, idntt, triples] = await Promise.all([
         fetch("json/allartms.json").then((r) => r.json()),
-
         fetch("json/allidntt.json").then((r) => r.json()),
-
         fetch("json/alltriples.json").then((r) => r.json()),
       ]);
 
@@ -26,14 +24,12 @@ const App = {
       return this.cache;
     } catch (error) {
       console.error("Failed to load JSON files", error);
-
       throw error;
     }
   },
 
   getGroup(group) {
     if (!this.cache) return [];
-
     return this.cache[group] || [];
   },
 
@@ -43,9 +39,7 @@ const App = {
 
   getSelection() {
     const data = localStorage.getItem(this.selectedKey);
-
     if (!data) return null;
-
     return JSON.parse(data);
   },
 
