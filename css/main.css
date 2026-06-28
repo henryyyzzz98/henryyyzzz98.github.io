@@ -250,6 +250,7 @@ footer {
   color: #9ba2bc;
   margin-top: 6px;
   line-height: 1.5;
+  font-size: 12px;
 }
 
 @media (max-width: 768px) {
