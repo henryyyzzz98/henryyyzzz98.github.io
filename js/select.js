@@ -8,20 +8,6 @@ const memberFilter = document.getElementById("memberFilter");
 const seasonFilter = document.getElementById("seasonFilter");
 
 const FILTERS = {
-  artms: {
-    members: ["heejin", "haseul", "kimlip", "jinsoul", "choerry"],
-    seasons: [
-      "atom01",
-      "binary01",
-      "cream01",
-      "divine01",
-      "ever01",
-      "atom02",
-      "binary02",
-      "cream02",
-    ],
-  },
-
   triples: {
     members: [
       "seoyeon",
@@ -61,6 +47,20 @@ const FILTERS = {
     ],
   },
 
+  artms: {
+    members: ["heejin", "haseul", "kimlip", "jinsoul", "choerry"],
+    seasons: [
+      "atom01",
+      "binary01",
+      "cream01",
+      "divine01",
+      "ever01",
+      "atom02",
+      "binary02",
+      "cream02",
+    ],
+  },
+
   idntt: {
     members: [
       "dohun",
@@ -79,12 +79,12 @@ const FILTERS = {
       "gyeongbeen",
       "eunsoo",
     ],
-    seasons: ["spring25", "summer25", "autumn25", "winter26", "spring26"],
+    seasons: ["summer25", "autumn25", "winter26", "spring26"],
   },
 };
 
 const state = {
-  activeGroup: "artms",
+  activeGroup: "triples",
   searchText: "",
   member: "",
   season: "",

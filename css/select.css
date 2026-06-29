@@ -63,6 +63,7 @@ body {
   border-radius: 14px;
   background: #1b2030;
   color: #9ea6c4;
+  font-family: Inter, sans-serif;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
@@ -92,10 +93,12 @@ body {
   color: white;
   padding: 0 18px;
   font-size: 15px;
+  font-family: Inter, sans-serif;
 }
 
 #search::placeholder {
   color: #8088a7;
+  font-family: Inter, sans-serif;
 }
 
 .filters{
@@ -113,6 +116,7 @@ body {
     color:white;
     padding:0 16px;
     font-size:14px;
+    font-family: Inter, sans-serif;
     cursor:pointer;
 }
 

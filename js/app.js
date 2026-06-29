@@ -9,16 +9,16 @@ const App = {
     }
 
     try {
-      const [artms, idntt, triples] = await Promise.all([
+      const [triples, artms, idntt] = await Promise.all([
+        fetch("json/alltriples.json").then((r) => r.json()),
         fetch("json/allartms.json").then((r) => r.json()),
         fetch("json/allidntt.json").then((r) => r.json()),
-        fetch("json/alltriples.json").then((r) => r.json()),
       ]);
 
       this.cache = {
-        artms,
-        idntt,
         triples,
+        artms,
+        idntt
       };
 
       return this.cache;
