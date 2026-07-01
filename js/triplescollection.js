@@ -331,18 +331,10 @@ function revealAll() {
     const card = cards[index];
 
     if (index === selectedIndex && card.video && card.video.trim() !== "") {
-      const video = document.createElement("video");
-
-      video.src = card.video;
-      video.className = "card-video";
-      video.autoplay = true;
-      video.loop = true;
-      video.playsInline = true;
-      video.muted = false;
-
-      cardEl.appendChild(video);
-
-      video.play().catch(() => {});
+      const thumbnail = document.createElement("img");
+      thumbnail.src = card.image; // or poster image
+      thumbnail.className = "card-image";
+      cardEl.appendChild(thumbnail);
     } else {
       const image = cardEl.querySelector(".card-image");
 
