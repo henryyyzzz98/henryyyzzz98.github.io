@@ -165,8 +165,16 @@ function revealCard() {
 // Function to reveal all remaining cards
 function revealAll() {
     const confirmBtn = document.getElementById("confirm-btn");
-    confirmBtn.disabled = true;
-    confirmBtn.style.display = "none";
+    const tryAgainBtn = document.getElementById("try-again-btn");
+    
+    if (confirmBtn) {
+        confirmBtn.disabled = true;
+        confirmBtn.style.display = "none";
+    }
+
+    if (tryAgainBtn) {
+        tryAgainBtn.style.display = "block";
+    }
     
     document.querySelectorAll(".card").forEach(card => {
         card.querySelector(".placeholder").style.display = "none"; // Hide placeholder

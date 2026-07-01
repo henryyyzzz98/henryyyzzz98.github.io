@@ -1,17 +1,15 @@
 const RevealEngine = (() => {
-
     let modal = null;
     let inner = null;
-    let image = null;
-
+    let back = null;
     let isOpen = false;
 
     function init() {
         modal = document.getElementById("revealModal");
         inner = document.getElementById("revealInner");
-        image = document.getElementById("revealImage");
+        back = document.querySelector(".reveal-back");
 
-        if (!modal || !inner || !image) {
+        if (!modal || !inner || !back) {
             console.error("RevealEngine modal elements missing");
             return;
         }
@@ -23,39 +21,64 @@ const RevealEngine = (() => {
         });
     }
 
+    function setReward(card) {
+        back.innerHTML = "";
+
+        if (card.video && card.video.trim() !== "") {
+            const video = document.createElement("video");
+
+            video.src = card.video;
+            video.autoplay = true;
+            video.loop = true;
+            video.playsInline = true;
+            video.controls = false;
+            video.muted = false;
+            video.className = "reveal-video";
+
+            back.appendChild(video);
+
+            video.play().catch(() => {});
+            return;
+        }
+
+        const img = document.createElement("img");
+        img.src = card.image;
+        img.alt = card.name;
+
+        back.appendChild(img);
+    }
+
     function open(card, options = {}) {
         if (!modal) init();
-
         if (!modal) return;
 
         const {
-            flipDelay = 900,
-            textDelay = 900,
+            flipDelay = 500,
+            holdDelay = 2200,
+            revealAllDelay = 600,
             onReveal = null
         } = options;
 
         isOpen = true;
 
-        image.src = card.image;
+        setReward(card);
 
         inner.classList.remove("flipped");
         modal.classList.remove("hidden");
 
         document.body.classList.add("modal-open");
 
-        requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-                setTimeout(() => {
-                    inner.classList.add("flipped");
-                }, flipDelay);
-            });
-        });
+        setTimeout(() => {
+            inner.classList.add("flipped");
+        }, flipDelay);
 
-        if (onReveal) {
-            setTimeout(() => {
+        setTimeout(() => {
+            if (onReveal) {
                 onReveal(card);
-            }, textDelay);
-        }
+            }
+
+            close();
+        }, flipDelay + holdDelay + revealAllDelay);
     }
 
     function close() {
@@ -72,12 +95,18 @@ const RevealEngine = (() => {
     function reveal(card, statusEl, resultEl, options = {}) {
         const {
             autoRevealAll = true,
-            revealAllDelay = 900,
             revealAllFn = null
         } = options;
 
+        if (statusEl) statusEl.style.opacity = "0";
+        if (resultEl) resultEl.style.opacity = "0";
+
         open(card, {
             onReveal: revealedCard => {
+
+                if (autoRevealAll && revealAllFn) {
+                    revealAllFn();
+                }
 
                 if (statusEl && resultEl) {
                     if (revealedCard.name === "Fail") {
@@ -93,47 +122,10 @@ const RevealEngine = (() => {
                     }
                 }
 
-                setTimeout(() => {
-                    close();
-
-                    setTimeout(() => {
-                        if (autoRevealAll && revealAllFn) {
-                            revealAllFn();
-                        }
-
-                        setTimeout(() => {
-                            close();
-
-                            if (autoRevealAll && revealAllFn) {
-                                revealAllFn();
-                            }
-
-                            const selectBtn = document.getElementById("confirm-btn");
-                            const retryBtn = document.getElementById("try-again-btn");
-
-                            selectBtn.style.display = "none";
-                            retryBtn.style.display = "inline-block";
-
-                        }, revealAllDelay);
-
-                        // ONLY update text here
-                        if (statusEl && resultEl) {
-                            if (revealedCard.name === "Fail") {
-                                statusEl.textContent = "Spin failed";
-                                resultEl.textContent =
-                                    "Please try again next time.";
-                            } else {
-                                statusEl.textContent =
-                                    "Spin was successful!";
-
-                                resultEl.innerHTML =
-                                    `Chosen the <span style="color:#B09EF8;">${revealedCard.name}</span> Objekt.`;
-                            }
-                        }
-
-                    }, 500);
-
-                }, revealAllDelay);
+                requestAnimationFrame(() => {
+                    if (statusEl) statusEl.style.opacity = "1";
+                    if (resultEl) resultEl.style.opacity = "1";
+                });
             }
         });
     }
@@ -149,7 +141,6 @@ const RevealEngine = (() => {
         reveal,
         isVisible
     };
-
 })();
 
 window.RevealEngine = RevealEngine;
