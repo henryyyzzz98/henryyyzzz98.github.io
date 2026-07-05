@@ -9,77 +9,34 @@ const seasonFilter = document.getElementById("seasonFilter");
 
 const FILTERS = {
   triples: {
-    members: [
-      "seoyeon",
-      "hyerin",
-      "jiwoo",
-      "chaeyeon",
-      "yooyeon",
-      "soomin",
-      "nakyoung",
-      "yubin",
-      "kaede",
-      "dahyun",
-      "kotone",
-      "yeonji",
-      "nien",
-      "sohyun",
-      "xinyu",
-      "mayu",
-      "lynn",
-      "joobin",
-      "hayeon",
-      "shion",
-      "chaewon",
-      "sullin",
-      "seoah",
-      "jiyeon",
-    ],
+    members: ["SeoYeon", "HyeRin", "JiWoo", "ChaeYeon", "YooYeon", "SooMin", "NaKyoung", "YuBin", "Kaede", "DaHyun", "Kotone", "YeonJi", "Nien", "SoHyun", "Xinyu", "Mayu", "Lynn", "JooBin", "HaYeon", "ShiOn", "ChaeWon", "Sullin", "SeoAh", "JiYeon"],
     seasons: [
-      "atom01",
-      "binary01",
-      "cream01",
-      "divine01",
-      "ever01",
-      "atom02",
-      "binary02",
-      "cream02",
+      "Atom01",
+      "Binary01",
+      "Cream01",
+      "Divine01",
+      "Ever01",
+      "Atom02",
+      "Binary02",
+      "Cream02",
     ],
   },
 
   artms: {
-    members: ["heejin", "haseul", "kimlip", "jinsoul", "choerry"],
+    members: ["HeeJin", "HaSeul", "KimLip", "JinSoul", "Choerry"],
     seasons: [
-      "atom01",
-      "binary01",
-      "cream01",
-      "divine01",
-      "ever01",
-      "atom02",
-      "binary02",
-      "cream02",
+      "Atom01",
+      "Binary01",
+      "Cream01",
+      "Divine01",
+      "Ever01",
+      "Atom02"
     ],
   },
 
   idntt: {
-    members: [
-      "dohun",
-      "heeju",
-      "taein",
-      "jaeyoung",
-      "juho",
-      "jiwoon",
-      "hwanhee",
-      "cheongmyeong",
-      "towa",
-      "kyuhyuk",
-      "nuri",
-      "seongjun",
-      "yejoon",
-      "gyeongbeen",
-      "eunsoo",
-    ],
-    seasons: ["summer25", "autumn25", "winter26", "spring26"],
+    members: ["DoHun", "HeeJu", "TaeIn", "JaeYoung", "JuHo", "JiWoon", "HwanHee", "CheongMyeong", "Towa", "KyuHyuk", "NuRi", "SeongJun", "YeJoon", "GyeongBeen", "EunSoo", "GiWoong", "JooHeon", "GyungHo", "EunChan", "EunSung"],
+    seasons: ["Summer25", "Autumn25", "Winter26", "Spring26","Summer26"],
   },
 };
 
@@ -148,13 +105,13 @@ function render() {
 
   // Member filter
   if (state.member) {
-    cards = cards.filter((card) => card.member.toLowerCase() === state.member);
+    cards = cards.filter((card) => card.member === state.member);
   }
 
   // Season filter
   if (state.season) {
     cards = cards.filter((card) =>
-      card.name.toLowerCase().startsWith(state.season),
+      card.name.startsWith(state.season),
     );
   }
 

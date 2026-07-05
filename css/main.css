@@ -60,6 +60,20 @@ body {
   font-weight: 600;
 }
 
+.spin-btn {
+  width: 180px;
+  height: 40px;
+  border: none;
+  border-radius: 14px;
+  background: #1f2435;
+  color: white;
+  font-size: 15px;
+  cursor: pointer;
+  transition: 0.2s;
+  font-family: Inter, sans-serif;
+  font-weight: 600;
+}
+
 .back-btn:hover {
   background: #2b3148;
 }

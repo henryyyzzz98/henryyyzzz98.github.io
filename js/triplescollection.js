@@ -5,8 +5,8 @@ let selectedCard = null;
 let selectedIndex = null;
 let hasConfirmed = false;
 
-let selectedCollections = JSON.parse(
-  localStorage.getItem("selectedCollections") || "[]",
+let selectedtriplesCollections = JSON.parse(
+  localStorage.getItem("selectedtriplesCollections") || "[]",
 );
 
 const tryAgainBtn = document.getElementById("try-again-btn");
@@ -91,44 +91,44 @@ function renderCollectionGroup(prefix, collectionList) {
     btn.textContent = collection;
     btn.className = "collection-btn";
 
-    if (selectedCollections.includes(collection)) {
+    if (selectedtriplesCollections.includes(collection)) {
       btn.classList.add("selected");
     }
 
     btn.addEventListener("click", () => {
-      if (selectedCollections.includes(collection)) {
-        selectedCollections = selectedCollections.filter(
+      if (selectedtriplesCollections.includes(collection)) {
+        selectedtriplesCollections = selectedtriplesCollections.filter(
           (c) => c !== collection,
         );
 
         btn.classList.remove("selected");
       } else {
-        selectedCollections.push(collection);
+        selectedtriplesCollections.push(collection);
         btn.classList.add("selected");
       }
 
       updateTabHighlights();
-      updateSelectedCollectionsMessage();
+      updateselectedtriplesCollectionsMessage();
     });
 
     grid.appendChild(btn);
   });
 
   updateTabHighlights();
-  updateSelectedCollectionsMessage();
+  updateselectedtriplesCollectionsMessage();
 }
 
-function updateSelectedCollectionsMessage() {
-  const msg = document.getElementById("selectedCollectionsMsg");
+function updateselectedtriplesCollectionsMessage() {
+  const msg = document.getElementById("selectedtriplesCollectionsMsg");
 
   if (!msg) return;
 
-  if (!selectedCollections.length) {
+  if (!selectedtriplesCollections.length) {
     msg.textContent = "No collections selected.";
     return;
   }
 
-  msg.textContent = "Selected collections: " + selectedCollections.join(", ");
+  msg.textContent = "Selected collections: " + selectedtriplesCollections.join(", ");
 }
 
 function updateTabHighlights() {
@@ -137,7 +137,7 @@ function updateTabHighlights() {
   tabs.forEach((tab) => {
     const prefix = tab.textContent;
 
-    const anySelected = selectedCollections.some((collection) => {
+    const anySelected = selectedtriplesCollections.some((collection) => {
       if (prefix === "AA") {
         return collection.startsWith("AA");
       }
@@ -164,14 +164,15 @@ function updateTabHighlights() {
 
 document.getElementById("saveCollectionBtn").addEventListener("click", () => {
   localStorage.setItem(
-    "selectedCollections",
-    JSON.stringify(selectedCollections),
+    "selectedtriplesCollections",
+    JSON.stringify(selectedtriplesCollections),
   );
 
   generateRandomSet();
   displayCards();
 
   alert("✅ Collection selections saved!");
+  location.reload();
 });
 
 function shuffleArray(array) {
@@ -189,7 +190,7 @@ function shuffleAndPick(array, count) {
 }
 
 function generateRandomSet() {
-  if (!selectedCollections.length) {
+  if (!selectedtriplesCollections.length) {
     cards = [];
     return;
   }
@@ -197,7 +198,7 @@ function generateRandomSet() {
   const filteredCards = allCards.filter(
     (card) =>
       card.collection &&
-      selectedCollections.some(
+      selectedtriplesCollections.some(
         (selected) =>
           selected.trim().toLowerCase() ===
           card.collection.trim().toLowerCase(),
@@ -397,10 +398,10 @@ function tryAgain() {
 window.onload = async () => {
   await loadCollections();
 
-  if (selectedCollections.length > 0) {
+  if (selectedtriplesCollections.length > 0) {
     generateRandomSet();
     displayCards();
   }
 
-  updateSelectedCollectionsMessage();
+  updateselectedtriplesCollectionsMessage();
 };
