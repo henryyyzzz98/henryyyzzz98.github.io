@@ -48,7 +48,7 @@ body {
 
 .back-btn {
   width: 145px;
-  height: 40px;
+  height: 35px;
   border: none;
   border-radius: 14px;
   background: #1f2435;
@@ -58,20 +58,7 @@ body {
   transition: 0.2s;
   font-family: Inter, sans-serif;
   font-weight: 600;
-}
-
-.spin-btn {
-  width: 180px;
-  height: 40px;
-  border: none;
-  border-radius: 14px;
-  background: #1f2435;
-  color: white;
-  font-size: 15px;
-  cursor: pointer;
-  transition: 0.2s;
-  font-family: Inter, sans-serif;
-  font-weight: 600;
+  font-size: 14px;
 }
 
 .back-btn:hover {
@@ -86,11 +73,13 @@ body {
 .pill {
   background: #1b2030;
   border-radius: 999px;
+  height: 35px;
   padding: 10px 16px;
   display: flex;
   align-items: center;
   gap: 8px;
   font-weight: 600;
+  font-size: 14px;
 }
 
 .pill-icon {
@@ -217,14 +206,14 @@ main h1 {
 }
 
 .spin-button {
-  margin-top: 42px;
-  width: 200px;
-  height: 58px;
+  margin-top: 25px;
+  width: 180px;
+  height: 40px;
   border: none;
   border-radius: 18px;
   background: #6d5cff;
   color: white;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
   cursor: pointer;
   transition: 0.25s;
@@ -274,6 +263,11 @@ footer {
     padding: 0 20px;
   }
 
+  main h2 {
+    font-size: 18px;
+    text-align: center;
+  }
+
   .selector {
     width: 191.6px;
   }
@@ -282,7 +276,27 @@ footer {
     width: 145px;
   }
 
+  .back-btn {
+    width: 120px;
+    height: 35px;
+    font-size: 12px;
+  }
+
+  .pill {
+    height: 35px;
+    font-size: 12px;
+    background: #1b2030;
+    border-radius: 999px;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+  }
+
   .spin-button {
+    height: 40px;
     width: 40%;
+    font-size: 16px;
   }
 }

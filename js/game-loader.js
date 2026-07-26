@@ -8,6 +8,7 @@ function getSpinScript(selected) {
             Autumn25: "au25",
             Winter26: "wi26",
             Spring26: "sp26",
+            Summer26: "su26"
         };
 
         const prefix = map[season];

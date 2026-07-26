@@ -13043,7 +13043,7 @@
    "name": "Atom02 JinSoul 304Z",
    "member": "JinSoul",
    "collection": "AA304Z",
-   "group": "Double",
+   "group": "Shop",
    "image": "https://resources.cosmo.fans/images/collection-front-image/2000/2dbec6ffe1494389947f8783cad084f720260611072755514.webp",
    "video": ""
  },
@@ -13051,7 +13051,7 @@
    "name": "Atom02 JinSoul 305Z",
    "member": "JinSoul",
    "collection": "AA305Z",
-   "group": "Double",
+   "group": "Shop",
    "image": "https://resources.cosmo.fans/images/collection-front-image/2000/9d533b8628bd457684742476024ffb1f20260611072751337.webp",
    "video": ""
  },
@@ -13059,8 +13059,192 @@
    "name": "Atom02 JinSoul 306Z",
    "member": "JinSoul",
    "collection": "AA306Z",
-   "group": "Double",
+   "group": "Shop",
    "image": "https://resources.cosmo.fans/images/collection-front-image/2000/09b4972e99f64b9b93c874a1b473e02a20260611072751408.webp",
+   "video": ""
+ },
+ {
+   "name": "Atom02 HeeJin 307Z",
+   "member": "HeeJin",
+   "collection": "AA307Z",
+   "group": "Shop",
+   "image": "https://resources.cosmo.fans/images/collection-front-image/2000/af5567409fb546d69e7c0ed04413e33720260706091144831.webp",
+   "video": ""
+ },
+ {
+   "name": "Atom02 HaSeul 307Z",
+   "member": "HaSeul",
+   "collection": "AA307Z",
+   "group": "Shop",
+   "image": "https://resources.cosmo.fans/images/collection-front-image/2000/4ea39f6908694ca79a35833bb83538e420260706091635894.webp",
+   "video": ""
+ },
+ {
+   "name": "Atom02 KimLip 307Z",
+   "member": "KimLip",
+   "collection": "AA307Z",
+   "group": "Shop",
+   "image": "https://resources.cosmo.fans/images/collection-front-image/2000/d146963ab04447b2aa73c3155843533e20260706091254858.webp",
+   "video": ""
+ },
+ {
+   "name": "Atom02 JinSoul 307Z",
+   "member": "JinSoul",
+   "collection": "AA307Z",
+   "group": "Shop",
+   "image": "https://resources.cosmo.fans/images/collection-front-image/2000/fcc87714f2a2454faa02e0af88b5756a20260706091412934.webp",
+   "video": ""
+ },
+ {
+   "name": "Atom02 Choerry 307Z",
+   "member": "Choerry",
+   "collection": "AA307Z",
+   "group": "Shop",
+   "image": "https://resources.cosmo.fans/images/collection-front-image/2000/77d714881b0049d2bbbb5d5d8ffdc4d020260706091536027.webp",
+   "video": ""
+ },
+ {
+   "name": "Atom02 ARTMS 309Z",
+   "member": "ARTMS",
+   "collection": "AA309Z",
+   "group": "Shop",
+   "image": "https://resources.cosmo.fans/images/collection-front-image/2000/3e648e1d272b45a89f20e04d4ecf108520260714093944645.webp",
+   "video": ""
+ },
+ {
+   "name": "Atom02 ARTMS 310Z",
+   "member": "ARTMS",
+   "collection": "AA310Z",
+   "group": "Shop",
+   "image": "https://resources.cosmo.fans/images/collection-front-image/2000/e6f27ec2db684875bb80431590f8b07e20260714100110909.webp",
+   "video": ""
+ },
+ {
+   "name": "Atom02 ARTMS 311Z",
+   "member": "ARTMS",
+   "collection": "AA311Z",
+   "group": "Shop",
+   "image": "https://resources.cosmo.fans/images/collection-front-image/2000/c8d4fe970e104cbe8b6bc176480473d520260714100239221.webp",
+   "video": ""
+ },
+ {
+   "name": "Atom02 ARTMS 312Z",
+   "member": "ARTMS",
+   "collection": "AA312Z",
+   "group": "Shop",
+   "image": "https://resources.cosmo.fans/images/collection-front-image/2000/688b93d0b0ff45b48aba320a634a709120260714100416330.webp",
+   "video": ""
+ },
+ {
+   "name": "Atom02 ARTMS 313Z",
+   "member": "ARTMS",
+   "collection": "AA313Z",
+   "group": "Shop",
+   "image": "https://resources.cosmo.fans/images/collection-front-image/2000/ea7082a8244e4f0e872a18dc1744b33e20260714100520279.webp",
+   "video": ""
+ },
+ {
+   "name": "Atom02 ARTMS 314Z",
+   "member": "ARTMS",
+   "collection": "AA314Z",
+   "group": "Shop",
+   "image": "https://resources.cosmo.fans/images/collection-front-image/2000/001743aeeff04939824c98ca98f7d4f720260714100625993.webp",
+   "video": ""
+ },
+ {
+   "name": "Atom02 ARTMS 315Z",
+   "member": "ARTMS",
+   "collection": "AA315Z",
+   "group": "Shop",
+   "image": "https://resources.cosmo.fans/images/collection-front-image/2000/e2d7c28354ea4337beeca0eec495b37620260714100921611.webp",
+   "video": ""
+ },
+ {
+   "name": "Atom02 ARTMS 316Z",
+   "member": "ARTMS",
+   "collection": "AA316Z",
+   "group": "Shop",
+   "image": "https://resources.cosmo.fans/images/collection-front-image/2000/1348ea45e7144dd4877f735087b7f08120260714101019466.webp",
+   "video": ""
+ },
+ {
+   "name": "Atom02 ARTMS 317Z",
+   "member": "ARTMS",
+   "collection": "AA317Z",
+   "group": "Shop",
+   "image": "https://resources.cosmo.fans/images/collection-front-image/2000/c28de7767d444d4a9d91e9be630f7ac920260714101114766.webp",
+   "video": ""
+ },
+ {
+   "name": "Atom02 ARTMS 318Z",
+   "member": "ARTMS",
+   "collection": "AA318Z",
+   "group": "Shop",
+   "image": "https://resources.cosmo.fans/images/collection-front-image/2000/251bd14d075646b8b3556d1ab340b88820260714101213053.webp",
+   "video": ""
+ },
+ {
+   "name": "Atom02 ARTMS 319Z",
+   "member": "ARTMS",
+   "collection": "AA319Z",
+   "group": "Shop",
+   "image": "https://resources.cosmo.fans/images/collection-front-image/2000/2856a0ebc0d6488892b4fd4879419c4a20260714101305650.webp",
+   "video": ""
+ },
+ {
+   "name": "Atom02 ARTMS 320Z",
+   "member": "ARTMS",
+   "collection": "AA320Z",
+   "group": "Shop",
+   "image": "https://resources.cosmo.fans/images/collection-front-image/2000/30fb164d0890448aa7481bce2805875e20260714101430204.webp",
+   "video": ""
+ },
+ {
+   "name": "Atom02 ARTMS 321Z",
+   "member": "ARTMS",
+   "collection": "AA321Z",
+   "group": "Shop",
+   "image": "https://resources.cosmo.fans/images/collection-front-image/2000/887d91097f9e489183b944ca656ef98e20260714101527297.webp",
+   "video": ""
+ },
+ {
+   "name": "Atom02 ARTMS 322Z",
+   "member": "ARTMS",
+   "collection": "AA322Z",
+   "group": "Shop",
+   "image": "https://resources.cosmo.fans/images/collection-front-image/2000/8b9fffe2ac7e4a139e25e66e4a1b29b520260714101718268.webp",
+   "video": ""
+ },
+ {
+   "name": "Atom02 ARTMS 323Z",
+   "member": "ARTMS",
+   "collection": "AA323Z",
+   "group": "Shop",
+   "image": "https://resources.cosmo.fans/images/collection-front-image/2000/56336ff90c664e36b7f766cd1bc113c620260714101822029.webp",
+   "video": ""
+ },
+ {
+   "name": "Atom02 ARTMS 324Z",
+   "member": "ARTMS",
+   "collection": "AA324Z",
+   "group": "Shop",
+   "image": "https://resources.cosmo.fans/images/collection-front-image/2000/a20e43a785ad4b559423d312092cdffa20260714101933647.webp",
+   "video": ""
+ },
+ {
+   "name": "Atom02 ARTMS 325Z",
+   "member": "ARTMS",
+   "collection": "AA325Z",
+   "group": "Shop",
+   "image": "https://resources.cosmo.fans/images/collection-front-image/2000/ba80a7d6837a4eae95ea48d8f9641efd20260714102038434.webp",
+   "video": ""
+ },
+ {
+   "name": "Atom02 ARTMS 326Z",
+   "member": "ARTMS",
+   "collection": "AA326Z",
+   "group": "Shop",
+   "image": "https://resources.cosmo.fans/images/collection-front-image/2000/d988ef6f8ff643a5bd98bbca11181e0520260714102135188.webp",
    "video": ""
  },
  {
