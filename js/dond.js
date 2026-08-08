@@ -1055,20 +1055,22 @@ function takeDeal() {
 
 noDealButton.addEventListener("click", continueGame);
 
-function continueGame() {
+function continueGame(isAutomaticNoDeal = false) {
   /*
-        Record No Deal.
-
-        Do not record this if we're already
-        transitioning automatically from a
-        failed Counter Offer.
+        Record No Deal only when appropriate.
     */
 
   addLog({
     type: "NO_DEAL",
 
     round: round,
+
+    automatic: isAutomaticNoDeal,
   });
+
+  /*
+        Reset Banker / Counter UI.
+    */
 
   waitingForDeal = false;
 
@@ -1082,12 +1084,24 @@ function continueGame() {
 
   counterPanel.classList.add("hidden");
 
+  counterButton.classList.add("hidden");
+
+  /*
+        Reset cases opened for the
+        upcoming round.
+    */
+
   openedCasesThisRound = 0;
+
+  /*
+        Move to next round.
+    */
 
   round++;
 
   /*
-        After Round 9, two cases remain.
+        After Round 9, only two cases
+        remain.
     */
 
   if (round > ROUND_CASES.length) {
@@ -1096,12 +1110,22 @@ function continueGame() {
     return;
   }
 
+  /*
+        Get number of cases to open
+        in the new round.
+    */
+
   casesToOpen = ROUND_CASES[round - 1];
 
   instruction.textContent =
     `OPEN ${casesToOpen} CASE` + `${casesToOpen === 1 ? "" : "S"}`;
 
-  message.textContent = "NO DEAL! THE GAME CONTINUES.";
+  if (isAutomaticNoDeal) {
+    message.textContent =
+      "THE BANKER REJECTED YOUR " + "COUNTER OFFER. NO DEAL!";
+  } else {
+    message.textContent = "NO DEAL! THE GAME CONTINUES.";
+  }
 
   updateGameInfo();
 }
@@ -1500,7 +1524,7 @@ function showBankerCounter(amount) {
 
 function rejectCounter() {
   /*
-        Record rejection.
+        Record the rejection.
     */
 
   addLog({
@@ -1509,14 +1533,14 @@ function rejectCounter() {
     round: round,
   });
 
+  /*
+        Immediately disable all Banker
+        interaction.
+    */
+
   waitingForDeal = true;
 
   counterOfferInProgress = false;
-
-  /*
-        Hide EVERYTHING related to
-        the Banker.
-    */
 
   bankerSection.classList.add("hidden");
 
@@ -1528,18 +1552,21 @@ function rejectCounter() {
 
   counterButton.classList.add("hidden");
 
+  /*
+        Tell the player what happened.
+    */
+
   instruction.textContent = "NO DEAL!";
 
   message.textContent = "THE BANKER REJECTED YOUR " + "COUNTER OFFER.";
 
   /*
-        Automatic No Deal.
-
-        Continue to next round.
+        Automatically proceed to the
+        next round.
     */
 
   delay(1800).then(() => {
-    continueGame();
+    continueGame(true);
   });
 }
 
