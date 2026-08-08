@@ -2,7 +2,6 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <title>Deal or No Deal</title>
@@ -12,8 +11,8 @@
 
   <body>
     <!-- =====================================================
-     SETUP SCREEN
-===================================================== -->
+       SETUP SCREEN
+  ====================================================== -->
 
     <div id="setupScreen" class="screen setup-screen">
       <div class="setup-background"></div>
@@ -21,17 +20,14 @@
       <div class="setup-box">
         <div class="setup-logo">
           <div class="logo-small">THE</div>
-
           <div class="logo-main">DEAL</div>
-
           <div class="logo-small">OR</div>
-
           <div class="logo-main">NO DEAL</div>
         </div>
 
         <p class="subtitle">Create Your Game</p>
 
-        <label for="maxPrize"> MAXIMUM PRIZE </label>
+        <label for="maxPrize">MAXIMUM PRIZE</label>
 
         <div class="input-wrapper">
           <span>$</span>
@@ -44,8 +40,8 @@
     </div>
 
     <!-- =====================================================
-     GAME SCREEN
-===================================================== -->
+       GAME SCREEN
+  ====================================================== -->
 
     <div id="gameScreen" class="screen game-screen hidden">
       <!-- =================================================
@@ -54,23 +50,27 @@
 
       <header class="game-header">
         <div class="show-logo">
-          <span class="logo-deal"> DEAL </span>
-
-          <span class="logo-or"> OR </span>
-
-          <span class="logo-no-deal"> NO DEAL </span>
+          <span class="logo-deal">DEAL</span>
+          <span class="logo-or">OR</span>
+          <span class="logo-no-deal">NO DEAL</span>
         </div>
 
-        <div class="round-display">
-          <span> ROUND </span>
+        <div class="header-center">
+          <div class="round-display">
+            <span>ROUND</span>
+            <strong id="roundNumber">1</strong>
+          </div>
 
-          <strong id="roundNumber"> 1 </strong>
+          <div class="header-instruction">
+            <span id="instructionRound"></span>
+
+            <strong id="instruction"> CHOOSE YOUR CASE </strong>
+          </div>
         </div>
 
         <div class="cases-counter">
-          <span> CASES LEFT </span>
-
-          <strong id="casesLeft"> 26 </strong>
+          <span>CASES LEFT</span>
+          <strong id="casesLeft">26</strong>
         </div>
       </header>
 
@@ -80,68 +80,44 @@
 
       <main class="game-main">
         <!-- =============================================
-             PRIZE BOARD
-        ============================================== -->
+           PRIZE BOARD + CASES
+      ============================================== -->
 
-        <section class="prize-section">
-          <div class="section-title">
-            <span></span>
+        <div class="main-board">
+          <!-- =========================================
+             LEFT PRIZE VALUES
+        ========================================== -->
 
-            <h2>PRIZE BOARD</h2>
-
-            <span></span>
-          </div>
-
-          <div class="money-board">
+          <section class="prize-section left-prize-section">
             <div class="money-column" id="leftMoneyBoard"></div>
+          </section>
 
-            <div class="money-column" id="rightMoneyBoard"></div>
-          </div>
-        </section>
-
-        <!-- =============================================
-             GAME INSTRUCTION
-        ============================================== -->
-
-        <div class="game-instruction">
-          <div class="instruction-round">
-            ROUND <span id="instructionRound">1</span>
-          </div>
-
-          <h2 id="instruction">CHOOSE YOUR CASE</h2>
-        </div>
-
-        <!-- =============================================
+          <!-- =========================================
              CASES
-        ============================================== -->
+        ========================================== -->
 
-        <section class="cases-section">
-          <div id="casesContainer" class="cases-container"></div>
-        </section>
+          <section class="cases-section">
+            <div class="center-player-case">
+              <div class="player-case-label">YOUR CASE</div>
 
-        <!-- =============================================
-             PLAYER CASE
-        ============================================== -->
+              <div id="playerCase" class="player-case">?</div>
+            </div>
 
-        <section class="player-case-section">
-          <div class="player-case-label">YOUR CASE</div>
+            <div id="casesContainer" class="cases-container"></div>
+          </section>
 
-          <div id="playerCase" class="player-case">?</div>
-        </section>
+          <!-- =========================================
+             RIGHT PRIZE VALUES
+        ========================================== -->
 
-        <!-- =============================================
-             REVEAL DISPLAY
-        ============================================== -->
-
-        <div id="revealDisplay" class="reveal-display hidden">
-          <div class="reveal-label">CASE REVEALS</div>
-
-          <div id="revealedAmount" class="revealed-amount">$0</div>
+          <section class="prize-section right-prize-section">
+            <div class="money-column" id="rightMoneyBoard"></div>
+          </section>
         </div>
 
         <!-- =============================================
-             BANKER
-        ============================================== -->
+           BANKER
+      ============================================== -->
 
         <section id="bankerSection" class="banker-section hidden">
           <div class="banker-phone">
@@ -152,7 +128,6 @@
 
           <div id="bankerWaiting" class="banker-waiting">
             <div class="phone-ringing">☎</div>
-
             <p>Please wait...</p>
           </div>
 
@@ -160,9 +135,9 @@
             <div class="banker-title">THE BANKER'S OFFER</div>
 
             <div class="offer-box">
-              <span> TAKE THE MONEY </span>
+              <span>TAKE THE MONEY</span>
 
-              <strong id="bankerOffer"> $0 </strong>
+              <strong id="bankerOffer">$0</strong>
             </div>
 
             <div class="deal-buttons">
@@ -173,6 +148,10 @@
               <button id="noDealButton" class="no-deal">NO DEAL</button>
             </div>
           </div>
+
+          <!-- =========================================
+             COUNTER OFFER
+        ========================================== -->
 
           <div id="counterPanel" class="counter-panel hidden">
             <div class="counter-title">MAKE YOUR COUNTER OFFER</div>
@@ -202,8 +181,8 @@
         </section>
 
         <!-- =============================================
-             FINAL CHOICE
-        ============================================== -->
+           FINAL CHOICE
+      ============================================== -->
 
         <div id="finalChoice" class="final-choice hidden">
           <div class="final-choice-title">TWO CASES REMAIN</div>
@@ -220,14 +199,14 @@
         </div>
 
         <!-- =============================================
-             MESSAGE
-        ============================================== -->
+           MESSAGE
+      ============================================== -->
 
         <div id="message" class="message"></div>
 
         <!-- =============================================
-             NEW GAME
-        ============================================== -->
+           NEW GAME
+      ============================================== -->
 
         <button id="newGameButton" class="new-game hidden">PLAY AGAIN</button>
       </main>

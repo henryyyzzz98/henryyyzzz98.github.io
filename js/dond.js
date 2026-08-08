@@ -153,10 +153,6 @@ const swapButton = document.getElementById("swapButton");
 
 const message = document.getElementById("message");
 
-const revealDisplay = document.getElementById("revealDisplay");
-
-const revealedAmount = document.getElementById("revealedAmount");
-
 const newGameButton = document.getElementById("newGameButton");
 
 /* =========================================================
@@ -291,14 +287,6 @@ function resetGame() {
     */
 
   finalChoice.classList.add("hidden");
-
-  /*
-        Hide reveal.
-    */
-
-  revealDisplay.classList.add("hidden");
-
-  revealedAmount.textContent = "$0";
 
   /*
         Hide new game button.
@@ -638,9 +626,9 @@ async function openCase(gameCase) {
         Display amount.
     */
 
-  revealedAmount.textContent = formatMoney(gameCase.value);
+  caseButton.textContent = formatMoney(gameCase.value);
 
-  revealDisplay.classList.remove("hidden");
+  caseButton.classList.add("revealed");
 
   message.textContent =
     `CASE ${String(gameCase.number).padStart(2, "0")} CONTAINS ` +
@@ -661,8 +649,6 @@ async function openCase(gameCase) {
   updateGameInfo();
 
   await delay(500);
-
-  revealDisplay.classList.add("hidden");
 
   /*
         Round complete?
@@ -767,8 +753,6 @@ function formatMoney(value) {
 
 function updateGameInfo() {
   roundNumber.textContent = round;
-
-  instructionRound.textContent = round;
 
   const unopenedCases = cases.filter((gameCase) => !gameCase.opened).length;
 
@@ -1293,32 +1277,24 @@ function evaluateCounterOffer(playerOffer, currentOffer) {
     values.reduce((sum, value) => sum + value, 0) / values.length;
 
   /*
-        Hidden negotiation limit.
+        How far above the current
+        Banker offer the player is
+        allowed to counter.
+
+        5% or less:
+        Banker accepts.
+
+        Above 5%:
+        Banker rejects.
     */
 
-  let negotiationLimit = expectedValue * 0.92;
+  const maximumCounter = currentOffer * 1.05;
 
   /*
-        More generous late-game.
+        Reasonable counter.
     */
 
-  if (round >= 7) {
-    negotiationLimit = expectedValue * 0.96;
-  }
-
-  /*
-        Absolute ceiling.
-    */
-
-  const absoluteLimit = expectedValue * 1.02;
-
-  const counterRatio = playerOffer / currentOffer;
-
-  /*
-        Very reasonable counter.
-    */
-
-  if (counterRatio <= 1.05) {
+  if (playerOffer <= maximumCounter) {
     return {
       action: "ACCEPT",
 
@@ -1327,51 +1303,7 @@ function evaluateCounterOffer(playerOffer, currentOffer) {
   }
 
   /*
-        Reasonable counter.
-    */
-
-  if (playerOffer <= negotiationLimit) {
-    const counterAmount = calculateBankerCounter(
-      playerOffer,
-      currentOffer,
-      expectedValue,
-    );
-
-    return {
-      action: "COUNTER",
-
-      amount: counterAmount,
-    };
-  }
-
-  /*
-        Aggressive counter.
-    */
-
-  if (playerOffer <= absoluteLimit) {
-    if (Math.random() < 0.25) {
-      return {
-        action: "ACCEPT",
-
-        amount: playerOffer,
-      };
-    }
-
-    const counterAmount = calculateBankerCounter(
-      playerOffer,
-      currentOffer,
-      expectedValue,
-    );
-
-    return {
-      action: "COUNTER",
-
-      amount: counterAmount,
-    };
-  }
-
-  /*
-        Too aggressive.
+        Counter failed.
 
         Automatic No Deal.
     */
@@ -1414,15 +1346,14 @@ function handleCounterResult(result) {
     return;
   }
 
-  if (result.action === "COUNTER") {
-    showBankerCounter(result.amount);
+  /*
+        Any counter that is not accepted
+        is considered rejected.
 
-    return;
-  }
+        Rejection = automatic No Deal.
+    */
 
-  if (result.action === "REJECT") {
-    rejectCounter();
-  }
+  rejectCounter();
 }
 
 /* =========================================================
@@ -1523,24 +1454,25 @@ function showBankerCounter(amount) {
 ========================================================= */
 
 function rejectCounter() {
-  /*
-        Record the rejection.
-    */
+  /* -----------------------------------------
+       RECORD COUNTER REJECTION
+    ----------------------------------------- */
 
   addLog({
     type: "COUNTER_REJECTED",
-
     round: round,
   });
 
-  /*
-        Immediately disable all Banker
-        interaction.
-    */
+  /* -----------------------------------------
+       LOCK GAME
+    ----------------------------------------- */
 
   waitingForDeal = true;
-
   counterOfferInProgress = false;
+
+  /* -----------------------------------------
+       HIDE ALL BANKER UI
+    ----------------------------------------- */
 
   bankerSection.classList.add("hidden");
 
@@ -1552,22 +1484,67 @@ function rejectCounter() {
 
   counterButton.classList.add("hidden");
 
-  /*
-        Tell the player what happened.
-    */
+  /* -----------------------------------------
+       SHOW REJECTION
+    ----------------------------------------- */
 
   instruction.textContent = "NO DEAL!";
 
   message.textContent = "THE BANKER REJECTED YOUR " + "COUNTER OFFER.";
 
-  /*
-        Automatically proceed to the
-        next round.
-    */
+  /* -----------------------------------------
+       AUTOMATICALLY MOVE TO NEXT ROUND
+    ----------------------------------------- */
 
   delay(1800).then(() => {
-    continueGame(true);
+    startNextRoundAfterCounter();
   });
+}
+
+function startNextRoundAfterCounter() {
+  /* -----------------------------------------
+       RESET ROUND STATE
+    ----------------------------------------- */
+
+  waitingForDeal = false;
+
+  counterOfferInProgress = false;
+
+  openedCasesThisRound = 0;
+
+  /* -----------------------------------------
+       MOVE TO NEXT ROUND
+    ----------------------------------------- */
+
+  round++;
+
+  /* -----------------------------------------
+       IF ROUND 9 IS FINISHED,
+       GO TO FINAL STAGE
+    ----------------------------------------- */
+
+  if (round > ROUND_CASES.length) {
+    startFinalStage();
+
+    return;
+  }
+
+  /* -----------------------------------------
+       SET CASES TO OPEN
+    ----------------------------------------- */
+
+  casesToOpen = ROUND_CASES[round - 1];
+
+  /* -----------------------------------------
+       UPDATE UI
+    ----------------------------------------- */
+
+  instruction.textContent =
+    `OPEN ${casesToOpen} CASE` + `${casesToOpen === 1 ? "" : "S"}`;
+
+  message.textContent = "NO DEAL! THE GAME CONTINUES.";
+
+  updateGameInfo();
 }
 
 /* =========================================================
@@ -1786,6 +1763,7 @@ function generateGameLog() {
 
   if (playerSelection) {
     output += `Player's Original Case: Case #${playerSelection.caseNumber}\n`;
+    output += `Player's Original Case Amount: ${formatMoney(playerSelection.value)}\n`;
   }
 
   output += "\n";
