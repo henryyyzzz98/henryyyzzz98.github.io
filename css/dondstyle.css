@@ -453,7 +453,7 @@ button {
 ========================================================= */
 
 .game-main {
-  width: min(1250px, 94%);
+  width: min(94%, 94%);
 
   margin: auto;
 
@@ -565,9 +565,9 @@ button {
 
   border-radius: 4px;
 
-  background: linear-gradient(90deg, #202840, #252d47, #202840);
+  background: linear-gradient(175deg,rgba(206, 173, 67, 1) 0%, rgba(241, 226, 167, 1) 50%, rgba(192, 156, 60, 1) 100%);
 
-  color: #e8b923;
+  color: #000;
 
   font-size: 12px;
 
@@ -641,7 +641,7 @@ button {
 .cases-container {
   display: grid;
 
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(6, 1fr);
 
   gap: 13px;
 
@@ -659,15 +659,15 @@ button {
   min-width: 0;
   aspect-ratio: 1.5;
 
-  border: 2px solid #b58c18;
+  border: 2px solid #000;
   border-radius: 9px;
 
-  background: linear-gradient(145deg, #46506c, #20273d);
+  background: #ABB3AE;
 
-  color: white;
+  color: #000;
 
-  font-size: clamp(11px, 1.4vw, 18px);
-  font-weight: 900;
+  font-size: 28px;
+  font-weight: 700;
 
   white-space: nowrap;
   overflow: hidden;
@@ -687,7 +687,7 @@ button {
 }
 
 .case.revealed {
-  font-size: clamp(8px, 1vw, 14px);
+  font-size: 10px;
   padding: 3px 2px;
   letter-spacing: -0.5px;
   overflow: hidden;
@@ -697,9 +697,9 @@ button {
 .case:hover:not(.disabled):not(.opening) {
   transform: translateY(-5px);
 
-  border-color: #f0c62e;
+  border-color: #fff;
 
-  background: linear-gradient(145deg, #586582, #28324d);
+  background: #C6CBC8;
 }
 
 .case.player-selected {
@@ -759,7 +759,7 @@ button {
 
   justify-content: center;
 
-  color: #f0c62e;
+  color: #C6CBC8;
 
   font-size: 11px;
 
@@ -771,13 +771,13 @@ button {
 .case.revealed {
   background: linear-gradient(145deg, #111521, #090c15);
 
-  border-color: #454d62;
+  border-color: #fff;
 
-  color: #e8b923;
+  color: #fff;
 
   animation: caseReveal 0.4s ease-out;
 
-  font-size: clamp(9px, 1.1vw, 15px);
+  font-size: 10px;
 
   padding: 3px 2px;
 
@@ -867,9 +867,9 @@ button {
 }
 
 .player-case {
-  width: 58px;
+  width: 275px;
 
-  height: 38px;
+  height: 28px;
 
   margin: 0;
 
@@ -879,17 +879,17 @@ button {
 
   justify-content: center;
 
-  border: 2px solid #e8b923;
+  border: 2px solid #000;
 
   border-radius: 7px;
 
-  background: linear-gradient(145deg, #2d354e, #151a2a);
+  background: #ABB3AE;
 
-  color: #f0c62e;
+  color: #000;
 
   font-size: 15px;
 
-  font-weight: 900;
+  font-weight: 700;
 
   box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
 
@@ -1584,7 +1584,8 @@ button {
     aspect-ratio: 1.35;
     border-width: 1.5px;
     border-radius: 7px;
-    font-size: clamp(10px, 3vw, 13px);
+    font-size: 28px;
+    font-weight: 700;
     padding: 2px;
   }
 
@@ -1606,7 +1607,7 @@ button {
   }
 
   .player-case {
-    width: 46px;
+    width: 200px;
     height: 30px;
     font-size: 12px;
   }
@@ -1718,7 +1719,8 @@ button {
   }
 
   .case {
-    font-size: 9px;
+    font-size: 28px;
+    font-weight: 700;
   }
 
   .case.revealed {
