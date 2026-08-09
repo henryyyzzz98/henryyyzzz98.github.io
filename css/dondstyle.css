@@ -1255,8 +1255,6 @@ button {
 .message {
   min-height: 24px;
 
-  margin: 20px auto;
-
   text-align: center;
 
   color: #aeb5c9;
@@ -1432,100 +1430,57 @@ button {
 
 @media (max-width: 1000px) {
   .game-header {
-    grid-template-columns: 1fr auto;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 14px;
+    padding: 12px 16px;
+    margin-bottom: 14px;
+  }
 
-    gap: 15px;
+  .show-logo {
+    justify-self: start;
+  }
+
+  .show-logo .logo-deal,
+  .show-logo .logo-no-deal {
+    font-size: 17px;
+  }
+
+  .cases-counter {
+    justify-self: end;
+  }
+
+  .header-center {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    padding-top: 8px;
+    border-top: 1px solid #303750;
   }
 
   .round-display {
-    order: 3;
-
-    grid-column: 1 / -1;
-
     border: none;
+    padding: 0;
+  }
 
-    border-top: 1px solid #303750;
-
-    padding-top: 8px;
+  .header-instruction strong {
+    font-size: clamp(12px, 3.5vw, 16px);
   }
 
   .main-board {
     grid-template-columns:
-      minmax(115px, 0.8fr)
-      minmax(340px, 2.5fr)
-      minmax(115px, 0.8fr);
+      minmax(100px, 0.8fr)
+      minmax(300px, 2.5fr)
+      minmax(100px, 0.8fr);
+    gap: 8px;
+  }
 
-    gap: 10px;
+  .money-column {
+    padding: 7px;
+    gap: 3px;
   }
 
   .money-value {
     font-size: 10px;
-    padding: 5px 4px;
-  }
-
-  .cases-section {
-    padding: 14px;
-  }
-
-  .cases-container {
-    grid-template-columns: repeat(4, 1fr);
-    gap: 9px;
-  }
-}
-
-@media (max-width: 700px) {
-  .main-board {
-    grid-template-columns: 1fr;
-    gap: 18px;
-  }
-
-  .left-prize-section {
-    order: 2;
-  }
-
-  .cases-section {
-    order: 1;
-  }
-
-  .right-prize-section {
-    order: 3;
-  }
-
-  .prize-section .section-title {
-    margin-bottom: 8px;
-  }
-
-  .money-column {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 4px 6px;
-  }
-}
-
-@media (max-width: 600px) {
-  .center-player-case {
-    margin-bottom: 10px;
-    padding-bottom: 9px;
-  }
-
-  .player-case {
-    width: 48px;
-    height: 32px;
-    font-size: 12px;
-  }
-
-  .setup-box {
-    padding: 40px 25px;
-  }
-
-  .logo-main {
-    font-size: 30px;
-  }
-
-  .game-main {
-    width: 96%;
-
-    padding-top: 20px;
+    padding: 5px 3px;
   }
 
   .cases-section {
@@ -1533,50 +1488,244 @@ button {
   }
 
   .cases-container {
-    grid-template-columns: repeat(4, 1fr);
     gap: 8px;
+  }
+}
+
+@media (max-width: 700px) {
+  /*
+     PHONE / SMALL TABLET
+     Cases remain the main focus.
+  */
+
+  .game-header {
+    grid-template-columns: 1fr 1fr;
+    padding: 10px 12px;
+    gap: 8px 10px;
+  }
+
+  .show-logo {
+    justify-self: start;
+    gap: 4px;
+  }
+
+  .show-logo .logo-deal,
+  .show-logo .logo-no-deal {
+    font-size: 14px;
+  }
+
+  .show-logo .logo-or {
+    font-size: 8px;
+  }
+
+  .cases-counter span,
+  .round-display span {
+    font-size: 7px;
+    letter-spacing: 1.5px;
+  }
+
+  .cases-counter strong,
+  .round-display strong {
+    font-size: 17px;
+  }
+
+  .header-center {
+    padding-top: 7px;
+  }
+
+  .header-instruction span {
+    font-size: 7px;
+    letter-spacing: 1.5px;
+  }
+
+  .header-instruction strong {
+    font-size: 12px;
+    letter-spacing: 1px;
+  }
+
+  .game-main {
+    width: calc(100% - 16px);
+    padding-bottom: 35px;
+  }
+
+  /*
+     Two-column layout:
+     cases span the full width,
+     prize boards sit side-by-side underneath.
+  */
+  .main-board {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px 8px;
+  }
+
+  .cases-section {
+    order: 1;
+    grid-column: 1 / -1;
+    padding: 10px;
+    border-radius: 13px;
+  }
+
+  .left-prize-section {
+    order: 2;
+    grid-column: 1;
+  }
+
+  .right-prize-section {
+    order: 3;
+    grid-column: 2;
+  }
+
+  .cases-container {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
   }
 
   .case {
-    font-size: 12px;
-    padding: 3px;
+    aspect-ratio: 1.35;
+    border-width: 1.5px;
+    border-radius: 7px;
+    font-size: clamp(10px, 3vw, 13px);
+    padding: 2px;
   }
 
   .case.revealed {
-    font-size: 9px;
+    font-size: clamp(7px, 2.4vw, 10px);
+    padding: 2px;
+    letter-spacing: -0.4px;
+  }
+
+  .center-player-case {
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    gap: 7px;
+  }
+
+  .player-case-label {
+    font-size: 8px;
+    letter-spacing: 1.5px;
+  }
+
+  .player-case {
+    width: 46px;
+    height: 30px;
+    font-size: 12px;
+  }
+
+  .money-column {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 3px 4px;
+    padding: 6px;
   }
 
   .money-value {
-    font-size: 10px;
-
-    padding: 4px;
+    font-size: clamp(8px, 2.5vw, 10px);
+    padding: 4px 2px;
+    border-radius: 3px;
   }
 
-  .game-instruction h2 {
-    font-size: 19px;
+  .prize-section .section-title {
+    margin-bottom: 5px;
   }
 
-  .revealed-amount {
-    font-size: 36px;
+  .prize-section .section-title h2 {
+    font-size: 8px;
+    letter-spacing: 1.5px;
+  }
+
+  /*
+     Banker / final panels fit the phone width.
+  */
+  .banker-section {
+    width: 100%;
+    margin: 18px auto;
+    padding: 25px 14px;
+    border-radius: 13px;
+  }
+
+  .phone-icon {
+    font-size: 38px;
+  }
+
+  .phone-text {
+    font-size: 11px;
+    letter-spacing: 2px;
+  }
+
+  .offer-box {
+    padding: 22px 12px;
   }
 
   .offer-box strong {
-    font-size: 40px;
+    font-size: clamp(30px, 10vw, 40px);
   }
 
-  .deal-buttons {
-    flex-direction: column;
-  }
-
-  .deal-buttons button {
-    width: 100%;
-  }
-
+  .deal-buttons,
   .final-buttons {
     flex-direction: column;
+    gap: 8px;
   }
 
+  .deal-buttons button,
   .final-buttons button {
     width: 100%;
+    min-width: 0;
+  }
+
+  .counter-panel {
+    padding: 18px 12px;
+  }
+
+  .counter-input-wrapper input {
+    font-size: 18px;
+  }
+
+  .message {
+    margin: 6px auto;
+    font-size: 12px;
+  }
+
+  .new-game {
+    width: 100%;
+    margin: 18px auto;
+  }
+}
+
+@media (max-width: 380px) {
+  .game-header {
+    padding: 9px 10px;
+  }
+
+  .show-logo .logo-deal,
+  .show-logo .logo-no-deal {
+    font-size: 12px;
+  }
+
+  .header-instruction strong {
+    font-size: 11px;
+  }
+
+  .game-main {
+    width: calc(100% - 12px);
+  }
+
+  .cases-section {
+    padding: 8px;
+  }
+
+  .cases-container {
+    gap: 5px;
+  }
+
+  .case {
+    font-size: 9px;
+  }
+
+  .case.revealed {
+    font-size: 7px;
+  }
+
+  .money-value {
+    font-size: 8px;
   }
 }

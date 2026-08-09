@@ -294,6 +294,12 @@ function resetGame() {
 
   newGameButton.classList.add("hidden");
 
+  const logButton = document.getElementById("downloadLogButton");
+
+  if (logButton) {
+    logButton.remove();
+  }
+
   /*
         Reset player case display.
     */
@@ -1041,20 +1047,28 @@ noDealButton.addEventListener("click", continueGame);
 
 function continueGame(isAutomaticNoDeal = false) {
   /*
-        Record No Deal only when appropriate.
-    */
+      Record No Deal.
+  */
 
   addLog({
     type: "NO_DEAL",
-
     round: round,
-
     automatic: isAutomaticNoDeal,
   });
 
   /*
-        Reset Banker / Counter UI.
-    */
+      Show the appropriate message immediately.
+  */
+
+  if (isAutomaticNoDeal) {
+    message.textContent = "NO DEAL! THE GAME CONTINUES.";
+  } else {
+    message.textContent = "NO DEAL! THE GAME CONTINUES.";
+  }
+
+  /*
+      Reset Banker / Counter UI.
+  */
 
   waitingForDeal = false;
 
@@ -1071,22 +1085,20 @@ function continueGame(isAutomaticNoDeal = false) {
   counterButton.classList.add("hidden");
 
   /*
-        Reset cases opened for the
-        upcoming round.
-    */
+      Reset cases opened for the upcoming round.
+  */
 
   openedCasesThisRound = 0;
 
   /*
-        Move to next round.
-    */
+      Move to next round.
+  */
 
   round++;
 
   /*
-        After Round 9, only two cases
-        remain.
-    */
+      Final stage.
+  */
 
   if (round > ROUND_CASES.length) {
     startFinalStage();
@@ -1095,21 +1107,13 @@ function continueGame(isAutomaticNoDeal = false) {
   }
 
   /*
-        Get number of cases to open
-        in the new round.
-    */
+      Set cases to open.
+  */
 
   casesToOpen = ROUND_CASES[round - 1];
 
   instruction.textContent =
     `OPEN ${casesToOpen} CASE` + `${casesToOpen === 1 ? "" : "S"}`;
-
-  if (isAutomaticNoDeal) {
-    message.textContent =
-      "THE BANKER REJECTED YOUR " + "COUNTER OFFER. NO DEAL!";
-  } else {
-    message.textContent = "NO DEAL! THE GAME CONTINUES.";
-  }
 
   updateGameInfo();
 }
@@ -1269,70 +1273,50 @@ function submitCounterOffer() {
 ========================================================= */
 
 function evaluateCounterOffer(playerOffer, currentOffer) {
-  const remainingCases = cases.filter((gameCase) => !gameCase.opened);
-
-  const values = remainingCases.map((gameCase) => gameCase.value);
-
-  const expectedValue =
-    values.reduce((sum, value) => sum + value, 0) / values.length;
+  const counterRatio = playerOffer / currentOffer;
 
   /*
-        How far above the current
-        Banker offer the player is
-        allowed to counter.
+      Very reasonable counter:
+      Up to 5% above the Banker's offer.
+  */
 
-        5% or less:
-        Banker accepts.
-
-        Above 5%:
-        Banker rejects.
-    */
-
-  const maximumCounter = currentOffer * 1.05;
-
-  /*
-        Reasonable counter.
-    */
-
-  if (playerOffer <= maximumCounter) {
+  if (counterRatio <= 1.05) {
     return {
       action: "ACCEPT",
-
       amount: playerOffer,
     };
   }
 
   /*
-        Counter failed.
+      Reasonable counter:
+      5% - 15% above the Banker's offer.
 
-        Automatic No Deal.
-    */
+      Banker has a 50% chance to accept.
+  */
+
+  if (counterRatio <= 1.15) {
+    if (Math.random() < 0.5) {
+      return {
+        action: "ACCEPT",
+        amount: playerOffer,
+      };
+    }
+
+    return {
+      action: "REJECT",
+    };
+  }
+
+  /*
+      Aggressive counter:
+      More than 15% above the Banker's offer.
+
+      Automatic rejection.
+  */
 
   return {
     action: "REJECT",
   };
-}
-
-/* =========================================================
-   CALCULATE BANKER COUNTER
-========================================================= */
-
-function calculateBankerCounter(playerOffer, currentOffer, expectedValue) {
-  let counter = currentOffer + (playerOffer - currentOffer) * 0.45;
-
-  let maximumCounter = expectedValue * 0.92;
-
-  if (round >= 7) {
-    maximumCounter = expectedValue * 0.96;
-  }
-
-  counter = Math.min(counter, maximumCounter);
-
-  counter = smartRound(counter);
-
-  counter = Math.max(counter, currentOffer);
-
-  return counter;
 }
 
 /* =========================================================
