@@ -565,7 +565,12 @@ button {
 
   border-radius: 4px;
 
-  background: linear-gradient(175deg,rgba(206, 173, 67, 1) 0%, rgba(241, 226, 167, 1) 50%, rgba(192, 156, 60, 1) 100%);
+  background: linear-gradient(
+    175deg,
+    rgba(206, 173, 67, 1) 0%,
+    rgba(241, 226, 167, 1) 50%,
+    rgba(192, 156, 60, 1) 100%
+  );
 
   color: #000;
 
@@ -662,7 +667,7 @@ button {
   border: 2px solid #000;
   border-radius: 9px;
 
-  background: #ABB3AE;
+  background: #abb3ae;
 
   color: #000;
 
@@ -699,7 +704,7 @@ button {
 
   border-color: #fff;
 
-  background: #C6CBC8;
+  background: #c6cbc8;
 }
 
 .case.player-selected {
@@ -759,7 +764,7 @@ button {
 
   justify-content: center;
 
-  color: #C6CBC8;
+  color: #c6cbc8;
 
   font-size: 11px;
 
@@ -883,7 +888,7 @@ button {
 
   border-radius: 7px;
 
-  background: #ABB3AE;
+  background: #abb3ae;
 
   color: #000;
 
@@ -1444,6 +1449,34 @@ button {
 
     transform: translateY(0) scale(1);
   }
+}
+
+.banker-hint {
+  margin: 12px auto 16px;
+
+  padding: 10px 14px;
+
+  max-width: 420px;
+
+  border: 1px solid #c89b2c;
+
+  border-radius: 8px;
+
+  background: rgba(200, 155, 44, 0.08);
+
+  color: #f0c94a;
+
+  font-size: 12px;
+
+  font-weight: 800;
+
+  letter-spacing: 1px;
+
+  text-align: center;
+
+  line-height: 1.5;
+
+  text-transform: uppercase;
 }
 
 /* =========================================================
