@@ -8,19 +8,18 @@
 ========================================================= */
 
 const BASE_PRIZES = [
-  0.01, 1, 5, 10, 25, 50, 75, 100, 200, 300, 400, 500, 750, 1000, 2500, 5000,
-  7500, 10000, 15000, 25000, 50000, 75000, 100000, 200000, 300000, 400000,
-  500000, 600000, 750000, 1000000
+  0.01, 100, 200, 500, 1000, 2000, 3000, 4000, 5000, 10000, 20000, 30000, 40000, 50000, 100000, 200000,
+  500000, 1000000
 ];
 
 /* =========================================================
    GAME SETTINGS
 ========================================================= */
 
-const TOTAL_CASES = 30;
+const TOTAL_CASES = 18;
 
 /*
-    Custom 30-case round structure:
+    Custom 18-case round structure:
 
     Round 1 → 5
     Round 2 → 5
@@ -32,7 +31,7 @@ const TOTAL_CASES = 30;
     Round 8 → 2
 */
 
-const ROUND_CASES = [5, 5, 4, 4, 3, 3, 2, 2];
+const ROUND_CASES = [5, 4, 3, 2, 2];
 
 /* =========================================================
    GAME STATE
@@ -366,7 +365,7 @@ function smartRound(value) {
   }
 
   if (value < 100) {
-    return Math.round(value / 5) * 5;
+    return Math.round(value / 1) * 1;
   }
 
   if (value < 1000) {
@@ -377,11 +376,7 @@ function smartRound(value) {
     return Math.round(value / 100) * 100;
   }
 
-  if (value < 100000) {
-    return Math.round(value / 1000) * 1000;
-  }
-
-  return Math.round(value / 5000) * 5000;
+  return Math.round(value / 1000) * 1000;
 }
 
 /* =========================================================

@@ -8,31 +8,31 @@
 ========================================================= */
 
 const BASE_PRIZES = [
-  0.01, 1, 5, 10, 25, 50, 75, 100, 200, 300, 400, 500, 750, 1000, 5000, 10000,
-  25000, 50000, 75000, 100000, 200000, 300000, 400000, 500000, 750000, 1000000
+  0.01, 1, 5, 10, 25, 50, 75, 100, 200, 300, 400, 500, 750, 1000, 2500, 5000,
+  7500, 10000, 15000, 25000, 50000, 75000, 100000, 200000, 300000, 400000,
+  500000, 600000, 750000, 1000000
 ];
 
 /* =========================================================
    GAME SETTINGS
 ========================================================= */
 
-const TOTAL_CASES = 26;
+const TOTAL_CASES = 30;
 
 /*
-    Actual Deal or No Deal round structure:
+    Custom 30-case round structure:
 
-    Round 1 → 6
+    Round 1 → 5
     Round 2 → 5
     Round 3 → 4
-    Round 4 → 3
-    Round 5 → 2
-    Round 6 → 1
-    Round 7 → 1
-    Round 8 → 1
-    Round 9 → 1
+    Round 4 → 4
+    Round 5 → 3
+    Round 6 → 3
+    Round 7 → 2
+    Round 8 → 2
 */
 
-const ROUND_CASES = [6, 5, 4, 3, 2, 1, 1, 1, 1];
+const ROUND_CASES = [5, 5, 4, 4, 3, 3, 2, 2];
 
 /* =========================================================
    GAME STATE
@@ -552,7 +552,7 @@ function handleCaseClick(gameCase) {
     instruction.textContent = `OPEN ${casesToOpen} CASES`;
 
     message.textContent =
-      "YOUR CASE HAS BEEN SELECTED. " + "CHOOSE ANOTHER CASE TO OPEN.";
+      "YOUR CASE HAS BEEN SELECTED. " + "CHOOSE A CASE TO START.";
 
     renderCases();
 

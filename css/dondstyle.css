@@ -1290,6 +1290,28 @@ button {
   letter-spacing: 2px;
 }
 
+.download-log-button {
+  display: block;
+
+  margin: 25px auto;
+
+  padding: 14px 35px;
+
+  border: 1px solid #d8a91d;
+
+  border-radius: 8px;
+
+  background: linear-gradient(180deg, #e8c442, #bd9012);
+
+  color: #111;
+
+  font-size: 14px;
+
+  font-weight: 900;
+
+  letter-spacing: 2px;
+}
+
 /* =========================================================
    COUNTER OFFER
 ========================================================= */
