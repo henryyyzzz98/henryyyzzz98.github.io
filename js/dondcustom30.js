@@ -8,9 +8,9 @@
 ========================================================= */
 
 const BASE_PRIZES = [
-  1, 2, 5, 10, 25, 50, 75, 100, 200, 300, 400, 500, 750, 1000, 2500, 5000, 7500,
-  10000, 15000, 25000, 50000, 75000, 100000, 200000, 300000, 400000, 500000,
-  600000, 750000, 1000000,
+  100, 500, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000, 6000, 7000, 8000, 9000, 10000, 20000,
+  30000, 40000, 50000, 60000, 80000, 100000, 200000, 300000, 400000, 500000,
+  600000, 800000, 1000000,
 ];
 
 /* =========================================================
@@ -22,19 +22,19 @@ const TOTAL_CASES = 30;
 /*
     Custom 30-case round structure:
 
-    Round 1 → 4
-    Round 2 → 4
+    Round 1 → 6
+    Round 2 → 5
     Round 3 → 4
-    Round 4 → 4
+    Round 4 → 3
     Round 5 → 3
-    Round 6 → 3
+    Round 6 → 2
     Round 7 → 2
     Round 8 → 2
     Round 9 → 1
     Round 10 → 1
 */
 
-const ROUND_CASES = [4, 4, 4, 4, 3, 3, 2, 2, 1, 1];
+const ROUND_CASES = [6, 5, 4, 3, 3, 2, 2, 1, 1, 1];
 
 /* =========================================================
    GAME STATE
@@ -371,7 +371,7 @@ function smartRound(value) {
   }
 
   if (value < 10) {
-    return Math.round(value * 2) / 2;
+    return Math.round(value * 1) / 1;
   }
 
   if (value < 100) {
@@ -695,7 +695,6 @@ function eliminatePrize(value) {
 
 function renderMoneyBoard() {
   leftMoneyBoard.innerHTML = "";
-
   rightMoneyBoard.innerHTML = "";
 
   const half = Math.ceil(prizes.length / 2);
@@ -704,14 +703,16 @@ function renderMoneyBoard() {
     const element = document.createElement("div");
 
     element.className = "money-value";
-
     element.dataset.value = value;
 
+    // Remove the "$" from formatMoney() so we can display
+    // the currency symbol and amount separately.
+    const formattedAmount = formatMoney(value).replace("$", "");
+
     element.innerHTML = `
-                <span>
-                    ${formatMoney(value)}
-                </span>
-            `;
+      <span class="money-symbol">$</span>
+      <span class="money-amount">${formattedAmount}</span>
+    `;
 
     if (index < half) {
       leftMoneyBoard.appendChild(element);
@@ -721,8 +722,8 @@ function renderMoneyBoard() {
   });
 
   /*
-        Reapply eliminated prizes.
-    */
+      Reapply eliminated prizes.
+  */
 
   cases.forEach((gameCase) => {
     if (!gameCase.opened) {
@@ -771,7 +772,7 @@ function updateGameInfo() {
 ========================================================= */
 
 function getBankerHint() {
-  if (round !== 4 || playerCaseValue === null) {
+  if (round !== 3 || playerCaseValue === null) {
     return null;
   }
 

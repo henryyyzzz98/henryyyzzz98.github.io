@@ -15,7 +15,7 @@ body {
 
   min-height: 100%;
 
-  font-family: Inter, sans-serif;
+  font-family: Eurostile, sans-serif;
 
   color: white;
 
@@ -555,13 +555,13 @@ button {
 }
 
 .money-value {
-  display: flex;
+  display: grid;
 
-  justify-content: center;
+  grid-template-columns: 28px 1fr;
 
-  padding: 5px 8px;
+  align-items: center;
 
-  border: 1px solid #303851;
+  width: 100%;
 
   border-radius: 4px;
 
@@ -574,21 +574,35 @@ button {
 
   color: #000;
 
-  font-size: 12px;
+  box-sizing: border-box;
 
-  font-weight: bold;
+  padding: 6px 10px;
 
-  transition: 0.25s;
+  border-radius: 4px;
+
+  font-weight: 900;
+
+  font-size: 16px;
+}
+
+.money-symbol {
+  text-align: left;
+}
+
+.money-amount {
+  text-align: right;
+
+  white-space: nowrap;
+
+  font-variant-numeric: tabular-nums;
 }
 
 .money-value.eliminated {
-  color: #555d72;
+  color: #000;
 
-  background: #101421;
+  background: linear-gradient(175deg,rgba(47, 30, 0, 1) 0%, rgba(113, 67, 8, 1) 50%, rgba(51, 36, 16, 1) 100%);
 
   border-color: #202638;
-
-  text-decoration: line-through;
 }
 
 /* =========================================================
@@ -752,7 +766,7 @@ button {
 }
 
 .case.opening::after {
-  content: "OPENING...";
+  content: "";
 
   position: absolute;
 
@@ -983,45 +997,82 @@ button {
    BANKER
 ========================================================= */
 
+.cases-area {
+  position: relative;
+  width: 100%;
+}
+
 .banker-section {
-  width: min(700px, 100%);
+  position: absolute;
+  inset: 0;
+  z-index: 50;
 
-  margin: 30px auto;
+  width: 100%;
+  margin: 0;
+  padding: 0;
 
-  padding: 35px 25px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  text-align: center;
+
+  background: transparent;
+  border: none;
+  border-radius: 18px;
+  box-shadow: none;
+}
+
+.banker-overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: 18px;
+
+  background: rgba(5, 8, 18, 0.68);
+
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+.banker-panel {
+  position: relative;
+  z-index: 51;
+
+  width: min(700px, calc(100% - 40px));
+  max-height: calc(100% - 40px);
+  overflow-y: auto;
+
+  padding: 30px 25px;
 
   text-align: center;
 
   background: radial-gradient(ellipse at center, #222a45, #111626);
 
   border: 1px solid #394360;
-
   border-radius: 18px;
 
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+  box-shadow:
+    0 25px 70px rgba(0, 0, 0, 0.65),
+    0 0 35px rgba(232, 185, 35, 0.08);
+
+  animation: bankerOverlayAppear 0.35s ease-out;
 }
 
 .banker-phone {
-  margin-bottom: 20px;
+  margin-bottom: 18px;
 }
 
 .phone-icon {
   color: #e8b923;
-
   font-size: 48px;
-
   animation: phoneRing 0.8s infinite;
 }
 
 .phone-text {
   margin-top: 8px;
-
   color: #e8b923;
-
   font-size: 14px;
-
   font-weight: bold;
-
   letter-spacing: 3px;
 }
 
@@ -1031,9 +1082,7 @@ button {
 
 .phone-ringing {
   color: #e8b923;
-
   font-size: 38px;
-
   animation: phoneRing 0.6s infinite;
 }
 
@@ -1043,73 +1092,56 @@ button {
 
 .banker-title {
   color: #aeb5c9;
-
   font-size: 12px;
-
   font-weight: bold;
-
   letter-spacing: 4px;
 }
 
 .offer-box {
   width: min(480px, 100%);
+  margin: 20px auto 20px;
+  padding: 25px 20px;
 
-  margin: 20px auto 25px;
+  background: linear-gradient(
+    175deg,
+    rgba(206, 173, 67, 1) 0%,
+    rgba(241, 226, 167, 1) 50%,
+    rgba(192, 156, 60, 1) 100%
+  );
 
-  padding: 30px 20px;
-
-  background: radial-gradient(ellipse at center, #10141f, #080b12);
-
-  border: 3px solid #e8b923;
-
-  border-radius: 16px;
+  border-radius: 12px;
 
   box-shadow: 0 0 35px rgba(232, 185, 35, 0.12);
 }
 
-.offer-box span {
-  display: block;
-
-  color: #7f879d;
-
-  font-size: 11px;
-
-  letter-spacing: 3px;
-}
-
 .offer-box strong {
   display: block;
+  margin-top: 0;
 
-  margin-top: 8px;
+  color: #000;
+  font-size: clamp(32px, 5vw, 52px);
+  font-weight: 700;
+  line-height: 1.05;
 
-  color: #f0c62e;
-
-  font-size: 52px;
-
-  font-weight: 900;
+  overflow-wrap: anywhere;
 
   text-shadow: 0 0 25px rgba(240, 198, 46, 0.3);
 }
 
 .deal-buttons {
   display: flex;
-
   justify-content: center;
-
   gap: 15px;
 }
 
 .deal-buttons button {
   min-width: 150px;
-
   padding: 15px 30px;
 
   border-radius: 8px;
 
   font-size: 15px;
-
   font-weight: 900;
-
   letter-spacing: 1px;
 
   transition:
@@ -1119,17 +1151,13 @@ button {
 
 .deal {
   background: linear-gradient(180deg, #43c67b, #269358);
-
   color: white;
-
   box-shadow: 0 7px 15px rgba(38, 147, 88, 0.25);
 }
 
 .no-deal {
   background: linear-gradient(180deg, #dc4848, #a52d2d);
-
   color: white;
-
   box-shadow: 0 7px 15px rgba(165, 45, 45, 0.25);
 }
 
@@ -1137,29 +1165,15 @@ button {
   transform: translateY(-3px);
 }
 
-@keyframes phoneRing {
-  0% {
-    transform: rotate(0);
+@keyframes bankerOverlayAppear {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
   }
 
-  20% {
-    transform: rotate(-12deg);
-  }
-
-  40% {
-    transform: rotate(12deg);
-  }
-
-  60% {
-    transform: rotate(-8deg);
-  }
-
-  80% {
-    transform: rotate(8deg);
-  }
-
-  100% {
-    transform: rotate(0);
+  to {
+    opacity: 1;
+    transform: scale(1);
   }
 }
 
@@ -1483,7 +1497,15 @@ button {
    MOBILE
 ========================================================= */
 
+/* =========================================================
+   RESPONSIVE — TABLET
+========================================================= */
+
 @media (max-width: 1000px) {
+  /* -------------------------
+     HEADER
+  ------------------------- */
+
   .game-header {
     grid-template-columns: 1fr 1fr;
     gap: 10px 14px;
@@ -1520,13 +1542,22 @@ button {
     font-size: clamp(12px, 3.5vw, 16px);
   }
 
+  /* -------------------------
+     MAIN BOARD
+  ------------------------- */
+
   .main-board {
     grid-template-columns:
       minmax(100px, 0.8fr)
       minmax(300px, 2.5fr)
       minmax(100px, 0.8fr);
+
     gap: 8px;
   }
+
+  /* -------------------------
+     PRIZE BOARD
+  ------------------------- */
 
   .money-column {
     padding: 7px;
@@ -1534,9 +1565,23 @@ button {
   }
 
   .money-value {
-    font-size: 10px;
-    padding: 5px 3px;
+    grid-template-columns: 22px 1fr;
+    padding: 5px 7px;
+    font-size: 13px;
   }
+
+  .money-symbol {
+    font-size: 13px;
+  }
+
+  .money-amount {
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  /* -------------------------
+     CASES
+  ------------------------- */
 
   .cases-section {
     padding: 12px;
@@ -1547,11 +1592,19 @@ button {
   }
 }
 
+/* =========================================================
+   RESPONSIVE — PHONE / SMALL TABLET
+========================================================= */
+
 @media (max-width: 700px) {
   /*
-     PHONE / SMALL TABLET
-     Cases remain the main focus.
+     The cases remain the main focus.
+     Prize boards move underneath.
   */
+
+  /* -------------------------
+     HEADER
+  ------------------------- */
 
   .game-header {
     grid-template-columns: 1fr 1fr;
@@ -1598,62 +1651,102 @@ button {
     letter-spacing: 1px;
   }
 
+  /* -------------------------
+     GAME CONTAINER
+  ------------------------- */
+
   .game-main {
     width: calc(100% - 16px);
     padding-bottom: 35px;
   }
 
-  /*
-     Two-column layout:
-     cases span the full width,
-     prize boards sit side-by-side underneath.
-  */
+  /* -------------------------
+     MAIN BOARD
+  ------------------------- */
+
   .main-board {
-    grid-template-columns: 1fr 1fr;
+    display: flex;
+
+    flex-wrap: wrap;
+
     gap: 12px 8px;
+
+    width: 100%;
+
+    box-sizing: border-box;
   }
+
+  /* -------------------------
+     CASES
+  ------------------------- */
 
   .cases-section {
     order: 1;
-    grid-column: 1 / -1;
+
+    flex: 0 0 100%;
+
+    width: 100%;
+    min-width: 0;
+
+    box-sizing: border-box;
+
     padding: 10px;
+
     border-radius: 13px;
   }
 
-  .left-prize-section {
-    order: 2;
-    grid-column: 1;
-  }
-
-  .right-prize-section {
-    order: 3;
-    grid-column: 2;
-  }
-
   .cases-container {
-    grid-template-columns: repeat(4, 1fr);
+    display: grid;
+
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+
     gap: 6px;
+
+    width: 100%;
+
+    min-width: 0;
+
+    box-sizing: border-box;
   }
 
   .case {
+    width: 100%;
+    min-width: 0;
+
     aspect-ratio: 1.35;
+
     border-width: 1.5px;
     border-radius: 7px;
+
     font-size: 28px;
     font-weight: 700;
+
     padding: 2px;
+
+    box-sizing: border-box;
   }
 
   .case.revealed {
     font-size: clamp(7px, 2.4vw, 10px);
+
     padding: 2px;
+
     letter-spacing: -0.4px;
   }
 
+  /* -------------------------
+     PLAYER CASE
+  ------------------------- */
+
   .center-player-case {
+    width: 100%;
+
     margin-bottom: 8px;
     padding-bottom: 8px;
+
     gap: 7px;
+
+    box-sizing: border-box;
   }
 
   .player-case-label {
@@ -1663,21 +1756,84 @@ button {
 
   .player-case {
     width: 200px;
+    max-width: 80%;
+
     height: 30px;
+
     font-size: 12px;
   }
 
+  /* -------------------------
+     PRIZE BOARDS
+  ------------------------- */
+
+  .left-prize-section {
+    order: 2;
+
+    flex: 0 0 calc(50% - 4px);
+
+    width: calc(50% - 4px);
+    min-width: 0;
+
+    box-sizing: border-box;
+  }
+
+  .right-prize-section {
+    order: 3;
+
+    flex: 0 0 calc(50% - 4px);
+
+    width: calc(50% - 4px);
+    min-width: 0;
+
+    box-sizing: border-box;
+  }
+
   .money-column {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 3px 4px;
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 3px;
+
+    width: 100%;
+    min-width: 0;
+
     padding: 6px;
+
+    box-sizing: border-box;
   }
 
   .money-value {
-    font-size: clamp(8px, 2.5vw, 10px);
-    padding: 4px 2px;
-    border-radius: 3px;
+    display: grid;
+
+    grid-template-columns:
+      22px
+      minmax(0, 1fr);
+
+    width: 100%;
+    min-width: 0;
+
+    box-sizing: border-box;
+
+    padding: 5px 7px;
+
+    font-size: 13px;
+  }
+
+  .money-symbol {
+    text-align: left;
+    font-size: 13px;
+  }
+
+  .money-amount {
+    min-width: 0;
+
+    text-align: right;
+
+    white-space: nowrap;
+
+    font-variant-numeric: tabular-nums;
   }
 
   .prize-section .section-title {
@@ -1689,13 +1845,25 @@ button {
     letter-spacing: 1.5px;
   }
 
-  /*
-     Banker / final panels fit the phone width.
-  */
+  /* -------------------------
+     BANKER OVERLAY
+  ------------------------- */
+
   .banker-section {
     width: 100%;
-    margin: 18px auto;
-    padding: 25px 14px;
+    margin: 0;
+    padding: 0;
+    border-radius: 13px;
+  }
+
+  .banker-panel {
+    width: calc(100% - 24px);
+    max-height: calc(100% - 24px);
+    padding: 22px 14px;
+    border-radius: 13px;
+  }
+
+  .banker-overlay {
     border-radius: 13px;
   }
 
@@ -1716,6 +1884,10 @@ button {
     font-size: clamp(30px, 10vw, 40px);
   }
 
+  /* -------------------------
+     BANKER BUTTONS
+  ------------------------- */
+
   .deal-buttons,
   .final-buttons {
     flex-direction: column;
@@ -1728,6 +1900,10 @@ button {
     min-width: 0;
   }
 
+  /* -------------------------
+     COUNTER OFFER
+  ------------------------- */
+
   .counter-panel {
     padding: 18px 12px;
   }
@@ -1735,6 +1911,10 @@ button {
   .counter-input-wrapper input {
     font-size: 18px;
   }
+
+  /* -------------------------
+     MESSAGE / NEW GAME
+  ------------------------- */
 
   .message {
     margin: 6px auto;
@@ -1747,7 +1927,15 @@ button {
   }
 }
 
+/* =========================================================
+   RESPONSIVE — VERY SMALL PHONES
+========================================================= */
+
 @media (max-width: 380px) {
+  /* -------------------------
+     HEADER
+  ------------------------- */
+
   .game-header {
     padding: 9px 10px;
   }
@@ -1761,9 +1949,17 @@ button {
     font-size: 11px;
   }
 
+  /* -------------------------
+     GAME CONTAINER
+  ------------------------- */
+
   .game-main {
     width: calc(100% - 12px);
   }
+
+  /* -------------------------
+     CASES
+  ------------------------- */
 
   .cases-section {
     padding: 8px;
@@ -1782,7 +1978,73 @@ button {
     font-size: 7px;
   }
 
+  /* -------------------------
+     PRIZE BOARD
+  ------------------------- */
+
+  .main-board {
+    grid-template-columns:
+      minmax(0, 1fr)
+      minmax(0, 1fr);
+
+    gap: 8px 6px;
+  }
+
+  .main-board > .cases-section {
+    grid-column: 1 / 3;
+
+    padding: 8px;
+  }
+
+  .cases-container {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+
+    gap: 5px;
+  }
+
+  .case {
+    font-size: 28px;
+    font-weight: 700;
+  }
+
+  .case.revealed {
+    font-size: 7px;
+  }
+
+  .money-column {
+    padding: 5px;
+    gap: 3px;
+  }
+
   .money-value {
-    font-size: 8px;
+    grid-template-columns:
+      18px
+      minmax(0, 1fr);
+
+    padding: 4px 5px;
+
+    font-size: 11px;
+  }
+
+  .money-symbol {
+    font-size: 11px;
+  }
+
+  .money-amount {
+    font-size: 11px;
+  }
+
+  /* -------------------------
+     BANKER OVERLAY
+  ------------------------- */
+
+  .banker-panel {
+    width: calc(100% - 16px);
+    max-height: calc(100% - 16px);
+    padding: 18px 10px;
+  }
+
+  .banker-overlay {
+    border-radius: 10px;
   }
 }
