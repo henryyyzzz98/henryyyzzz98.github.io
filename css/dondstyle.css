@@ -600,7 +600,12 @@ button {
 .money-value.eliminated {
   color: #000;
 
-  background: linear-gradient(175deg,rgba(47, 30, 0, 1) 0%, rgba(113, 67, 8, 1) 50%, rgba(51, 36, 16, 1) 100%);
+  background: linear-gradient(
+    175deg,
+    rgba(47, 30, 0, 1) 0%,
+    rgba(113, 67, 8, 1) 50%,
+    rgba(51, 36, 16, 1) 100%
+  );
 
   border-color: #202638;
 }
@@ -1039,8 +1044,6 @@ button {
   z-index: 51;
 
   width: min(700px, calc(100% - 40px));
-  max-height: calc(100% - 40px);
-  overflow-y: auto;
 
   padding: 30px 25px;
 
@@ -1135,15 +1138,12 @@ button {
 }
 
 .deal-buttons button {
-  min-width: 150px;
-  padding: 15px 30px;
-
+  min-width: 100px;
+  padding: 10px 0px;
   border-radius: 8px;
-
-  font-size: 15px;
-  font-weight: 900;
+  font-size: 14px;
+  font-weight: 600;
   letter-spacing: 1px;
-
   transition:
     transform 0.15s,
     box-shadow 0.15s;
@@ -1858,8 +1858,13 @@ button {
 
   .banker-panel {
     width: calc(100% - 24px);
-    max-height: calc(100% - 24px);
+
+    max-height: none;
+
+    overflow: visible;
+
     padding: 22px 14px;
+
     border-radius: 13px;
   }
 
@@ -2040,7 +2045,11 @@ button {
 
   .banker-panel {
     width: calc(100% - 16px);
-    max-height: calc(100% - 16px);
+
+    max-height: none;
+
+    overflow: visible;
+
     padding: 18px 10px;
   }
 

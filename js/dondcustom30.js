@@ -860,7 +860,7 @@ async function showBanker() {
 
   const bankerHint = getBankerHint();
 
-  if (round === 4 && bankerHint) {
+  if (round === 3 && bankerHint) {
     bankerHintElement.textContent = `💡 BANKER'S HINT: YOUR CASE IS ON THE ${bankerHint} SIDE OF THE BOARD.`;
 
     bankerHintElement.classList.remove("hidden");
