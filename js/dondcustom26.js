@@ -8,36 +8,37 @@
 ========================================================= */
 
 const BASE_PRIZES = [
-  0.01, 100, 200, 500, 1000, 2000, 3000, 4000, 5000, 10000, 20000, 30000, 40000, 50000, 100000, 200000,
-  500000, 1000000
+  0.05, 0.25, 0.50, 1, 5, 10, 25, 50, 100, 500, 1000, 2500, 5000, 7500, 10000, 25000, 50000, 75000, 100000, 200000, 300000, 400000, 500000,
+  750000, 1000000, 2500000,
 ];
 
 /* =========================================================
    GAME SETTINGS
 ========================================================= */
 
-const TOTAL_CASES = 18;
+const TOTAL_CASES = 26;
 
 /*
-    Custom 18-case round structure:
+    Actual Deal or No Deal round structure:
 
-    Round 1 → 5
+    Round 1 → 6
     Round 2 → 5
     Round 3 → 4
-    Round 4 → 4
-    Round 5 → 3
-    Round 6 → 3
-    Round 7 → 2
-    Round 8 → 2
+    Round 4 → 3
+    Round 5 → 2
+    Round 6 → 1
+    Round 7 → 1
+    Round 8 → 1
+    Round 9 → 1
 */
 
-const ROUND_CASES = [5, 4, 3, 2, 2];
+const ROUND_CASES = [6, 5, 4, 3, 2, 1, 1, 1, 1];
 
 /* =========================================================
    GAME STATE
 ========================================================= */
 
-let maxPrize = 1000000;
+let maxPrize = 2500000;
 
 let prizes = [];
 
@@ -121,6 +122,8 @@ const bankerWaiting = document.getElementById("bankerWaiting");
 const bankerOfferContent = document.getElementById("bankerOfferContent");
 
 const bankerOffer = document.getElementById("bankerOffer");
+
+const bankerHintElement = document.getElementById("bankerHint");
 
 const dealButton = document.getElementById("dealButton");
 
@@ -231,6 +234,11 @@ function startGame() {
 ========================================================= */
 
 function resetGame() {
+  if (bankerHintElement) {
+    bankerHintElement.classList.add("hidden");
+    bankerHintElement.textContent = "";
+  }
+
   playerCase = null;
 
   playerCaseValue = null;
@@ -313,7 +321,7 @@ function resetGame() {
 ========================================================= */
 
 function generatePrizeBoard(maximumPrize) {
-  const multiplier = maximumPrize / 1000000;
+  const multiplier = maximumPrize / 2500000;
 
   let generated = BASE_PRIZES.map((value) => {
     const scaled = value * multiplier;
@@ -361,7 +369,7 @@ function smartRound(value) {
   }
 
   if (value < 10) {
-    return Math.round(value * 2) / 2;
+    return Math.round(value * 1) / 1;
   }
 
   if (value < 100) {
@@ -393,7 +401,7 @@ function getMinimumIncrement(value) {
   }
 
   if (value < 100) {
-    return 5;
+    return 1;
   }
 
   if (value < 1000) {
@@ -404,11 +412,7 @@ function getMinimumIncrement(value) {
     return 100;
   }
 
-  if (value < 100000) {
-    return 1000;
-  }
-
-  return 5000;
+  return 1000;
 }
 
 /* =========================================================
@@ -689,7 +693,6 @@ function eliminatePrize(value) {
 
 function renderMoneyBoard() {
   leftMoneyBoard.innerHTML = "";
-
   rightMoneyBoard.innerHTML = "";
 
   const half = Math.ceil(prizes.length / 2);
@@ -698,14 +701,16 @@ function renderMoneyBoard() {
     const element = document.createElement("div");
 
     element.className = "money-value";
-
     element.dataset.value = value;
 
+    // Remove the "$" from formatMoney() so we can display
+    // the currency symbol and amount separately.
+    const formattedAmount = formatMoney(value).replace("$", "");
+
     element.innerHTML = `
-                <span>
-                    ${formatMoney(value)}
-                </span>
-            `;
+      <span class="money-symbol">$</span>
+      <span class="money-amount">${formattedAmount}</span>
+    `;
 
     if (index < half) {
       leftMoneyBoard.appendChild(element);
@@ -715,8 +720,8 @@ function renderMoneyBoard() {
   });
 
   /*
-        Reapply eliminated prizes.
-    */
+      Reapply eliminated prizes.
+  */
 
   cases.forEach((gameCase) => {
     if (!gameCase.opened) {
@@ -761,6 +766,25 @@ function updateGameInfo() {
 }
 
 /* =========================================================
+   BANKER'S HINT
+========================================================= */
+
+function getBankerHint() {
+  if (round !== 3 || playerCaseValue === null) {
+    return null;
+  }
+
+  const half = Math.ceil(prizes.length / 2);
+  const playerPrizeIndex = prizes.indexOf(playerCaseValue);
+
+  if (playerPrizeIndex === -1) {
+    return null;
+  }
+
+  return playerPrizeIndex < half ? "LEFT" : "RIGHT";
+}
+
+/* =========================================================
    SHOW BANKER
 ========================================================= */
 
@@ -779,12 +803,22 @@ async function showBanker() {
         Record Banker offer.
     */
 
+  const unopenedCases = cases
+    .filter((gameCase) => !gameCase.opened)
+    .map((gameCase) => ({
+      caseNumber: gameCase.number,
+      value: gameCase.value,
+      isPlayerCase: gameCase.isPlayerCase,
+    }));
+
   addLog({
     type: "BANKER_OFFER",
 
     round: round,
 
     offer: offer,
+
+    unopenedCases: unopenedCases,
   });
 
   /*
@@ -821,6 +855,22 @@ async function showBanker() {
   }
 
   instruction.textContent = "THE BANKER HAS MADE AN OFFER";
+
+  const bankerHint = getBankerHint();
+
+  if (round === 3 && bankerHint) {
+    bankerHintElement.textContent = `💡 BANKER'S HINT: YOUR CASE IS ON THE ${bankerHint} SIDE OF THE BOARD.`;
+
+    bankerHintElement.classList.remove("hidden");
+
+    addLog({
+      type: "BANKER_HINT",
+      round: round,
+      side: bankerHint,
+    });
+  } else {
+    bankerHintElement.classList.add("hidden");
+  }
 
   message.textContent = "WILL YOU TAKE THE DEAL?";
 }
@@ -870,39 +920,43 @@ function calculateBankerOffer() {
       break;
 
     case 2:
-      roundFactor = 0.4;
+      roundFactor = 0.38;
       break;
 
     case 3:
-      roundFactor = 0.5;
+      roundFactor = 0.46;
       break;
 
     case 4:
-      roundFactor = 0.6;
+      roundFactor = 0.54;
       break;
 
     case 5:
-      roundFactor = 0.7;
+      roundFactor = 0.62;
       break;
 
     case 6:
-      roundFactor = 0.76;
+      roundFactor = 0.7;
       break;
 
     case 7:
-      roundFactor = 0.8;
+      roundFactor = 0.76;
       break;
 
     case 8:
-      roundFactor = 0.84;
+      roundFactor = 0.82;
       break;
 
     case 9:
-      roundFactor = 0.9;
+      roundFactor = 0.87;
+      break;
+
+    case 10:
+      roundFactor = 0.92;
       break;
 
     default:
-      roundFactor = 0.9;
+      roundFactor = 0.92;
   }
 
   /*
@@ -931,9 +985,9 @@ function calculateBankerOffer() {
 
   let caseFactor;
 
-  if (casesRemaining > 15) {
+  if (casesRemaining > 20) {
     caseFactor = 0.9;
-  } else if (casesRemaining > 10) {
+  } else if (casesRemaining > 13) {
     caseFactor = 0.95;
   } else if (casesRemaining > 5) {
     caseFactor = 1.0;
@@ -1822,6 +1876,24 @@ function generateGameLog() {
 
       if (offer) {
         output += `Banker's Offer: ${formatMoney(offer.offer)}\n`;
+
+        if (offer.unopenedCases && offer.unopenedCases.length > 0) {
+          output += "\nUnopened Cases and Amounts:\n";
+
+          offer.unopenedCases.forEach((gameCase) => {
+            const playerLabel = gameCase.isPlayerCase ? " (PLAYER'S CASE)" : "";
+
+            output +=
+              `Case #${gameCase.caseNumber} → ` +
+              `${formatMoney(gameCase.value)}${playerLabel}\n`;
+          });
+        }
+      }
+
+      const bankerHint = events.find((event) => event.type === "BANKER_HINT");
+
+      if (bankerHint) {
+        output += `\nBanker's Hint: ${bankerHint.side} SIDE OF THE BOARD\n`;
       }
 
       /*
