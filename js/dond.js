@@ -885,43 +885,39 @@ function calculateBankerOffer() {
       break;
 
     case 2:
-      roundFactor = 0.38;
+      roundFactor = 0.4;
       break;
 
     case 3:
-      roundFactor = 0.46;
+      roundFactor = 0.5;
       break;
 
     case 4:
-      roundFactor = 0.54;
+      roundFactor = 0.6;
       break;
 
     case 5:
-      roundFactor = 0.62;
-      break;
-
-    case 6:
       roundFactor = 0.7;
       break;
 
-    case 7:
+    case 6:
       roundFactor = 0.76;
       break;
 
+    case 7:
+      roundFactor = 0.8;
+      break;
+
     case 8:
-      roundFactor = 0.82;
+      roundFactor = 0.84;
       break;
 
     case 9:
-      roundFactor = 0.87;
-      break;
-
-    case 10:
-      roundFactor = 0.92;
+      roundFactor = 0.9;
       break;
 
     default:
-      roundFactor = 0.92;
+      roundFactor = 0.9;
   }
 
   /*
@@ -950,9 +946,9 @@ function calculateBankerOffer() {
 
   let caseFactor;
 
-  if (casesRemaining > 20) {
+  if (casesRemaining > 15) {
     caseFactor = 0.9;
-  } else if (casesRemaining > 13) {
+  } else if (casesRemaining > 10) {
     caseFactor = 0.95;
   } else if (casesRemaining > 5) {
     caseFactor = 1.0;
