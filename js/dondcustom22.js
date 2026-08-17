@@ -8,8 +8,8 @@
 ========================================================= */
 
 const BASE_PRIZES = [
-  0.01, 0.1, 0.5, 1, 5, 10, 50, 100, 250, 500, 750, 1000, 3000, 5000, 10000,
-  15000, 20000, 35000, 50000, 75000, 100000, 250000,
+  0.01, 1, 5, 10, 25, 50, 100, 200, 300, 400, 500, 1000, 2500, 5000, 7500,
+  10000, 25000, 50000, 75000, 100000, 250000, 500000,
 ];
 
 /* =========================================================
@@ -21,24 +21,22 @@ const TOTAL_CASES = 22;
 /*
     Actual Deal or No Deal round structure:
 
-    Round 1 → 6
+    Round 1 → 5
     Round 2 → 5
     Round 3 → 4
-    Round 4 → 3
+    Round 4 → 2
     Round 5 → 2
     Round 6 → 1
     Round 7 → 1
-    Round 8 → 1
-    Round 9 → 1
 */
 
-const ROUND_CASES = [5, 3, 3, 3, 3, 3];
+const ROUND_CASES = [5, 5, 4, 2, 2, 1, 1];
 
 /* =========================================================
    GAME STATE
 ========================================================= */
 
-let maxPrize = 250000;
+let maxPrize = 500000;
 
 let prizes = [];
 
@@ -321,7 +319,7 @@ function resetGame() {
 ========================================================= */
 
 function generatePrizeBoard(maximumPrize) {
-  const multiplier = maximumPrize / 250000;
+  const multiplier = maximumPrize / 500000;
 
   let generated = BASE_PRIZES.map((value) => {
     const scaled = value * multiplier;
@@ -853,27 +851,31 @@ function calculateBankerOffer() {
       break;
 
     case 2:
-      roundFactor = 0.45;
+      roundFactor = 0.42;
       break;
 
     case 3:
-      roundFactor = 0.58;
+      roundFactor = 0.55;
       break;
 
     case 4:
-      roundFactor = 0.7;
+      roundFactor = 0.68;
       break;
 
     case 5:
-      roundFactor = 0.82;
+      roundFactor = 0.78;
       break;
 
     case 6:
-      roundFactor = 0.95;
+      roundFactor = 0.88;
+      break;
+
+    case 7:
+      roundFactor = 0.96;
       break;
 
     default:
-      roundFactor = 0.95;
+      roundFactor = 0.96;
   }
 
   /*

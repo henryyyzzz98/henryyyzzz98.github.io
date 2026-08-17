@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>Deal or No Deal</title>
+
+    <link rel="stylesheet" href="css/dondstyle.css" />
+  </head>
+
+  <body>
+    <!-- =====================================================
+       SETUP SCREEN
+  ====================================================== -->
+
+    <div id="setupScreen" class="screen setup-screen">
+      <div class="setup-background"></div>
+
+      <div class="setup-box">
+        <div class="setup-logo">
+          <div class="logo-main">DEAL</div>
+          <div class="logo-small">OR</div>
+          <div class="logo-main">NO DEAL</div>
+        </div>
+
+        <label for="maxPrize">JACKPOT AMOUNT:</label>
+
+        <div class="input-wrapper">
+          <span>$</span>
+
+          <input type="number" id="maxPrize" value="" min="1" step="1" />
+        </div>
+
+        <button id="startButton" class="start-button">START GAME</button>
+      </div>
+    </div>
+
+    <!-- =====================================================
+       GAME SCREEN
+  ====================================================== -->
+
+    <div id="gameScreen" class="screen game-screen hidden">
+      <!-- =================================================
+         TOP BAR
+    ================================================== -->
+
+      <header class="game-header">
+        <div class="show-logo">
+          <span class="logo-deal">DEAL</span>
+          <span class="logo-or">OR</span>
+          <span class="logo-no-deal">NO DEAL</span>
+        </div>
+
+        <div class="header-center">
+          <div class="round-display">
+            <span>ROUND</span>
+            <strong id="roundNumber">1</strong>
+          </div>
+
+          <div class="header-instruction">
+            <span id="instructionRound"></span>
+
+            <strong id="instruction"> CHOOSE YOUR CASE </strong>
+          </div>
+        </div>
+
+        <div class="cases-counter">
+          <span>CASES LEFT</span>
+          <strong id="casesLeft">26</strong>
+        </div>
+      </header>
+
+      <!-- =================================================
+         MAIN GAME
+    ================================================== -->
+
+      <main class="game-main">
+        <div id="message" class="message"></div>
+        <!-- =============================================
+           PRIZE BOARD + CASES
+      ============================================== -->
+
+        <div class="main-board">
+          <!-- =========================================
+             LEFT PRIZE VALUES
+        ========================================== -->
+
+          <section class="prize-section left-prize-section">
+            <div class="money-column" id="leftMoneyBoard"></div>
+          </section>
+
+          <!-- =========================================
+             CASES
+        ========================================== -->
+
+          <div class="cases-area">
+            <section class="cases-section">
+              <div class="center-player-case">
+                <div class="player-case-label">YOUR CASE</div>
+
+                <div id="playerCase" class="player-case">?</div>
+              </div>
+
+              <div id="casesContainer" class="cases-container"></div>
+            </section>
+
+            <section id="bankerSection" class="banker-section hidden">
+              <div class="banker-overlay"></div>
+
+              <div class="banker-panel">
+                <div class="banker-phone">
+                  <div class="phone-icon">☎</div>
+                  <div class="phone-text">THE BANKER IS CALLING...</div>
+                </div>
+
+                <div id="bankerWaiting" class="banker-waiting">
+                  <div class="phone-ringing">☎</div>
+                  <p>Please wait...</p>
+                </div>
+
+                <div id="bankerOfferContent" class="banker-offer-content hidden">
+                  <div class="banker-title">BANK OFFER</div>
+
+                  <div class="offer-box">
+                    <strong id="bankerOffer">$0</strong>
+                  </div>
+
+                  <div id="bankerHint" class="banker-hint hidden">
+                    💡 BANKER'S HINT:
+                  </div>
+
+                  <div class="deal-buttons">
+                    <button id="dealButton" class="deal">DEAL</button>
+                    <button id="counterButton" class="counter">COUNTER</button>
+                    <button id="noDealButton" class="no-deal">NO DEAL</button>
+                  </div>
+                </div>
+
+                <div id="counterPanel" class="counter-panel hidden">
+                  <div class="counter-title">MAKE YOUR COUNTER OFFER</div>
+
+                  <p>How much would you like the Banker to pay?</p>
+
+                  <div class="counter-input-wrapper">
+                    <span>$</span>
+                    <input
+                      type="number"
+                      id="counterInput"
+                      min="0"
+                      step="1"
+                      placeholder="Enter amount"
+                    />
+                  </div>
+
+                  <button id="submitCounterButton" class="submit-counter">
+                    SUBMIT COUNTER OFFER
+                  </button>
+
+                  <button id="cancelCounterButton" class="cancel-counter">
+                    CANCEL
+                  </button>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <!-- =========================================
+             RIGHT PRIZE VALUES
+        ========================================== -->
+
+          <section class="prize-section right-prize-section">
+            <div class="money-column" id="rightMoneyBoard"></div>
+          </section>
+        </div>
+
+        <!-- =============================================
+           FINAL CHOICE
+      ============================================== -->
+
+        <div id="finalChoice" class="final-choice hidden">
+          <div class="final-choice-title">TWO CASES REMAIN</div>
+
+          <h2>KEEP OR SWAP?</h2>
+
+          <p>The final decision is yours.</p>
+
+          <div class="final-buttons">
+            <button id="keepButton">KEEP CASE</button>
+
+            <button id="swapButton">SWAP CASE</button>
+          </div>
+        </div>
+
+        <!-- =============================================
+           MESSAGE
+      ============================================== -->
+
+        <!-- =============================================
+           NEW GAME
+      ============================================== -->
+
+        <button id="newGameButton" class="new-game hidden">PLAY AGAIN</button>
+      </main>
+    </div>
+
+    <script src="js/dondcustom22.js"></script>
+  </body>
+</html>
