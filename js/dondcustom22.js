@@ -369,6 +369,34 @@ function smartRound(value) {
   return Math.round(value / 1) * 1;
 }
 
+function smartRoundOffer(value) {
+  if (value < 0.01) {
+    return 0.01;
+  }
+
+  if (value < 1) {
+    return Math.round(value * 100) / 100;
+  }
+
+  if (value < 10) {
+    return Math.round(value * 1) / 1;
+  }
+
+  if (value < 100) {
+    return Math.round(value / 1) * 1;
+  }
+
+  if (value < 1000) {
+    return Math.round(value / 10) * 10;
+  }
+
+  if (value < 10000) {
+    return Math.round(value / 100) * 100;
+  }
+
+  return Math.round(value / 1000) * 1000;
+}
+
 /* =========================================================
    MINIMUM PRIZE INCREMENT
 ========================================================= */
@@ -981,7 +1009,7 @@ function calculateBankerOffer() {
         Round amount.
     */
 
-  offer = smartRound(offer);
+  offer = smartRoundOffer(offer);
 
   return offer;
 }
