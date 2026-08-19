@@ -725,7 +725,9 @@ button {
 
   border-color: #fff;
 
-  background: #c6cbc8;
+  background: #abb3ae;
+
+  color: #000;
 }
 
 .case.player-selected {

@@ -124,6 +124,10 @@ const bankerOfferContent = document.getElementById("bankerOfferContent");
 const bankerOffer = document.getElementById("bankerOffer");
 
 const bankerHintElement = document.getElementById("bankerHint");
+const buyoutOfferContent = document.getElementById("buyoutOfferContent");
+const buyoutOffer = document.getElementById("buyoutOffer");
+const buyoutButton = document.getElementById("buyoutButton");
+const rejectBuyoutButton = document.getElementById("rejectBuyoutButton");
 
 const dealButton = document.getElementById("dealButton");
 
@@ -280,6 +284,10 @@ function resetGame() {
   bankerWaiting.classList.remove("hidden");
 
   bankerOfferContent.classList.add("hidden");
+
+  if (buyoutOfferContent) {
+    buyoutOfferContent.classList.add("hidden");
+  }
 
   /*
         Hide Counter panel.
@@ -787,17 +795,8 @@ function getBankerHint() {
 async function showBanker() {
   waitingForDeal = true;
 
-  /*
-        Calculate offer.
-    */
-
   const offer = calculateBankerOffer();
-
-  bankerOffer.textContent = formatMoney(offer);
-
-  /*
-        Record Banker offer.
-    */
+  const shouldShowBuyout = isBuyoutTriggered();
 
   const unopenedCases = cases
     .filter((gameCase) => !gameCase.opened)
@@ -807,42 +806,56 @@ async function showBanker() {
       isPlayerCase: gameCase.isPlayerCase,
     }));
 
-  addLog({
-    type: "BANKER_OFFER",
-
-    round: round,
-
-    offer: offer,
-
-    unopenedCases: unopenedCases,
-  });
-
   /*
-        Show Banker.
+        A Buyout replaces the normal Banker offer when
+        only one prize remains on the RIGHT side of the board.
     */
+  if (shouldShowBuyout) {
+    const buyout = calculateBankerBuyout(offer);
+
+    buyoutOffer.textContent = formatMoney(buyout);
+
+    addLog({
+      type: "BUYOUT_OFFER",
+      round: round,
+      offer: buyout,
+      normalBankerOffer: offer,
+      unopenedCases: unopenedCases,
+    });
+  } else {
+    bankerOffer.textContent = formatMoney(offer);
+
+    addLog({
+      type: "BANKER_OFFER",
+      round: round,
+      offer: offer,
+      unopenedCases: unopenedCases,
+    });
+  }
 
   bankerSection.classList.remove("hidden");
-
   bankerWaiting.classList.remove("hidden");
-
   bankerOfferContent.classList.add("hidden");
-
+  buyoutOfferContent.classList.add("hidden");
   counterPanel.classList.add("hidden");
 
   instruction.textContent = "THE BANKER IS CALLING...";
-
-  message.textContent = "PLEASE WAIT FOR THE BANKER'S OFFER.";
+  message.textContent = shouldShowBuyout
+    ? "THE BANKER HAS A SPECIAL OFFER FOR YOU."
+    : "PLEASE WAIT FOR THE BANKER'S OFFER.";
 
   await delay(1800);
 
   bankerWaiting.classList.add("hidden");
 
-  bankerOfferContent.classList.remove("hidden");
+  if (shouldShowBuyout) {
+    buyoutOfferContent.classList.remove("hidden");
+    instruction.textContent = "THE BANKER HAS A SPECIAL OFFER";
+    message.textContent = "THE BANKER WANTS TO BUY YOU OUT.";
+    return;
+  }
 
-  /*
-        Show Counter only if still
-        available.
-    */
+  bankerOfferContent.classList.remove("hidden");
 
   if (counterOfferAvailable) {
     counterButton.classList.remove("hidden");
@@ -870,6 +883,97 @@ async function showBanker() {
 
   message.textContent = "WILL YOU TAKE THE DEAL?";
 }
+
+/* =========================================================
+   BANKER BUYOUT
+========================================================= */
+
+function isBuyoutTriggered() {
+  if (!rightMoneyBoard) {
+    return false;
+  }
+
+  const remainingRightSidePrizes = rightMoneyBoard.querySelectorAll(
+    ".money-value:not(.eliminated)",
+  ).length;
+
+  return remainingRightSidePrizes === 1;
+}
+
+function calculateBankerBuyout(normalOffer) {
+  const remainingValues = cases
+    .filter((gameCase) => !gameCase.opened)
+    .map((gameCase) => gameCase.value);
+
+  if (remainingValues.length === 0) {
+    return normalOffer;
+  }
+
+  const expectedValue =
+    remainingValues.reduce((sum, value) => sum + value, 0) /
+    remainingValues.length;
+
+  /*
+        The Buyout is intentionally generous: 135% of the
+        normal offer, but never more than 95% of expected value.
+    */
+  let buyout = Math.min(normalOffer * 1.35, expectedValue * 0.95);
+
+  buyout = Math.max(buyout, normalOffer);
+
+  return smartRoundOffer(buyout);
+}
+
+function acceptBuyout() {
+  const amount = Number(buyoutOffer.textContent.replace(/[$,]/g, ""));
+
+  addLog({
+    type: "BUYOUT_ACCEPTED",
+    round: round,
+    amount: amount,
+  });
+
+  gameOver = true;
+  waitingForDeal = false;
+
+  bankerSection.classList.add("hidden");
+  buyoutOfferContent.classList.add("hidden");
+
+  instruction.textContent = "BUYOUT ACCEPTED!";
+  message.textContent = `YOU ACCEPTED THE BANKER'S BUYOUT OF ${formatMoney(amount)}!`;
+
+  revealPlayerCase();
+
+  addLog({
+    type: "GAME_END",
+    reason: "BUYOUT",
+    winnings: amount,
+    playerCase: playerCase,
+    playerCaseValue: playerCaseValue,
+  });
+
+  showGameLogButton();
+  newGameButton.classList.remove("hidden");
+}
+
+function rejectBuyout() {
+  addLog({
+    type: "BUYOUT_REJECTED",
+    round: round,
+    amount: Number(buyoutOffer.textContent.replace(/[$,]/g, "")),
+  });
+
+  buyoutOfferContent.classList.add("hidden");
+  bankerSection.classList.add("hidden");
+
+  message.textContent = "BUYOUT REJECTED. NO DEAL! THE GAME CONTINUES.";
+
+  continueGame(false);
+}
+
+buyoutButton.addEventListener("click", acceptBuyout);
+rejectBuyoutButton.addEventListener("click", rejectBuyout);
+
 
 /* =========================================================
    BANKER OFFER CALCULATION
@@ -1864,6 +1968,38 @@ function generateGameLog() {
                 Banker offer
             */
 
+      const buyout = events.find((event) => event.type === "BUYOUT_OFFER");
+
+      if (buyout) {
+        output += `Banker Buyout Offer: ${formatMoney(buyout.offer)}\n`;
+        output += `Normal Banker Offer: ${formatMoney(buyout.normalBankerOffer)}\n`;
+
+        if (buyout.unopenedCases && buyout.unopenedCases.length > 0) {
+          output += "\nUnopened Cases and Amounts:\n";
+
+          buyout.unopenedCases.forEach((gameCase) => {
+            const playerLabel = gameCase.isPlayerCase ? " (PLAYER'S CASE)" : "";
+            output +=
+              `Case #${gameCase.caseNumber} → ` +
+              `${formatMoney(gameCase.value)}${playerLabel}\n`;
+          });
+        }
+      }
+
+      const buyoutAccepted = events.find((event) => event.type === "BUYOUT_ACCEPTED");
+
+      if (buyoutAccepted) {
+        output += `\nBuyout Decision: ACCEPTED\n`;
+        output += `Buyout Amount: ${formatMoney(buyoutAccepted.amount)}\n`;
+      }
+
+      const buyoutRejected = events.find((event) => event.type === "BUYOUT_REJECTED");
+
+      if (buyoutRejected) {
+        output += `\nBuyout Decision: REJECTED\n`;
+        output += "Result: NO DEAL\n";
+      }
+
       const offer = events.find((event) => event.type === "BANKER_OFFER");
 
       if (offer) {
@@ -2006,6 +2142,8 @@ function generateGameLog() {
       output += `Result: DEAL\n`;
     } else if (finalGameEnd.reason === "COUNTER_ACCEPTED") {
       output += `Result: COUNTER OFFER ACCEPTED\n`;
+    } else if (finalGameEnd.reason === "BUYOUT") {
+      output += `Result: BANKER BUYOUT ACCEPTED\n`;
     } else {
       output += `Result: FINAL CASE\n`;
     }
