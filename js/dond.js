@@ -766,6 +766,25 @@ function updateGameInfo() {
 }
 
 /* =========================================================
+   BANKER'S HINT
+========================================================= */
+
+function getBankerHint() {
+  if (round !== 3 || playerCaseValue === null) {
+    return null;
+  }
+
+  const half = Math.ceil(prizes.length / 2);
+  const playerPrizeIndex = prizes.indexOf(playerCaseValue);
+
+  if (playerPrizeIndex === -1) {
+    return null;
+  }
+
+  return playerPrizeIndex < half ? "LEFT" : "RIGHT";
+}
+
+/* =========================================================
    SHOW BANKER
 ========================================================= */
 
@@ -836,6 +855,22 @@ async function showBanker() {
   }
 
   instruction.textContent = "THE BANKER HAS MADE AN OFFER";
+
+  const bankerHint = getBankerHint();
+
+  if (round === 3 && bankerHint) {
+    bankerHintElement.textContent = `💡 BANKER'S HINT: YOUR CASE IS ON THE ${bankerHint} SIDE OF THE BOARD.`;
+
+    bankerHintElement.classList.remove("hidden");
+
+    addLog({
+      type: "BANKER_HINT",
+      round: round,
+      side: bankerHint,
+    });
+  } else {
+    bankerHintElement.classList.add("hidden");
+  }
 
   message.textContent = "WILL YOU TAKE THE DEAL?";
 }
