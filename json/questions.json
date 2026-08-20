@@ -1,0 +1,42 @@
+[
+  {
+    "question": "Which planet is known as the Red Planet?",
+    "answers": ["Venus", "Mars", "Jupiter"],
+    "correct": 1
+  },
+  {
+    "question": "Which country is home to the city of Barcelona?",
+    "answers": ["Portugal", "Italy", "Spain"],
+    "correct": 2
+  },
+  {
+    "question": "Which animal is the largest living land animal?",
+    "answers": ["African elephant", "Giraffe", "Hippopotamus"],
+    "correct": 0
+  },
+  {
+    "question": "Which artist painted the Mona Lisa?",
+    "answers": ["Vincent van Gogh", "Leonardo da Vinci", "Pablo Picasso"],
+    "correct": 1
+  },
+  {
+    "question": "Which city was formerly called Constantinople?",
+    "answers": ["Athens", "Istanbul", "Alexandria"],
+    "correct": 1
+  },
+  {
+    "question": "Which element has the chemical symbol Au?",
+    "answers": ["Silver", "Copper", "Gold"],
+    "correct": 2
+  },
+  {
+    "question": "What is the capital of Japan?",
+    "answers": ["Tokyo", "Kyoto", "Osaka"],
+    "correct": 0
+  },
+  {
+    "question": "Which ocean is the largest?",
+    "answers": ["Atlantic", "Pacific", "Indian"],
+    "correct": 1
+  }
+]

@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Million Drop — TV Game</title>
+    <link rel="stylesheet" href="css/mdmdstyle.css" />
+  </head>
+  <body>
+    <div id="app">
+      <div id="topLights"></div>
+      <section id="startScreen" class="screen active">
+        <div class="brand">MILLION <b>DROP</b></div>
+        <div class="subtitle">THE MONEY IS YOURS. THE ANSWERS ARE NOT.</div>
+        <div class="start-panel">
+          <label for="teamName">TEAM NAME</label
+          ><input id="teamName" maxlength="24" placeholder="Enter team name" />
+          <button id="startBtn" class="red-btn">START GAME</button>
+        </div>
+        <p class="legal">
+          Original fan-made game concept inspired by money-drop mechanics.
+        </p>
+      </section>
+
+      <section id="gameScreen" class="screen">
+        <header class="hud">
+          <div><small>TEAM</small><strong id="teamDisplay">PLAYER</strong></div>
+          <div class="round">
+            <small>QUESTION</small
+            ><strong
+              ><span id="qNo">1</span> / <span id="qTotal">6</span></strong
+            >
+          </div>
+          <div class="hud-bank">
+            <small>BANK</small><strong id="bankDisplay">$1,000,000</strong>
+          </div>
+        </header>
+        <div class="progress"><i id="progress"></i></div>
+        <div class="question-wrap">
+          <div class="question-tag">QUESTION <span id="qTag">1</span></div>
+          <h1 id="questionText"></h1>
+          <div id="clock" class="clock">30</div>
+        </div>
+        <div id="gates" class="gates"></div>
+        <div class="money-control">
+          <div class="control-title">MOVE YOUR MONEY</div>
+          <div class="money-summary">
+            <span>UNPLACED <b id="unplaced">$1,000,000</b></span
+            ><span>PLACED <b id="placed">$0</b></span>
+          </div>
+          <div class="drag-help">
+            Drag a money stack onto an answer gate. You can split the money
+            between answers.
+          </div>
+          <div id="stacks" class="stacks"></div>
+          <button id="lockBtn" class="red-btn lock" disabled>LOCK IN</button>
+          <button id="clearBtn" class="ghost-btn">RETURN ALL MONEY</button>
+        </div>
+      </section>
+
+      <section id="revealScreen" class="screen">
+        <div class="reveal-box">
+          <div class="eyebrow">THE ANSWER IS...</div>
+          <div id="correctAnswer" class="correct-answer"></div>
+          <div id="revealGates" class="reveal-gates"></div>
+          <div id="revealText" class="reveal-text"></div>
+          <div id="revealBank" class="reveal-bank"></div>
+          <button id="nextBtn" class="red-btn" hidden>CONTINUE</button>
+        </div>
+      </section>
+
+      <section id="endScreen" class="screen">
+        <div class="end-box">
+          <div id="endTitle" class="end-title">CONGRATULATIONS!</div>
+          <div id="endTeam" class="end-team"></div>
+          <div class="eyebrow">FINAL BANK</div>
+          <div id="finalBank" class="final-bank">$0</div>
+          <div id="endMessage" class="end-message"></div>
+          <button id="restartBtn" class="red-btn">PLAY AGAIN</button>
+        </div>
+      </section>
+    </div>
+    <script src="js/mdmdscript.js"></script>
+  </body>
+</html>
