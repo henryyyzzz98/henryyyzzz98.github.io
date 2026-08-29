@@ -9,7 +9,7 @@
 
 const BASE_PRIZES = [
   0.01, 1, 5, 10, 25, 50, 75, 100, 200, 300, 400, 500, 750, 1000, 5000, 10000,
-  25000, 50000, 75000, 100000, 200000, 300000, 400000, 500000, 750000, 1000000
+  25000, 50000, 75000, 100000, 200000, 300000, 400000, 500000, 750000, 1000000,
 ];
 
 /* =========================================================
@@ -77,9 +77,9 @@ let superChestBankerTotal = 0;
    COUNTER OFFER STATE
 ========================================================= */
 
-let counterOfferAvailable = true;
+/*let counterOfferAvailable = true;*/
 
-let counterOfferInProgress = false;
+/*let counterOfferInProgress = false;*/
 
 /* =========================================================
    GAME LOG
@@ -142,14 +142,22 @@ const buyoutOffer = document.getElementById("buyoutOffer");
 const buyoutButton = document.getElementById("buyoutButton");
 const rejectBuyoutButton = document.getElementById("rejectBuyoutButton");
 
-const superChestBenefitButton = document.getElementById("superChestBenefitButton");
+const superChestBenefitButton = document.getElementById(
+  "superChestBenefitButton",
+);
 const superChestElement = document.getElementById("superChest");
 const superChestInstruction = document.getElementById("superChestInstruction");
 const superChestCasesElement = document.getElementById("superChestCases");
-const superChestPlayerTotalElement = document.getElementById("superChestPlayerTotal");
-const superChestBankerTotalElement = document.getElementById("superChestBankerTotal");
+const superChestPlayerTotalElement = document.getElementById(
+  "superChestPlayerTotal",
+);
+const superChestBankerTotalElement = document.getElementById(
+  "superChestBankerTotal",
+);
 const superChestResultElement = document.getElementById("superChestResult");
-const superChestContinueButton = document.getElementById("superChestContinueButton");
+const superChestContinueButton = document.getElementById(
+  "superChestContinueButton",
+);
 
 const dealButton = document.getElementById("dealButton");
 
@@ -295,9 +303,9 @@ function resetGame() {
         Counter Offer reset.
     */
 
-  counterOfferAvailable = true;
+  /*counterOfferAvailable = true;
 
-  counterOfferInProgress = false;
+  counterOfferInProgress = false;*/
 
   /*
         Reset log.
@@ -869,7 +877,7 @@ async function showBanker() {
   bankerWaiting.classList.remove("hidden");
   bankerOfferContent.classList.add("hidden");
   buyoutOfferContent.classList.add("hidden");
-  counterPanel.classList.add("hidden");
+  /*counterPanel.classList.add("hidden");*/
 
   instruction.textContent = "THE BANKER IS CALLING...";
   message.textContent = shouldShowBuyout
@@ -889,11 +897,11 @@ async function showBanker() {
 
   bankerOfferContent.classList.remove("hidden");
 
-  if (counterOfferAvailable) {
+  /*if (counterOfferAvailable) {
     counterButton.classList.remove("hidden");
   } else {
     counterButton.classList.add("hidden");
-  }
+  }*/
 
   if (superChestBenefitAvailable && !superChestBenefitUsed) {
     superChestBenefitButton.classList.remove("hidden");
@@ -938,21 +946,30 @@ function startSuperChest() {
   superChestPlayerTotal = 0;
   superChestBankerTotal = 0;
 
-  const values = [100,100,100,100,100,200,200,200,200,200,300,300,300,300,300,500,500,500,500,500];
+  const values = [
+    100, 100, 100, 100, 100, 200, 200, 200, 200, 200, 300, 300, 300, 300, 300,
+    500, 500, 500, 500, 500,
+  ];
   shuffle(values);
-  superChestCases = values.map((value, index) => ({ number: index + 1, value, selected: false }));
+  superChestCases = values.map((value, index) => ({
+    number: index + 1,
+    value,
+    selected: false,
+  }));
 
   waitingForDeal = true;
   bankerSection.classList.add("hidden");
   finalChoice.classList.add("hidden");
   superChestElement.classList.remove("hidden");
-  superChestInstruction.textContent = "Choose 10 mini cases. The Banker gets the other 10.";
+  superChestInstruction.textContent =
+    "Choose 10 mini cases. The Banker gets the other 10.";
   superChestResultElement.classList.add("hidden");
   superChestContinueButton.classList.add("hidden");
   updateSuperChestScoreboard();
   renderSuperChestCases();
   instruction.textContent = "SUPER CHEST";
-  message.textContent = "WIN THE SUPER CHEST TO EARN A ONE-TIME +50% BANKER OFFER BENEFIT.";
+  message.textContent =
+    "WIN THE SUPER CHEST TO EARN A ONE-TIME +50% BANKER OFFER BENEFIT.";
   addLog({ type: "SUPER_CHEST_START", round: 3 });
 }
 
@@ -965,7 +982,8 @@ function renderSuperChestCases() {
     button.dataset.miniCaseNumber = miniCase.number;
     if (miniCase.selected) button.classList.add("selected");
     button.disabled = miniCase.selected || superChestPlayerCases.length >= 10;
-    if (!button.disabled) button.addEventListener("click", () => selectSuperChestCase(miniCase));
+    if (!button.disabled)
+      button.addEventListener("click", () => selectSuperChestCase(miniCase));
     superChestCasesElement.appendChild(button);
   });
 }
@@ -975,7 +993,12 @@ function selectSuperChestCase(miniCase) {
   miniCase.selected = true;
   superChestPlayerCases.push(miniCase);
   superChestPlayerTotal += miniCase.value;
-  addLog({ type: "SUPER_CHEST_PLAYER_PICK", round: 3, caseNumber: miniCase.number, value: miniCase.value });
+  addLog({
+    type: "SUPER_CHEST_PLAYER_PICK",
+    round: 3,
+    caseNumber: miniCase.number,
+    value: miniCase.value,
+  });
   updateSuperChestScoreboard();
   renderSuperChestCases();
   const picksLeft = 10 - superChestPlayerCases.length;
@@ -987,10 +1010,15 @@ function selectSuperChestCase(miniCase) {
 }
 
 async function revealSuperChestBankerCases() {
-  superChestInstruction.textContent = "THE BANKER'S 10 MINI CASES ARE BEING REVEALED...";
-  superChestBankerCases = superChestCases.filter((miniCase) => !miniCase.selected);
+  superChestInstruction.textContent =
+    "THE BANKER'S 10 MINI CASES ARE BEING REVEALED...";
+  superChestBankerCases = superChestCases.filter(
+    (miniCase) => !miniCase.selected,
+  );
   for (const miniCase of superChestBankerCases) {
-    const button = superChestCasesElement.querySelector(`.super-chest-case[data-mini-case-number="${miniCase.number}"]`);
+    const button = superChestCasesElement.querySelector(
+      `.super-chest-case[data-mini-case-number="${miniCase.number}"]`,
+    );
     if (button) {
       button.classList.add("banker-reveal");
       await delay(350);
@@ -1011,8 +1039,14 @@ async function revealSuperChestBankerCases() {
     bankerTotal: superChestBankerTotal,
     won: playerWins,
     benefit: playerWins ? "+50% BANKER OFFER ONCE" : "NONE",
-    playerCases: superChestPlayerCases.map((c) => ({ caseNumber: c.number, value: c.value })),
-    bankerCases: superChestBankerCases.map((c) => ({ caseNumber: c.number, value: c.value })),
+    playerCases: superChestPlayerCases.map((c) => ({
+      caseNumber: c.number,
+      value: c.value,
+    })),
+    bankerCases: superChestBankerCases.map((c) => ({
+      caseNumber: c.number,
+      value: c.value,
+    })),
   });
 
   superChestResultElement.classList.remove("hidden");
@@ -1031,7 +1065,11 @@ function finishSuperChest() {
   superChestElement.classList.add("hidden");
   superChestAvailable = false;
   waitingForDeal = false;
-  addLog({ type: "SUPER_CHEST_COMPLETE", round: 3, benefitAvailable: superChestBenefitAvailable });
+  addLog({
+    type: "SUPER_CHEST_COMPLETE",
+    round: 3,
+    benefitAvailable: superChestBenefitAvailable,
+  });
   round++;
   casesToOpen = ROUND_CASES[round - 1];
   openedCasesThisRound = 0;
@@ -1051,7 +1089,13 @@ function useSuperChestBenefit() {
   superChestBenefitAvailable = false;
   bankerOffer.textContent = formatMoney(boostedOffer);
   superChestBenefitButton.classList.add("hidden");
-  addLog({ type: "SUPER_CHEST_BENEFIT_USED", round, originalOffer: currentOffer, boostedOffer, multiplier: 1.5 });
+  addLog({
+    type: "SUPER_CHEST_BENEFIT_USED",
+    round,
+    originalOffer: currentOffer,
+    boostedOffer,
+    multiplier: 1.5,
+  });
   instruction.textContent = "SUPER CHEST BENEFIT ACTIVATED";
   message.textContent = `THE BANKER'S OFFER HAS BEEN INCREASED BY 50%: ${formatMoney(boostedOffer)}.`;
 }
@@ -1145,7 +1189,6 @@ function rejectBuyout() {
 
 buyoutButton.addEventListener("click", acceptBuyout);
 rejectBuyoutButton.addEventListener("click", rejectBuyout);
-
 
 /* =========================================================
    BANKER OFFER CALCULATION
@@ -1389,7 +1432,7 @@ function continueGame(isAutomaticNoDeal = false) {
 
   waitingForDeal = false;
 
-  counterOfferInProgress = false;
+  /*counterOfferInProgress = false;*/
 
   bankerSection.classList.add("hidden");
 
@@ -1443,7 +1486,7 @@ function continueGame(isAutomaticNoDeal = false) {
    COUNTER OFFER
 ========================================================= */
 
-counterButton.addEventListener("click", openCounterPanel);
+/*counterButton.addEventListener("click", openCounterPanel);
 
 function openCounterPanel() {
   if (!counterOfferAvailable) {
@@ -1460,7 +1503,7 @@ function openCounterPanel() {
         when submitted.
     */
 
-  addLog({
+/*addLog({
     type: "COUNTER_STARTED",
 
     round: round,
@@ -1481,13 +1524,13 @@ function openCounterPanel() {
 
   message.textContent =
     "CHOOSE YOUR AMOUNT CAREFULLY. " + "YOU CAN ONLY COUNTER ONCE.";
-}
+}*/
 
 /* =========================================================
    CANCEL COUNTER
 ========================================================= */
 
-cancelCounterButton.addEventListener("click", cancelCounter);
+/*cancelCounterButton.addEventListener("click", cancelCounter);
 
 function cancelCounter() {
   counterOfferInProgress = false;
@@ -1496,7 +1539,7 @@ function cancelCounter() {
         Remove the temporary log entry.
     */
 
-  if (
+/*if (
     gameLog.length > 0 &&
     gameLog[gameLog.length - 1].type === "COUNTER_STARTED"
   ) {
@@ -1518,13 +1561,13 @@ function cancelCounter() {
   instruction.textContent = "THE BANKER HAS MADE AN OFFER";
 
   message.textContent = "WILL YOU TAKE THE DEAL?";
-}
+}*/
 
 /* =========================================================
    SUBMIT COUNTER OFFER
 ========================================================= */
 
-submitCounterButton.addEventListener("click", submitCounterOffer);
+/*submitCounterButton.addEventListener("click", submitCounterOffer);
 
 function submitCounterOffer() {
   const playerOffer = Number(counterInput.value);
@@ -1537,7 +1580,7 @@ function submitCounterOffer() {
         Validate amount.
     */
 
-  if (!playerOffer || playerOffer <= 0) {
+/*if (!playerOffer || playerOffer <= 0) {
     message.textContent = "PLEASE ENTER A VALID AMOUNT.";
 
     return;
@@ -1548,7 +1591,7 @@ function submitCounterOffer() {
         the Banker's current offer.
     */
 
-  if (playerOffer <= currentBankerOffer) {
+/*if (playerOffer <= currentBankerOffer) {
     message.textContent =
       "YOUR COUNTER OFFER MUST BE " + "HIGHER THAN THE BANKER'S OFFER.";
 
@@ -1559,7 +1602,7 @@ function submitCounterOffer() {
         Counter is now permanently used.
     */
 
-  counterOfferAvailable = false;
+/*counterOfferAvailable = false;
 
   counterOfferInProgress = false;
 
@@ -1567,7 +1610,7 @@ function submitCounterOffer() {
         Record player's counter.
     */
 
-  addLog({
+/*addLog({
     type: "COUNTER_OFFER",
 
     round: round,
@@ -1592,13 +1635,13 @@ function submitCounterOffer() {
 
     handleCounterResult(result);
   });
-}
+}*/
 
 /* =========================================================
    EVALUATE COUNTER OFFER
 ========================================================= */
 
-function evaluateCounterOffer(playerOffer, currentOffer) {
+/*function evaluateCounterOffer(playerOffer, currentOffer) {
   const counterRatio = playerOffer / currentOffer;
 
   /*
@@ -1606,7 +1649,7 @@ function evaluateCounterOffer(playerOffer, currentOffer) {
       Up to 5% above the Banker's offer.
   */
 
-  if (counterRatio <= 1.05) {
+/*if (counterRatio <= 1.05) {
     return {
       action: "ACCEPT",
       amount: playerOffer,
@@ -1620,7 +1663,7 @@ function evaluateCounterOffer(playerOffer, currentOffer) {
       Banker has a 50% chance to accept.
   */
 
-  if (counterRatio <= 1.15) {
+/*if (counterRatio <= 1.15) {
     if (Math.random() < 0.5) {
       return {
         action: "ACCEPT",
@@ -1640,16 +1683,16 @@ function evaluateCounterOffer(playerOffer, currentOffer) {
       Automatic rejection.
   */
 
-  return {
+/*return {
     action: "REJECT",
   };
-}
+}*/
 
 /* =========================================================
    HANDLE COUNTER RESULT
 ========================================================= */
 
-function handleCounterResult(result) {
+/*function handleCounterResult(result) {
   if (result.action === "ACCEPT") {
     counterAccepted(result.amount);
 
@@ -1663,19 +1706,19 @@ function handleCounterResult(result) {
         Rejection = automatic No Deal.
     */
 
-  rejectCounter();
-}
+/*rejectCounter();
+}*/
 
 /* =========================================================
    BANKER ACCEPTS COUNTER
 ========================================================= */
 
-function counterAccepted(amount) {
+/*function counterAccepted(amount) {
   /*
         Record Banker acceptance.
     */
 
-  addLog({
+/*addLog({
     type: "COUNTER_ACCEPTED",
 
     round: round,
@@ -1703,7 +1746,7 @@ function counterAccepted(amount) {
         Final game log.
     */
 
-  addLog({
+/*addLog({
     type: "GAME_END",
 
     reason: "COUNTER_ACCEPTED",
@@ -1718,57 +1761,18 @@ function counterAccepted(amount) {
   showGameLogButton();
 
   newGameButton.classList.remove("hidden");
-}
-
-/* =========================================================
-   BANKER COUNTERS
-========================================================= */
-
-function showBankerCounter(amount) {
-  /*
-        Record Banker's counter.
-    */
-
-  addLog({
-    type: "BANKER_COUNTER",
-
-    round: round,
-
-    amount: amount,
-  });
-
-  bankerOffer.textContent = formatMoney(amount);
-
-  bankerSection.classList.remove("hidden");
-
-  bankerWaiting.classList.add("hidden");
-
-  bankerOfferContent.classList.remove("hidden");
-
-  /*
-        Counter is already consumed.
-    */
-
-  counterButton.classList.add("hidden");
-
-  instruction.textContent = "THE BANKER COUNTERS";
-
-  message.textContent =
-    `THE BANKER WILL GIVE YOU ` + `${formatMoney(amount)}. DEAL OR NO DEAL?`;
-
-  waitingForDeal = true;
-}
+}*/
 
 /* =========================================================
    BANKER REJECTS COUNTER
 ========================================================= */
 
-function rejectCounter() {
+/*function rejectCounter() {
   /* -----------------------------------------
        RECORD COUNTER REJECTION
     ----------------------------------------- */
 
-  addLog({
+/*addLog({
     type: "COUNTER_REJECTED",
     round: round,
   });
@@ -1777,14 +1781,14 @@ function rejectCounter() {
        LOCK GAME
     ----------------------------------------- */
 
-  waitingForDeal = true;
+/*waitingForDeal = true;
   counterOfferInProgress = false;
 
   /* -----------------------------------------
        HIDE ALL BANKER UI
     ----------------------------------------- */
 
-  bankerSection.classList.add("hidden");
+/*bankerSection.classList.add("hidden");
 
   bankerWaiting.classList.add("hidden");
 
@@ -1798,7 +1802,7 @@ function rejectCounter() {
        SHOW REJECTION
     ----------------------------------------- */
 
-  instruction.textContent = "NO DEAL!";
+/*instruction.textContent = "NO DEAL!";
 
   message.textContent = "THE BANKER REJECTED YOUR " + "COUNTER OFFER.";
 
@@ -1806,7 +1810,7 @@ function rejectCounter() {
        AUTOMATICALLY MOVE TO NEXT ROUND
     ----------------------------------------- */
 
-  delay(1800).then(() => {
+/*delay(1800).then(() => {
     startNextRoundAfterCounter();
   });
 }
@@ -1816,7 +1820,7 @@ function startNextRoundAfterCounter() {
        RESET ROUND STATE
     ----------------------------------------- */
 
-  waitingForDeal = false;
+/*waitingForDeal = false;
 
   counterOfferInProgress = false;
 
@@ -1830,14 +1834,14 @@ function startNextRoundAfterCounter() {
        MOVE TO NEXT ROUND
     ----------------------------------------- */
 
-  round++;
+/*round++;
 
   /* -----------------------------------------
        IF ROUND 9 IS FINISHED,
        GO TO FINAL STAGE
     ----------------------------------------- */
 
-  if (round > ROUND_CASES.length) {
+/*if (round > ROUND_CASES.length) {
     startFinalStage();
 
     return;
@@ -1847,19 +1851,19 @@ function startNextRoundAfterCounter() {
        SET CASES TO OPEN
     ----------------------------------------- */
 
-  casesToOpen = ROUND_CASES[round - 1];
+/*casesToOpen = ROUND_CASES[round - 1];
 
   /* -----------------------------------------
        UPDATE UI
     ----------------------------------------- */
 
-  instruction.textContent =
+/*instruction.textContent =
     `OPEN ${casesToOpen} CASE` + `${casesToOpen === 1 ? "" : "S"}`;
 
   message.textContent = "NO DEAL! THE GAME CONTINUES.";
 
   updateGameInfo();
-}
+}*/
 
 /* =========================================================
    FINAL STAGE
@@ -2171,14 +2175,18 @@ function generateGameLog() {
         }
       }
 
-      const buyoutAccepted = events.find((event) => event.type === "BUYOUT_ACCEPTED");
+      const buyoutAccepted = events.find(
+        (event) => event.type === "BUYOUT_ACCEPTED",
+      );
 
       if (buyoutAccepted) {
         output += `\nBuyout Decision: ACCEPTED\n`;
         output += `Buyout Amount: ${formatMoney(buyoutAccepted.amount)}\n`;
       }
 
-      const buyoutRejected = events.find((event) => event.type === "BUYOUT_REJECTED");
+      const buyoutRejected = events.find(
+        (event) => event.type === "BUYOUT_REJECTED",
+      );
 
       if (buyoutRejected) {
         output += `\nBuyout Decision: REJECTED\n`;
@@ -2340,9 +2348,9 @@ function generateGameLog() {
         Counter status
     */
 
-  output += `Counter Offer: ${counterOfferAvailable ? "NOT USED" : "USED"}\n`;
+  /*output += `Counter Offer: ${counterOfferAvailable ? "NOT USED" : "USED"}\n`;
 
-  output += "\n";
+  output += "\n";*/
 
   output += "========================================\n";
 
