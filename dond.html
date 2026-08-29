@@ -130,6 +130,10 @@
                     💡 BANKER'S HINT:
                   </div>
 
+                  <button id="superChestBenefitButton" class="super-chest-benefit-button hidden">
+                    USE SUPER CHEST BENEFIT (+50%)
+                  </button>
+
                   <div class="deal-buttons">
                     <button id="dealButton" class="deal">DEAL</button>
                     <button id="counterButton" class="counter">COUNTER</button>
@@ -198,6 +202,24 @@
            FINAL CHOICE
       ============================================== -->
 
+        <!-- SUPER CHEST -->
+        <section id="superChest" class="super-chest hidden" aria-label="Super Chest bonus game">
+          <div class="super-chest-overlay"></div>
+          <div class="super-chest-panel">
+            <div class="super-chest-kicker">BONUS MINIGAME</div>
+            <h2>SUPER CHEST</h2>
+            <p id="superChestInstruction">Choose 10 mini cases. The Banker gets the other 10.</p>
+            <div class="super-chest-scoreboard">
+              <div><span>YOU</span><strong id="superChestPlayerTotal">$0</strong></div>
+              <div class="super-chest-vs">VS</div>
+              <div><span>BANKER</span><strong id="superChestBankerTotal">$0</strong></div>
+            </div>
+            <div id="superChestCases" class="super-chest-cases"></div>
+            <div id="superChestResult" class="super-chest-result hidden"></div>
+            <button id="superChestContinueButton" class="super-chest-continue hidden">CONTINUE GAME</button>
+          </div>
+        </section>
+        
         <div id="finalChoice" class="final-choice hidden">
           <div class="final-choice-title">TWO CASES REMAIN</div>
 

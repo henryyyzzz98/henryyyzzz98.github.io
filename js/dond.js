@@ -61,6 +61,19 @@ let gameOver = false;
 let waitingForDeal = false;
 
 /* =========================================================
+   SUPER CHEST STATE
+========================================================= */
+
+let superChestAvailable = false;
+let superChestBenefitAvailable = false;
+let superChestBenefitUsed = false;
+let superChestCases = [];
+let superChestPlayerCases = [];
+let superChestBankerCases = [];
+let superChestPlayerTotal = 0;
+let superChestBankerTotal = 0;
+
+/* =========================================================
    COUNTER OFFER STATE
 ========================================================= */
 
@@ -128,6 +141,15 @@ const buyoutOfferContent = document.getElementById("buyoutOfferContent");
 const buyoutOffer = document.getElementById("buyoutOffer");
 const buyoutButton = document.getElementById("buyoutButton");
 const rejectBuyoutButton = document.getElementById("rejectBuyoutButton");
+
+const superChestBenefitButton = document.getElementById("superChestBenefitButton");
+const superChestElement = document.getElementById("superChest");
+const superChestInstruction = document.getElementById("superChestInstruction");
+const superChestCasesElement = document.getElementById("superChestCases");
+const superChestPlayerTotalElement = document.getElementById("superChestPlayerTotal");
+const superChestBankerTotalElement = document.getElementById("superChestBankerTotal");
+const superChestResultElement = document.getElementById("superChestResult");
+const superChestContinueButton = document.getElementById("superChestContinueButton");
 
 const dealButton = document.getElementById("dealButton");
 
@@ -259,6 +281,16 @@ function resetGame() {
 
   waitingForDeal = false;
 
+  superChestAvailable = false;
+  superChestBenefitAvailable = false;
+  superChestBenefitUsed = false;
+  superChestCases = [];
+  superChestPlayerCases = [];
+  superChestBankerCases = [];
+  superChestPlayerTotal = 0;
+  superChestBankerTotal = 0;
+  superChestElement.classList.add("hidden");
+  superChestBenefitButton.classList.add("hidden");
   /*
         Counter Offer reset.
     */
@@ -863,6 +895,12 @@ async function showBanker() {
     counterButton.classList.add("hidden");
   }
 
+  if (superChestBenefitAvailable && !superChestBenefitUsed) {
+    superChestBenefitButton.classList.remove("hidden");
+  } else {
+    superChestBenefitButton.classList.add("hidden");
+  }
+
   instruction.textContent = "THE BANKER HAS MADE AN OFFER";
 
   const bankerHint = getBankerHint();
@@ -882,6 +920,140 @@ async function showBanker() {
   }
 
   message.textContent = "WILL YOU TAKE THE DEAL?";
+}
+
+/* =========================================================
+   SUPER CHEST
+========================================================= */
+
+superChestBenefitButton.addEventListener("click", useSuperChestBenefit);
+superChestContinueButton.addEventListener("click", finishSuperChest);
+
+function startSuperChest() {
+  superChestAvailable = true;
+  superChestBenefitAvailable = false;
+  superChestBenefitUsed = false;
+  superChestPlayerCases = [];
+  superChestBankerCases = [];
+  superChestPlayerTotal = 0;
+  superChestBankerTotal = 0;
+
+  const values = [100,100,100,100,100,200,200,200,200,200,300,300,300,300,300,500,500,500,500,500];
+  shuffle(values);
+  superChestCases = values.map((value, index) => ({ number: index + 1, value, selected: false }));
+
+  waitingForDeal = true;
+  bankerSection.classList.add("hidden");
+  finalChoice.classList.add("hidden");
+  superChestElement.classList.remove("hidden");
+  superChestInstruction.textContent = "Choose 10 mini cases. The Banker gets the other 10.";
+  superChestResultElement.classList.add("hidden");
+  superChestContinueButton.classList.add("hidden");
+  updateSuperChestScoreboard();
+  renderSuperChestCases();
+  instruction.textContent = "SUPER CHEST";
+  message.textContent = "WIN THE SUPER CHEST TO EARN A ONE-TIME +50% BANKER OFFER BENEFIT.";
+  addLog({ type: "SUPER_CHEST_START", round: 3 });
+}
+
+function renderSuperChestCases() {
+  superChestCasesElement.innerHTML = "";
+  superChestCases.forEach((miniCase) => {
+    const button = document.createElement("button");
+    button.className = "super-chest-case";
+    button.textContent = String(miniCase.number).padStart(2, "0");
+    button.dataset.miniCaseNumber = miniCase.number;
+    if (miniCase.selected) button.classList.add("selected");
+    button.disabled = miniCase.selected || superChestPlayerCases.length >= 10;
+    if (!button.disabled) button.addEventListener("click", () => selectSuperChestCase(miniCase));
+    superChestCasesElement.appendChild(button);
+  });
+}
+
+function selectSuperChestCase(miniCase) {
+  if (miniCase.selected || superChestPlayerCases.length >= 10) return;
+  miniCase.selected = true;
+  superChestPlayerCases.push(miniCase);
+  superChestPlayerTotal += miniCase.value;
+  addLog({ type: "SUPER_CHEST_PLAYER_PICK", round: 3, caseNumber: miniCase.number, value: miniCase.value });
+  updateSuperChestScoreboard();
+  renderSuperChestCases();
+  const picksLeft = 10 - superChestPlayerCases.length;
+  if (picksLeft > 0) {
+    superChestInstruction.textContent = `Choose ${picksLeft} more mini case${picksLeft === 1 ? "" : "s"}.`;
+  } else {
+    revealSuperChestBankerCases();
+  }
+}
+
+async function revealSuperChestBankerCases() {
+  superChestInstruction.textContent = "THE BANKER'S 10 MINI CASES ARE BEING REVEALED...";
+  superChestBankerCases = superChestCases.filter((miniCase) => !miniCase.selected);
+  for (const miniCase of superChestBankerCases) {
+    const button = superChestCasesElement.querySelector(`.super-chest-case[data-mini-case-number="${miniCase.number}"]`);
+    if (button) {
+      button.classList.add("banker-reveal");
+      await delay(350);
+      button.textContent = formatMoney(miniCase.value);
+      button.classList.add("revealed");
+    }
+    superChestBankerTotal += miniCase.value;
+    updateSuperChestScoreboard();
+    await delay(250);
+  }
+
+  const playerWins = superChestPlayerTotal > superChestBankerTotal;
+  superChestBenefitAvailable = playerWins;
+  addLog({
+    type: "SUPER_CHEST_RESULT",
+    round: 3,
+    playerTotal: superChestPlayerTotal,
+    bankerTotal: superChestBankerTotal,
+    won: playerWins,
+    benefit: playerWins ? "+50% BANKER OFFER ONCE" : "NONE",
+    playerCases: superChestPlayerCases.map((c) => ({ caseNumber: c.number, value: c.value })),
+    bankerCases: superChestBankerCases.map((c) => ({ caseNumber: c.number, value: c.value })),
+  });
+
+  superChestResultElement.classList.remove("hidden");
+  superChestResultElement.innerHTML = playerWins
+    ? `<strong>🎉 YOU WIN THE SUPER CHEST!</strong><br>You: ${formatMoney(superChestPlayerTotal)} &nbsp;|&nbsp; Banker: ${formatMoney(superChestBankerTotal)}<br><span>You've earned a one-time +50% Banker Offer benefit.</span>`
+    : `<strong>THE BANKER WINS THE SUPER CHEST.</strong><br>You: ${formatMoney(superChestPlayerTotal)} &nbsp;|&nbsp; Banker: ${formatMoney(superChestBankerTotal)}<br><span>No benefit this time.</span>`;
+  superChestContinueButton.classList.remove("hidden");
+}
+
+function updateSuperChestScoreboard() {
+  superChestPlayerTotalElement.textContent = formatMoney(superChestPlayerTotal);
+  superChestBankerTotalElement.textContent = formatMoney(superChestBankerTotal);
+}
+
+function finishSuperChest() {
+  superChestElement.classList.add("hidden");
+  superChestAvailable = false;
+  waitingForDeal = false;
+  addLog({ type: "SUPER_CHEST_COMPLETE", round: 3, benefitAvailable: superChestBenefitAvailable });
+  round++;
+  casesToOpen = ROUND_CASES[round - 1];
+  openedCasesThisRound = 0;
+  instruction.textContent = `OPEN ${casesToOpen} CASE${casesToOpen === 1 ? "" : "S"}`;
+  message.textContent = superChestBenefitAvailable
+    ? "SUPER CHEST WON! YOUR +50% BENEFIT CAN BE USED ON ANY FUTURE BANKER OFFER ONCE."
+    : "SUPER CHEST COMPLETE. NO BENEFIT THIS TIME.";
+  updateGameInfo();
+}
+
+function useSuperChestBenefit() {
+  if (!superChestBenefitAvailable || superChestBenefitUsed || gameOver) return;
+  const currentOffer = Number(bankerOffer.textContent.replace(/[$,]/g, ""));
+  if (!currentOffer || currentOffer <= 0) return;
+  const boostedOffer = smartRoundOffer(currentOffer * 1.5);
+  superChestBenefitUsed = true;
+  superChestBenefitAvailable = false;
+  bankerOffer.textContent = formatMoney(boostedOffer);
+  superChestBenefitButton.classList.add("hidden");
+  addLog({ type: "SUPER_CHEST_BENEFIT_USED", round, originalOffer: currentOffer, boostedOffer, multiplier: 1.5 });
+  instruction.textContent = "SUPER CHEST BENEFIT ACTIVATED";
+  message.textContent = `THE BANKER'S OFFER HAS BEEN INCREASED BY 50%: ${formatMoney(boostedOffer)}.`;
 }
 
 /* =========================================================
@@ -1235,6 +1407,10 @@ function continueGame(isAutomaticNoDeal = false) {
 
   openedCasesThisRound = 0;
 
+  if (round === 3 && !gameOver) {
+    startSuperChest();
+    return;
+  }
   /*
       Move to next round.
   */
@@ -1293,6 +1469,7 @@ function openCounterPanel() {
   });
 
   bankerOfferContent.classList.add("hidden");
+  superChestBenefitButton.classList.add("hidden");
 
   counterPanel.classList.remove("hidden");
 
@@ -1332,6 +1509,10 @@ function cancelCounter() {
 
   if (counterOfferAvailable) {
     counterButton.classList.remove("hidden");
+  }
+
+  if (superChestBenefitAvailable && !superChestBenefitUsed) {
+    superChestBenefitButton.classList.remove("hidden");
   }
 
   instruction.textContent = "THE BANKER HAS MADE AN OFFER";
@@ -1641,6 +1822,10 @@ function startNextRoundAfterCounter() {
 
   openedCasesThisRound = 0;
 
+  if (round === 3 && !gameOver) {
+    startSuperChest();
+    return;
+  }
   /* -----------------------------------------
        MOVE TO NEXT ROUND
     ----------------------------------------- */
