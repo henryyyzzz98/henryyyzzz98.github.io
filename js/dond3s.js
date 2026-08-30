@@ -4,18 +4,17 @@
 ========================================================= */
 
 const BASE_PRIZES = [
-  0.01, 1, 5, 10, 25, 50, 75, 100, 200, 300, 400, 500, 750, 1000, 5000, 10000,
+  1, 2, 5, 10, 25, 50, 75, 100, 200, 300, 400, 500, 750, 1000, 5000, 10000,
   25000, 50000, 75000, 100000, 200000, 300000, 400000, 500000, 750000, 1000000,
 ];
 
 const TOTAL_CASES = 26;
-const ROUND_CASES = [6, 5, 4, 3, 2, 1, 1, 1, 1];
+const ROUND_CASES = [6, 5, 4, 3, 2, 1, 1, 1, 1, 1];
 const CASE_RESULTS = [
-  ...Array(14).fill("UP 1"),
-  ...Array(4).fill("UP 2"),
+  ...Array(15).fill("UP 1"),
+  ...Array(3).fill("UP 2"),
   ...Array(2).fill("UP 3"),
-  ...Array(3).fill("DOWN 1"),
-  ...Array(3).fill("STRIKE"),
+  ...Array(6).fill("STRIKE"),
 ];
 
 let maxPrize = 1000000;
@@ -78,11 +77,10 @@ function startGame() {
     maximumPrize: maxPrize,
     prizeBoard: [...prizes],
     caseDistribution: {
-      "UP 1": 14,
-      "UP 2": 4,
+      "UP 1": 15,
+      "UP 2": 3,
       "UP 3": 2,
-      "DOWN 1": 3,
-      STRIKE: 3,
+      STRIKE: 6,
     },
   });
 
@@ -272,10 +270,8 @@ function getResultMessage(result) {
       return "UP 2! CLIMB TWO LEVELS.";
     case "UP 3":
       return "UP 3! CLIMB THREE LEVELS.";
-    case "DOWN 1":
-      return "DOWN 1! DROP ONE LEVEL.";
     case "STRIKE":
-      return "STRIKE! THE HIGHEST PRIZE IS STRUCK OUT.";
+      return "STRIKE! THE HIGHEST PRIZE IS GONE.";
     default:
       return result;
   }
@@ -285,20 +281,19 @@ function applyResult(result) {
   if (result === "UP 1") currentPrizeIndex += 1;
   if (result === "UP 2") currentPrizeIndex += 2;
   if (result === "UP 3") currentPrizeIndex += 3;
-  if (result === "DOWN 1") currentPrizeIndex -= 1;
 
   if (result === "STRIKE") {
     const strikesRemaining = getStrikesRemaining();
-    const strikeNumber = 3 - strikesRemaining;
+    const strikeNumber = 6 - strikesRemaining;
 
     // Third Strike = immediate game-ending loss.
-    if (strikeNumber >= 3) {
+    if (strikeNumber >= 6) {
       addLog({
         type: "STRIKE",
         round,
-        strikeNumber: 3,
+        strikeNumber: 6,
         strikesRemaining: 0,
-        finalResult: "GAME OVER - 3RD STRIKE",
+        finalResult: "GAME OVER - FINAL STRIKE",
         winnings: 0,
       });
       loseOnThirdStrike();
@@ -350,7 +345,7 @@ function loseOnThirdStrike() {
   bankerWaiting.classList.add("hidden");
   bankerOfferContent.classList.add("hidden");
 
-  instruction.textContent = "THREE STRIKES!";
+  instruction.textContent = "LAST STRIKE!";
   message.textContent = "GAME OVER — YOU WIN $0.";
 
   updateGameInfo();
@@ -359,7 +354,7 @@ function loseOnThirdStrike() {
 
   addLog({
     type: "GAME_END",
-    reason: "THIRD_STRIKE",
+    reason: "FINAL STRIKE",
     winnings: 0,
     round,
     currentPrize: prizes[currentPrizeIndex],
@@ -384,7 +379,7 @@ function winTopPrize() {
 
   addLog({
     type: "GAME_END",
-    reason: "TOP_PRIZE_REACHED",
+    reason: "TOP PRIZE WON",
     winnings,
     round,
     currentPrize: winnings,
@@ -540,8 +535,6 @@ function calculateBankerOffer() {
       simulatedIndex += 2;
     } else if (gameCase.result === "UP 3") {
       simulatedIndex += 3;
-    } else if (gameCase.result === "DOWN 1") {
-      simulatedIndex -= 1;
     } else if (gameCase.result === "STRIKE") {
       // A Strike removes the current highest prize.
       // If the current position was that prize, it falls to the new top.
@@ -747,7 +740,7 @@ function finishAfterFinalRound() {
 
   addLog({
     type: "GAME_END",
-    reason: "FINAL_ROUND_COMPLETE",
+    reason: "FINAL ROUND COMPLETE",
     winnings,
     currentPrize: winnings,
     topPrize: prizes[prizes.length - 1],
@@ -785,14 +778,12 @@ function formatDateTime(date) {
 function generateGameLog() {
   let output = "";
   output += "========================================\n";
-  output += "       DEAL OR NO DEAL - 3 STRIKES\n";
+  output += "       DEAL OR NO DEAL - MOVE ON UP\n";
   output += "========================================\n\n";
 
   const start = gameLog.find((e) => e.type === "GAME_START");
   output += `Game Date: ${start ? start.date : "Unknown"}\n`;
-  output += `Maximum Prize: ${start ? formatMoney(start.maximumPrize) : "Unknown"}\n`;
-  output +=
-    "Case Distribution: 14 UP 1 | 4 UP 2 | 2 UP 3 | 3 DOWN 1 | 3 STRIKE\n\n";
+  output += `Maximum Prize: ${start ? formatMoney(start.maximumPrize) : "Unknown"}\n\n`;
 
   if (start?.prizeBoard) {
     output += "PRIZE BOARD\n----------------------------------------\n";
@@ -828,22 +819,22 @@ function generateGameLog() {
       rounds[r]
         .filter((e) => e.type === "STRIKE")
         .forEach((e) => {
-          if (e.strikeNumber === 3) {
-            output += "STRIKE #3: GAME OVER — PLAYER WINS $0\n";
+          if (e.strikeNumber === 6) {
+            output += "STRIKE #6: GAME OVER — PLAYER WINS $0\n";
           } else {
-            output += `STRIKE #${e.strikeNumber}: ${formatMoney(e.removedPrize)} removed | New Top Prize: ${formatMoney(e.newTopPrize)}\n`;
+            output += `\nSTRIKE #${e.strikeNumber}: ${formatMoney(e.removedPrize)} removed | New Top Prize: ${formatMoney(e.newTopPrize)}\n`;
           }
         });
 
       rounds[r]
         .filter((e) => e.type === "BANKER_OFFER" || e.type === "BANKER_BUYOUT")
         .forEach((e) => {
-          output += `${e.type === "BANKER_BUYOUT" ? "BANKER BUYOUT" : "Banker's Offer"}: ${formatMoney(e.offer)}\n`;
+          output += `${e.type === "BANKER_BUYOUT" ? "BANKER BUYOUT" : "\nBanker's Offer"}: ${formatMoney(e.offer)}\n`;
           if (e.normalOffer != null && e.type === "BANKER_BUYOUT")
             output += `Normal Offer Before Buyout: ${formatMoney(e.normalOffer)}\n`;
           output += `Current Prize: ${formatMoney(e.currentPrize)} | Top Prize: ${formatMoney(e.topPrize)} | Strikes Remaining: ${e.strikesRemaining}\n`;
           if (e.unopenedCases?.length) {
-            output += "Unopened Cases and Results:\n";
+            output += "\nUnopened Cases and Results:\n";
             e.unopenedCases.forEach(
               (c) => (output += `Case #${c.caseNumber} → ${c.result}\n`),
             );
@@ -858,12 +849,12 @@ function generateGameLog() {
         )
         .forEach((e) => {
           if (e.type === "DEAL")
-            output += `Decision: DEAL → ${formatMoney(e.amount)}\n`;
+            output += `\nDecision: DEAL → ${formatMoney(e.amount)}\n`;
           if (e.type === "BUYOUT_ACCEPTED")
-            output += `Decision: BUYOUT ACCEPTED → ${formatMoney(e.amount)}\n`;
+            output += `\nDecision: BUYOUT ACCEPTED → ${formatMoney(e.amount)}\n`;
           if (e.type === "BUYOUT_REJECTED")
-            output += "Decision: BUYOUT REJECTED / NO DEAL\n";
-          if (e.type === "NO_DEAL") output += "Decision: NO DEAL\n";
+            output += "\nDecision: BUYOUT REJECTED / NO DEAL\n";
+          if (e.type === "NO_DEAL") output += "\nDecision: NO DEAL\n";
         });
       output += "\n";
     });
@@ -892,7 +883,7 @@ function downloadGameLog() {
   const link = document.createElement("a");
   const now = new Date();
   link.href = url;
-  link.download = `DealOrNoDeal_3Strikes_GameLog_${now.toISOString().slice(0, 10)}_${now.toTimeString().slice(0, 8).replace(/:/g, "-")}.txt`;
+  link.download = `DealOrNoDeal_MoveOnUp_GameLog_${now.toISOString().slice(0, 10)}_${now.toTimeString().slice(0, 8).replace(/:/g, "-")}.txt`;
   document.body.appendChild(link);
   link.click();
   link.remove();
