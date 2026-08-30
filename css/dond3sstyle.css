@@ -2139,7 +2139,7 @@ button {
 }
 
 .case.revealed.strike {
-  text-decoration: line-through;
+  color: #FF0000;
 }
 
 .banker-title {
