@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Secret Fortune</title><link rel="stylesheet" href="css/dondsfstyle.css">
+<title>Secret Fortune</title><link rel="stylesheet" href="css/sfstyle.css">
 </head>
 <body>
 <div id="setup" class="screen setup">
@@ -25,9 +25,24 @@
 </section>
 
 <section id="choice" class="panel hidden">
-  <h2>ROUND 3 — CHOOSE YOUR GROUP</h2><p>The computer has calculated the average value of each group.</p>
-  <div class="choices"><button data-g="A"><span>GROUP A</span><br><strong id="avgA">$0</strong><small>AVERAGE VALUE</small></button>
-  <button data-g="B"><span>GROUP B</span><br><strong id="avgB">$0</strong><small>AVERAGE VALUE</small></button></div>
+  <h2>ROUND 3 — BUILD YOUR TWO GROUPS</h2>
+  <p id="round3Instruction">Distribute the 12 remaining envelopes between Group A and Group B. Each group must contain 6 envelopes.</p>
+  <div id="round3Pool" class="pool"></div>
+  <div class="round3-groups">
+    <div id="groupA" class="r3-group">
+      <h3>GROUP A <span id="countA">0 / 6</span></h3>
+      <div id="listA"></div>
+    </div>
+    <div id="groupB" class="r3-group">
+      <h3>GROUP B <span id="countB">0 / 6</span></h3>
+      <div id="listB"></div>
+    </div>
+  </div>
+  <button id="lockRound3">LOCK GROUPS</button>
+  <div id="averageChoices" class="choices hidden">
+    <button class="choice" data-g="A"><span>GROUP A</span><strong id="avgA">$0</strong><small>AVERAGE VALUE</small></button>
+    <button class="choice" data-g="B"><span>GROUP B</span><strong id="avgB">$0</strong><small>AVERAGE VALUE</small></button>
+  </div>
 </section>
 
 <section id="final" class="panel hidden">

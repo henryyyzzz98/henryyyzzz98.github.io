@@ -440,3 +440,52 @@ main {
     min-height: 115px;
   }
 }
+
+.round3-groups {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  max-width: 900px;
+  margin: 18px auto;
+}
+.r3-group {
+  min-height: 145px;
+  background: #0d1017;
+  border: 2px dashed #555d72;
+  border-radius: 14px;
+  padding: 15px;
+  text-align: center;
+}
+.r3-group:first-child {
+  border-color: #4c8df6;
+}
+.r3-group:last-child {
+  border-color: #e84b5f;
+}
+.r3-group h3 {
+  margin: 0 0 12px;
+  letter-spacing: 0.12em;
+}
+.r3-group h3 span {
+  display: block;
+  font-size: 10px;
+  color: #9ca3b5;
+  margin-top: 5px;
+  letter-spacing: 0.08em;
+}
+.r3-group .mini {
+  cursor: pointer;
+}
+.r3-group .mini:hover {
+  outline: 2px solid #f4c95d;
+}
+#round3Pool {
+  max-width: 850px;
+  margin-left: auto;
+  margin-right: auto;
+}
+@media (max-width: 600px) {
+  .round3-groups {
+    grid-template-columns: 1fr;
+  }
+}
