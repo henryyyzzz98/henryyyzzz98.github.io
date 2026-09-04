@@ -11,8 +11,8 @@ const S = {
 };
 const defs = [
   ["red", "RED"],
-  ["yellow", "YELLOW"],
   ["orange", "ORANGE"],
+  ["yellow", "YELLOW"],
   ["green", "GREEN"],
   ["blue", "BLUE"],
   ["purple", "PURPLE"],
@@ -187,8 +187,9 @@ function round3() {
   msg("Choose Group A or B. The average is your only clue.");
 }
 document
-  .querySelectorAll(".choice")
-  .forEach((b) => (b.onclick = () => choose(b.dataset.g)));
+  .querySelectorAll("[data-g]")
+  .forEach((b) => b.addEventListener("click", () => choose(b.dataset.g)));
+
 function choose(g) {
   let ids = S.groups[g];
   S.env.forEach((e) => {
