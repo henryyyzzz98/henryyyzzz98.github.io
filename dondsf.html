@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Secret Fortune</title><link rel="stylesheet" href="css/dondsfstyle.css">
+</head>
+<body>
+<div id="setup" class="screen setup">
+  <h1>SECRET <span>FORTUNE</span></h1>
+  <p>24 envelopes. One secret fortune.</p>
+  <div class="setup-card"><label>CUSTOM JACKPOT</label><div class="input"><b>$</b><input id="jackpot" type="number" min="10000" step="100" value=""></div>
+  <button id="start">START GAME</button></div>
+</div>
+
+<div id="game" class="hidden">
+<header><div><div class="brand">SECRET <span>FORTUNE</span></div><div id="round">ROUND 1</div></div>
+<div class="jackpot">JACKPOT<strong id="jackpotText">$100,000</strong></div></header>
+<div id="message" class="message"></div>
+<section class="tree"><small>MONEY TREE</small><div id="tree"></div></section>
+
+<main>
+<section id="placement" class="panel">
+  <h2 id="instruction"></h2><div id="pool" class="pool"></div><div id="groups" class="groups"></div>
+  <button id="lock">LOCK GROUPS</button>
+</section>
+
+<section id="choice" class="panel hidden">
+  <h2>ROUND 3 — CHOOSE YOUR GROUP</h2><p>The computer has calculated the average value of each group.</p>
+  <div class="choices"><button data-g="A"><span>GROUP A</span><strong id="avgA">$0</strong><small>AVERAGE VALUE</small></button>
+  <button data-g="B"><span>GROUP B</span><strong id="avgB">$0</strong><small>AVERAGE VALUE</small></button></div>
+</section>
+
+<section id="final" class="panel hidden">
+  <div class="round">FINAL ROUND</div><h2>FIND YOUR SECRET FORTUNE</h2><p id="finalInstruction"></p><div id="finalEnvelopes" class="final-envelopes"></div>
+</section>
+
+<section id="result" class="panel result hidden"><small>YOUR SECRET FORTUNE</small><div id="amount">$0</div><p>GAME COMPLETE</p><button onclick="location.reload()">PLAY AGAIN</button></section>
+</main>
+</div>
+
+<div id="modal" class="modal hidden"><div class="modal-card"><small id="modalTitle"></small><div id="modalEnv">?</div><div id="modalMoney">$0</div><button id="continue">CONTINUE</button></div></div>
+<script src="js/sfgame.js"></script>
+</body></html>
