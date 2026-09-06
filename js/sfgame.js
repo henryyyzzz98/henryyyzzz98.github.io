@@ -9,6 +9,7 @@ const S = {
   round3Pool: [],
   busy: false,
   gameOver: false,
+  log: []
 };
 
 const defs = [
@@ -71,8 +72,10 @@ function startGame() {
   S.round3Pool = [];
   S.busy = false;
   S.gameOver = false;
+  S.log = [];
 
   resetGroups();
+  logEvent(`GAME STARTED — Jackpot: ${money(jackpot)}`);
 
   $("setup").classList.add("hidden");
   $("game").classList.remove("hidden");
@@ -101,6 +104,65 @@ function tree() {
     .map((value) => `<div class="step">${money(value)}</div>`)
     .join("");
 }
+
+/* ======================== GAME LOG ======================== */
+function logEvent(text) {
+  S.log.push(text);
+}
+
+function formatEnvelopeList(ids) {
+  return ids.map(id => `#${String(id).padStart(2, "0")}`).join(", ");
+}
+
+function buildGameLog(finalEnvelope) {
+  const lines = [];
+  const now = new Date();
+  lines.push("========================================");
+  lines.push("          SECRET FORTUNE");
+  lines.push("             GAME LOG");
+  lines.push("========================================");
+  lines.push("");
+  lines.push(`Game Date: ${now.toLocaleString()}`);
+  lines.push(`Jackpot: ${money(S.jackpot)}`);
+  lines.push("");
+  lines.push("----------------------------------------");
+  lines.push("ENVELOPE VALUES");
+  lines.push("----------------------------------------");
+  S.env.slice().sort((a,b) => a.id-b.id).forEach(e => {
+    lines.push(`Envelope #${String(e.id).padStart(2,"0")}: ${money(e.value)}`);
+  });
+  lines.push("");
+  lines.push("========================================");
+  lines.push("GAMEPLAY");
+  lines.push("========================================");
+  lines.push("");
+  lines.push(...S.log);
+  lines.push("");
+  lines.push("========================================");
+  lines.push("FINAL RESULT");
+  lines.push("========================================");
+  lines.push("");
+  lines.push(`Winning Envelope: #${String(finalEnvelope.id).padStart(2,"0")}`);
+  lines.push(`SECRET FORTUNE: ${money(finalEnvelope.value)}`);
+  lines.push("");
+  lines.push("Thank you for playing Secret Fortune!");
+  lines.push("========================================");
+  return lines.join("\n");
+}
+
+function downloadGameLog(finalEnvelope) {
+  const blob = new Blob([buildGameLog(finalEnvelope)], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  const date = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `Secret_Fortune_Game_Log_${date}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+/* ============================================================ */
 
 /* ======================== ROUNDS 1/2 ======================== */
 
@@ -202,6 +264,12 @@ async function lock() {
     lowest.push(members.reduce((a, b) => (a.value <= b.value ? a : b)));
   }
 
+  logEvent(`ROUND ${S.round} — GROUP ASSIGNMENTS`);
+  for (const [groupId, name] of defs) {
+    logEvent(`${name}: ${formatEnvelopeList(S.groups[groupId])}`);
+  }
+  logEvent("");
+  logEvent(`ROUND ${S.round} — LOWEST ENVELOPES REVEALED`);
   msg(
     "Groups locked. The computer is revealing the lowest envelope in each group...",
   );
@@ -210,6 +278,7 @@ async function lock() {
   for (const envelope of lowest) {
     envelope.dead = true;
     envelope.group = null;
+    logEvent(`Envelope #${String(envelope.id).padStart(2,"0")} — ${money(envelope.value)} — LOWEST IN ITS GROUP`);
     await reveal(envelope, "LOWEST IN ITS GROUP");
   }
 
@@ -380,6 +449,13 @@ async function lockRound3() {
     "Your groups are locked. The averages are your only clue. Choose A or B.";
   $("avgA").textContent = money(avgA);
   $("avgB").textContent = money(avgB);
+
+  logEvent("ROUND 3 — GROUP A: " + formatEnvelopeList(S.groups.A));
+  logEvent("GROUP A TOTAL: " + money(A.reduce((sum, e) => sum + e.value, 0)));
+  logEvent("GROUP A AVERAGE: " + money(avgA));
+  logEvent("ROUND 3 — GROUP B: " + formatEnvelopeList(S.groups.B));
+  logEvent("GROUP B TOTAL: " + money(B.reduce((sum, e) => sum + e.value, 0)));
+  logEvent("GROUP B AVERAGE: " + money(avgB));
   $("averageChoices").classList.remove("hidden");
 
   S.busy = false;
@@ -395,6 +471,9 @@ function choose(group) {
   if (!ids || ids.length !== 6) return;
 
   // Only the chosen group survives.
+  logEvent(`CONTESTANT CHOSE GROUP ${group}`);
+  logEvent(`ENVELOPES ADVANCING TO FINAL ROUND: ${formatEnvelopeList(ids)}`);
+  logEvent("");
   S.env.forEach((e) => {
     if (!ids.includes(e.id)) e.dead = true;
   });
@@ -450,6 +529,7 @@ async function finalPick(id) {
 
   if (active.length > 2) {
     envelope.dead = true;
+    logEvent(`FINAL ROUND — ELIMINATED Envelope #${String(envelope.id).padStart(2,"0")} — ${money(envelope.value)}`);
     await reveal(envelope, "ENVELOPE ELIMINATED");
     renderFinal();
     msg(`${S.final.filter((e) => !e.dead).length} envelopes remain.`);
@@ -461,6 +541,9 @@ async function finalPick(id) {
     $("result").classList.remove("hidden");
     $("amount").textContent = money(envelope.value);
     $("round").textContent = "GAME COMPLETE";
+    logEvent(`FINAL SELECTION — Envelope #${String(envelope.id).padStart(2,"0")}`);
+    logEvent(`SECRET FORTUNE: ${money(envelope.value)}`);
+    $("downloadLog").onclick = () => downloadGameLog(envelope);
     msg("Your Secret Fortune has been revealed.");
     S.busy = false;
   }
