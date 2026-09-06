@@ -11,10 +11,11 @@ const BASE_PRIZES = [
 const TOTAL_CASES = 26;
 const ROUND_CASES = [6, 5, 4, 3, 2, 1, 1, 1, 1, 1];
 const CASE_RESULTS = [
-  ...Array(15).fill("UP 1"),
-  ...Array(3).fill("UP 2"),
+  ...Array(14).fill("UP 1"),
+  ...Array(4).fill("UP 2"),
   ...Array(2).fill("UP 3"),
-  ...Array(6).fill("STRIKE"),
+  ...Array(3).fill("BACK 1"),
+  ...Array(3).fill("STRIKE")
 ];
 
 let maxPrize = 1000000;
@@ -77,10 +78,11 @@ function startGame() {
     maximumPrize: maxPrize,
     prizeBoard: [...prizes],
     caseDistribution: {
-      "UP 1": 15,
-      "UP 2": 3,
+      "UP 1": 14,
+      "UP 2": 4,
       "UP 3": 2,
-      STRIKE: 6,
+      "BACK 1": 3,
+      STRIKE: 3,
     },
   });
 
@@ -265,11 +267,13 @@ async function openCase(gameCase) {
 function getResultMessage(result) {
   switch (result) {
     case "UP 1":
-      return "UP 1! CLIMB ONE LEVEL.";
+      return "UP 1! 1 STEP CLOSER TO THE JACKPOT.";
     case "UP 2":
-      return "UP 2! CLIMB TWO LEVELS.";
+      return "UP 2! 2 STEPS CLOSER TO THE JACKPOT.";
     case "UP 3":
-      return "UP 3! CLIMB THREE LEVELS.";
+      return "UP 3! 3 STEPS CLOSER TO THE JACKPOT.";
+    case "BACK 1":
+      return "BACK 1! MOVE BACK ONE STEP.";
     case "STRIKE":
       return "STRIKE! THE HIGHEST PRIZE IS GONE.";
     default:
@@ -281,17 +285,18 @@ function applyResult(result) {
   if (result === "UP 1") currentPrizeIndex += 1;
   if (result === "UP 2") currentPrizeIndex += 2;
   if (result === "UP 3") currentPrizeIndex += 3;
+  if (result === "BACK 1") currentPrizeIndex -= 1;
 
   if (result === "STRIKE") {
     const strikesRemaining = getStrikesRemaining();
-    const strikeNumber = 6 - strikesRemaining;
+    const strikeNumber = 3 - strikesRemaining;
 
     // Third Strike = immediate game-ending loss.
-    if (strikeNumber >= 6) {
+    if (strikeNumber >= 3) {
       addLog({
         type: "STRIKE",
         round,
-        strikeNumber: 6,
+        strikeNumber: 3,
         strikesRemaining: 0,
         finalResult: "GAME OVER - FINAL STRIKE",
         winnings: 0,
@@ -535,6 +540,8 @@ function calculateBankerOffer() {
       simulatedIndex += 2;
     } else if (gameCase.result === "UP 3") {
       simulatedIndex += 3;
+    } else if (gameCase.result === "BACK 1") {
+      simulatedIndex -= 1;
     } else if (gameCase.result === "STRIKE") {
       // A Strike removes the current highest prize.
       // If the current position was that prize, it falls to the new top.
@@ -819,8 +826,8 @@ function generateGameLog() {
       rounds[r]
         .filter((e) => e.type === "STRIKE")
         .forEach((e) => {
-          if (e.strikeNumber === 6) {
-            output += "STRIKE #6: GAME OVER — PLAYER WINS $0\n";
+          if (e.strikeNumber === 3) {
+            output += "STRIKE #3: GAME OVER — PLAYER WINS $0\n";
           } else {
             output += `\nSTRIKE #${e.strikeNumber}: ${formatMoney(e.removedPrize)} removed | New Top Prize: ${formatMoney(e.newTopPrize)}\n`;
           }

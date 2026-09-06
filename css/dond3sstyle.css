@@ -2094,9 +2094,11 @@ button {
 }
 
 .current-prize-panel {
-  display: flex;
+  /*display: flex;*/
+  display: grid;
   flex-direction: column;
   align-items: center;
+  grid-template-columns: 1fr 1fr;
   gap: 2px;
   padding: 8px 14px;
   border-radius: 12px;
@@ -2133,7 +2135,7 @@ button {
   font-size: clamp(11px, 2vw, 18px);
 }
 
-.case.revealed.down-1,
+.case.revealed.back-1,
 .case.revealed.strike {
   font-size: clamp(10px, 1.8vw, 16px);
 }
