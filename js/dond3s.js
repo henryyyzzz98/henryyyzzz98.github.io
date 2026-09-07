@@ -275,23 +275,25 @@ function getResultMessage(result) {
     case "BACK 1":
       return "BACK 1! MOVE BACK ONE STEP.";
     case "STRIKE":
-      return "STRIKE! THE HIGHEST PRIZE IS GONE.";
+      return "STRIKE!";
     default:
       return result;
   }
 }
 
 function applyResult(result) {
+  // Move the current prize position
   if (result === "UP 1") currentPrizeIndex += 1;
   if (result === "UP 2") currentPrizeIndex += 2;
   if (result === "UP 3") currentPrizeIndex += 3;
   if (result === "BACK 1") currentPrizeIndex -= 1;
 
+  // Handle STRIKE
   if (result === "STRIKE") {
     const strikesRemaining = getStrikesRemaining();
     const strikeNumber = 3 - strikesRemaining;
 
-    // Third Strike = immediate game-ending loss.
+    // Third Strike = immediate game-ending loss
     if (strikeNumber >= 3) {
       addLog({
         type: "STRIKE",
@@ -301,30 +303,29 @@ function applyResult(result) {
         finalResult: "GAME OVER - FINAL STRIKE",
         winnings: 0,
       });
+
       loseOnThirdStrike();
       return;
     }
 
-    if (prizes.length > 1) {
-      const removedPrize = prizes.pop();
-      addLog({
-        type: "STRIKE",
-        round,
-        strikeNumber,
-        removedPrize,
-        newTopPrize: prizes[prizes.length - 1],
-        strikesRemaining,
-      });
-    }
-    if (currentPrizeIndex >= prizes.length)
-      currentPrizeIndex = prizes.length - 1;
+    // Strike only.
+    // The prize ladder and top prize remain unchanged.
+    addLog({
+      type: "STRIKE",
+      round,
+      strikeNumber,
+      strikesRemaining,
+      topPrize: prizes[prizes.length - 1],
+    });
   }
 
+  // Keep the prize position within the valid range
   currentPrizeIndex = Math.max(
     0,
     Math.min(currentPrizeIndex, prizes.length - 1),
   );
 
+  // Log the resulting prize position
   addLog({
     type: "PRIZE_POSITION_CHANGED",
     round,
@@ -335,6 +336,7 @@ function applyResult(result) {
     strikesRemaining: getStrikesRemaining(),
   });
 
+  // Reaching the top prize = immediate win
   if (currentPrizeIndex === prizes.length - 1) {
     winTopPrize();
   }
@@ -820,7 +822,7 @@ function generateGameLog() {
       rounds[r]
         .filter((e) => e.type === "PRIZE_POSITION_CHANGED")
         .forEach((e) => {
-          output += `After ${e.result}: Current Prize ${formatMoney(e.currentPrize)} | Top Prize ${formatMoney(e.topPrize)} | Strikes Remaining: ${e.strikesRemaining}\n`;
+          output += `After ${e.result}: Current Prize ${formatMoney(e.currentPrize)} | Strikes Remaining: ${e.strikesRemaining}\n`;
         });
 
       rounds[r]
@@ -829,7 +831,7 @@ function generateGameLog() {
           if (e.strikeNumber === 3) {
             output += "STRIKE #3: GAME OVER — PLAYER WINS $0\n";
           } else {
-            output += `\nSTRIKE #${e.strikeNumber}: ${formatMoney(e.removedPrize)} removed | New Top Prize: ${formatMoney(e.newTopPrize)}\n`;
+            output += `\nSTRIKE #${e.strikeNumber}: Strike received | Strikes Remaining: ${e.strikesRemaining}\n`;
           }
         });
 
@@ -839,7 +841,7 @@ function generateGameLog() {
           output += `${e.type === "BANKER_BUYOUT" ? "BANKER BUYOUT" : "\nBanker's Offer"}: ${formatMoney(e.offer)}\n`;
           if (e.normalOffer != null && e.type === "BANKER_BUYOUT")
             output += `Normal Offer Before Buyout: ${formatMoney(e.normalOffer)}\n`;
-          output += `Current Prize: ${formatMoney(e.currentPrize)} | Top Prize: ${formatMoney(e.topPrize)} | Strikes Remaining: ${e.strikesRemaining}\n`;
+          output += `Current Prize: ${formatMoney(e.currentPrize)} | Strikes Remaining: ${e.strikesRemaining}\n`;
           if (e.unopenedCases?.length) {
             output += "\nUnopened Cases and Results:\n";
             e.unopenedCases.forEach(
