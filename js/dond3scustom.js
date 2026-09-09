@@ -139,17 +139,16 @@ function smartRound(value) {
   if (value < 1) return Math.round(value * 100) / 100;
   if (value < 100) return Math.ceil(value / 5) * 5;
   if (value < 1000) return Math.ceil(value / 5) * 5;
-  return Math.round(value);
+  return Math.ceil(value / 5) * 5;
 }
 
 function smartRoundOffer(value) {
   if (value < 0.01) return 0.01;
   if (value < 1) return Math.round(value * 100) / 100;
-  if (value < 10) return Math.round(value);
-  if (value < 100) return Math.round(value);
-  if (value < 1000) return Math.round(value / 10) * 10;
-  if (value < 10000) return Math.round(value / 100) * 100;
-  return Math.round(value / 1000) * 1000;
+  if (value < 100) return Math.ceil(value / 5) * 5;
+  if (value < 1000) return Math.ceil(value / 10) * 10;
+  if (value < 10000) return Math.ceil(value / 100) * 100;
+  return Math.ceil(value / 1000) * 1000;
 }
 
 function getMinimumIncrement(value) {
