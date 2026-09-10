@@ -7,7 +7,7 @@
   1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 60, 75, 85, 100,
 ];*/
 const BASE_PRIZES = [
-  1, 6, 12, 24, 36, 60, 120, 180, 240, 300, 480
+  1, 12.5, 25, 50, 75, 125, 250, 375, 500, 625, 1000
 ];
 
 const TOTAL_CASES = 15;
@@ -17,7 +17,7 @@ const CASE_RESULTS = [
   ...Array(4).fill("STRIKE")
 ];
 
-let maxPrize = 480;
+let maxPrize = 1000;
 let prizes = [];
 let cases = [];
 let currentPrizeIndex = 0;
@@ -121,7 +121,7 @@ function resetGame() {
 }
 
 function generatePrizeBoard(maximumPrize) {
-  const multiplier = maximumPrize / 480;
+  const multiplier = maximumPrize / 1000;
   const generated = BASE_PRIZES.map((value) => smartRound(value * multiplier));
   generated[generated.length - 1] = maximumPrize;
 
@@ -137,6 +137,7 @@ function generatePrizeBoard(maximumPrize) {
 function smartRound(value) {
   if (value < 0.01) return 0.01;
   if (value < 1) return Math.round(value * 100) / 100;
+  if (value < 10) return Math.round(value * 100) / 100;
   if (value < 100) return Math.ceil(value / 5) * 5;
   if (value < 1000) return Math.ceil(value / 5) * 5;
   return Math.ceil(value / 5) * 5;
@@ -145,6 +146,7 @@ function smartRound(value) {
 function smartRoundOffer(value) {
   if (value < 0.01) return 0.01;
   if (value < 1) return Math.round(value * 100) / 100;
+  if (value < 10) return Math.round(value * 100) / 100;
   if (value < 100) return Math.ceil(value / 5) * 5;
   if (value < 1000) return Math.ceil(value / 10) * 10;
   if (value < 10000) return Math.ceil(value / 100) * 100;
