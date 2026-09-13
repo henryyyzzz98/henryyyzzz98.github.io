@@ -503,14 +503,14 @@ button {
 ========================================================= */
 
 .main-board {
-  display: grid;
+  /*display: grid;
 
   grid-template-columns:
     minmax(145px, 0.85fr)
     minmax(430px, 2.5fr)
     minmax(145px, 0.85fr);
 
-  gap: 18px;
+  gap: 18px;*/
 
   align-items: start;
 
@@ -803,7 +803,7 @@ button {
 
   animation: caseReveal 0.4s ease-out;
 
-  font-size: 10px;
+  font-size: 18px;
 
   padding: 3px 2px;
 
@@ -2131,13 +2131,18 @@ button {
 
 .case.revealed.up-1,
 .case.revealed.up-2,
-.case.revealed.up-3 {
+.case.revealed.up-3,
+.case.revealed.win {
   font-size: clamp(11px, 2vw, 18px);
 }
 
 .case.revealed.back-1,
 .case.revealed.strike {
   font-size: clamp(10px, 1.8vw, 16px);
+}
+
+.case.revealed.win {
+  color: #FFD700;
 }
 
 .case.revealed.strike {

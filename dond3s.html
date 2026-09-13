@@ -3,30 +3,22 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-    <title>Move On Up</title>
-
+    <title>Accumulator</title>
     <link rel="stylesheet" href="css/dond3sstyle.css" />
   </head>
 
   <body>
-    <!-- =====================================================
-       SETUP SCREEN
-  ====================================================== -->
-
     <div id="setupScreen" class="screen setup-screen">
       <div class="setup-background"></div>
-
       <div class="setup-box">
         <div class="setup-logo">
-          <div class="logo-main">MOVE ON UP</div>
+          <div class="logo-main">ACCUMULATOR</div>
         </div>
 
         <label for="maxPrize">JACKPOT AMOUNT:</label>
 
         <div class="input-wrapper">
           <span>$</span>
-
           <input type="number" id="maxPrize" value="" min="1" step="1" />
         </div>
 
@@ -34,72 +26,50 @@
       </div>
     </div>
 
-    <!-- =====================================================
-       GAME SCREEN
-  ====================================================== -->
-
     <div id="gameScreen" class="screen game-screen hidden">
-      <!-- =================================================
-         TOP BAR
-    ================================================== -->
-
       <header class="game-header">
         <div class="show-logo">
-          <span class="logo-deal">MOVE ON UP</span>
+          <span class="logo-deal">ACCUMULATOR</span>
         </div>
 
         <div class="header-center">
           <div class="round-display">
-            <span>ROUND</span>
-            <strong id="roundNumber">1</strong>
+            <span>SELECTION</span>
+            <strong id="roundNumber"></strong>
           </div>
 
           <div class="header-instruction">
             <span id="instructionRound"></span>
-
-            <strong id="instruction"> CHOOSE YOUR CASE </strong>
+            <strong id="instruction">CHOOSE YOUR CASE</strong>
           </div>
         </div>
 
         <div class="cases-counter">
           <span>CASES LEFT</span>
-          <strong id="casesLeft">26</strong>
+          <strong id="casesLeft">25</strong>
         </div>
       </header>
 
-      <!-- =================================================
-         MAIN GAME
-    ================================================== -->
-
       <main class="game-main">
         <div id="message" class="message"></div>
+
         <div class="strikes-status">
           <strong id="strikesRemaining">3</strong>
           <span>STRIKES REMAINING</span>
         </div>
+
         <div class="current-prize-panel">
-          <div><span>CURRENT LEVEL:</span>
-          <strong id="currentPrize">$0</strong></div>
-          <div><span>TOP PRIZE:</span>
-          <strong id="topPrize">$0</strong></div>
+          <div>
+            <span>CURRENT TOTAL:</span>
+            <strong id="currentPrize">$0</strong>
+          </div>
+          <div>
+            <span>TOP PRIZE:</span>
+            <strong id="topPrize">$0</strong>
+          </div>
         </div>
-        <!-- =============================================
-           PRIZE BOARD + CASES
-      ============================================== -->
 
         <div class="main-board">
-          <!-- =========================================
-             LEFT PRIZE VALUES
-        ========================================== -->
-
-          <section class="prize-section left-prize-section">
-            <div class="money-column" id="leftMoneyBoard"></div>
-          </section>
-
-          <!-- =========================================
-             CASES
-        ========================================== -->
-
           <div class="cases-area">
             <section class="cases-section">
               <div id="casesContainer" class="cases-container"></div>
@@ -111,7 +81,7 @@
               <div class="banker-panel">
                 <div class="banker-phone">
                   <div class="phone-icon">☎</div>
-                  <div class="phone-text">THE BANKER IS CALLING...</div>
+                  <div class="phone-text">THE BANKER HAS AN OFFER...</div>
                 </div>
 
                 <div id="bankerWaiting" class="banker-waiting">
@@ -119,8 +89,11 @@
                   <p>Please wait...</p>
                 </div>
 
-                <div id="bankerOfferContent" class="banker-offer-content hidden">
-                  <div class="banker-title">BANK OFFER</div>
+                <div
+                  id="bankerOfferContent"
+                  class="banker-offer-content hidden"
+                >
+                  <div class="banker-title">BAILOUT OFFER</div>
 
                   <div class="offer-box">
                     <strong id="bankerOffer">$0</strong>
@@ -134,27 +107,12 @@
               </div>
             </section>
           </div>
-
-          <!-- =========================================
-             RIGHT PRIZE VALUES
-        ========================================== -->
-
-          <section class="prize-section right-prize-section">
-            <div class="money-column" id="rightMoneyBoard"></div>
-          </section>
         </div>
-        <!-- =============================================
-           MESSAGE
-      ============================================== -->
-
-        <!-- =============================================
-           NEW GAME
-      ============================================== -->
 
         <button id="newGameButton" class="new-game hidden">PLAY AGAIN</button>
       </main>
     </div>
 
-    <script src="js/dond3scustom.js"></script>
+    <script src="js/dond3scustom2.js"></script>
   </body>
 </html>
