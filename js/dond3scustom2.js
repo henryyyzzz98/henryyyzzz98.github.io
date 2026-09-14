@@ -6,8 +6,13 @@
       3 STRIKE
 
    MONEY:
-     Randomly worth 3.0%–7.0% of the top prize.
-     Values are generated in 0.1% increments and rounded.
+     21 random positive amounts are generated.
+     Each money case is at least 0.5% of the selected top prize.
+     All 21 money-case amounts add up to exactly the selected top prize.
+
+   BAILOUT:
+     After Strike #2, every subsequent Bailout offer is exactly
+     75% of the accumulated total.
 
    WIN:
      Selection #1 -> automatic top-prize win.
@@ -29,8 +34,8 @@ const TOTAL_CASES = 25;
 const MONEY_CASES = 21;
 const WIN_CASES = 1;
 const STRIKE_CASES = 3;
-const MIN_MONEY_PERCENT = 3.0;
-const MAX_MONEY_PERCENT = 7.0;
+const MIN_MONEY_PERCENT = 0.5;
+const BAILOUT_PERCENT = 75;
 
 let maxPrize = 1000000;
 let cases = [];
@@ -94,7 +99,8 @@ function startGame() {
       WIN: WIN_CASES,
       STRIKE: STRIKE_CASES,
     },
-    moneyRange: `${MIN_MONEY_PERCENT.toFixed(1)}%-${MAX_MONEY_PERCENT.toFixed(1)}%`,
+    moneyMinimum: `${MIN_MONEY_PERCENT.toFixed(1)}% of top prize`,
+    bailoutRate: `${BAILOUT_PERCENT}% of accumulated total`,
   });
 
   setupScreen.classList.add("hidden");
@@ -129,25 +135,42 @@ function resetGame() {
   if (logButton) {
     logButton.remove();
   }
+  updateAccumulatedProgress();
 }
 
 function createCases() {
   const generated = [];
 
-  for (let i = 0; i < MONEY_CASES; i++) {
-    const percentage =
-      Math.round(
-        (MIN_MONEY_PERCENT +
-          Math.random() * (MAX_MONEY_PERCENT - MIN_MONEY_PERCENT)) *
-          10,
-      ) / 10;
+  // 0.5% of the selected top prize is the minimum amount per Money case.
+  // Example: $1,000,000 top prize -> $5,000 minimum.
+  const moneyUnit = getMoneyUnit();
+  const minimumAmount = Math.max(
+    moneyUnit,
+    Math.ceil((maxPrize * (MIN_MONEY_PERCENT / 100)) / moneyUnit) * moneyUnit,
+  );
 
-    const rawAmount = maxPrize * (percentage / 100);
-    const amount = roundMoneyValue(rawAmount);
+  // Reserve the minimum for all 21 Money cases first.
+  const remainingAmount = maxPrize - minimumAmount * MONEY_CASES;
+
+  if (remainingAmount < 0) {
+    throw new Error(
+      `Top prize is too small to generate ${MONEY_CASES} money cases with the minimum amount.`,
+    );
+  }
+
+  // Randomly distribute the remainder across the 21 Money cases.
+  // This guarantees every Money case meets the minimum and that the
+  // combined value is exactly the selected top prize.
+  const extraAmounts = randomPartition(
+    Math.floor(remainingAmount / moneyUnit),
+    MONEY_CASES,
+  );
+
+  for (let i = 0; i < MONEY_CASES; i++) {
+    const amount = minimumAmount + extraAmounts[i] * moneyUnit;
 
     generated.push({
       type: "MONEY",
-      percentage,
       amount,
       opened: false,
     });
@@ -175,6 +198,39 @@ function createCases() {
     ...gameCase,
     number: index + 1,
   }));
+}
+
+function getMoneyUnit() {
+  if (maxPrize >= 1000000) return 1000;
+  if (maxPrize >= 100000) return 100;
+  if (maxPrize >= 10000) return 10;
+  return 1;
+}
+
+function randomPartition(totalUnits, count) {
+  if (count <= 0) return [];
+  if (totalUnits <= 0) return Array(count).fill(0);
+
+  const cuts = [];
+
+  for (let i = 0; i < count - 1; i++) {
+    cuts.push(Math.floor(Math.random() * (totalUnits + 1)));
+  }
+
+  cuts.sort((a, b) => a - b);
+
+  const parts = [];
+  let previous = 0;
+
+  for (const cut of cuts) {
+    parts.push(cut - previous);
+    previous = cut;
+  }
+
+  parts.push(totalUnits - previous);
+
+  shuffle(parts);
+  return parts;
 }
 
 function roundMoneyValue(value) {
@@ -233,7 +289,6 @@ function openCase(gameCase) {
       caseNumber: gameCase.number,
       result: gameCase.type,
       amount: gameCase.amount,
-      percentage: gameCase.percentage ?? null,
       totalBefore: accumulatedPrize,
       strikesHitBefore: strikesHit,
     });
@@ -370,37 +425,7 @@ function showWinDecision() {
 }
 
 function calculateBailoutOffer() {
-  const currentTotal = accumulatedPrize;
-
-  const remainingMoney = cases.filter(
-    (gameCase) => !gameCase.opened && gameCase.type === "MONEY",
-  );
-
-  const averageRemaining =
-    remainingMoney.length > 0
-      ? remainingMoney.reduce((sum, gameCase) => sum + gameCase.amount, 0) /
-        remainingMoney.length
-      : 0;
-
-  // After two Strikes, the contestant is risking a $0 result on the
-  // next Strike. The Banker therefore pays a premium over the current
-  // accumulated amount, while still keeping the offer below the jackpot.
-  const riskAdjustedContinuation = currentTotal + averageRemaining * 0.65;
-
-  const minimumOffer =
-    currentTotal > 0 ? currentTotal * 1.25 : averageRemaining * 0.4;
-
-  const maximumOffer = Math.min(
-    maxPrize,
-    Math.max(currentTotal * 2, currentTotal + averageRemaining),
-  );
-
-  const offer = Math.max(
-    minimumOffer,
-    Math.min(maximumOffer, riskAdjustedContinuation),
-  );
-
-  return smartRoundOffer(Math.min(maxPrize, offer));
+  return accumulatedPrize * (BAILOUT_PERCENT / 100);
 }
 
 function showBailoutOffer() {
@@ -637,6 +662,21 @@ function renderCases() {
   });
 }
 
+function updateAccumulatedProgress() {
+  const progressBar = document.getElementById("accumulatedProgressBar");
+  const progressText = document.getElementById("accumulatedProgressText");
+
+  if (!progressBar || !progressText) return;
+
+  const topPrize = Number(maxPrize) || 0;
+  const total = Number(accumulatedPrize) || 0;
+  const percentage =
+    topPrize > 0 ? Math.max(0, Math.min(100, (total / topPrize) * 100)) : 0;
+
+  progressBar.style.width = `${percentage}%`;
+  progressText.textContent = `${percentage.toFixed(1)}%`;
+}
+
 function updateGameInfo() {
   const remaining = cases.filter((gameCase) => !gameCase.opened).length;
 
@@ -645,6 +685,7 @@ function updateGameInfo() {
   strikesRemainingElement.textContent = Math.max(0, 3 - strikesHit);
   currentPrizeElement.textContent = formatMoney(accumulatedPrize);
   topPrizeElement.textContent = formatMoney(maxPrize);
+  updateAccumulatedProgress();
 }
 
 function resultClass(result) {
@@ -717,22 +758,15 @@ function showGameLogButton() {
 function generateGameLog() {
   let output = "";
   output += "========================================\n";
-  output += "     MOVE ON UP - 3 STRIKES ACCUMULATOR\n";
+  output += "     ACCUMULATOR\n";
   output += "========================================\n\n";
 
   const start = gameLog.find((event) => event.type === "GAME_START");
 
   output += `Game Date: ${start?.date || "Unknown"}\n`;
   output += `Maximum Prize: ${formatMoney(start?.maximumPrize || maxPrize)}\n`;
-  output += `Money Range: ${MIN_MONEY_PERCENT.toFixed(1)}%-${MAX_MONEY_PERCENT.toFixed(1)}%\n\n`;
 
-  output += "CASE DISTRIBUTION\n";
-  output += "----------------------------------------\n";
-  output += `Money: ${MONEY_CASES}\n`;
-  output += `WIN: ${WIN_CASES}\n`;
-  output += `STRIKE: ${STRIKE_CASES}\n\n`;
-
-  output += "CASE RESULTS\n";
+  output += "\nCASE RESULTS\n";
   output += "----------------------------------------\n";
 
   gameLog
@@ -741,7 +775,7 @@ function generateGameLog() {
       if (event.result === "MONEY") {
         output +=
           `Selection #${event.selectionNumber} | Case #${event.caseNumber} → ` +
-          `${formatMoney(event.amount)} (${event.percentage.toFixed(1)}%)\n`;
+          `${formatMoney(event.amount)}\n`;
       } else {
         output +=
           `Selection #${event.selectionNumber} | Case #${event.caseNumber} → ` +
@@ -827,7 +861,7 @@ function downloadGameLog() {
   const link = document.createElement("a");
 
   link.href = url;
-  link.download = `move-on-up-3-strikes-${Date.now()}.txt`;
+  link.download = `accumulator-${Date.now()}.txt`;
   link.click();
 
   URL.revokeObjectURL(url);

@@ -5,6 +5,38 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Accumulator</title>
     <link rel="stylesheet" href="css/dond3sstyle.css" />
+
+    <style>
+      .accumulated-progress {
+        width: 100%;
+        margin-top: 10px;
+        text-align: center;
+      }
+
+      .progress-track {
+        width: 100%;
+        height: 10px;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 999px;
+        overflow: hidden;
+      }
+
+      .progress-fill {
+        width: 0%;
+        height: 100%;
+        background: #ffd12d;
+        border-radius: inherit;
+        transition: width 0.35s ease;
+      }
+
+      .progress-text {
+        margin-top: 5px;
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        opacity: 0.85;
+      }
+    </style>
   </head>
 
   <body>
@@ -35,7 +67,7 @@
         <div class="header-center">
           <div class="round-display">
             <span>SELECTION</span>
-            <strong id="roundNumber"></strong>
+            <strong id="roundNumber">1</strong>
           </div>
 
           <div class="header-instruction">
@@ -60,8 +92,17 @@
 
         <div class="current-prize-panel">
           <div>
-            <span>CURRENT TOTAL:</span>
-            <strong id="currentPrize">$0</strong>
+            <div
+              class="accumulated-progress"
+              aria-label="Accumulated money progress"
+            >
+              <div class="progress-track">
+                <div id="accumulatedProgressBar" class="progress-fill"></div>
+              </div>
+              <div id="accumulatedProgressText" class="progress-text">0.0%</div>
+              <strong id="currentPrize">$0</strong>
+            </div>
+
           </div>
           <div>
             <span>TOP PRIZE:</span>
