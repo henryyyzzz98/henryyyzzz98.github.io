@@ -35,7 +35,6 @@ const MONEY_CASES = 21;
 const WIN_CASES = 1;
 const STRIKE_CASES = 3;
 const MIN_MONEY_PERCENT = 0.5;
-const BAILOUT_PERCENT = 75;
 
 let maxPrize = 1000000;
 let cases = [];
@@ -100,7 +99,6 @@ function startGame() {
       STRIKE: STRIKE_CASES,
     },
     moneyMinimum: `${MIN_MONEY_PERCENT.toFixed(1)}% of top prize`,
-    bailoutRate: `${BAILOUT_PERCENT}% of accumulated total`,
   });
 
   setupScreen.classList.add("hidden");
@@ -335,38 +333,31 @@ function handleMoneyCase(gameCase) {
 }
 
 function handleStrikeCase() {
-  strikesHit++;
+  strikesHit += 1;
 
-  addLog({
+  const previousTotal = accumulatedPrize;
+  const newTotal = roundStrikeTotal(previousTotal * 0.75);
+  const penaltyAmount = previousTotal - newTotal;
+
+  accumulatedPrize = newTotal;
+
+  gameLog.push({
     type: "STRIKE",
     selectionNumber: openedCases,
-    caseNumber:
-      cases.find(
-        (gameCase) =>
-          gameCase.opened && gameCase.number === getLastOpenedCaseNumber(),
-      )?.number ?? null,
     strikeNumber: strikesHit,
-    strikesRemaining: 3 - strikesHit,
-    accumulatedPrize,
+    previousTotal,
+    penaltyAmount,
+    newTotal: accumulatedPrize,
   });
 
   updateGameInfo();
-  renderCases();
+  updateAccumulatedProgress();
 
-  if (strikesHit >= 3) {
-    loseOnThirdStrike();
-    return;
-  }
+  message.textContent =
+    `STRIKE ${strikesHit}! ${formatMoney(penaltyAmount)} deducted. ` +
+    `Current total: ${formatMoney(accumulatedPrize)}.`;
 
-  message.textContent = `STRIKE ${strikesHit}/3! YOUR TOTAL REMAINS ${formatMoney(accumulatedPrize)}.`;
-
-  if (strikesHit >= 2) {
-    delay(350).then(() => {
-      if (!gameOver) showBailoutOffer();
-    });
-  } else {
-    finishCaseAndContinue();
-  }
+  finishCaseAndContinue();
 }
 
 function handleWinCase() {
@@ -418,50 +409,6 @@ function showWinDecision() {
 
     const title = bankerOfferContent.querySelector(".banker-title");
     if (title) title.textContent = "WIN CASE";
-
-    const buttons = bankerOfferContent.querySelector(".deal-buttons");
-    if (buttons) buttons.classList.add("buyout-buttons");
-  });
-}
-
-function calculateBailoutOffer() {
-  return accumulatedPrize * (BAILOUT_PERCENT / 100);
-}
-
-function showBailoutOffer() {
-  currentOfferType = "BAILOUT";
-
-  const offer = calculateBailoutOffer();
-
-  bankerSection.classList.remove("hidden");
-  bankerWaiting.classList.remove("hidden");
-  bankerOfferContent.classList.add("hidden");
-
-  bankerOffer.textContent = formatMoney(offer);
-
-  instruction.textContent = "BAILOUT OFFER";
-  message.textContent = `TAKE ${formatMoney(offer)} OR DECLINE AND KEEP PLAYING.`;
-
-  addLog({
-    type: "BAILOUT_OFFER",
-    selectionNumber: openedCases,
-    offer,
-    accumulatedPrize,
-    strikesHit,
-    strikesRemaining: 3 - strikesHit,
-    remainingMoneyCases: cases.filter(
-      (gameCase) => !gameCase.opened && gameCase.type === "MONEY",
-    ).length,
-  });
-
-  delay(900).then(() => {
-    if (gameOver || currentOfferType !== "BAILOUT") return;
-
-    bankerWaiting.classList.add("hidden");
-    bankerOfferContent.classList.remove("hidden");
-
-    const title = bankerOfferContent.querySelector(".banker-title");
-    if (title) title.textContent = "BAILOUT OFFER";
 
     const buttons = bankerOfferContent.querySelector(".deal-buttons");
     if (buttons) buttons.classList.add("buyout-buttons");
@@ -606,32 +553,6 @@ function winTopPrize(reason) {
   newGameButton.classList.remove("hidden");
 }
 
-function loseOnThirdStrike() {
-  if (gameOver) return;
-
-  gameOver = true;
-  waitingForDeal = false;
-  currentOfferType = null;
-
-  bankerSection.classList.add("hidden");
-
-  instruction.textContent = "THIRD STRIKE!";
-  message.textContent = "GAME OVER — YOU WIN $0.";
-
-  addLog({
-    type: "GAME_END",
-    reason: "THIRD STRIKE",
-    winnings: 0,
-    accumulatedPrize,
-    strikesHit: 3,
-  });
-
-  updateGameInfo();
-  renderCases();
-  showGameLogButton();
-  newGameButton.classList.remove("hidden");
-}
-
 function renderCases() {
   casesContainer.innerHTML = "";
 
@@ -675,6 +596,18 @@ function updateAccumulatedProgress() {
 
   progressBar.style.width = `${percentage}%`;
   progressText.textContent = `${percentage.toFixed(1)}%`;
+}
+
+function getStrikeRoundingUnit() {
+  if (maxPrize >= 1000000) return 1000;
+  if (maxPrize >= 100000) return 100;
+  if (maxPrize >= 10000) return 10;
+  return 1;
+}
+
+function roundStrikeTotal(value) {
+  const unit = getStrikeRoundingUnit();
+  return Math.round(value / unit) * unit;
 }
 
 function updateGameInfo() {
@@ -764,9 +697,9 @@ function generateGameLog() {
   const start = gameLog.find((event) => event.type === "GAME_START");
 
   output += `Game Date: ${start?.date || "Unknown"}\n`;
-  output += `Maximum Prize: ${formatMoney(start?.maximumPrize || maxPrize)}\n`;
+  output += `Maximum Prize: ${formatMoney(start?.maximumPrize || maxPrize)}\n\n`;
 
-  output += "\nCASE RESULTS\n";
+  output += "CASE RESULTS\n";
   output += "----------------------------------------\n";
 
   gameLog
@@ -794,38 +727,19 @@ function generateGameLog() {
         `→ Total ${formatMoney(event.totalAfter)}\n`;
     });
 
-  output += "\nSTRIKES\n";
-  output += "----------------------------------------\n";
-
-  gameLog
-    .filter((event) => event.type === "STRIKE")
-    .forEach((event) => {
-      output +=
-        `Strike #${event.strikeNumber} | Remaining: ${event.strikesRemaining} ` +
-        `| Total: ${formatMoney(event.accumulatedPrize)}\n`;
-    });
-
-  output += "\nBAILOUT / WIN DECISIONS\n";
+  output += "\nWIN DECISIONS\n";
   output += "----------------------------------------\n";
 
   gameLog
     .filter((event) =>
       [
-        "BAILOUT_OFFER",
-        "BAILOUT_ACCEPTED",
-        "BAILOUT_REJECTED",
         "WIN_CASE_DECISION",
         "WIN_ACCEPTED",
         "WIN_DECLINED",
       ].includes(event.type),
     )
     .forEach((event) => {
-      if (event.type === "BAILOUT_OFFER") {
-        output +=
-          `Bailout Offer: ${formatMoney(event.offer)} | ` +
-          `Total: ${formatMoney(event.accumulatedPrize)} | ` +
-          `Strikes: ${event.strikesHit}/3\n`;
-      } else if (event.type === "WIN_CASE_DECISION") {
+      if (event.type === "WIN_CASE_DECISION") {
         output +=
           `WIN Decision Offered: ${formatMoney(event.offer)} | ` +
           `Total: ${formatMoney(event.accumulatedPrize)}\n`;
