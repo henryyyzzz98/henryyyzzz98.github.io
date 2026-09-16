@@ -7,9 +7,14 @@
    MASTER PRIZE BOARD
 ========================================================= */
 
-const BASE_PRIZES = [
+/*const BASE_PRIZES = [
   0.01, 1, 5, 10, 25, 50, 75, 100, 200, 300, 400, 500, 750, 1000, 5000, 10000,
   25000, 50000, 75000, 100000, 200000, 300000, 400000, 500000, 750000, 1000000,
+];*/
+
+const BASE_PRIZES = [
+  100, 500, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 12000,
+  14000, 16000, 18000, 20000, 25000, 30000, 35000, 40000, 45000, 50000, 60000, 75000, 100000,
 ];
 
 /* =========================================================
@@ -38,7 +43,7 @@ const ROUND_CASES = [6, 5, 4, 3, 2, 1, 1, 1, 1];
    GAME STATE
 ========================================================= */
 
-let maxPrize = 1000000;
+let maxPrize = 100000;
 
 let prizes = [];
 
@@ -345,7 +350,7 @@ function resetGame() {
 ========================================================= */
 
 function generatePrizeBoard(maximumPrize) {
-  const multiplier = maximumPrize / 1000000;
+  const multiplier = maximumPrize / 100000;
 
   let generated = BASE_PRIZES.map((value) => {
     const scaled = value * multiplier;
@@ -918,9 +923,8 @@ function startSuperChest() {
   superChestBankerTotal = 0;
 
   const values = [
-    100, 100, 100, 100, 200, 200, 200, 200, 
-    300, 300, 300, 300, 400, 400, 400, 400, 
-    500, 500, 500, 500,
+    100, 100, 100, 100, 200, 200, 200, 200, 300, 300, 300, 300, 400, 400, 400,
+    400, 500, 500, 500, 500,
   ];
   shuffle(values);
   superChestCases = values.map((value, index) => ({
