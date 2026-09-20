@@ -1,0 +1,758 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fansign Event Table Generator</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: Arial, Helvetica, sans-serif;
+        background: #f5f6f8;
+        color: #222;
+      }
+      .container {
+        max-width: 1500px;
+        margin: 24px auto;
+        padding: 0 18px;
+      }
+      h1 {
+        margin: 0 0 6px;
+        font-size: 25px;
+      }
+      .subtitle {
+        color: #666;
+        margin-bottom: 20px;
+      }
+      .card {
+        background: #fff;
+        border: 1px solid #ddd;
+        border-radius: 12px;
+        padding: 18px;
+        margin-bottom: 18px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(180px, 1fr));
+        gap: 14px;
+      }
+      .field label {
+        display: block;
+        font-weight: 700;
+        font-size: 13px;
+        margin-bottom: 6px;
+      }
+      input,
+      select {
+        width: 100%;
+        height: 40px;
+        border: 1px solid #cfcfcf;
+        border-radius: 7px;
+        padding: 0 10px;
+        font-size: 14px;
+        background: #fff;
+      }
+      input:focus,
+      select:focus {
+        outline: 2px solid #9bc9ff;
+        border-color: #6ba8e8;
+      }
+      .auto-box {
+        height: 40px;
+        border: 1px solid #d2d2d2;
+        border-radius: 7px;
+        background: #f7f7f7;
+        display: flex;
+        align-items: center;
+        padding: 0 10px;
+        font-weight: 700;
+      }
+      .organizer-wrap {
+        position: relative;
+      }
+      .suggestions {
+        display: none;
+        position: absolute;
+        z-index: 20;
+        left: 0;
+        right: 0;
+        top: 67px;
+        background: #fff;
+        border: 1px solid #ccc;
+        border-radius: 7px;
+        max-height: 190px;
+        overflow: auto;
+        box-shadow: 0 5px 14px rgba(0, 0, 0, 0.14);
+      }
+      .suggestion {
+        padding: 10px 12px;
+        cursor: pointer;
+      }
+      .suggestion:hover {
+        background: #f1f4f7;
+      }
+      .member-title {
+        font-weight: 700;
+        margin: 18px 0 8px;
+      }
+      .members {
+        display: grid;
+        grid-template-columns: repeat(8, minmax(100px, 1fr));
+        gap: 7px;
+      }
+      .member {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        border: 1px solid #ddd;
+        border-radius: 7px;
+        padding: 8px;
+        background: #fafafa;
+        cursor: pointer;
+        font-size: 13px;
+      }
+      .member input {
+        width: auto;
+        height: auto;
+      }
+      .actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 16px;
+      }
+      button {
+        border: 0;
+        border-radius: 7px;
+        padding: 10px 15px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      .primary {
+        background: #222;
+        color: #fff;
+      }
+      .secondary {
+        background: #fff;
+        border: 1px solid #ccc;
+      }
+      .danger {
+        background: #fff0f0;
+        color: #b00020;
+        border: 1px solid #e2b5b5;
+      }
+      .status {
+        margin-top: 10px;
+        font-size: 13px;
+        color: #16803a;
+        min-height: 18px;
+      }
+      .table-wrap {
+        overflow: auto;
+        border: 1px solid #222;
+      }
+      table {
+        border-collapse: collapse;
+        min-width: 2100px;
+        width: 100%;
+        font-size: 11px;
+      }
+      th,
+      td {
+        border: 1px solid #333;
+        text-align: center;
+        padding: 4px 6px;
+        height: 30px;
+        white-space: nowrap;
+      }
+      th {
+        font-weight: 800;
+        color: #111;
+      }
+      th.yellow {
+        background: #f6d83c;
+      }
+      .th-person {
+        background: #67ed4f;
+      }
+      .th-video {
+        background: #ff777d;
+      }
+      .th-x {
+        background: #111;
+        color: #fff;
+      }
+      .th-organizer {
+        background: #ddd;
+      }
+      .th-member-a {
+        background: #8bc9cf;
+      }
+      .th-member-b {
+        background: #eda2a7;
+      }
+      .xlink {
+        font-size: 16px;
+        font-weight: 900;
+        color: #111;
+        text-decoration: none;
+      }
+      .xlink:hover {
+        text-decoration: underline;
+      }
+      .empty {
+        text-align: center;
+        padding: 28px;
+        color: #777;
+      }
+      .small {
+        font-size: 12px;
+        color: #777;
+        margin-top: 5px;
+      }
+      @media (max-width: 950px) {
+        .grid {
+          grid-template-columns: repeat(2, minmax(180px, 1fr));
+        }
+        .members {
+          grid-template-columns: repeat(4, minmax(100px, 1fr));
+        }
+      }
+      @media (max-width: 560px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+        .members {
+          grid-template-columns: repeat(2, minmax(100px, 1fr));
+        }
+        .container {
+          padding: 0 10px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Fansign Event Table Generator</h1>
+      <div class="subtitle">
+        Enter each event once and generate a spreadsheet-ready table
+        automatically.
+      </div>
+
+      <div class="card">
+        <div class="grid">
+          <div class="field">
+            <label for="date">Date</label>
+            <input id="date" type="date" />
+          </div>
+          <div class="field">
+            <label for="event">Event Type</label>
+            <select id="event">
+              <option value="대면팬싸">대면팬싸</option>
+              <option value="단체영통">단체영통</option>
+              <option value="개인영통">개인영통</option>
+            </select>
+          </div>
+          <div class="field organizer-wrap">
+            <label for="organizer">Organizer / K-pop Store</label>
+            <input
+              id="organizer"
+              type="text"
+              autocomplete="off"
+              placeholder="e.g. MAKESTAR"
+            />
+            <div id="suggestions" class="suggestions"></div>
+            <div class="small">
+              Previously entered organizers will appear as suggestions.
+            </div>
+          </div>
+          <div class="field">
+            <label for="xlink">X Event Details Link</label>
+            <input id="xlink" type="url" placeholder="https://x.com/..." />
+          </div>
+
+          <div class="field">
+            <label>팬싸회차 Fansign Round</label>
+            <div class="auto-box" id="overallRound">1</div>
+          </div>
+          <div class="field">
+            <label>대면팬싸 In-Person Round</label>
+            <div class="auto-box" id="personRound">1</div>
+          </div>
+          <div class="field">
+            <label>영상통화 Video Call Round</label>
+            <div class="auto-box" id="videoRound">—</div>
+          </div>
+          <div class="field">
+            <label for="winners">당첨인원 Winner Count</label>
+            <input id="winners" type="number" min="0" value="0" />
+          </div>
+          <div class="field">
+            <label for="polaroid">사인폴라 Signed Polaroid Count</label>
+            <input id="polaroid" type="number" min="0" value="0" />
+          </div>
+        </div>
+
+        <div class="member-title">Members</div>
+        <div class="members" id="members"></div>
+
+        <div class="actions">
+          <button class="primary" id="addEvent">Add Event</button>
+          <button class="secondary" id="resetForm">Reset Form</button>
+          <button class="danger" id="clearAll">Delete All Events</button
+          ><button class="secondary" id="resetSaved">Start New Dataset</button>
+        </div>
+        <div class="status" id="status"></div>
+      </div>
+
+      <div class="card">
+        <div
+          style="
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+          "
+        >
+          <strong>Generated Table</strong>
+          <div class="actions" style="margin: 0">
+            <button class="secondary" id="copySheets">
+              Copy for Google Sheets
+            </button>
+            <button class="secondary" id="downloadCsv">Download CSV</button>
+            <button class="secondary" id="downloadJson">
+              Save Events JSON
+            </button>
+          </div>
+        </div>
+        <div class="table-wrap" id="tableWrap">
+          <div class="empty">Add an event to generate the table.</div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      (() => {
+        const members = [
+          "서연",
+          "혜린",
+          "지우",
+          "채연",
+          "유연",
+          "수민",
+          "나경",
+          "유빈",
+          "카에데",
+          "다현",
+          "코토네",
+          "연지",
+          "니엔",
+          "소현",
+          "신위",
+          "마유",
+          "린",
+          "주빈",
+          "하연",
+          "시온",
+          "채원",
+          "설린",
+          "서아",
+          "지연",
+        ];
+
+        const state = { events: [] };
+        const organizerKey = "fansignOrganizers";
+        const eventKey = "fansignEvents";
+
+        const $ = (id) => document.getElementById(id);
+        const memberBox = $("members");
+
+        members.forEach((name) => {
+          const label = document.createElement("label");
+          label.className = "member";
+          const checkbox = document.createElement("input");
+          checkbox.type = "checkbox";
+          checkbox.value = name;
+          label.appendChild(checkbox);
+          label.appendChild(document.createTextNode(name));
+          memberBox.appendChild(label);
+        });
+
+        const now = new Date();
+        $("date").value = new Date(
+          now.getTime() - now.getTimezoneOffset() * 60000,
+        )
+          .toISOString()
+          .slice(0, 10);
+
+        function personEvent(type) {
+          return type === "대면팬싸";
+        }
+
+        function updateRoundPreview() {
+          const type = $("event").value;
+          const overall = state.events.length + 1;
+          const person =
+            state.events.filter((e) => personEvent(e.event)).length + 1;
+          const video =
+            state.events.filter((e) => !personEvent(e.event)).length + 1;
+
+          $("overallRound").textContent = overall;
+          $("personRound").textContent = personEvent(type) ? person : "—";
+          $("videoRound").textContent = personEvent(type) ? "—" : video;
+        }
+
+        function loadEvents() {
+          try {
+            const data = JSON.parse(localStorage.getItem(eventKey) || "[]");
+            state.events = Array.isArray(data) ? data : [];
+          } catch {
+            state.events = [];
+          }
+        }
+
+        function saveEvents() {
+          localStorage.setItem(eventKey, JSON.stringify(state.events));
+        }
+
+        function getOrganizers() {
+          try {
+            const data = JSON.parse(localStorage.getItem(organizerKey) || "[]");
+            return Array.isArray(data) ? data.filter(Boolean) : [];
+          } catch {
+            return [];
+          }
+        }
+
+        function saveOrganizer(name) {
+          name = name.trim();
+          if (!name) return;
+          const list = getOrganizers().filter(
+            (x) => x.toLowerCase() !== name.toLowerCase(),
+          );
+          list.unshift(name);
+          localStorage.setItem(
+            organizerKey,
+            JSON.stringify(list.slice(0, 100)),
+          );
+        }
+
+        function showSuggestions() {
+          const input = $("organizer");
+          const box = $("suggestions");
+          const q = input.value.trim().toLowerCase();
+          const matches = getOrganizers().filter(
+            (x) => !q || x.toLowerCase().includes(q),
+          );
+          box.innerHTML = "";
+          if (!matches.length) {
+            box.style.display = "none";
+            return;
+          }
+          matches.forEach((name) => {
+            const item = document.createElement("div");
+            item.className = "suggestion";
+            item.textContent = name;
+            item.addEventListener("mousedown", (e) => {
+              e.preventDefault();
+              input.value = name;
+              box.style.display = "none";
+            });
+            box.appendChild(item);
+          });
+          box.style.display = "block";
+        }
+
+        function dayName(date) {
+          const [y, m, d] = date.split("-").map(Number);
+          return ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][
+            new Date(y, m - 1, d).getDay()
+          ];
+        }
+
+        function displayDate(date) {
+          const [y, m, d] = date.split("-");
+          return `${d}/${m}/${y}`;
+        }
+
+        function validUrl(value) {
+          if (!value) return "";
+          try {
+            const u = new URL(value);
+            return u.protocol === "https:" || u.protocol === "http:"
+              ? u.href
+              : "";
+          } catch {
+            return "";
+          }
+        }
+
+        function selectedMembers() {
+          return [...memberBox.querySelectorAll("input:checked")].map(
+            (x) => x.value,
+          );
+        }
+
+        function resetForm() {
+          $("winners").value = 0;
+          $("polaroid").value = 0;
+          $("xlink").value = "";
+          $("organizer").value = "";
+          memberBox
+            .querySelectorAll("input")
+            .forEach((x) => (x.checked = false));
+          $("status").textContent = "";
+          updateRoundPreview();
+        }
+
+        function escapeHtml(value) {
+          return String(value ?? "").replace(
+            /[&<>"']/g,
+            (c) =>
+              ({
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                '"': "&quot;",
+                "'": "&#39;",
+              })[c],
+          );
+        }
+
+        function render() {
+          const wrap = $("tableWrap");
+          if (!state.events.length) {
+            wrap.innerHTML =
+              '<div class="empty">Add an event to generate the table.</div>';
+            updateRoundPreview();
+            return;
+          }
+
+          const headers = [
+            "팬싸회차",
+            "대면팬싸",
+            "영상통화",
+            "날짜",
+            "요일",
+            "행사",
+            "당첨인원",
+            "사인폴라",
+            "𝕏",
+            "주최/주관사",
+            ...members,
+          ];
+
+          let html = "<table><thead><tr>";
+          headers.forEach((h, i) => {
+            let cls = "yellow";
+            if (i === 1) cls = "th-person";
+            else if (i === 2) cls = "th-video";
+            else if (i === 8) cls = "th-x";
+            else if (i === 9) cls = "th-organizer";
+            else if (i >= 10)
+              cls = (i - 10) % 2 === 0 ? "th-member-a" : "th-member-b";
+            html += `<th class="${cls}">${escapeHtml(h)}</th>`;
+          });
+          html += "</tr></thead><tbody>";
+
+          state.events.forEach((e) => {
+            html += "<tr>";
+            html += `<td>${e.overall}</td>`;
+            html += `<td>${e.person || ""}</td>`;
+            html += `<td>${e.video || ""}</td>`;
+            html += `<td>${escapeHtml(displayDate(e.date))}</td>`;
+            html += `<td>${escapeHtml(e.day)}</td>`;
+            html += `<td>${escapeHtml(e.event)}</td>`;
+            html += `<td>${e.winners}</td>`;
+            html += `<td>${e.polaroid}</td>`;
+            html += `<td>${e.xlink ? `<a class="xlink" href="${escapeHtml(e.xlink)}" target="_blank" rel="noopener noreferrer">𝕏</a>` : ""}</td>`;
+            html += `<td>${escapeHtml(e.organizer)}</td>`;
+
+            members.forEach((m) => {
+              html += `<td>${e.members.includes(m) ? "☐" : ""}</td>`;
+            });
+            html += "</tr>";
+          });
+
+          html += "</tbody></table>";
+          wrap.innerHTML = html;
+          updateRoundPreview();
+        }
+
+        $("event").addEventListener("change", updateRoundPreview);
+
+        $("organizer").addEventListener("input", showSuggestions);
+        $("organizer").addEventListener("focus", showSuggestions);
+        $("organizer").addEventListener("blur", () =>
+          setTimeout(() => ($("suggestions").style.display = "none"), 150),
+        );
+
+        $("addEvent").addEventListener("click", () => {
+          const date = $("date").value;
+          const event = $("event").value;
+          const organizer = $("organizer").value.trim();
+
+          if (!date) {
+            $("date").focus();
+            $("status").textContent = "Please select a date.";
+            return;
+          }
+          if (!organizer) {
+            $("organizer").focus();
+            $("status").textContent = "Please enter the organizer.";
+            return;
+          }
+
+          const overall = state.events.length + 1;
+          const person =
+            state.events.filter((e) => personEvent(e.event)).length + 1;
+          const video =
+            state.events.filter((e) => !personEvent(e.event)).length + 1;
+
+          const eventRow = {
+            overall,
+            person: personEvent(event) ? person : "",
+            video: personEvent(event) ? "" : video,
+            date,
+            day: dayName(date),
+            event,
+            organizer,
+            winners: Math.max(0, Number($("winners").value) || 0),
+            polaroid: Math.max(0, Number($("polaroid").value) || 0),
+            xlink: validUrl($("xlink").value.trim()),
+            members: selectedMembers(),
+          };
+
+          state.events.push(eventRow);
+          saveEvents();
+          saveOrganizer(organizer);
+          resetForm();
+          render();
+          $("status").textContent = `Event ${overall} added.`;
+        });
+
+        $("resetForm").addEventListener("click", resetForm);
+
+        $("resetSaved").addEventListener("click", () => {
+          if (
+            !confirm(
+              "This will permanently clear the saved events and start the round counters from 1. Continue?",
+            )
+          )
+            return;
+          state.events.length = 0;
+          localStorage.removeItem(eventKey);
+          render();
+          $("status").textContent =
+            "Saved dataset cleared. Counters reset to 1.";
+        });
+
+        $("clearAll").addEventListener("click", () => {
+          if (!state.events.length) return;
+          if (!confirm("Delete all events from the current table?")) return;
+          state.events.length = 0;
+          saveEvents();
+          render();
+          $("status").textContent = "All events deleted.";
+        });
+
+        function sheetData() {
+          const headers = [
+            "팬싸회차",
+            "대면팬싸",
+            "영상통화",
+            "날짜",
+            "요일",
+            "행사",
+            "당첨인원",
+            "사인폴라",
+            "X Link",
+            "주최/주관사",
+            ...members,
+          ];
+
+          const lines = [headers.join("\t")];
+          state.events.forEach((e) => {
+            lines.push(
+              [
+                e.overall,
+                e.person,
+                e.video,
+                displayDate(e.date),
+                e.day,
+                e.event,
+                e.winners,
+                e.polaroid,
+                e.xlink,
+                e.organizer,
+                ...members.map((m) =>
+                  e.members.includes(m) ? "TRUE" : "FALSE",
+                ),
+              ].join("\t"),
+            );
+          });
+          return lines.join("\n");
+        }
+
+        $("copySheets").addEventListener("click", async () => {
+          if (!state.events.length) return;
+          const data = sheetData();
+          try {
+            await navigator.clipboard.writeText(data);
+            $("status").textContent =
+              "Copied — paste directly into Google Sheets.";
+          } catch {
+            const w = window.open("", "_blank");
+            w.document.write(
+              "<pre style='white-space:pre-wrap'>" +
+                escapeHtml(data) +
+                "</pre>",
+            );
+          }
+        });
+
+        $("downloadCsv").addEventListener("click", () => {
+          if (!state.events.length) return;
+          const data = sheetData()
+            .split("\n")
+            .map((line) =>
+              line
+                .split("\t")
+                .map((v) => `"${v.replace(/"/g, '""')}"`)
+                .join(","),
+            )
+            .join("\n");
+          const blob = new Blob(["\ufeff" + data], {
+            type: "text/csv;charset=utf-8",
+          });
+          const a = document.createElement("a");
+          a.href = URL.createObjectURL(blob);
+          a.download = "fansign_events.csv";
+          a.click();
+          URL.revokeObjectURL(a.href);
+        });
+
+        $("downloadJson").addEventListener("click", () => {
+          if (!state.events.length) return;
+          const blob = new Blob([JSON.stringify(state.events, null, 2)], {
+            type: "application/json",
+          });
+          const a = document.createElement("a");
+          a.href = URL.createObjectURL(blob);
+          a.download = "fansign_events.json";
+          a.click();
+          URL.revokeObjectURL(a.href);
+        });
+
+        loadEvents();
+        render();
+      })();
+    </script>
+  </body>
+</html>
