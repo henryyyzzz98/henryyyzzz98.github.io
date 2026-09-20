@@ -286,7 +286,7 @@
     <div class="container">
       <h1>Fansign Event Table Generator</h1>
       <div class="subtitle">
-        GitHub Pages frontend · Google Sheets shared database
+        All entries are logged into a shared database.
       </div>
 
       <div class="card">
@@ -720,7 +720,8 @@
             showStatus(
               `Saved: 팬싸회차 ${r.overall}` +
                 (r.person ? ` / 대면팬싸 ${r.person}` : "") +
-                (r.video ? ` / 영상통화 ${r.video}` : ""),
+                (r.video ? ` / 영상통화 ${r.video}` : "") +
+                (r.xlink ? " / X link saved" : " / no X link"),
             );
 
             resetForm();
