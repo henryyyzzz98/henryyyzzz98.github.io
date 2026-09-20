@@ -285,9 +285,7 @@
   <body>
     <div class="container">
       <h1>Fansign Event Table Generator</h1>
-      <div class="subtitle">
-        All entries are logged into a shared database.
-      </div>
+      <div class="subtitle">All entries are logged into a shared database.</div>
 
       <div class="card">
         <div class="api-box" style="display: none">
@@ -329,9 +327,7 @@
             <label for="groupMode">Event Group</label>
             <select id="groupMode">
               <option value="new">New Round — New 팬싸회차</option>
-              <option value="same">
-                Same Round — Same 팬싸회차
-              </option>
+              <option value="same">Same Round — Same 팬싸회차</option>
             </select>
           </div>
 
@@ -366,7 +362,12 @@
           </div>
 
           <div class="group-note">
-            Tip: On First Use, add the first event as <b>New Round</b> under <b>Event Group</b>. To input a second event belonging to the same fansign event, choose <b>Same Round</b> under <b>Event Group</b>. That way, the overall <b>팬싸회차 (Fansign Round)</b> will stay the same, while the <b>대면팬싸 (In-Person)</b> / <b>영상통화 (Video Call)</b> counters continue independently.
+            Tip: On First Use, add the first event as <b>New Round</b> under
+            <b>Event Group</b>. To input a second event belonging to the same
+            fansign event, choose <b>Same Round</b> under <b>Event Group</b>.
+            That way, the overall <b>팬싸회차 (Fansign Round)</b> will stay the
+            same, while the <b>대면팬싸 (In-Person)</b> /
+            <b>영상통화 (Video Call)</b> counters continue independently.
           </div>
         </div>
 
@@ -401,6 +402,9 @@
           </div>
           <div class="actions" style="margin: 0">
             <button class="secondary" id="refresh">Refresh</button>
+            <button class="secondary" id="openDatabase">
+              📊 Open Shared Database
+            </button>
             <button class="secondary" id="copySheets">
               Copy for Google Sheets
             </button>
@@ -874,6 +878,13 @@
         // API connection is automatic.
         $("refresh").addEventListener("click", () => refresh(false));
         $("addEvent").addEventListener("click", addEvent);
+        $("openDatabase").addEventListener("click", () =>
+          window.open(
+            "https://docs.google.com/spreadsheets/d/1cDKnS6x0xtRWk2AC-9AZ9o0TOPeisboMczIcwKBk6AA/edit?usp=sharing",
+            "_blank",
+            "noopener,noreferrer",
+          ),
+        );
         $("resetForm").addEventListener("click", resetForm);
         $("clearAll").addEventListener("click", clearAll);
         $("copySheets").addEventListener("click", copySheets);
