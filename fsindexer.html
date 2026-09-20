@@ -2,8 +2,8 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Fansign Event Table Generator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fansign Event Table</title>
     <style>
       * {
         box-sizing: border-box;
@@ -20,7 +20,7 @@
         padding: 0 18px;
       }
       h1 {
-        margin: 0 0 6px;
+        margin: 0 0 5px;
         font-size: 25px;
       }
       .subtitle {
@@ -137,6 +137,10 @@
         font-weight: 700;
         cursor: pointer;
       }
+      button:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+      }
       .primary {
         background: #222;
         color: #fff;
@@ -156,13 +160,16 @@
         color: #16803a;
         min-height: 18px;
       }
+      .error {
+        color: #b00020;
+      }
       .table-wrap {
         overflow: auto;
         border: 1px solid #222;
       }
       table {
         border-collapse: collapse;
-        min-width: 2250px;
+        min-width: 2350px;
         width: 100%;
         font-size: 11px;
       }
@@ -209,10 +216,21 @@
       .xlink:hover {
         text-decoration: underline;
       }
+      .delete-btn {
+        font-size: 11px;
+        padding: 5px 7px;
+        background: #fff0f0;
+        color: #a00000;
+        border: 1px solid #e1b5b5;
+      }
       .empty {
         text-align: center;
         padding: 28px;
         color: #777;
+      }
+      .loading {
+        color: #777;
+        font-size: 13px;
       }
       .group-note {
         grid-column: 1/-1;
@@ -222,6 +240,23 @@
         border: 1px solid #d7e2ef;
         color: #4b5d70;
         font-size: 13px;
+      }
+      .summary {
+        font-size: 13px;
+        color: #666;
+      }
+      .api-box {
+        display: flex;
+        gap: 8px;
+        align-items: end;
+        margin-bottom: 18px;
+      }
+      .api-box .field {
+        flex: 1;
+      }
+      .small {
+        font-size: 12px;
+        color: #777;
       }
       @media (max-width: 950px) {
         .grid {
@@ -241,6 +276,9 @@
         .container {
           padding: 0 10px;
         }
+        .api-box {
+          display: block;
+        }
       }
     </style>
   </head>
@@ -248,17 +286,25 @@
     <div class="container">
       <h1>Fansign Event Table Generator</h1>
       <div class="subtitle">
-        Enter each event once and generate a spreadsheet-ready table automatically.
+        For Shared Database
       </div>
 
       <div class="card">
+        <div class="api-box" style="display: none">
+          <input id="apiUrl" type="hidden" />
+        </div>
+
         <div class="grid">
           <div class="field">
-            <label for="date">Date</label><input id="date" type="date" />
+            <label for="date">Date</label>
+            <input id="date" type="date" />
           </div>
+
           <div class="field">
-            <label for="time">Time</label><input id="time" type="time" />
+            <label for="time">Time</label>
+            <input id="time" type="time" />
           </div>
+
           <div class="field">
             <label for="event">Event Type</label>
             <select id="event">
@@ -267,6 +313,7 @@
               <option value="개인영통">개인영통</option>
             </select>
           </div>
+
           <div class="field organizer-wrap">
             <label for="organizer">Organizer / K-pop Store</label>
             <input
@@ -290,35 +337,40 @@
               </option>
             </select>
             <div class="help">
-              Use “Same Round” when registering a second event that is part
-              of the same fansign event.
+              Use “Same Round” when registering a second event that is part of the same fansign event.
             </div>
           </div>
+
           <div class="field">
             <label>팬싸회차 Fansign Round</label>
-            <div class="auto-box" id="overallRound">1</div>
+            <div class="auto-box" id="overallRound">—</div>
           </div>
+
           <div class="field">
             <label>대면팬싸 In-Person Round</label>
-            <div class="auto-box" id="personRound">1</div>
+            <div class="auto-box" id="personRound">—</div>
           </div>
+
           <div class="field">
             <label>영상통화 Video Call Round</label>
             <div class="auto-box" id="videoRound">—</div>
           </div>
 
           <div class="field">
-            <label for="winners">당첨인원 Winner Count</label
-            ><input id="winners" type="number" min="0" value="0" />
+            <label for="winners">당첨인원 Winner Count</label>
+            <input id="winners" type="number" min="0" value="0" />
           </div>
+
           <div class="field">
-            <label for="polaroid">사인폴라 Signed Polaroid Count</label
-            ><input id="polaroid" type="number" min="0" value="0" />
+            <label for="polaroid">사인폴라 Signed Polaroid Count</label>
+            <input id="polaroid" type="number" min="0" value="0" />
           </div>
+
           <div class="field">
-            <label for="xlink">X Event Details Link</label
-            ><input id="xlink" type="url" placeholder="https://x.com/..." />
+            <label for="xlink">X Event Details Link</label>
+            <input id="xlink" type="url" placeholder="https://x.com/..." />
           </div>
+
           <div class="group-note">
             Tip: On First Use, add the first event as <b>New Round</b> under <b>Event Group</b>. To input a second event belonging to the same fansign event, choose
             <b>Same Round</b> under <b>Event Group</b>. That way, the overall <b>팬싸회차 (Fansign Round)</b> will stay the
@@ -330,10 +382,13 @@
         <div class="members" id="members"></div>
 
         <div class="actions">
-          <button class="primary" id="addEvent">Add Event</button>
+          <button class="primary" id="addEvent" disabled>Add Event</button>
           <button class="secondary" id="resetForm">Reset Form</button>
-          <button class="danger" id="clearAll">Start New Dataset</button>
+          <button class="danger" id="clearAll" disabled>
+            Start New Dataset
+          </button>
         </div>
+
         <div class="status" id="status"></div>
       </div>
 
@@ -348,8 +403,12 @@
             margin-bottom: 12px;
           "
         >
-          <strong>Generated Table</strong>
+          <div>
+            <strong>Generated Table</strong>
+            <div class="summary" id="summary"></div>
+          </div>
           <div class="actions" style="margin: 0">
+            <button class="secondary" id="refresh">Refresh</button>
             <button class="secondary" id="copySheets">
               Copy for Google Sheets
             </button>
@@ -360,168 +419,73 @@
           </div>
         </div>
         <div class="table-wrap" id="tableWrap">
-          <div class="empty">Add an event to generate the table.</div>
+          <div class="empty">Connect to the database first.</div>
         </div>
       </div>
     </div>
 
     <script>
       (() => {
-        const STORAGE_KEY = "fansignEventDataset_v2";
-        const ORGANIZER_KEY = "fansignOrganizers_v2";
-        const members = [
-          "서연",
-          "혜린",
-          "지우",
-          "채연",
-          "유연",
-          "수민",
-          "나경",
-          "유빈",
-          "카에데",
-          "다현",
-          "코토네",
-          "연지",
-          "니엔",
-          "소현",
-          "신위",
-          "마유",
-          "린",
-          "주빈",
-          "하연",
-          "시온",
-          "채원",
-          "설린",
-          "서아",
-          "지연",
-        ];
-        const state = { events: [] };
+        const state = {
+          events: [],
+          organizers: [],
+          members: [],
+        };
+
         const $ = (id) => document.getElementById(id);
 
-        members.forEach((name) => {
-          const label = document.createElement("label");
-          label.className = "member";
-          const cb = document.createElement("input");
-          cb.type = "checkbox";
-          cb.value = name;
-          label.append(cb, document.createTextNode(name));
-          $("members").appendChild(label);
-        });
+        // Backend API is configured by the site owner.
+        // Visitors do not need to enter or know the Apps Script URL.
+        const API_URL =
+          "https://script.google.com/macros/s/AKfycbwLR_RPmBxdf4VTPlcS6zO50YjYW889CkOiwZ8BFGhhGgicgFJU3X7d4ll8dMUHWDG_/exec";
+        $("apiUrl").value = API_URL;
 
-        const now = new Date();
-        $("date").value = new Date(
-          now.getTime() - now.getTimezoneOffset() * 60000,
-        )
+        const d = new Date();
+        $("date").value = new Date(d.getTime() - d.getTimezoneOffset() * 60000)
           .toISOString()
           .slice(0, 10);
 
-        function personEvent(type) {
-          return type === "대면팬싸";
+        function apiUrl() {
+          return API_URL;
         }
-        function saveState() {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(state.events));
-        }
-        function loadState() {
-          try {
-            const x = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-            state.events = Array.isArray(x) ? x : [];
-          } catch {
-            state.events = [];
+
+        async function api(action, data = {}) {
+          const url = apiUrl();
+
+          if (!url) {
+            throw new Error(
+              "Please enter your Google Apps Script Web App URL.",
+            );
           }
-        }
-        function organizers() {
-          try {
-            const x = JSON.parse(localStorage.getItem(ORGANIZER_KEY) || "[]");
-            return Array.isArray(x) ? x : [];
-          } catch {
-            return [];
-          }
-        }
-        function saveOrganizer(name) {
-          if (!name) return;
-          const list = organizers().filter(
-            (x) => x.toLowerCase() !== name.toLowerCase(),
-          );
-          list.unshift(name);
-          localStorage.setItem(
-            ORGANIZER_KEY,
-            JSON.stringify(list.slice(0, 100)),
-          );
-        }
-        function showSuggestions() {
-          const q = $("organizer").value.trim().toLowerCase(),
-            box = $("suggestions");
-          const list = organizers().filter(
-            (x) => !q || x.toLowerCase().includes(q),
-          );
-          box.innerHTML = "";
-          if (!list.length) {
-            box.style.display = "none";
-            return;
-          }
-          list.forEach((name) => {
-            const item = document.createElement("div");
-            item.className = "suggestion";
-            item.textContent = name;
-            item.addEventListener("mousedown", (e) => {
-              e.preventDefault();
-              $("organizer").value = name;
-              box.style.display = "none";
-            });
-            box.appendChild(item);
+
+          // API URL is configured in this site's code.
+
+          const response = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify({ action, ...data }),
           });
-          box.style.display = "block";
-        }
-        function nextOverall() {
-          if (!state.events.length) return 1;
-          return (
-            Math.max(...state.events.map((e) => Number(e.overall) || 0)) + 1
-          );
-        }
-        function nextPerson() {
-          return state.events.filter((e) => personEvent(e.event)).length + 1;
-        }
-        function nextVideo() {
-          return state.events.filter((e) => !personEvent(e.event)).length + 1;
-        }
-        function previousOverall() {
-          return state.events.length
-            ? Number(state.events[state.events.length - 1].overall)
-            : null;
-        }
-        function updatePreview() {
-          const same =
-            $("groupMode").value === "same" && state.events.length > 0;
-          const event = $("event").value;
-          $("overallRound").textContent = same
-            ? previousOverall()
-            : nextOverall();
-          $("personRound").textContent = personEvent(event)
-            ? nextPerson()
-            : "—";
-          $("videoRound").textContent = personEvent(event) ? "—" : nextVideo();
-        }
-        function dayName(v) {
-          const [y, m, d] = v.split("-").map(Number);
-          return ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][
-            new Date(y, m - 1, d).getDay()
-          ];
-        }
-        function displayDate(v) {
-          const [y, m, d] = v.split("-");
-          return `${d}/${m}/${y}`;
-        }
-        function validUrl(v) {
-          if (!v) return "";
-          try {
-            const u = new URL(v);
-            return ["http:", "https:"].includes(u.protocol) ? u.href : "";
-          } catch {
-            return "";
+
+          if (!response.ok) {
+            throw new Error("API request failed: HTTP " + response.status);
           }
+
+          const result = await response.json();
+
+          if (!result.ok) {
+            throw new Error(result.error || "Unknown API error.");
+          }
+
+          return result;
         }
-        function esc(v) {
-          return String(v ?? "").replace(
+
+        function showStatus(message, error = false) {
+          $("status").textContent = message;
+          $("status").className = error ? "status error" : "status";
+        }
+
+        function esc(value) {
+          return String(value ?? "").replace(
             /[&<>"']/g,
             (c) =>
               ({
@@ -533,31 +497,114 @@
               })[c],
           );
         }
+
+        function nextOverall() {
+          if (!state.events.length) return 1;
+          return (
+            Math.max(...state.events.map((e) => Number(e.overall) || 0)) + 1
+          );
+        }
+
+        function nextPerson() {
+          const nums = state.events
+            .filter((e) => e.event === "대면팬싸")
+            .map((e) => Number(e.person) || 0);
+          return nums.length ? Math.max(...nums) + 1 : 1;
+        }
+
+        function nextVideo() {
+          const nums = state.events
+            .filter((e) => e.event !== "대면팬싸")
+            .map((e) => Number(e.video) || 0);
+          return nums.length ? Math.max(...nums) + 1 : 1;
+        }
+
+        function updatePreview() {
+          const same = $("groupMode").value === "same" && state.events.length;
+          const type = $("event").value;
+
+          $("overallRound").textContent = same
+            ? state.events[state.events.length - 1].overall
+            : nextOverall();
+
+          $("personRound").textContent =
+            type === "대면팬싸" ? nextPerson() : "—";
+
+          $("videoRound").textContent = type === "대면팬싸" ? "—" : nextVideo();
+        }
+
+        function renderMembers() {
+          $("members").innerHTML = "";
+
+          state.members.forEach((name) => {
+            const label = document.createElement("label");
+            label.className = "member";
+
+            const cb = document.createElement("input");
+            cb.type = "checkbox";
+            cb.value = name;
+
+            label.append(cb, document.createTextNode(name));
+            $("members").appendChild(label);
+          });
+        }
+
         function selectedMembers() {
           return [...$("members").querySelectorAll("input:checked")].map(
             (x) => x.value,
           );
         }
-        function resetForm() {
-          $("winners").value = 0;
-          $("polaroid").value = 0;
-          $("xlink").value = "";
-          $("organizer").value = "";
-          $("groupMode").value = "new";
-          $("members")
-            .querySelectorAll("input")
-            .forEach((x) => (x.checked = false));
-          $("status").textContent = "";
-          updatePreview();
+
+        function renderSuggestions() {
+          const q = $("organizer").value.trim().toLowerCase();
+          const box = $("suggestions");
+
+          const list = state.organizers.filter(
+            (x) => !q || x.toLowerCase().includes(q),
+          );
+
+          box.innerHTML = "";
+
+          if (!list.length) {
+            box.style.display = "none";
+            return;
+          }
+
+          list.forEach((name) => {
+            const item = document.createElement("div");
+            item.className = "suggestion";
+            item.textContent = name;
+            item.addEventListener("mousedown", (e) => {
+              e.preventDefault();
+              $("organizer").value = name;
+              box.style.display = "none";
+            });
+            box.appendChild(item);
+          });
+
+          box.style.display = "block";
         }
-        function render() {
+
+        function formatDate(v) {
+          if (!v) return "";
+          const p = String(v).split("-");
+          return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : v;
+        }
+
+        function renderTable() {
           const wrap = $("tableWrap");
+
           if (!state.events.length) {
             wrap.innerHTML =
-              '<div class="empty">Add an event to generate the table.</div>';
+              '<div class="empty">No events in the shared database.</div>';
+            $("summary").textContent = "0 events";
             updatePreview();
             return;
           }
+
+          $("summary").textContent =
+            `${state.events.length} event row${state.events.length === 1 ? "" : "s"}`;
+
           const headers = [
             "팬싸회차",
             "대면팬싸",
@@ -570,97 +617,179 @@
             "사인폴라",
             "𝕏",
             "주최/주관사",
-            ...members,
+            ...state.members,
+            "관리",
           ];
+
           let html = "<table><thead><tr>";
+
           headers.forEach((h, i) => {
-            let c = "th-yellow";
-            if (i === 1) c = "th-person";
-            else if (i === 2) c = "th-video";
-            else if (i === 9) c = "th-x";
-            else if (i === 10) c = "th-organizer";
-            else if (i >= 11)
-              c = (i - 11) % 2 === 0 ? "th-member-a" : "th-member-b";
-            html += `<th class="${c}">${esc(h)}</th>`;
+            let cls = "th-yellow";
+            if (i === 1) cls = "th-person";
+            else if (i === 2) cls = "th-video";
+            else if (i === 9) cls = "th-x";
+            else if (i === 10) cls = "th-organizer";
+            else if (i >= 11 && i < 11 + state.members.length)
+              cls = (i - 11) % 2 === 0 ? "th-member-a" : "th-member-b";
+
+            html += `<th class="${cls}">${esc(h)}</th>`;
           });
+
           html += "</tr></thead><tbody>";
+
           state.events.forEach((e) => {
-            html += `<tr><td>${e.overall}</td><td>${e.person || ""}</td><td>${e.video || ""}</td><td>${esc(displayDate(e.date))}</td><td>${esc(e.time || "")}</td><td>${esc(e.day)}</td><td>${esc(e.event)}</td><td>${e.winners}</td><td>${e.polaroid}</td>`;
-            html += `<td>${e.xlink ? `<a class="xlink" href="${esc(e.xlink)}" target="_blank" rel="noopener noreferrer">𝕏</a>` : ""}</td><td>${esc(e.organizer)}</td>`;
-            members.forEach(
-              (m) => (html += `<td>${e.members.includes(m) ? "☐" : ""}</td>`),
-            );
+            html += "<tr>";
+            html += `<td>${esc(e.overall)}</td>`;
+            html += `<td>${esc(e.person)}</td>`;
+            html += `<td>${esc(e.video)}</td>`;
+            html += `<td>${esc(formatDate(e.date))}</td>`;
+            html += `<td>${esc(e.time)}</td>`;
+            html += `<td>${esc(e.day)}</td>`;
+            html += `<td>${esc(e.event)}</td>`;
+            html += `<td>${esc(e.winners)}</td>`;
+            html += `<td>${esc(e.polaroid)}</td>`;
+            html += `<td>${e.xlink ? `<a class="xlink" href="${esc(e.xlink)}" target="_blank" rel="noopener noreferrer">𝕏</a>` : ""}</td>`;
+            html += `<td>${esc(e.organizer)}</td>`;
+
+            state.members.forEach((m) => {
+              html += `<td>${e.members.includes(m) ? "☐" : ""}</td>`;
+            });
+
+            html += `<td><button class="delete-btn" data-id="${esc(e.id)}">Delete</button></td>`;
             html += "</tr>";
           });
+
           html += "</tbody></table>";
           wrap.innerHTML = html;
+
+          wrap.querySelectorAll(".delete-btn").forEach((btn) => {
+            btn.addEventListener("click", () => deleteEvent(btn.dataset.id));
+          });
+
           updatePreview();
         }
-        $("event").addEventListener("change", updatePreview);
-        $("groupMode").addEventListener("change", updatePreview);
-        $("organizer").addEventListener("input", showSuggestions);
-        $("organizer").addEventListener("focus", showSuggestions);
-        $("organizer").addEventListener("blur", () =>
-          setTimeout(() => ($("suggestions").style.display = "none"), 150),
-        );
 
-        $("addEvent").addEventListener("click", () => {
-          const date = $("date").value,
-            event = $("event").value,
-            organizer = $("organizer").value.trim();
-          if (!date) {
-            $("date").focus();
-            $("status").textContent = "Please select a date.";
+        async function refresh(silent = false) {
+          try {
+            const result = await api("getInitialData");
+            state.events = result.events || [];
+            state.organizers = result.organizers || [];
+            state.members = result.members || [];
+
+            renderMembers();
+            renderTable();
+
+            $("addEvent").disabled = false;
+            $("clearAll").disabled = !state.events.length;
+
+            if (!silent) showStatus("Database refreshed.");
+          } catch (err) {
+            $("addEvent").disabled = true;
+            showStatus(err.message, true);
+          }
+        }
+
+        async function addEvent() {
+          if (!apiUrl()) {
+            showStatus("Please enter the Apps Script Web App URL.", true);
             return;
           }
-          if (!$("time").value) {
-            $("time").focus();
-            $("status").textContent = "Please select a time.";
-            return;
+
+          const date = $("date").value;
+          const time = $("time").value;
+          const event = $("event").value;
+          const organizer = $("organizer").value.trim();
+
+          if (!date) return showStatus("Please select a date.", true);
+          if (!time) return showStatus("Please select a time.", true);
+          if (!organizer)
+            return showStatus("Please enter the organizer.", true);
+
+          $("addEvent").disabled = true;
+          showStatus("Saving event...");
+
+          try {
+            const result = await api("addEvent", {
+              data: {
+                date,
+                time,
+                event,
+                organizer,
+                xlink: $("xlink").value.trim(),
+                winners: $("winners").value,
+                polaroid: $("polaroid").value,
+                groupMode: $("groupMode").value,
+                members: selectedMembers(),
+              },
+            });
+
+            const r = result.result;
+
+            showStatus(
+              `Saved: 팬싸회차 ${r.overall}` +
+                (r.person ? ` / 대면팬싸 ${r.person}` : "") +
+                (r.video ? ` / 영상통화 ${r.video}` : ""),
+            );
+
+            resetForm();
+            await refresh(true);
+          } catch (err) {
+            $("addEvent").disabled = false;
+            showStatus(err.message, true);
           }
-          if (!organizer) {
-            $("organizer").focus();
-            $("status").textContent = "Please enter the organizer.";
+        }
+
+        async function deleteEvent(id) {
+          if (!confirm("Delete this event row from the shared database?"))
             return;
+
+          showStatus("Deleting...");
+
+          try {
+            await api("deleteEvent", { id });
+            await refresh(true);
+            showStatus("Event deleted.");
+          } catch (err) {
+            showStatus(err.message, true);
           }
-          const same =
-            $("groupMode").value === "same" && state.events.length > 0;
-          const row = {
-            overall: same ? previousOverall() : nextOverall(),
-            person: personEvent(event) ? nextPerson() : "",
-            video: personEvent(event) ? "" : nextVideo(),
-            date,
-            time: $("time").value,
-            day: dayName(date),
-            event,
-            organizer,
-            winners: Math.max(0, Number($("winners").value) || 0),
-            polaroid: Math.max(0, Number($("polaroid").value) || 0),
-            xlink: validUrl($("xlink").value.trim()),
-            members: selectedMembers(),
-          };
-          state.events.push(row);
-          saveState();
-          saveOrganizer(organizer);
-          resetForm();
-          render();
-          $("status").textContent = `Event added as 팬싸회차 ${row.overall}.`;
-        });
-        $("resetForm").addEventListener("click", resetForm);
-        $("clearAll").addEventListener("click", () => {
+        }
+
+        async function clearAll() {
+          if (!state.events.length) return;
+
           if (
             !confirm(
-              "Start a new dataset? This will delete all saved events and reset the counters.",
+              "Start a new dataset?\\n\\n" +
+                "This deletes ALL event rows from the shared Google Sheet.",
             )
           )
             return;
-          state.events.length = 0;
-          saveState();
-          render();
-          $("status").textContent = "New dataset started.";
-        });
+
+          showStatus("Clearing database...");
+
+          try {
+            await api("clearAllEvents");
+            await refresh(true);
+            showStatus("New dataset started.");
+          } catch (err) {
+            showStatus(err.message, true);
+          }
+        }
+
+        function resetForm() {
+          $("winners").value = 0;
+          $("polaroid").value = 0;
+          $("xlink").value = "";
+          $("organizer").value = "";
+          $("groupMode").value = "new";
+          $("members")
+            .querySelectorAll("input")
+            .forEach((x) => (x.checked = false));
+          updatePreview();
+        }
+
         function sheetData() {
-          const h = [
+          const headers = [
             "팬싸회차",
             "대면팬싸",
             "영상통화",
@@ -672,16 +801,18 @@
             "사인폴라",
             "X Link",
             "주최/주관사",
-            ...members,
+            ...state.members,
           ];
-          return [
-            h.join("\t"),
-            ...state.events.map((e) =>
+
+          const lines = [headers.join("\t")];
+
+          state.events.forEach((e) => {
+            lines.push(
               [
                 e.overall,
                 e.person,
                 e.video,
-                displayDate(e.date),
+                formatDate(e.date),
                 e.time,
                 e.day,
                 e.event,
@@ -689,59 +820,86 @@
                 e.polaroid,
                 e.xlink,
                 e.organizer,
-                ...members.map((m) =>
+                ...state.members.map((m) =>
                   e.members.includes(m) ? "TRUE" : "FALSE",
                 ),
               ].join("\t"),
-            ),
-          ].join("\n");
+            );
+          });
+
+          return lines.join("\n");
         }
-        $("copySheets").addEventListener("click", async () => {
+
+        async function copySheets() {
           if (!state.events.length) return;
-          const data = sheetData();
+
           try {
-            await navigator.clipboard.writeText(data);
-            $("status").textContent =
-              "Copied — paste directly into Google Sheets.";
-          } catch {
-            const w = window.open("", "_blank");
-            w.document.write("<pre>" + esc(data) + "</pre>");
+            await navigator.clipboard.writeText(sheetData());
+            showStatus("Copied — paste directly into Google Sheets.");
+          } catch (err) {
+            showStatus("Clipboard access was blocked by the browser.", true);
           }
-        });
-        $("downloadCsv").addEventListener("click", () => {
+        }
+
+        function downloadCsv() {
           if (!state.events.length) return;
+
           const csv = sheetData()
             .split("\n")
-            .map((l) =>
-              l
+            .map((line) =>
+              line
                 .split("\t")
                 .map((v) => `"${v.replace(/"/g, '""')}"`)
                 .join(","),
             )
             .join("\n");
+
           const blob = new Blob(["\ufeff" + csv], {
-              type: "text/csv;charset=utf-8",
-            }),
-            a = document.createElement("a");
+            type: "text/csv;charset=utf-8",
+          });
+          const a = document.createElement("a");
           a.href = URL.createObjectURL(blob);
           a.download = "fansign_events.csv";
           a.click();
           URL.revokeObjectURL(a.href);
-        });
-        $("downloadJson").addEventListener("click", () => {
+        }
+
+        function downloadJson() {
           if (!state.events.length) return;
+
           const blob = new Blob([JSON.stringify(state.events, null, 2)], {
-              type: "application/json",
-            }),
-            a = document.createElement("a");
+            type: "application/json",
+          });
+
+          const a = document.createElement("a");
           a.href = URL.createObjectURL(blob);
           a.download = "fansign_events.json";
           a.click();
           URL.revokeObjectURL(a.href);
+        }
+
+        // API connection is automatic.
+        $("refresh").addEventListener("click", () => refresh(false));
+        $("addEvent").addEventListener("click", addEvent);
+        $("resetForm").addEventListener("click", resetForm);
+        $("clearAll").addEventListener("click", clearAll);
+        $("copySheets").addEventListener("click", copySheets);
+        $("downloadCsv").addEventListener("click", downloadCsv);
+        $("downloadJson").addEventListener("click", downloadJson);
+
+        $("event").addEventListener("change", updatePreview);
+        $("groupMode").addEventListener("change", updatePreview);
+
+        $("organizer").addEventListener("input", renderSuggestions);
+        $("organizer").addEventListener("focus", renderSuggestions);
+        $("organizer").addEventListener("blur", () => {
+          setTimeout(() => {
+            $("suggestions").style.display = "none";
+          }, 150);
         });
 
-        loadState();
-        render();
+        refresh(true);
+        updatePreview();
       })();
     </script>
   </body>
