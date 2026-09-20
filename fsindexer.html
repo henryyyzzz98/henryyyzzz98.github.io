@@ -15,7 +15,7 @@
         color: #222;
       }
       .container {
-        max-width: 1500px;
+        max-width: 1600px;
         margin: 24px auto;
         padding: 0 18px;
       }
@@ -95,6 +95,11 @@
       .suggestion:hover {
         background: #f1f4f7;
       }
+      .help {
+        font-size: 12px;
+        color: #777;
+        margin-top: 5px;
+      }
       .member-title {
         font-weight: 700;
         margin: 18px 0 8px;
@@ -157,7 +162,7 @@
       }
       table {
         border-collapse: collapse;
-        min-width: 2100px;
+        min-width: 2250px;
         width: 100%;
         font-size: 11px;
       }
@@ -173,7 +178,7 @@
         font-weight: 800;
         color: #111;
       }
-      th.yellow {
+      .th-yellow {
         background: #f6d83c;
       }
       .th-person {
@@ -209,10 +214,14 @@
         padding: 28px;
         color: #777;
       }
-      .small {
-        font-size: 12px;
-        color: #777;
-        margin-top: 5px;
+      .group-note {
+        grid-column: 1/-1;
+        padding: 10px 12px;
+        border-radius: 7px;
+        background: #f2f6fb;
+        border: 1px solid #d7e2ef;
+        color: #4b5d70;
+        font-size: 13px;
       }
       @media (max-width: 950px) {
         .grid {
@@ -239,15 +248,16 @@
     <div class="container">
       <h1>Fansign Event Table Generator</h1>
       <div class="subtitle">
-        Enter each event once and generate a spreadsheet-ready table
-        automatically.
+        Enter each event once and generate a spreadsheet-ready table automatically.
       </div>
 
       <div class="card">
         <div class="grid">
           <div class="field">
-            <label for="date">Date</label>
-            <input id="date" type="date" />
+            <label for="date">Date</label><input id="date" type="date" />
+          </div>
+          <div class="field">
+            <label for="time">Time</label><input id="time" type="time" />
           </div>
           <div class="field">
             <label for="event">Event Type</label>
@@ -266,15 +276,24 @@
               placeholder="e.g. MAKESTAR"
             />
             <div id="suggestions" class="suggestions"></div>
-            <div class="small">
-              Previously entered organizers will appear as suggestions.
+            <div class="help">
+              Previously entered organizers appear as suggestions.
             </div>
           </div>
-          <div class="field">
-            <label for="xlink">X Event Details Link</label>
-            <input id="xlink" type="url" placeholder="https://x.com/..." />
-          </div>
 
+          <div class="field">
+            <label for="groupMode">Event Group</label>
+            <select id="groupMode">
+              <option value="new">New Round — New 팬싸회차</option>
+              <option value="same">
+                Same Round — Same 팬싸회차
+              </option>
+            </select>
+            <div class="help">
+              Use “Same Round” when registering a second event that is part
+              of the same fansign event.
+            </div>
+          </div>
           <div class="field">
             <label>팬싸회차 Fansign Round</label>
             <div class="auto-box" id="overallRound">1</div>
@@ -287,13 +306,23 @@
             <label>영상통화 Video Call Round</label>
             <div class="auto-box" id="videoRound">—</div>
           </div>
+
           <div class="field">
-            <label for="winners">당첨인원 Winner Count</label>
-            <input id="winners" type="number" min="0" value="0" />
+            <label for="winners">당첨인원 Winner Count</label
+            ><input id="winners" type="number" min="0" value="0" />
           </div>
           <div class="field">
-            <label for="polaroid">사인폴라 Signed Polaroid Count</label>
-            <input id="polaroid" type="number" min="0" value="0" />
+            <label for="polaroid">사인폴라 Signed Polaroid Count</label
+            ><input id="polaroid" type="number" min="0" value="0" />
+          </div>
+          <div class="field">
+            <label for="xlink">X Event Details Link</label
+            ><input id="xlink" type="url" placeholder="https://x.com/..." />
+          </div>
+          <div class="group-note">
+            Tip: On First Use, add the first event as <b>New Round</b> under <b>Event Group</b>. To input a second event belonging to the same fansign event, choose
+            <b>Same Round</b> under <b>Event Group</b>. That way, the overall <b>팬싸회차 (Fansign Round)</b> will stay the
+            same, while the <b>대면팬싸 (In-Person)</b> / <b>영상통화 (Video Call)</b> counters continue independently.
           </div>
         </div>
 
@@ -303,8 +332,7 @@
         <div class="actions">
           <button class="primary" id="addEvent">Add Event</button>
           <button class="secondary" id="resetForm">Reset Form</button>
-          <button class="danger" id="clearAll">Delete All Events</button
-          ><button class="secondary" id="resetSaved">Start New Dataset</button>
+          <button class="danger" id="clearAll">Start New Dataset</button>
         </div>
         <div class="status" id="status"></div>
       </div>
@@ -339,6 +367,8 @@
 
     <script>
       (() => {
+        const STORAGE_KEY = "fansignEventDataset_v2";
+        const ORGANIZER_KEY = "fansignOrganizers_v2";
         const members = [
           "서연",
           "혜린",
@@ -365,23 +395,17 @@
           "서아",
           "지연",
         ];
-
         const state = { events: [] };
-        const organizerKey = "fansignOrganizers";
-        const eventKey = "fansignEvents";
-
         const $ = (id) => document.getElementById(id);
-        const memberBox = $("members");
 
         members.forEach((name) => {
           const label = document.createElement("label");
           label.className = "member";
-          const checkbox = document.createElement("input");
-          checkbox.type = "checkbox";
-          checkbox.value = name;
-          label.appendChild(checkbox);
-          label.appendChild(document.createTextNode(name));
-          memberBox.appendChild(label);
+          const cb = document.createElement("input");
+          cb.type = "checkbox";
+          cb.value = name;
+          label.append(cb, document.createTextNode(name));
+          $("members").appendChild(label);
         });
 
         const now = new Date();
@@ -394,125 +418,110 @@
         function personEvent(type) {
           return type === "대면팬싸";
         }
-
-        function updateRoundPreview() {
-          const type = $("event").value;
-          const overall = state.events.length + 1;
-          const person =
-            state.events.filter((e) => personEvent(e.event)).length + 1;
-          const video =
-            state.events.filter((e) => !personEvent(e.event)).length + 1;
-
-          $("overallRound").textContent = overall;
-          $("personRound").textContent = personEvent(type) ? person : "—";
-          $("videoRound").textContent = personEvent(type) ? "—" : video;
+        function saveState() {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state.events));
         }
-
-        function loadEvents() {
+        function loadState() {
           try {
-            const data = JSON.parse(localStorage.getItem(eventKey) || "[]");
-            state.events = Array.isArray(data) ? data : [];
+            const x = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+            state.events = Array.isArray(x) ? x : [];
           } catch {
             state.events = [];
           }
         }
-
-        function saveEvents() {
-          localStorage.setItem(eventKey, JSON.stringify(state.events));
-        }
-
-        function getOrganizers() {
+        function organizers() {
           try {
-            const data = JSON.parse(localStorage.getItem(organizerKey) || "[]");
-            return Array.isArray(data) ? data.filter(Boolean) : [];
+            const x = JSON.parse(localStorage.getItem(ORGANIZER_KEY) || "[]");
+            return Array.isArray(x) ? x : [];
           } catch {
             return [];
           }
         }
-
         function saveOrganizer(name) {
-          name = name.trim();
           if (!name) return;
-          const list = getOrganizers().filter(
+          const list = organizers().filter(
             (x) => x.toLowerCase() !== name.toLowerCase(),
           );
           list.unshift(name);
           localStorage.setItem(
-            organizerKey,
+            ORGANIZER_KEY,
             JSON.stringify(list.slice(0, 100)),
           );
         }
-
         function showSuggestions() {
-          const input = $("organizer");
-          const box = $("suggestions");
-          const q = input.value.trim().toLowerCase();
-          const matches = getOrganizers().filter(
+          const q = $("organizer").value.trim().toLowerCase(),
+            box = $("suggestions");
+          const list = organizers().filter(
             (x) => !q || x.toLowerCase().includes(q),
           );
           box.innerHTML = "";
-          if (!matches.length) {
+          if (!list.length) {
             box.style.display = "none";
             return;
           }
-          matches.forEach((name) => {
+          list.forEach((name) => {
             const item = document.createElement("div");
             item.className = "suggestion";
             item.textContent = name;
             item.addEventListener("mousedown", (e) => {
               e.preventDefault();
-              input.value = name;
+              $("organizer").value = name;
               box.style.display = "none";
             });
             box.appendChild(item);
           });
           box.style.display = "block";
         }
-
-        function dayName(date) {
-          const [y, m, d] = date.split("-").map(Number);
+        function nextOverall() {
+          if (!state.events.length) return 1;
+          return (
+            Math.max(...state.events.map((e) => Number(e.overall) || 0)) + 1
+          );
+        }
+        function nextPerson() {
+          return state.events.filter((e) => personEvent(e.event)).length + 1;
+        }
+        function nextVideo() {
+          return state.events.filter((e) => !personEvent(e.event)).length + 1;
+        }
+        function previousOverall() {
+          return state.events.length
+            ? Number(state.events[state.events.length - 1].overall)
+            : null;
+        }
+        function updatePreview() {
+          const same =
+            $("groupMode").value === "same" && state.events.length > 0;
+          const event = $("event").value;
+          $("overallRound").textContent = same
+            ? previousOverall()
+            : nextOverall();
+          $("personRound").textContent = personEvent(event)
+            ? nextPerson()
+            : "—";
+          $("videoRound").textContent = personEvent(event) ? "—" : nextVideo();
+        }
+        function dayName(v) {
+          const [y, m, d] = v.split("-").map(Number);
           return ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][
             new Date(y, m - 1, d).getDay()
           ];
         }
-
-        function displayDate(date) {
-          const [y, m, d] = date.split("-");
+        function displayDate(v) {
+          const [y, m, d] = v.split("-");
           return `${d}/${m}/${y}`;
         }
-
-        function validUrl(value) {
-          if (!value) return "";
+        function validUrl(v) {
+          if (!v) return "";
           try {
-            const u = new URL(value);
-            return u.protocol === "https:" || u.protocol === "http:"
-              ? u.href
-              : "";
+            const u = new URL(v);
+            return ["http:", "https:"].includes(u.protocol) ? u.href : "";
           } catch {
             return "";
           }
         }
-
-        function selectedMembers() {
-          return [...memberBox.querySelectorAll("input:checked")].map(
-            (x) => x.value,
-          );
-        }
-
-        function resetForm() {
-          $("winners").value = 0;
-          $("polaroid").value = 0;
-          $("xlink").value = "";
-          $("organizer").value = "";
-          memberBox
-            .querySelectorAll("input")
-            .forEach((x) => (x.checked = false));
-          $("status").textContent = "";
-          updateRoundPreview();
-        }
-
-        function escapeHtml(value) {
-          return String(value ?? "").replace(
+        function esc(v) {
+          return String(v ?? "").replace(
             /[&<>"']/g,
             (c) =>
               ({
@@ -524,21 +533,37 @@
               })[c],
           );
         }
-
+        function selectedMembers() {
+          return [...$("members").querySelectorAll("input:checked")].map(
+            (x) => x.value,
+          );
+        }
+        function resetForm() {
+          $("winners").value = 0;
+          $("polaroid").value = 0;
+          $("xlink").value = "";
+          $("organizer").value = "";
+          $("groupMode").value = "new";
+          $("members")
+            .querySelectorAll("input")
+            .forEach((x) => (x.checked = false));
+          $("status").textContent = "";
+          updatePreview();
+        }
         function render() {
           const wrap = $("tableWrap");
           if (!state.events.length) {
             wrap.innerHTML =
               '<div class="empty">Add an event to generate the table.</div>';
-            updateRoundPreview();
+            updatePreview();
             return;
           }
-
           const headers = [
             "팬싸회차",
             "대면팬싸",
             "영상통화",
             "날짜",
+            "시간",
             "요일",
             "행사",
             "당첨인원",
@@ -547,46 +572,32 @@
             "주최/주관사",
             ...members,
           ];
-
           let html = "<table><thead><tr>";
           headers.forEach((h, i) => {
-            let cls = "yellow";
-            if (i === 1) cls = "th-person";
-            else if (i === 2) cls = "th-video";
-            else if (i === 8) cls = "th-x";
-            else if (i === 9) cls = "th-organizer";
-            else if (i >= 10)
-              cls = (i - 10) % 2 === 0 ? "th-member-a" : "th-member-b";
-            html += `<th class="${cls}">${escapeHtml(h)}</th>`;
+            let c = "th-yellow";
+            if (i === 1) c = "th-person";
+            else if (i === 2) c = "th-video";
+            else if (i === 9) c = "th-x";
+            else if (i === 10) c = "th-organizer";
+            else if (i >= 11)
+              c = (i - 11) % 2 === 0 ? "th-member-a" : "th-member-b";
+            html += `<th class="${c}">${esc(h)}</th>`;
           });
           html += "</tr></thead><tbody>";
-
           state.events.forEach((e) => {
-            html += "<tr>";
-            html += `<td>${e.overall}</td>`;
-            html += `<td>${e.person || ""}</td>`;
-            html += `<td>${e.video || ""}</td>`;
-            html += `<td>${escapeHtml(displayDate(e.date))}</td>`;
-            html += `<td>${escapeHtml(e.day)}</td>`;
-            html += `<td>${escapeHtml(e.event)}</td>`;
-            html += `<td>${e.winners}</td>`;
-            html += `<td>${e.polaroid}</td>`;
-            html += `<td>${e.xlink ? `<a class="xlink" href="${escapeHtml(e.xlink)}" target="_blank" rel="noopener noreferrer">𝕏</a>` : ""}</td>`;
-            html += `<td>${escapeHtml(e.organizer)}</td>`;
-
-            members.forEach((m) => {
-              html += `<td>${e.members.includes(m) ? "☐" : ""}</td>`;
-            });
+            html += `<tr><td>${e.overall}</td><td>${e.person || ""}</td><td>${e.video || ""}</td><td>${esc(displayDate(e.date))}</td><td>${esc(e.time || "")}</td><td>${esc(e.day)}</td><td>${esc(e.event)}</td><td>${e.winners}</td><td>${e.polaroid}</td>`;
+            html += `<td>${e.xlink ? `<a class="xlink" href="${esc(e.xlink)}" target="_blank" rel="noopener noreferrer">𝕏</a>` : ""}</td><td>${esc(e.organizer)}</td>`;
+            members.forEach(
+              (m) => (html += `<td>${e.members.includes(m) ? "☐" : ""}</td>`),
+            );
             html += "</tr>";
           });
-
           html += "</tbody></table>";
           wrap.innerHTML = html;
-          updateRoundPreview();
+          updatePreview();
         }
-
-        $("event").addEventListener("change", updateRoundPreview);
-
+        $("event").addEventListener("change", updatePreview);
+        $("groupMode").addEventListener("change", updatePreview);
         $("organizer").addEventListener("input", showSuggestions);
         $("organizer").addEventListener("focus", showSuggestions);
         $("organizer").addEventListener("blur", () =>
@@ -594,13 +605,17 @@
         );
 
         $("addEvent").addEventListener("click", () => {
-          const date = $("date").value;
-          const event = $("event").value;
-          const organizer = $("organizer").value.trim();
-
+          const date = $("date").value,
+            event = $("event").value,
+            organizer = $("organizer").value.trim();
           if (!date) {
             $("date").focus();
             $("status").textContent = "Please select a date.";
+            return;
+          }
+          if (!$("time").value) {
+            $("time").focus();
+            $("status").textContent = "Please select a time.";
             return;
           }
           if (!organizer) {
@@ -608,18 +623,14 @@
             $("status").textContent = "Please enter the organizer.";
             return;
           }
-
-          const overall = state.events.length + 1;
-          const person =
-            state.events.filter((e) => personEvent(e.event)).length + 1;
-          const video =
-            state.events.filter((e) => !personEvent(e.event)).length + 1;
-
-          const eventRow = {
-            overall,
-            person: personEvent(event) ? person : "",
-            video: personEvent(event) ? "" : video,
+          const same =
+            $("groupMode").value === "same" && state.events.length > 0;
+          const row = {
+            overall: same ? previousOverall() : nextOverall(),
+            person: personEvent(event) ? nextPerson() : "",
+            video: personEvent(event) ? "" : nextVideo(),
             date,
+            time: $("time").value,
             day: dayName(date),
             event,
             organizer,
@@ -628,46 +639,33 @@
             xlink: validUrl($("xlink").value.trim()),
             members: selectedMembers(),
           };
-
-          state.events.push(eventRow);
-          saveEvents();
+          state.events.push(row);
+          saveState();
           saveOrganizer(organizer);
           resetForm();
           render();
-          $("status").textContent = `Event ${overall} added.`;
+          $("status").textContent = `Event added as 팬싸회차 ${row.overall}.`;
         });
-
         $("resetForm").addEventListener("click", resetForm);
-
-        $("resetSaved").addEventListener("click", () => {
+        $("clearAll").addEventListener("click", () => {
           if (
             !confirm(
-              "This will permanently clear the saved events and start the round counters from 1. Continue?",
+              "Start a new dataset? This will delete all saved events and reset the counters.",
             )
           )
             return;
           state.events.length = 0;
-          localStorage.removeItem(eventKey);
+          saveState();
           render();
-          $("status").textContent =
-            "Saved dataset cleared. Counters reset to 1.";
+          $("status").textContent = "New dataset started.";
         });
-
-        $("clearAll").addEventListener("click", () => {
-          if (!state.events.length) return;
-          if (!confirm("Delete all events from the current table?")) return;
-          state.events.length = 0;
-          saveEvents();
-          render();
-          $("status").textContent = "All events deleted.";
-        });
-
         function sheetData() {
-          const headers = [
+          const h = [
             "팬싸회차",
             "대면팬싸",
             "영상통화",
             "날짜",
+            "시간",
             "요일",
             "행사",
             "당첨인원",
@@ -676,15 +674,15 @@
             "주최/주관사",
             ...members,
           ];
-
-          const lines = [headers.join("\t")];
-          state.events.forEach((e) => {
-            lines.push(
+          return [
+            h.join("\t"),
+            ...state.events.map((e) =>
               [
                 e.overall,
                 e.person,
                 e.video,
                 displayDate(e.date),
+                e.time,
                 e.day,
                 e.event,
                 e.winners,
@@ -695,11 +693,9 @@
                   e.members.includes(m) ? "TRUE" : "FALSE",
                 ),
               ].join("\t"),
-            );
-          });
-          return lines.join("\n");
+            ),
+          ].join("\n");
         }
-
         $("copySheets").addEventListener("click", async () => {
           if (!state.events.length) return;
           const data = sheetData();
@@ -709,48 +705,42 @@
               "Copied — paste directly into Google Sheets.";
           } catch {
             const w = window.open("", "_blank");
-            w.document.write(
-              "<pre style='white-space:pre-wrap'>" +
-                escapeHtml(data) +
-                "</pre>",
-            );
+            w.document.write("<pre>" + esc(data) + "</pre>");
           }
         });
-
         $("downloadCsv").addEventListener("click", () => {
           if (!state.events.length) return;
-          const data = sheetData()
+          const csv = sheetData()
             .split("\n")
-            .map((line) =>
-              line
+            .map((l) =>
+              l
                 .split("\t")
                 .map((v) => `"${v.replace(/"/g, '""')}"`)
                 .join(","),
             )
             .join("\n");
-          const blob = new Blob(["\ufeff" + data], {
-            type: "text/csv;charset=utf-8",
-          });
-          const a = document.createElement("a");
+          const blob = new Blob(["\ufeff" + csv], {
+              type: "text/csv;charset=utf-8",
+            }),
+            a = document.createElement("a");
           a.href = URL.createObjectURL(blob);
           a.download = "fansign_events.csv";
           a.click();
           URL.revokeObjectURL(a.href);
         });
-
         $("downloadJson").addEventListener("click", () => {
           if (!state.events.length) return;
           const blob = new Blob([JSON.stringify(state.events, null, 2)], {
-            type: "application/json",
-          });
-          const a = document.createElement("a");
+              type: "application/json",
+            }),
+            a = document.createElement("a");
           a.href = URL.createObjectURL(blob);
           a.download = "fansign_events.json";
           a.click();
           URL.revokeObjectURL(a.href);
         });
 
-        loadEvents();
+        loadState();
         render();
       })();
     </script>
