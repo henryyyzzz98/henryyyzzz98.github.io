@@ -5,15 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Fansign Event Table</title>
     <style>
-      @import url('https://fonts.googleapis.com/css2?family=Asta+Sans:wght@300..800&display=swap');
+      @import url("https://fonts.googleapis.com/css2?family=Asta+Sans:wght@300..800&display=swap");
 
       * {
         box-sizing: border-box;
-        font-family: 'Asta Sans', sans-serif;
+        font-family: "Asta Sans", sans-serif;
       }
       body {
         margin: 0;
-        font-family: 'Asta Sans', sans-serif;
+        font-family: "Asta Sans", sans-serif;
         background: #f5f6f8;
         color: #222;
       }
@@ -321,7 +321,10 @@
               <option value="단체영통">단체영통</option>
               <option value="개인영통">개인영통</option>
             </select>
-            <div class="help">대면팬싸 - In-Person Fansign / 단체영통 - Group Video Call / 개인영통 - 1:1 Video Call</div>
+            <div class="help">
+              대면팬싸 - In-Person Fansign / 단체영통 - Group Video Call /
+              개인영통 - 1:1 Video Call
+            </div>
           </div>
 
           <div class="field organizer-wrap">
@@ -379,7 +382,9 @@
             fansign event, choose <b>Same Round</b> under <b>Event Group</b>.
             That way, the overall <b>팬싸회차 (Fansign Round)</b> will stay the
             same, while the <b>대면팬싸 (In-Person)</b> /
-            <b>영상통화 (Video Call)</b> counters continue independently.
+            <b>영상통화 (Video Call)</b> counters continue independently. Round
+            numbers follow event date and time; adding an earlier event may
+            update the numbers shown on later entries.
           </div>
         </div>
 
@@ -510,24 +515,49 @@
         }
 
         function nextOverall() {
-          if (!state.events.length) return 1;
+          const candidate = dateSortKey($("date").value);
+          const groups = new Map();
+          state.events.forEach((e) => {
+            const key = String(e.overall);
+            const date = dateSortKey(e.date);
+            if (!groups.has(key) || date < groups.get(key))
+              groups.set(key, date);
+          });
           return (
-            Math.max(...state.events.map((e) => Number(e.overall) || 0)) + 1
+            [...groups.values()].filter((date) => date <= candidate).length + 1
           );
         }
 
         function nextPerson() {
-          const nums = state.events
-            .filter((e) => e.event === "대면팬싸")
-            .map((e) => Number(e.person) || 0);
-          return nums.length ? Math.max(...nums) + 1 : 1;
+          return nextTypeRound("대면팬싸");
         }
 
         function nextVideo() {
-          const nums = state.events
-            .filter((e) => e.event !== "대면팬싸")
-            .map((e) => Number(e.video) || 0);
-          return nums.length ? Math.max(...nums) + 1 : 1;
+          return nextTypeRound("video");
+        }
+
+        function dateSortKey(value) {
+          const text = String(value || "").trim();
+          let match = text.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+          if (match)
+            return `${match[1]}-${match[2].padStart(2, "0")}-${match[3].padStart(2, "0")}`;
+          match = text.match(/^(\d{1,2})[/.](\d{1,2})[/.](\d{4})/);
+          if (match)
+            return `${match[3]}-${match[2].padStart(2, "0")}-${match[1].padStart(2, "0")}`;
+          return "9999-12-31";
+        }
+
+        function nextTypeRound(type) {
+          const candidateKey = `${dateSortKey($("date").value)} ${$("time").value || "00:00"}`;
+          const matching = state.events.filter((e) =>
+            type === "대면팬싸" ? e.event === type : e.event !== "대면팬싸",
+          );
+          return (
+            matching.filter(
+              (e) =>
+                `${dateSortKey(e.date)} ${e.time || "00:00"}` <= candidateKey,
+            ).length + 1
+          );
         }
 
         function updatePreview() {
@@ -648,27 +678,35 @@
 
           html += "</tr></thead><tbody>";
 
-          state.events.forEach((e) => {
-            html += "<tr>";
-            html += `<td>${esc(e.overall)}</td>`;
-            html += `<td>${esc(e.person)}</td>`;
-            html += `<td>${esc(e.video)}</td>`;
-            html += `<td>${esc(formatDate(e.date))}</td>`;
-            html += `<td>${esc(e.time)}</td>`;
-            html += `<td>${esc(e.day)}</td>`;
-            html += `<td>${esc(e.event)}</td>`;
-            html += `<td>${esc(e.winners)}</td>`;
-            html += `<td>${esc(e.polaroid)}</td>`;
-            html += `<td>${e.xlink ? `<a class="xlink" href="${esc(e.xlink)}" target="_blank" rel="noopener noreferrer">𝕏</a>` : ""}</td>`;
-            html += `<td>${esc(e.organizer)}</td>`;
+          state.events
+            .slice()
+            .sort(
+              (a, b) =>
+                (Number(a.overall) || 0) - (Number(b.overall) || 0) ||
+                dateSortKey(a.date).localeCompare(dateSortKey(b.date)) ||
+                String(a.time || "").localeCompare(String(b.time || "")),
+            )
+            .forEach((e) => {
+              html += "<tr>";
+              html += `<td>${esc(e.overall)}</td>`;
+              html += `<td>${esc(e.person)}</td>`;
+              html += `<td>${esc(e.video)}</td>`;
+              html += `<td>${esc(formatDate(e.date))}</td>`;
+              html += `<td>${esc(e.time)}</td>`;
+              html += `<td>${esc(e.day)}</td>`;
+              html += `<td>${esc(e.event)}</td>`;
+              html += `<td>${esc(e.winners)}</td>`;
+              html += `<td>${esc(e.polaroid)}</td>`;
+              html += `<td>${e.xlink ? `<a class="xlink" href="${esc(e.xlink)}" target="_blank" rel="noopener noreferrer">𝕏</a>` : ""}</td>`;
+              html += `<td>${esc(e.organizer)}</td>`;
 
-            state.members.forEach((m) => {
-              html += `<td>${e.members.includes(m) ? "✓" : ""}</td>`;
+              state.members.forEach((m) => {
+                html += `<td>${e.members.includes(m) ? "✓" : ""}</td>`;
+              });
+
+              html += `<td><button class="edit-btn" data-id="${esc(e.id)}">Edit</button><button class="delete-btn" data-id="${esc(e.id)}">Delete</button></td>`;
+              html += "</tr>";
             });
-
-            html += `<td><button class="edit-btn" data-id="${esc(e.id)}">Edit</button><button class="delete-btn" data-id="${esc(e.id)}">Delete</button></td>`;
-            html += "</tr>";
-          });
 
           html += "</tbody></table>";
           wrap.innerHTML = html;
@@ -955,6 +993,8 @@
         $("downloadJson").addEventListener("click", downloadJson);
 
         $("event").addEventListener("change", updatePreview);
+        $("date").addEventListener("change", updatePreview);
+        $("time").addEventListener("change", updatePreview);
         $("groupMode").addEventListener("change", () => {
           const previous = state.events[state.events.length - 1];
           if (
