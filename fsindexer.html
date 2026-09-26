@@ -5,12 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Fansign Event Table</title>
     <style>
+      @import url('https://fonts.googleapis.com/css2?family=Asta+Sans:wght@300..800&display=swap');
+      
       * {
         box-sizing: border-box;
+        font-family: 'Asta Sans', sans-serif;
       }
       body {
         margin: 0;
-        font-family: Arial, Helvetica, sans-serif;
+        font-family: 'Asta Sans', sans-serif;
         background: #f5f6f8;
         color: #222;
       }
@@ -223,6 +226,14 @@
         color: #a00000;
         border: 1px solid #e1b5b5;
       }
+      .edit-btn {
+        font-size: 11px;
+        padding: 5px 7px;
+        background: #eef5ff;
+        color: #174a8b;
+        border: 1px solid #b8cce8;
+        margin-right: 4px;
+      }
       .empty {
         text-align: center;
         padding: 28px;
@@ -376,6 +387,7 @@
 
         <div class="actions">
           <button class="primary" id="addEvent" disabled>Add Event</button>
+          <button class="secondary" id="cancelEdit" hidden>Cancel Edit</button>
           <button class="secondary" id="resetForm">Reset Form</button>
           <button class="danger" id="clearAll" disabled>
             Start New Dataset
@@ -426,6 +438,8 @@
           events: [],
           organizers: [],
           members: [],
+          editingId: null,
+          sameMembersRound: null,
         };
 
         const $ = (id) => document.getElementById(id);
@@ -648,10 +662,10 @@
             html += `<td>${esc(e.organizer)}</td>`;
 
             state.members.forEach((m) => {
-              html += `<td>${e.members.includes(m) ? "☐" : ""}</td>`;
+              html += `<td>${e.members.includes(m) ? "✓" : ""}</td>`;
             });
 
-            html += `<td><button class="delete-btn" data-id="${esc(e.id)}">Delete</button></td>`;
+            html += `<td><button class="edit-btn" data-id="${esc(e.id)}">Edit</button><button class="delete-btn" data-id="${esc(e.id)}">Delete</button></td>`;
             html += "</tr>";
           });
 
@@ -660,6 +674,9 @@
 
           wrap.querySelectorAll(".delete-btn").forEach((btn) => {
             btn.addEventListener("click", () => deleteEvent(btn.dataset.id));
+          });
+          wrap.querySelectorAll(".edit-btn").forEach((btn) => {
+            btn.addEventListener("click", () => editEvent(btn.dataset.id));
           });
 
           updatePreview();
@@ -702,10 +719,10 @@
             return showStatus("Please enter the organizer.", true);
 
           $("addEvent").disabled = true;
-          showStatus("Saving event...");
+          showStatus(state.editingId ? "Updating event..." : "Saving event...");
 
           try {
-            const result = await api("addEvent", {
+            const payload = {
               data: {
                 date,
                 time,
@@ -717,12 +734,15 @@
                 groupMode: $("groupMode").value,
                 members: selectedMembers(),
               },
-            });
+            };
+            const result = state.editingId
+              ? await api("updateEvent", { id: state.editingId, ...payload })
+              : await api("addEvent", payload);
 
             const r = result.result;
 
             showStatus(
-              `Saved: 팬싸회차 ${r.overall}` +
+              `${state.editingId ? "Updated" : "Saved"}: 팬싸회차 ${r.overall}` +
                 (r.person ? ` / 대면팬싸 ${r.person}` : "") +
                 (r.video ? ` / 영상통화 ${r.video}` : "") +
                 (r.xlink ? " / X link saved" : " / no X link"),
@@ -737,8 +757,20 @@
         }
 
         async function deleteEvent(id) {
-          if (!confirm("Delete this event row from the shared database?"))
+          if (
+            !confirm(
+              "Delete this event row from the shared database? This cannot be undone.",
+            )
+          )
             return;
+          const event = state.events.find((x) => String(x.id) === String(id));
+          const check = prompt(
+            `To confirm deletion of ${event?.event || "this event"}, type DELETE:`,
+          );
+          if (check !== "DELETE") {
+            showStatus("Deletion cancelled.");
+            return;
+          }
 
           showStatus("Deleting...");
 
@@ -774,6 +806,10 @@
         }
 
         function resetForm() {
+          state.editingId = null;
+          state.sameMembersRound = null;
+          $("addEvent").textContent = "Add Event";
+          $("cancelEdit").hidden = true;
           $("winners").value = 0;
           $("polaroid").value = 0;
           $("xlink").value = "";
@@ -783,6 +819,31 @@
             .querySelectorAll("input")
             .forEach((x) => (x.checked = false));
           updatePreview();
+        }
+
+        function editEvent(id) {
+          const e = state.events.find((x) => String(x.id) === String(id));
+          if (!e) return;
+          state.editingId = String(e.id);
+          $("date").value = e.date || "";
+          $("time").value = e.time || "";
+          $("event").value = e.event || "대면팬싸";
+          $("organizer").value = e.organizer || "";
+          $("xlink").value = e.xlink || "";
+          $("winners").value = e.winners || 0;
+          $("polaroid").value = e.polaroid || 0;
+          $("groupMode").value = "new";
+          $("members")
+            .querySelectorAll("input")
+            .forEach((cb) => {
+              cb.checked = (e.members || []).includes(cb.value);
+            });
+          $("addEvent").textContent = "Save Changes";
+          $("cancelEdit").hidden = false;
+          window.scrollTo({ top: 0, behavior: "smooth" });
+          showStatus(
+            `Editing entry. 팬싸회차 ${e.overall}, 대면팬싸 ${e.person || "—"}, 영상통화 ${e.video || "—"} will be preserved.`,
+          );
         }
 
         function sheetData() {
@@ -886,13 +947,32 @@
           ),
         );
         $("resetForm").addEventListener("click", resetForm);
+        $("cancelEdit").addEventListener("click", resetForm);
         $("clearAll").addEventListener("click", clearAll);
         $("copySheets").addEventListener("click", copySheets);
         $("downloadCsv").addEventListener("click", downloadCsv);
         $("downloadJson").addEventListener("click", downloadJson);
 
         $("event").addEventListener("change", updatePreview);
-        $("groupMode").addEventListener("change", updatePreview);
+        $("groupMode").addEventListener("change", () => {
+          const previous = state.events[state.events.length - 1];
+          if (
+            $("groupMode").value === "same" &&
+            previous &&
+            state.sameMembersRound !== previous.overall
+          ) {
+            const previousMembers = previous.members || [];
+            $("members")
+              .querySelectorAll("input")
+              .forEach((cb) => {
+                cb.checked = previousMembers.includes(cb.value);
+              });
+            state.sameMembersRound = previous.overall;
+          } else if ($("groupMode").value !== "same") {
+            state.sameMembersRound = null;
+          }
+          updatePreview();
+        });
 
         $("organizer").addEventListener("input", renderSuggestions);
         $("organizer").addEventListener("focus", renderSuggestions);
