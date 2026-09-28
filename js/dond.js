@@ -38,7 +38,7 @@ const TOTAL_CASES = 26;
     Round 9 → 1
 */
 
-const ROUND_CASES = [1, 1, 1, 3, 2, 1, 1, 1, 1];
+const ROUND_CASES = [6, 5, 4, 3, 2, 1, 1, 1, 1];
 
 /* =========================================================
    GAME STATE
