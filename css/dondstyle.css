@@ -679,7 +679,7 @@ button {
 }
 
 .cases-container > :last-child {
-    grid-column: 3;
+  grid-column: 3;
 }
 
 .case {
@@ -1624,6 +1624,45 @@ button {
   color: #fff;
   border-color: #8d96ac;
   font-size: clamp(11px, 2vw, 16px);
+}
+.super-chest-case.revealed.selected {
+  background: linear-gradient(145deg, #4b76c7, #263c72);
+  color: #fff;
+  border-color: #a9c5ff;
+}
+.super-chest-side-label {
+  margin: 10px auto 0;
+  color: #8791aa;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1.4px;
+}
+.super-chest-decision {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 16px auto 4px;
+}
+.super-chest-decision button {
+  min-width: 170px;
+  padding: 13px 18px;
+  border: 1px solid #e8b923;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #e8c442, #bd9012);
+  color: #111;
+  font-weight: 900;
+  letter-spacing: 1px;
+  cursor: pointer;
+}
+.super-chest-decision button:last-child {
+  border-color: #dc4848;
+  background: linear-gradient(180deg, #dc4848, #a52d2d);
+  color: #fff;
+}
+.super-chest-decision button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 .super-chest-result {
   margin: 20px auto 12px;
