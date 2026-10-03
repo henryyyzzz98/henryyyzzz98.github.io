@@ -140,10 +140,6 @@ const bankerOfferContent = document.getElementById("bankerOfferContent");
 const bankerOffer = document.getElementById("bankerOffer");
 
 const bankerHintElement = document.getElementById("bankerHint");
-const buyoutOfferContent = document.getElementById("buyoutOfferContent");
-const buyoutOffer = document.getElementById("buyoutOffer");
-const buyoutButton = document.getElementById("buyoutButton");
-const rejectBuyoutButton = document.getElementById("rejectBuyoutButton");
 
 const superChestBenefitButton = document.getElementById(
   "superChestBenefitButton",
@@ -324,10 +320,6 @@ function resetGame() {
   bankerWaiting.classList.remove("hidden");
 
   bankerOfferContent.classList.add("hidden");
-
-  if (buyoutOfferContent) {
-    buyoutOfferContent.classList.add("hidden");
-  }
 
   /*
         Hide final choice.
@@ -828,7 +820,6 @@ async function showBanker() {
   waitingForDeal = true;
 
   const offer = calculateBankerOffer();
-  const shouldShowBuyout = isBuyoutTriggered();
 
   const unopenedCases = cases
     .filter((gameCase) => !gameCase.opened)
@@ -838,53 +829,25 @@ async function showBanker() {
       isPlayerCase: gameCase.isPlayerCase,
     }));
 
-  /*
-        A Buyout replaces the normal Banker offer when
-        only one prize remains on the RIGHT side of the board.
-    */
-  if (shouldShowBuyout) {
-    const buyout = calculateBankerBuyout(offer);
+  bankerOffer.textContent = formatMoney(offer);
 
-    buyoutOffer.textContent = formatMoney(buyout);
-
-    addLog({
-      type: "BUYOUT_OFFER",
-      round: round,
-      offer: buyout,
-      normalBankerOffer: offer,
-      unopenedCases: unopenedCases,
-    });
-  } else {
-    bankerOffer.textContent = formatMoney(offer);
-
-    addLog({
-      type: "BANKER_OFFER",
-      round: round,
-      offer: offer,
-      unopenedCases: unopenedCases,
-    });
-  }
+  addLog({
+    type: "BANKER_OFFER",
+    round: round,
+    offer: offer,
+    unopenedCases: unopenedCases,
+  });
 
   bankerSection.classList.remove("hidden");
   bankerWaiting.classList.remove("hidden");
   bankerOfferContent.classList.add("hidden");
-  buyoutOfferContent.classList.add("hidden");
 
   instruction.textContent = "THE BANKER IS CALLING...";
-  message.textContent = shouldShowBuyout
-    ? "THE BANKER HAS A SPECIAL OFFER FOR YOU."
-    : "PLEASE WAIT FOR THE BANKER'S OFFER.";
+  message.textContent = "PLEASE WAIT FOR THE BANKER'S OFFER.";
 
   await delay(1800);
 
   bankerWaiting.classList.add("hidden");
-
-  if (shouldShowBuyout) {
-    buyoutOfferContent.classList.remove("hidden");
-    instruction.textContent = "THE BANKER HAS A SPECIAL OFFER";
-    message.textContent = "THE BANKER WANTS TO BUY YOU OUT.";
-    return;
-  }
 
   bankerOfferContent.classList.remove("hidden");
 
@@ -937,15 +900,9 @@ function startSuperChest() {
   superChestPendingCase = null;
   superChestPhase = "select";
 
-  /*const values = [
-    100, 100, 100, 100, 200, 200, 200, 200, 300, 300, 300, 300, 400, 400, 400,
-    400, 500, 500, 500, 500,
-  ];*/
-  /*const values = [
-    5, 5, 5, 5, 5, 5, 5, 5, 10, 10, 10, 10, 10, 10, 50, 50, 50, 50, 100, 100,
-  ];*/
   const values = [
-    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
+    10, 10, 20, 20, 30, 30, 50, 50, 75, 75, 
+    100, 100, 150, 150, 200, 200, 300, 400, 500, 1000,
   ];
   if (values.length !== SUPER_CHEST_CASE_COUNT)
     throw new Error("Super Chest must contain exactly 20 cases.");
@@ -1119,10 +1076,6 @@ async function resolveSuperChestChoice(choice) {
   superChestPhase = "select";
   renderSuperChestCases();
   updateSuperChestScoreboard();
-  if (superChestPlayerCases.length >= 10) {
-    await revealRemainingSuperChestForBanker();
-    return;
-  }
   await delay(800);
   if (superChestCases.every((item) => item.status !== "available"))
     await finishSuperChestAllocation();
@@ -1130,47 +1083,7 @@ async function resolveSuperChestChoice(choice) {
     superChestInstruction.textContent =
       "Choose one of the remaining cases to reveal.";
     superChestBusy = false;
-    renderSuperChestCases();
   }
-}
-
-async function revealRemainingSuperChestForBanker() {
-  superChestPhase = "banker-reveal";
-  superChestBusy = true;
-  document.getElementById("superChestDecision")?.remove();
-  const remaining = superChestCases.filter(
-    (item) => item.status === "available",
-  );
-  superChestInstruction.textContent =
-    "YOU HAVE 10 CASES. THE BANKER'S REMAINING CASES ARE BEING REVEALED...";
-  for (const miniCase of remaining) {
-    miniCase.status = "allocated";
-    miniCase.owner = "banker";
-    superChestBankerCases.push(miniCase);
-    superChestBankerTotal += miniCase.value;
-    addLog({
-      type: "SUPER_CHEST_BANKER_REVEAL",
-      round: 3,
-      caseNumber: miniCase.number,
-      value: miniCase.value,
-      reason: "PLAYER_REACHED_10_CASES",
-    });
-    renderSuperChestCases();
-    const button = superChestCasesElement.querySelector(
-      `.super-chest-case[data-mini-case-number="${miniCase.number}"]`,
-    );
-    if (button) button.classList.add("banker-reveal");
-    updateSuperChestScoreboard();
-    await delay(350);
-  }
-  addLog({
-    type: "SUPER_CHEST_AUTO_BANKER_ALLOCATION_COMPLETE",
-    round: 3,
-    playerCaseCount: superChestPlayerCases.length,
-    bankerCaseCount: superChestBankerCases.length,
-    remainingCasesRevealed: remaining.length,
-  });
-  await finishSuperChestAllocation();
 }
 
 async function finishSuperChestAllocation() {
@@ -1272,96 +1185,6 @@ function useSuperChestBenefit() {
   instruction.textContent = "SUPER CHEST BENEFIT ACTIVATED";
   message.textContent = `THE BANKER'S OFFER HAS BEEN INCREASED BY 50%: ${formatMoney(boostedOffer)}.`;
 }
-
-/* =========================================================
-   BANKER BUYOUT
-========================================================= */
-
-function isBuyoutTriggered() {
-  if (!rightMoneyBoard) {
-    return false;
-  }
-
-  const remainingRightSidePrizes = rightMoneyBoard.querySelectorAll(
-    ".money-value:not(.eliminated)",
-  ).length;
-
-  return remainingRightSidePrizes === 1;
-}
-
-function calculateBankerBuyout(normalOffer) {
-  const remainingValues = cases
-    .filter((gameCase) => !gameCase.opened)
-    .map((gameCase) => gameCase.value);
-
-  if (remainingValues.length === 0) {
-    return normalOffer;
-  }
-
-  const expectedValue =
-    remainingValues.reduce((sum, value) => sum + value, 0) /
-    remainingValues.length;
-
-  /*
-        The Buyout is intentionally generous: 135% of the
-        normal offer, but never more than 95% of expected value.
-    */
-  let buyout = Math.min(normalOffer * 1.35, expectedValue * 0.95);
-
-  buyout = Math.max(buyout, normalOffer);
-
-  return smartRoundOffer(buyout);
-}
-
-function acceptBuyout() {
-  const amount = Number(buyoutOffer.textContent.replace(/[$,]/g, ""));
-
-  addLog({
-    type: "BUYOUT_ACCEPTED",
-    round: round,
-    amount: amount,
-  });
-
-  gameOver = true;
-  waitingForDeal = false;
-
-  bankerSection.classList.add("hidden");
-  buyoutOfferContent.classList.add("hidden");
-
-  instruction.textContent = "BUYOUT ACCEPTED!";
-  message.textContent = `YOU ACCEPTED THE BANKER'S BUYOUT OF ${formatMoney(amount)}!`;
-
-  revealPlayerCase();
-
-  addLog({
-    type: "GAME_END",
-    reason: "BUYOUT",
-    winnings: amount,
-    playerCase: playerCase,
-    playerCaseValue: playerCaseValue,
-  });
-
-  showGameLogButton();
-  newGameButton.classList.remove("hidden");
-}
-
-function rejectBuyout() {
-  addLog({
-    type: "BUYOUT_REJECTED",
-    round: round,
-    amount: Number(buyoutOffer.textContent.replace(/[$,]/g, "")),
-  });
-
-  buyoutOfferContent.classList.add("hidden");
-  bankerSection.classList.add("hidden");
-
-  message.textContent = "BUYOUT REJECTED. NO DEAL! THE GAME CONTINUES.";
-
-  continueGame(false);
-}
-
-buyoutButton.addEventListener("click", acceptBuyout);
-rejectBuyoutButton.addEventListener("click", rejectBuyout);
 
 /* =========================================================
    BANKER OFFER CALCULATION
@@ -1935,46 +1758,6 @@ function generateGameLog() {
         output += "\n";
       }
 
-      /*
-                Banker offer
-            */
-
-      const buyout = events.find((event) => event.type === "BUYOUT_OFFER");
-
-      if (buyout) {
-        output += `Banker Buyout Offer: ${formatMoney(buyout.offer)}\n`;
-        output += `Normal Banker Offer: ${formatMoney(buyout.normalBankerOffer)}\n`;
-
-        if (buyout.unopenedCases && buyout.unopenedCases.length > 0) {
-          output += "\nUnopened Cases and Amounts:\n";
-
-          buyout.unopenedCases.forEach((gameCase) => {
-            const playerLabel = gameCase.isPlayerCase ? " (PLAYER'S CASE)" : "";
-            output +=
-              `Case #${gameCase.caseNumber} → ` +
-              `${formatMoney(gameCase.value)}${playerLabel}\n`;
-          });
-        }
-      }
-
-      const buyoutAccepted = events.find(
-        (event) => event.type === "BUYOUT_ACCEPTED",
-      );
-
-      if (buyoutAccepted) {
-        output += `\nBuyout Decision: ACCEPTED\n`;
-        output += `Buyout Amount: ${formatMoney(buyoutAccepted.amount)}\n`;
-      }
-
-      const buyoutRejected = events.find(
-        (event) => event.type === "BUYOUT_REJECTED",
-      );
-
-      if (buyoutRejected) {
-        output += `\nBuyout Decision: REJECTED\n`;
-        output += "Result: NO DEAL\n";
-      }
-
       const offer = events.find((event) => event.type === "BANKER_OFFER");
 
       if (offer) {
@@ -2063,8 +1846,6 @@ function generateGameLog() {
 
     if (finalGameEnd.reason === "DEAL") {
       output += `Result: DEAL\n`;
-    } else if (finalGameEnd.reason === "BUYOUT") {
-      output += `Result: BANKER BUYOUT ACCEPTED\n`;
     } else {
       output += `Result: FINAL CASE\n`;
     }
