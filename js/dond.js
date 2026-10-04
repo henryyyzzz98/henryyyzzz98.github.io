@@ -901,8 +901,8 @@ function startSuperChest() {
   superChestPhase = "select";
 
   const values = [
-    10, 10, 20, 20, 30, 30, 50, 50, 75, 75, 
-    100, 100, 150, 150, 200, 200, 300, 400, 500, 1000,
+    10, 10, 20, 20, 30, 30, 50, 50, 75, 75, 100, 100, 150, 150, 200, 200, 300,
+    400, 500, 1000,
   ];
   if (values.length !== SUPER_CHEST_CASE_COUNT)
     throw new Error("Super Chest must contain exactly 20 cases.");
@@ -1019,71 +1019,157 @@ async function resolveSuperChestChoice(choice) {
   if (
     superChestPhase !== "decision" ||
     superChestBusy ||
-    !superChestPendingCase
-  )
+    !superChestPendingCase ||
+    (choice !== "keep" && choice !== "throw")
+  ) {
     return;
+  }
+
   const selectedCase = superChestPendingCase;
-  if (
-    choice === "throw" &&
-    !superChestCases.some((item) => item.status === "available")
-  )
+
+  // THROW requires at least one other unpicked case for the replacement.
+  const availableCases = superChestCases.filter(
+    (item) => item.status === "available",
+  );
+
+  if (choice === "throw" && availableCases.length === 0) {
     return;
+  }
+
   superChestBusy = true;
   document.getElementById("superChestDecision")?.remove();
-  selectedCase.status = "allocated";
-  selectedCase.owner = choice === "keep" ? "player" : "banker";
-  if (choice === "keep") {
-    superChestPlayerCases.push(selectedCase);
-    superChestPlayerTotal += selectedCase.value;
-    addLog({
-      type: "SUPER_CHEST_KEEP",
-      round: 3,
-      turn: superChestTurn,
-      caseNumber: selectedCase.number,
-      value: selectedCase.value,
-      owner: "player",
-    });
-    superChestInstruction.textContent = `${formatMoney(selectedCase.value)} stays on your side.`;
-  } else {
-    superChestBankerCases.push(selectedCase);
-    superChestBankerTotal += selectedCase.value;
-    const available = superChestCases.filter(
-      (item) => item.status === "available",
-    );
-    const replacement = available[Math.floor(Math.random() * available.length)];
-    replacement.status = "allocated";
-    replacement.owner = "player";
-    superChestPlayerCases.push(replacement);
-    superChestPlayerTotal += replacement.value;
-    addLog({
-      type: "SUPER_CHEST_THROW_AND_REPLACE",
-      round: 3,
-      turn: superChestTurn,
-      thrownCase: {
+
+  try {
+    // The revealed case is now permanently allocated.
+    selectedCase.status = "allocated";
+    selectedCase.owner = choice === "keep" ? "player" : "banker";
+
+    if (choice === "keep") {
+      superChestPlayerCases.push(selectedCase);
+      superChestPlayerTotal += selectedCase.value;
+
+      addLog({
+        type: "SUPER_CHEST_KEEP",
+        round: 3,
+        turn: superChestTurn,
         caseNumber: selectedCase.number,
         value: selectedCase.value,
-      },
-      replacementCase: {
-        caseNumber: replacement.number,
-        value: replacement.value,
-      },
-      bankerTotal: superChestBankerTotal,
-      playerTotal: superChestPlayerTotal,
-    });
-    superChestInstruction.textContent = `You gave ${formatMoney(selectedCase.value)} to the Banker. Random replacement: Case ${String(replacement.number).padStart(2, "0")} — ${formatMoney(replacement.value)} added to your side.`;
-  }
-  superChestPendingCase = null;
-  superChestPhase = "select";
-  renderSuperChestCases();
-  updateSuperChestScoreboard();
-  await delay(800);
-  if (superChestCases.every((item) => item.status !== "available"))
-    await finishSuperChestAllocation();
-  else {
+        owner: "player",
+      });
+
+      superChestInstruction.textContent = `${formatMoney(selectedCase.value)} stays on your side.`;
+    } else {
+      // The thrown case goes to the Banker.
+      superChestBankerCases.push(selectedCase);
+      superChestBankerTotal += selectedCase.value;
+
+      // Give the player exactly one random replacement from the cases
+      // that have not yet been picked.
+      const replacement =
+        availableCases[Math.floor(Math.random() * availableCases.length)];
+
+      replacement.status = "allocated";
+      replacement.owner = "player";
+
+      superChestPlayerCases.push(replacement);
+      superChestPlayerTotal += replacement.value;
+
+      addLog({
+        type: "SUPER_CHEST_THROW_AND_REPLACE",
+        round: 3,
+        turn: superChestTurn,
+        thrownCase: {
+          caseNumber: selectedCase.number,
+          value: selectedCase.value,
+        },
+        replacementCase: {
+          caseNumber: replacement.number,
+          value: replacement.value,
+        },
+        bankerTotal: superChestBankerTotal,
+        playerTotal: superChestPlayerTotal,
+      });
+
+      superChestInstruction.textContent =
+        `You gave ${formatMoney(selectedCase.value)} to the Banker. ` +
+        `Random replacement: Case ${String(replacement.number).padStart(2, "0")} ` +
+        `— ${formatMoney(replacement.value)} added to your side.`;
+    }
+
+    // Clear the pending decision before rendering the next state.
+    superChestPendingCase = null;
+    superChestPhase = "select";
+
+    renderSuperChestCases();
+    updateSuperChestScoreboard();
+
+    // Briefly show the result before enabling the next pick.
+    await delay(800);
+
+    // Once the player has 10 allocated cases, stop making picks.
+    // The Banker automatically receives and reveals every remaining case.
+    if (superChestPlayerCases.length >= 10) {
+      await revealRemainingSuperChestForBanker();
+      return;
+    }
+
+    const remainingAvailable = superChestCases.filter(
+      (item) => item.status === "available",
+    ).length;
+
+    if (remainingAvailable === 0) {
+      await finishSuperChestAllocation();
+      return;
+    }
+
     superChestInstruction.textContent =
       "Choose one of the remaining cases to reveal.";
+  } finally {
+    // Always unlock the Super Chest, even if a UI/update operation throws.
+    // This prevents a decision from permanently freezing the mini-game.
     superChestBusy = false;
+
+    if (superChestPhase === "select") {
+      renderSuperChestCases();
+    }
   }
+}
+
+async function revealRemainingSuperChestForBanker() {
+  superChestPhase = "banker-reveal";
+  superChestBusy = true;
+  document.getElementById("superChestDecision")?.remove();
+
+  const remaining = superChestCases.filter(
+    (item) => item.status === "available",
+  );
+
+  superChestInstruction.textContent =
+    "YOU HAVE 10 CASES. THE BANKER'S REMAINING CASES ARE BEING REVEALED...";
+
+  for (const miniCase of remaining) {
+    miniCase.status = "allocated";
+    miniCase.owner = "banker";
+
+    superChestBankerCases.push(miniCase);
+    superChestBankerTotal += miniCase.value;
+
+    addLog({
+      type: "SUPER_CHEST_BANKER_REVEAL",
+      round: 3,
+      turn: superChestTurn,
+      caseNumber: miniCase.number,
+      value: miniCase.value,
+      owner: "banker",
+    });
+
+    renderSuperChestCases();
+    updateSuperChestScoreboard();
+
+    await delay(350);
+  }
+
+  await finishSuperChestAllocation();
 }
 
 async function finishSuperChestAllocation() {
