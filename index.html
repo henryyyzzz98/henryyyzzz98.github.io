@@ -3,9 +3,82 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>jyuubin318 Spin Simulator 2.0</title>
+    <title>jyuubin318 Spin Simulator</title>
 
-    <link rel="stylesheet" href="css/main.css" />
+    <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+    }
+
+    a {
+      color: #ffffff;
+    }
+
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    body {
+      font-family: Inter, sans-serif;
+      background: #11131b;
+      color: #fff;
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+
+    .bg-glow {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: -1;
+
+      background: radial-gradient(
+        circle at top,
+        rgba(108, 92, 255, 0.25),
+        transparent 45%
+      );
+    }
+
+    .notice {
+      width: min(900px, 92vw);
+      margin: auto;
+      display: flex;
+      gap: 18px;
+      background: #1a1f2d;
+      border-radius: 22px;
+      padding: 20px;
+    }
+
+    .notice-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: #2f3653;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .notice p {
+      color: #ffffff;
+      margin-top: 6px;
+      line-height: 1.5;
+      font-size: 14px;
+    }
+    </style>
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
@@ -13,59 +86,27 @@
   </head>
   <body>
     <div class="bg-glow"></div>
-
-    <div class="page">
-      <header class="header">
-        <button class="back-btn" onclick="location.href='oldindex.html'">
-            Old Index Page
-        </button>
-        <button class="back-btn" onclick="location.href='index2.html'">
-            All Collections Spin
-        </button>
-
-        <div class="currency">
-          <div class="pill">
-            <img src="images/spin-ticket.png" class="pill-icon" />
-            <span>999</span>
-          </div>
-        </div>
-      </header>
-
       <main>
-        <h1>Select an Objekt to spin</h1>
-
-        <div class="spin-area">
-          <div class="track"></div>
-
-          <div class="selector">
-            <div class="selector-inner">
-              <button id="selectButton" class="plus">+</button>
-
-              <img id="selectedObjekt" class="selected-image" hidden />
-            </div>
-          </div>
-        </div>
-
-        <button id="spinButton" class="spin-button">Spin</button>
-      </main>
-
-      <footer>
+        <br>
         <div class="notice">
-          <div class="notice-icon">i</div>
-
           <div>
-            <strong>jyuubin318 Spin Simulator 2.0</strong>
+            <strong>jyuubin318 Spin Simulators End of Service Announcement:</strong>
 
             <p>
-              Fanmade spin simulator by jyuubin318. Not affiliated with MODHAUS
-              / COSMO. No real objekts will be generated. Credit goes to Apollo for the MCO videos used in the simulator(s).
+              Hello there! It's jyuubin318 here to inform you that the Spin Simulators has been discontinued from 05 Oct 2026 and all functionalities here have been removed. If you would like to have more spin fun, you can head over to <a href="https://wavbase.app/fun/spin">WAVbase</a>. I would like to thank all the WAVs who have found some fun in playing with my spin simulator.
             </p>
           </div>
         </div>
-      </footer>
-    </div>
+        <br>
+        <div class="notice">
+          <div>
+            <strong>jyuubin318 Spin模拟器 停止服务公告:</strong>
 
-    <script src="js/app.js"></script>
-    <script src="js/main.js"></script>
+            <p>
+              大家好！这里是jyuubin318。在此通知大家，我的Spin模拟器已于2026年10月5日起停止服务，本站的所有相关功能也已移除。如果你还想继续享受spin的乐趣，可以前往 <a href="https://wavbase.app/fun/spin">WAVbase</a> 体验。最后，衷心感谢所有曾经来玩我的Spin模拟器并从中找到乐趣的你们！谢谢大家一直以来的支持！
+            </p>
+          </div>
+        </div>
+    </div>
   </body>
 </html>
