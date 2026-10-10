@@ -2,111 +2,127 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>jyuubin318 Spin Simulator</title>
-
-    <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    html,
-    body {
-      width: 100%;
-      height: 100%;
-    }
-
-    a {
-      color: #ffffff;
-    }
-
-    main {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-    }
-
-    body {
-      font-family: Inter, sans-serif;
-      background: #11131b;
-      color: #fff;
-      overflow-x: hidden;
-      overflow-y: auto;
-    }
-
-    .bg-glow {
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      z-index: -1;
-
-      background: radial-gradient(
-        circle at top,
-        rgba(108, 92, 255, 0.25),
-        transparent 45%
-      );
-    }
-
-    .notice {
-      width: min(900px, 92vw);
-      margin: auto;
-      display: flex;
-      gap: 18px;
-      background: #1a1f2d;
-      border-radius: 22px;
-      padding: 20px;
-    }
-
-    .notice-icon {
-      width: 38px;
-      height: 38px;
-      border-radius: 50%;
-      background: #2f3653;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      flex-shrink: 0;
-    }
-
-    .notice p {
-      color: #ffffff;
-      margin-top: 6px;
-      line-height: 1.5;
-      font-size: 14px;
-    }
-    </style>
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
-      rel="stylesheet"
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
     />
+    <title>Jyuubin318 Spin Simulator</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="css/seasons.css" />
   </head>
   <body>
-    <div class="bg-glow"></div>
-      <main>
-        <br>
-        <div class="notice">
-          <div>
-            <strong>jyuubin318 Spin Simulators End of Service Announcement:</strong>
+    <main class="app">
+      <div class="stars stars-a"></div>
+      <div class="stars stars-b"></div>
+      <div class="nebula"></div>
 
-            <p>
-              Hello there! It's jyuubin318 here to inform you that the Spin Simulators has been discontinued from 05 Oct 2026 and all functionalities here have been removed. If you would like to have more spin fun, you can head over to <a href="https://wavbase.app/fun/spin">WAVbase</a>. I would like to thank all the WAVs who have found some fun in playing with my spin simulator.
-            </p>
+      <header class="topbar">
+        <div class="brand">Jyuubin318 Spin Simulator</div>
+        <div class="top-right">
+          <div class="ticket-pill score-pill">
+            <div class="ticket-count"><span id="scoreCount">0</span></div>
+            <div class="ticket-timer">SCORE</div>
+          </div>
+          <div class="ticket-pill" aria-live="polite">
+            <div class="ticket-count">🎟 <span id="ticketCount">20</span></div>
+            <div class="ticket-timer" id="ticketTimer"></div>
           </div>
         </div>
-        <br>
-        <div class="notice">
-          <div>
-            <strong>jyuubin318 Spin模拟器 停止服务公告:</strong>
+      </header>
+      <div class="season-tag" id="seasonTag"></div>
 
-            <p>
-              大家好！这里是jyuubin318。在此通知大家，我的Spin模拟器已于2026年10月5日起停止服务，本站的所有相关功能也已移除。如果你还想继续享受spin的乐趣，可以前往 <a href="https://wavbase.app/fun/spin">WAVbase</a> 体验。最后，衷心感谢所有曾经来玩我的Spin模拟器并从中找到乐趣的你们！谢谢大家一直以来的支持！
-            </p>
-          </div>
+      <section class="stage" id="stage">
+        <div class="ambient-ring"></div>
+        <div
+          class="carousel"
+          id="carousel"
+          aria-label="Objekt selection carousel"
+        ></div>
+
+        <div class="center-glow"></div>
+
+        <div class="hint" id="hint">
+          Choose the Objekt you want by swiping it left or right<br />or have
+          the simulator randomly select one for you.
         </div>
-    </div>
+
+        <div class="controls">
+          <button class="primary-btn" id="spinBtn">Random Select</button>
+          <button class="secondary-btn" id="chooseBtn" disabled>Select</button>
+        </div>
+      </section>
+
+      <section class="result-panel" id="resultPanel" aria-live="polite">
+        <div class="reveal-bg" id="revealBg"></div>
+
+        <div class="reveal-stage" id="revealStage">
+          <div class="reveal-glow"></div>
+          <canvas class="orbit" id="orbitBack"></canvas>
+
+          <div class="result-card-wrap" id="resultWrap">
+            <div class="card-tilt">
+              <div class="result-card" id="resultCard">
+                <div class="card-face card-back">
+                  <div class="back-gloss"></div>
+                </div>
+                <div class="card-face card-front" id="resultFront">
+                  <img class="front-img" id="resultImage" alt="" hidden />
+                  <div class="front-name" id="resultName" hidden></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <canvas class="orbit" id="orbitFront"></canvas>
+          <div class="reveal-flash" id="revealFlash"></div>
+        </div>
+
+        <div class="result-text" id="resultText">Your Objekt is waiting...</div>
+        <div class="result-actions">
+          <button class="primary-btn bonus-btn" id="bonusBtn" hidden>
+            Bonus Pack - 2 Tickets
+          </button>
+          <button class="secondary-btn" id="viewAllBtn">View All Cards</button>
+          <button class="primary-btn" id="againBtn">Try Again</button>
+        </div>
+      </section>
+
+      <section class="season-panel" id="seasonPanel">
+        <div class="season-box">
+          <div class="season-title">SELECT SEASON</div>
+          <div class="pack-stage">
+            <div
+              class="pack-carousel"
+              id="packCarousel"
+              aria-label="Season packs"
+            ></div>
+          </div>
+          <div class="pack-nav">
+            <button class="icon-btn" id="packPrev" aria-label="Previous season">
+              &#60;
+            </button>
+            <div class="pack-info">
+              <div class="pack-name" id="packName"></div>
+              <div class="pack-sub" id="packSub"></div>
+            </div>
+            <button class="icon-btn" id="packNext" aria-label="Next season">
+              &#62;
+            </button>
+          </div>
+          <div class="season-msg" id="seasonMsg"></div>
+          <button class="primary-btn" id="enterBtn">
+            Every Spin Cost 1 Ticket
+          </button>
+        </div>
+      </section>
+
+      <section class="grid-panel" id="gridPanel">
+        <div class="grid-title">Here's what in the pack:</div>
+        <div class="grid-4x4" id="gridBoard"></div>
+        <button class="secondary-btn" id="gridCloseBtn">Back</button>
+      </section>
+    </main>
+
+    <script src="js/spin.js"></script>
   </body>
 </html>
