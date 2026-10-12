@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0d1024" />
+    <title>Deal or No Deal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="css/dondstyle.css" />
+  </head>
+  <body>
+    <!-- SETUP -->
+    <div id="setupScreen" class="screen setup-screen">
+      <div class="setup-box">
+        <h1 class="setup-logo"><span>Deal</span><i>or</i><span>No Deal</span></h1>
+        <label for="maxPrize">Top prize</label>
+        <div class="input-wrapper">
+          <span>$</span>
+          <input type="number" id="maxPrize" value="100000" min="1" step="1" inputmode="numeric" />
+        </div>
+        <div class="presets" role="group" aria-label="Quick amounts">
+          <button type="button" data-amount="10000">$10,000</button>
+          <button type="button" data-amount="100000">$100,000</button>
+          <button type="button" data-amount="1000000">$1,000,000</button>
+        </div>
+        <p id="setupError" class="setup-error" role="alert"></p>
+        <button id="startButton" class="start-button">Start game</button>
+      </div>
+    </div>
+
+    <!-- GAME -->
+    <div id="gameScreen" class="screen game-screen hidden">
+      <header class="hud">
+        <div class="show-logo"><span>Deal</span><i>or</i><span>No Deal</span></div>
+        <div class="hud-stats">
+          <div class="stat"><span>Round</span><strong id="roundNumber">1</strong></div>
+          <div class="stat"><span>Cases left</span><strong id="casesLeft">26</strong></div>
+        </div>
+      </header>
+
+      <main class="stage">
+        <div class="prompt-row">
+          <div class="center-player-case">
+            <div id="playerCase" class="player-case" aria-label="Your case">?</div>
+            <div class="player-case-label">Your case</div>
+          </div>
+          <div class="prompt">
+            <strong id="instruction" class="instruction" aria-live="polite">Choose your case</strong>
+            <span id="instructionRound"></span>
+            <div id="openPips" class="pips" aria-hidden="true"></div>
+            <div id="message" class="message" aria-live="polite"></div>
+          </div>
+        </div>
+
+        <div class="board">
+          <div id="prizeBackdrop" class="prize-backdrop"></div>
+          <aside id="prizeBoard" class="prizes" aria-label="Prize board">
+            <div class="prizes-head">
+              <strong>Prizes still in play</strong>
+              <button id="prizeClose" type="button" class="prizes-close" aria-label="Close prize board">Close</button>
+            </div>
+            <div class="money-column left" id="leftMoneyBoard"></div>
+            <div class="money-column right" id="rightMoneyBoard"></div>
+          </aside>
+
+          <section class="cases-area">
+            <div id="casesContainer" class="cases-container"></div>
+          </section>
+        </div>
+      </main>
+
+      <button id="prizeToggle" type="button" class="prize-toggle" aria-controls="prizeBoard" aria-expanded="false">
+        <span class="pt-main"><small>Biggest prize left</small><strong id="topPrize">$0</strong></span>
+        <span class="pt-count"><strong id="prizesLeft">26</strong> prizes · view board</span>
+      </button>
+
+      <!-- BANKER -->
+      <section id="bankerSection" class="banker-section hidden" role="dialog" aria-modal="true" aria-label="The Banker's offer">
+        <div class="banker-overlay"></div>
+        <div class="banker-panel" tabindex="-1">
+          <div id="bankerWaiting" class="banker-waiting">
+            <div class="phone-ringing">☎</div>
+            <p>The Banker is calling…</p>
+          </div>
+          <div id="bankerOfferContent" class="banker-offer-content hidden">
+            <div class="banker-title">The Banker offers</div>
+            <div class="offer-box"><strong id="bankerOffer">$0</strong></div>
+            <div id="offerHistory" class="offer-history"></div>
+            <div id="bankerHint" class="banker-hint hidden"></div>
+            <button id="superChestBenefitButton" class="super-chest-benefit-button hidden">Use Super Chest bonus (+50%)</button>
+            <div class="deal-buttons">
+              <button id="dealButton" class="deal">Deal</button>
+              <button id="noDealButton" class="no-deal">No deal</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SUPER CHEST -->
+      <section id="superChest" class="super-chest hidden" role="dialog" aria-modal="true" aria-label="Super Chest bonus game">
+        <div class="super-chest-overlay"></div>
+        <div class="super-chest-panel">
+          <h2>Super Chest</h2>
+          <p id="superChestInstruction">Pick a case to reveal it, then keep it or throw it to the Banker.</p>
+          <div class="super-chest-scoreboard">
+            <div class="sc-you"><span>You</span><strong id="superChestPlayerTotal">$0</strong></div>
+            <div class="super-chest-vs">vs</div>
+            <div class="sc-banker"><span>Banker</span><strong id="superChestBankerTotal">$0</strong></div>
+          </div>
+          <div id="superChestCases" class="super-chest-cases"></div>
+          <p class="super-chest-side-label">Blue cases are yours. Dark cases are the Banker's.</p>
+          <div id="superChestResult" class="super-chest-result hidden"></div>
+          <button id="superChestContinueButton" class="super-chest-continue hidden">Continue game</button>
+        </div>
+      </section>
+
+      <!-- FINAL CHOICE -->
+      <div id="finalChoice" class="final-choice hidden" role="dialog" aria-modal="true" aria-label="Keep or swap">
+        <div class="final-card">
+          <h2>Keep or swap?</h2>
+          <p>Two cases remain: yours and one other. Your call.</p>
+          <div class="final-buttons">
+            <button id="keepButton">Keep my case</button>
+            <button id="swapButton">Swap cases</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- RESULT -->
+      <section id="resultPanel" class="result hidden" aria-live="polite">
+        <div class="result-card">
+          <h2 id="resultTitle"></h2>
+          <p id="resultDetail"></p>
+          <div id="resultActions" class="result-actions">
+            <button id="newGameButton" class="new-game">Play again</button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <script src="js/dond.js"></script>
+  </body>
+</html>
