@@ -1,0 +1,392 @@
+/* =========================================================
+   DEAL OR NO DEAL — redesign
+   Stage: ink-indigo. Cases: brushed aluminium.
+   Prize tiers: blue (low) → amber (mid) → red (high).
+========================================================= */
+
+:root {
+  --ink: #0d1024;
+  --ink-2: #151a38;
+  --panel: #1d2346;
+  --line: rgba(255, 255, 255, 0.12);
+  --text: #f4f5fb;
+  --muted: #9ba3c6;
+  --alu-1: #e6e9f0;
+  --alu-2: #a3abbc;
+  --alu-3: #717a8f;
+  --low: #5b92ff;
+  --mid: #f6b93b;
+  --high: #ff5d52;
+  --go: #2fd07f;
+  --stop: #ff5d52;
+  --you: #3d7bff;
+  --radius: 10px;
+  --gap: clamp(6px, 1.2vw, 12px);
+  --font: "Archivo", "Helvetica Neue", Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  min-height: 100%;
+  font-family: var(--font);
+  color: var(--text);
+  background: var(--ink);
+  -webkit-tap-highlight-color: transparent;
+}
+body { overflow-x: hidden; }
+button, input { font-family: inherit; color: inherit; }
+button { cursor: pointer; }
+button:disabled { cursor: not-allowed; }
+.hidden { display: none !important; }
+.screen { min-height: 100vh; min-height: 100dvh; }
+
+:focus-visible { outline: 3px solid var(--mid); outline-offset: 2px; }
+
+/* Messages are written upper-case in the script; show them in sentence case */
+.instruction, .message, .banker-hint, #superChestInstruction, .super-chest-result {
+  text-transform: lowercase;
+}
+.instruction::first-letter, .message::first-letter, .banker-hint::first-letter,
+#superChestInstruction::first-letter { text-transform: uppercase; }
+
+/* =========================================================
+   SETUP
+========================================================= */
+.setup-screen {
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background:
+    radial-gradient(60% 50% at 50% 0%, rgba(246, 185, 59, 0.22), transparent 70%),
+    linear-gradient(180deg, var(--ink-2), var(--ink));
+}
+.setup-box {
+  width: min(100%, 460px);
+  padding: clamp(24px, 6vw, 44px);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55);
+}
+.setup-logo {
+  margin: 0 0 28px;
+  display: flex; flex-wrap: wrap; align-items: baseline; justify-content: center; gap: 0 12px;
+  font-weight: 900; font-stretch: 125%; font-size: clamp(34px, 9vw, 48px); line-height: 1;
+  color: var(--mid); text-align: center;
+}
+.setup-logo i { font-style: normal; font-weight: 600; font-stretch: 100%; font-size: 0.4em; color: var(--muted); }
+.setup-box label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--muted); }
+.input-wrapper {
+  display: flex; align-items: center; gap: 8px;
+  padding: 0 16px; background: var(--ink); border: 2px solid var(--line); border-radius: var(--radius);
+}
+.input-wrapper:focus-within { border-color: var(--mid); }
+.input-wrapper span { font-size: 26px; font-weight: 800; color: var(--mid); }
+.input-wrapper input {
+  width: 100%; padding: 14px 0; background: none; border: 0; outline: 0;
+  font-size: 28px; font-weight: 800; font-variant-numeric: tabular-nums;
+}
+.presets { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.presets button {
+  flex: 1 1 auto; min-height: 44px; padding: 0 12px;
+  background: transparent; border: 1px solid var(--line); border-radius: 999px;
+  font-weight: 600; font-variant-numeric: tabular-nums;
+}
+.presets button:hover { border-color: var(--mid); }
+.setup-error { min-height: 22px; margin: 12px 0 0; color: var(--stop); font-weight: 600; }
+.start-button {
+  width: 100%; min-height: 56px; margin-top: 4px;
+  background: var(--mid); color: #1b1503; border: 0; border-radius: var(--radius);
+  font-size: 18px; font-weight: 800;
+}
+.start-button:hover { filter: brightness(1.08); }
+
+/* =========================================================
+   HUD
+========================================================= */
+.game-screen { display: flex; flex-direction: column; padding-bottom: 88px; }
+.hud {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: calc(10px + env(safe-area-inset-top)) clamp(12px, 3vw, 28px) 10px;
+  background: rgba(13, 16, 36, 0.92); backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--line);
+}
+.show-logo { display: flex; align-items: baseline; gap: 6px; font-weight: 900; font-stretch: 125%; color: var(--mid); font-size: clamp(15px, 2.6vw, 20px); }
+.show-logo i { font-style: normal; font-weight: 600; font-stretch: 100%; font-size: 0.65em; color: var(--muted); }
+.hud-stats { display: flex; gap: clamp(14px, 3vw, 32px); }
+.stat { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.1; }
+.stat span { font-size: 12px; color: var(--muted); font-weight: 600; }
+.stat strong { font-size: clamp(20px, 3vw, 26px); font-weight: 800; font-variant-numeric: tabular-nums; }
+
+/* =========================================================
+   STAGE
+========================================================= */
+.stage { width: min(100%, 1280px); margin: 0 auto; padding: clamp(12px, 2.5vw, 28px); flex: 1; }
+
+.prompt-row { display: flex; align-items: center; gap: clamp(14px, 3vw, 28px); margin-bottom: clamp(14px, 2.5vw, 26px); }
+
+.center-player-case { flex: none; text-align: center; }
+.player-case {
+  position: relative; display: grid; place-items: center;
+  min-width: clamp(84px, 14vw, 132px); aspect-ratio: 1.25; padding: 0 8px;
+  background: linear-gradient(160deg, var(--alu-1), var(--alu-2) 55%, var(--alu-3));
+  color: #181c33; border-radius: 10px; border: 3px solid var(--mid);
+  font-weight: 900; font-stretch: 110%; font-size: clamp(20px, 3.4vw, 30px); font-variant-numeric: tabular-nums;
+  box-shadow: 0 0 0 4px rgba(246, 185, 59, 0.18), 0 10px 24px rgba(0, 0, 0, 0.4);
+}
+.player-case::before {
+  content: ""; position: absolute; top: -9px; left: 50%; width: 32%; height: 9px; transform: translateX(-50%);
+  background: var(--alu-3); border-radius: 5px 5px 0 0;
+}
+.player-case-label { margin-top: 8px; font-size: 13px; font-weight: 600; color: var(--muted); }
+
+.prompt { min-width: 0; flex: 1; }
+.instruction { display: block; font-weight: 800; font-stretch: 112%; font-size: clamp(22px, 4vw, 38px); line-height: 1.1; }
+.pips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.pips:empty { display: none; }
+.pips b { width: 22px; height: 8px; border-radius: 4px; background: var(--line); }
+.pips b.done { background: var(--mid); }
+.message { min-height: 22px; margin-top: 10px; color: var(--muted); font-size: clamp(14px, 2vw, 16px); }
+
+/* =========================================================
+   BOARD — desktop: prizes | cases | prizes
+========================================================= */
+.board {
+  display: grid; align-items: start; gap: clamp(14px, 2.5vw, 32px);
+  grid-template-columns: minmax(150px, 1fr) minmax(0, 2.5fr) minmax(150px, 1fr);
+}
+.prizes { display: contents; }
+.prizes-head, .prize-backdrop, .prize-toggle { display: none; }
+.money-column { display: grid; gap: 6px; }
+.money-column.left { grid-column: 1; grid-row: 1; }
+.cases-area { grid-column: 2; grid-row: 1; }
+.money-column.right { grid-column: 3; grid-row: 1; }
+
+.money-value {
+  display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  padding: 9px 12px; background: var(--panel);
+  border-left: 5px solid var(--tier, var(--low)); border-radius: 6px;
+  font-weight: 800; font-stretch: 90%; font-size: clamp(14px, 1.6vw, 18px); font-variant-numeric: tabular-nums;
+  transition: opacity 0.3s;
+}
+.money-value[data-tier="low"] { --tier: var(--low); }
+.money-value[data-tier="mid"] { --tier: var(--mid); }
+.money-value[data-tier="high"] { --tier: var(--high); }
+.money-symbol { color: var(--tier); }
+.money-value.eliminated { opacity: 0.25; text-decoration: line-through; border-left-color: var(--line); }
+.money-value.eliminated .money-symbol { color: var(--muted); }
+
+/* =========================================================
+   CASES — brushed aluminium briefcases
+========================================================= */
+.cases-container { display: flex; flex-wrap: wrap; justify-content: center; gap: clamp(12px, 2vw, 20px) var(--gap); padding-top: 10px; }
+.case {
+  --cols: 6;
+  position: relative; flex: 0 0 calc((100% - (var(--cols) - 1) * var(--gap)) / var(--cols));
+  aspect-ratio: 1.25; padding: 0; border: 0; border-radius: 8px;
+  background: linear-gradient(160deg, var(--alu-1), var(--alu-2) 55%, var(--alu-3));
+  color: #181c33; font-weight: 900; font-stretch: 100%; font-size: clamp(14px, 1.9vw, 20px); font-variant-numeric: tabular-nums;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.35), inset 0 -3px 0 rgba(0, 0, 0, 0.18);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.case::before { /* handle */
+  content: ""; position: absolute; top: -7px; left: 50%; width: 34%; height: 7px; transform: translateX(-50%);
+  background: var(--alu-3); border-radius: 4px 4px 0 0;
+}
+.case::after { /* seam */
+  content: ""; position: absolute; left: 0; right: 0; top: 24%; height: 2px; background: rgba(0, 0, 0, 0.22);
+}
+.case:hover:not(.disabled):not(.opening) { transform: translateY(-3px); box-shadow: 0 12px 18px rgba(0, 0, 0, 0.4), inset 0 -3px 0 rgba(0, 0, 0, 0.18); }
+.case .case-num {
+  position: relative; z-index: 1; display: inline-block; min-width: 56%; padding: 3px 4px 2px;
+  background: var(--ink); color: var(--text); border-radius: 4px; line-height: 1.1; margin-top: 18%;
+}
+.case.player-selected { outline: 3px solid var(--mid); outline-offset: 2px; }
+.case.player-selected .case-num { background: var(--mid); color: #1b1503; }
+.case.disabled { cursor: default; }
+.case.revealed {
+  background: var(--ink-2); box-shadow: inset 0 0 0 2px var(--tier, var(--low)); color: var(--tier, var(--low));
+  font-stretch: 85%; font-size: clamp(13px, 1.7vw, 18px);
+}
+.case.revealed::before { background: var(--line); }
+.case.revealed::after { display: none; }
+.case[data-tier="low"] { --tier: var(--low); }
+.case[data-tier="mid"] { --tier: var(--mid); }
+.case[data-tier="high"] { --tier: var(--high); }
+.case.opening { animation: shake 0.35s linear infinite; box-shadow: 0 0 0 3px var(--mid), 0 0 28px rgba(246, 185, 59, 0.6); }
+@keyframes shake { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-3deg); } 75% { transform: rotate(3deg); } }
+
+/* =========================================================
+   BANKER — dialog (desktop) / bottom sheet (mobile)
+========================================================= */
+.banker-section, .super-chest, .final-choice {
+  position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 16px;
+}
+.banker-overlay, .super-chest-overlay { position: absolute; inset: 0; background: rgba(5, 7, 18, 0.78); backdrop-filter: blur(4px); }
+.banker-panel {
+  position: relative; width: min(100%, 460px); padding: 28px 24px 24px; text-align: center;
+  background: linear-gradient(180deg, #232a55, var(--panel)); border: 1px solid var(--line); border-top: 4px solid var(--mid);
+  border-radius: 16px; box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6); outline: none;
+  animation: rise 0.3s ease-out;
+}
+@keyframes rise { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+.banker-waiting p { margin: 8px 0 0; font-weight: 700; font-size: 18px; color: var(--muted); }
+.phone-ringing { font-size: 56px; color: var(--mid); display: inline-block; animation: ring 0.6s ease-in-out infinite; }
+@keyframes ring { 0%, 100% { transform: rotate(-12deg); } 50% { transform: rotate(12deg); } }
+.banker-title { font-weight: 600; color: var(--muted); }
+.offer-box { margin: 6px 0 14px; }
+.offer-box strong { font-weight: 900; font-stretch: 110%; font-size: clamp(46px, 13vw, 72px); line-height: 1.05; color: var(--mid); font-variant-numeric: tabular-nums; }
+.offer-history { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-bottom: 14px; }
+.offer-history:empty { display: none; }
+.offer-history span { padding: 4px 10px; background: var(--ink); border-radius: 999px; color: var(--muted); font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.offer-history .label { background: none; padding-left: 0; }
+.banker-hint { margin-bottom: 14px; padding: 10px 12px; background: rgba(246, 185, 59, 0.12); border-radius: 8px; font-size: 14px; font-weight: 600; }
+.deal-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.deal-buttons button, .final-buttons button, .new-game, .super-chest-continue, .super-chest-benefit-button, .download-log-button {
+  min-height: 56px; padding: 0 16px; border: 0; border-radius: var(--radius); font-size: 18px; font-weight: 800;
+}
+.deal { background: var(--go); color: #04210f; }
+.no-deal { background: var(--stop); color: #2a0503; }
+.deal:hover, .no-deal:hover, .start-button:hover { filter: brightness(1.1); }
+.super-chest-benefit-button { width: 100%; margin-bottom: 12px; min-height: 48px; background: transparent; border: 2px solid var(--mid); color: var(--mid); font-size: 16px; }
+
+/* =========================================================
+   FINAL CHOICE / RESULT
+========================================================= */
+.final-choice { background: rgba(5, 7, 18, 0.78); backdrop-filter: blur(4px); }
+.final-card, .result-card {
+  width: min(100%, 460px); padding: 28px 24px; text-align: center;
+  background: var(--panel); border: 1px solid var(--line); border-top: 4px solid var(--mid); border-radius: 16px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6); animation: rise 0.3s ease-out;
+}
+.final-card h2, .result-card h2 { margin: 0 0 8px; font-stretch: 112%; font-weight: 900; font-size: clamp(26px, 6vw, 34px); line-height: 1.1; }
+.final-card p, .result-card p { margin: 0 0 20px; color: var(--muted); }
+.final-buttons, .result-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.final-buttons button { background: var(--panel); border: 2px solid var(--mid); color: var(--text); }
+#swapButton { background: var(--mid); color: #1b1503; }
+.result { position: fixed; left: 0; right: 0; bottom: 0; z-index: 55; display: grid; place-items: center; padding: 16px calc(16px + env(safe-area-inset-right)) calc(16px + env(safe-area-inset-bottom)); pointer-events: none; }
+.result-card { pointer-events: auto; }
+.result-actions { grid-template-columns: 1fr; }
+.result-actions:has(.download-log-button:not(.hidden)) { grid-template-columns: 1fr 1fr; }
+.new-game { background: var(--mid); color: #1b1503; }
+.download-log-button { background: transparent; border: 2px solid var(--line); color: var(--text); }
+
+/* =========================================================
+   SUPER CHEST
+========================================================= */
+.super-chest-panel {
+  position: relative; width: min(100%, 560px); max-height: calc(100dvh - 32px); overflow-y: auto; padding: 24px 20px 0;
+  background: var(--panel); border: 1px solid var(--line); border-top: 4px solid var(--you); border-radius: 16px; text-align: center;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6); animation: rise 0.3s ease-out;
+}
+.super-chest-panel h2 { margin: 0 0 6px; font-stretch: 112%; font-weight: 900; font-size: clamp(26px, 6vw, 34px); }
+.super-chest-panel > p { margin: 0 0 14px; color: var(--muted); min-height: 44px; }
+.super-chest-scoreboard { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px; margin-bottom: 16px; }
+.super-chest-scoreboard > div:not(.super-chest-vs) { padding: 10px 6px; background: var(--ink); border-radius: 8px; }
+.sc-you { box-shadow: inset 0 -3px 0 var(--you); }
+.sc-banker { box-shadow: inset 0 -3px 0 var(--muted); }
+.super-chest-scoreboard span { display: block; font-size: 12px; font-weight: 600; color: var(--muted); }
+.super-chest-scoreboard strong { font-size: clamp(18px, 4vw, 24px); font-weight: 800; font-variant-numeric: tabular-nums; }
+.super-chest-vs { color: var(--muted); font-weight: 600; }
+.super-chest-cases { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.super-chest-case {
+  aspect-ratio: 1.25; padding: 0; border: 0; border-radius: 6px;
+  background: linear-gradient(160deg, var(--alu-1), var(--alu-2) 55%, var(--alu-3)); color: #181c33;
+  font-weight: 900; font-size: clamp(14px, 3.6vw, 18px); font-variant-numeric: tabular-nums;
+}
+.super-chest-case:not(:disabled):hover { transform: translateY(-2px); }
+.super-chest-case.revealed { background: var(--ink); color: var(--muted); font-stretch: 85%; font-size: clamp(12px, 3vw, 16px); }
+.super-chest-case.selected.revealed { background: var(--you); color: #fff; }
+.super-chest-case.banker-reveal { animation: shake 0.35s linear 1; }
+.super-chest-side-label { margin: 12px 0 0; font-size: 13px; color: var(--muted); }
+.super-chest-decision {
+  position: sticky; bottom: 0; z-index: 2; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+  margin: 14px -20px 0; padding: 12px 20px calc(12px + env(safe-area-inset-bottom)); background: var(--panel); border-top: 1px solid var(--line);
+}
+.super-chest-decision button { min-height: 52px; border: 0; border-radius: var(--radius); font-weight: 800; font-size: 16px; background: var(--you); color: #fff; }
+.super-chest-decision button:last-child { background: var(--stop); color: #2a0503; }
+.super-chest-decision button:disabled { opacity: 0.4; }
+.super-chest-result { margin-top: 14px; padding: 14px; background: var(--ink); border-radius: 10px; line-height: 1.6; text-transform: none; }
+.super-chest-result span { color: var(--muted); }
+.super-chest-continue { position: sticky; bottom: 0; width: calc(100% + 40px); margin: 14px -20px 0; border-radius: 0; background: var(--mid); color: #1b1503; padding-bottom: env(safe-area-inset-bottom); }
+
+/* =========================================================
+   TABLET (720–1100)
+========================================================= */
+@media (max-width: 1100px) {
+  .board { grid-template-columns: minmax(120px, 1fr) minmax(0, 2.3fr) minmax(120px, 1fr); }
+  .case { --cols: 5; }
+  .money-value { padding: 8px 10px; }
+}
+
+/* =========================================================
+   MOBILE (<720): cases fill the screen, prizes live in a sheet
+========================================================= */
+@media (max-width: 719px) {
+  .board { display: block; }
+  .case { --cols: 6; --gap: 8px; font-size: 15px; border-radius: 6px; }
+  .case .case-num { min-width: 64%; }
+  .case.revealed { font-size: 12px; }
+  .cases-container { --gap: 8px; }
+
+  .prize-toggle {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); min-height: 64px;
+    background: var(--panel); border: 0; border-top: 1px solid var(--line); text-align: left;
+  }
+  .pt-main { display: flex; flex-direction: column; line-height: 1.1; }
+  .pt-main small { font-size: 12px; color: var(--muted); font-weight: 600; }
+  .pt-main strong { font-size: 22px; font-weight: 900; color: var(--high); font-variant-numeric: tabular-nums; }
+  .pt-count { font-size: 13px; color: var(--muted); font-weight: 600; }
+  .pt-count strong { color: var(--text); font-size: 15px; }
+
+  .prize-backdrop { display: block; position: fixed; inset: 0; z-index: 70; background: rgba(5, 7, 18, 0.7); opacity: 0; pointer-events: none; transition: opacity 0.25s; }
+  .prizes {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 71; display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+    max-height: 88dvh; overflow-y: auto; padding: 14px 14px calc(16px + env(safe-area-inset-bottom));
+    background: var(--ink-2); border-radius: 18px 18px 0 0; border-top: 3px solid var(--mid);
+    transform: translateY(105%); transition: transform 0.28s ease-out; visibility: hidden;
+  }
+  body.prizes-open .prizes { transform: none; visibility: visible; }
+  body.prizes-open .prize-backdrop { opacity: 1; pointer-events: auto; }
+  .prizes-head { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+  .prizes-close { min-height: 40px; padding: 0 14px; background: transparent; border: 1px solid var(--line); border-radius: 999px; font-weight: 600; }
+  .money-column.left, .money-column.right { grid-column: auto; grid-row: auto; }
+  .money-value { font-size: 15px; padding: 8px 10px; }
+
+  /* Banker becomes a bottom sheet */
+  .banker-section { place-items: end center; padding: 0; }
+  .banker-panel { width: 100%; border-radius: 18px 18px 0 0; padding-bottom: calc(20px + env(safe-area-inset-bottom)); }
+  .final-choice { place-items: end center; padding: 0; }
+  .final-card { width: 100%; border-radius: 18px 18px 0 0; padding-bottom: calc(24px + env(safe-area-inset-bottom)); }
+  .result { padding: 0; }
+  .result-card { width: 100%; border-radius: 18px 18px 0 0; padding-bottom: calc(20px + env(safe-area-inset-bottom)); }
+  .super-chest { padding: 0; place-items: end center; }
+  .super-chest-panel { width: 100%; max-height: 94dvh; border-radius: 18px 18px 0 0; }
+  .super-chest-cases { gap: 6px; }
+
+  .prompt-row { gap: 14px; }
+  .player-case { min-width: 78px; }
+  .show-logo i { display: none; }
+}
+
+/* Short landscape phones: keep three columns, shrink chrome */
+@media (max-height: 520px) and (min-width: 720px) {
+  .game-screen { padding-bottom: 0; }
+  .prompt-row { margin-bottom: 10px; }
+  .player-case { min-width: 70px; font-size: 18px; }
+  .instruction { font-size: 20px; }
+  .money-value { padding: 4px 8px; font-size: 12px; }
+  .money-column { gap: 3px; }
+  .case { --cols: 9; }
+  .banker-panel, .final-card, .result-card { padding: 16px; }
+  .offer-box strong { font-size: 40px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
