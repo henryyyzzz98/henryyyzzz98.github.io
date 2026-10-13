@@ -2075,8 +2075,8 @@ let offerHistory = [];
 /* Prize tier by share of the top prize: drives colour on board + cases */
 function getTier(value) {
   const share = value / maxPrize;
-  if (share <= 0.1) return "low";
-  if (share <= 0.4) return "mid";
+  if (share <= 0.13) return "low";
+  if (share <= 0.49) return "mid";
   return "high";
 }
 
