@@ -38,6 +38,7 @@ button.sm{padding:0 6px;border-color:var(--line)}
   <h1>Bus route builder</h1>
   <input id="q" type="search" placeholder="Search stop name or code" aria-label="Search stops" autocomplete="off">
   <div id="results" role="listbox"></div>
+  <label style="font-size:13px"><input type="checkbox" id="showstops" checked> Show all bus stops</label>
   <p id="hint" style="margin:0;color:#5b6a72">Click a stop on the map, or search, to add it. Stops are visited in the order listed.</p>
   <ol id="list"></ol>
   <div id="status" role="status" aria-live="polite"></div>
@@ -183,7 +184,16 @@ function addStop(code){
   if (picked.length && picked[picked.length-1] === code) return;
   picked.push(code); invalidate(); render();
 }
-function invalidate(){ routeGeo = null; lastMeta = []; routeLayer.clearLayers(); }
+function invalidate(){ routeGeo = null; lastMeta = []; routeLayer.clearLayers(); setStopsVisible(true); }
+// The stop layers (cluster bubbles + custom stops) can be hidden for a clean presentation view.
+function setStopsVisible(v){
+  $('showstops').checked = v;
+  for (const layer of [cluster, customLayer]) {
+    if (v && !map.hasLayer(layer)) map.addLayer(layer);
+    if (!v && map.hasLayer(layer)) map.removeLayer(layer);
+  }
+}
+$('showstops').onchange = e => setStopsVisible(e.target.checked);
 
 function render(){
   const ol = $('list'); ol.innerHTML = '';
@@ -265,7 +275,7 @@ async function route(fit, undo, note){
     const line = all.filter((c, i) => !i || c[0] !== all[i-1][0] || c[1] !== all[i-1][1]);
     routeGeo = {type: 'Feature', geometry: {type: 'LineString', coordinates: line},
       properties: {stops: [...picked], vias: [...viasByLeg].map(([leg, points]) => ({leg, points})), distance_m: r.distance, duration_s: r.duration}};
-    if (fit) map.fitBounds(L.geoJSON(routeGeo).getBounds(), {padding: [40, 40]});
+    if (fit) { map.fitBounds(L.geoJSON(routeGeo).getBounds(), {padding: [40, 40]}); setStopsVisible(false); }
     const stats = `${(r.distance/1000).toFixed(1)} km, about ${Math.round(r.duration/60)} min by road (car speeds, not bus timetables). Click the route to add a handle, then drag it.`;
     say(note ? note + ' ' + stats : stats, !!note);
   } catch (e) {
