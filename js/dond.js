@@ -13,9 +13,9 @@
 ];*/
 
 const BASE_PRIZES = [
-  100, 500, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 12000,
-  14000, 16000, 18000, 20000, 25000, 30000, 35000, 40000, 45000, 50000, 60000,
-  75000, 100000,
+  100, 500, 1000, 1500, 2000, 2500, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000,
+  15000, 20000, 25000, 30000, 35000, 40000, 45000, 50000, 60000,
+  70000, 85000,100000,
 ];
 
 /* =========================================================
@@ -23,6 +23,9 @@ const BASE_PRIZES = [
 ========================================================= */
 
 const TOTAL_CASES = 26;
+
+/* Most cases that may share the top prize (keeps the hint side unambiguous) */
+const MAX_TOP_PRIZE_CASES = 12;
 
 /*
     Actual Deal or No Deal round structure:
@@ -45,6 +48,8 @@ const ROUND_CASES = [6, 5, 4, 3, 2, 1, 1, 1, 1];
 ========================================================= */
 
 let maxPrize = 100000;
+
+let topPrizeCount = 1;
 
 let prizes = [];
 
@@ -178,6 +183,7 @@ const newGameButton = document.getElementById("newGameButton");
 
 /* New UI elements */
 const setupError = document.getElementById("setupError");
+const topCountInput = document.getElementById("topCount");
 const openPips = document.getElementById("openPips");
 const topPrizeElement = document.getElementById("topPrize");
 const prizesLeftElement = document.getElementById("prizesLeft");
@@ -198,6 +204,18 @@ startButton.addEventListener("click", startGame);
 function startGame() {
   maxPrize = Number(maxPrizeInput.value);
   setupError.textContent = "";
+
+  topPrizeCount = Number(topCountInput.value);
+
+  if (
+    !Number.isInteger(topPrizeCount) ||
+    topPrizeCount < 1 ||
+    topPrizeCount > MAX_TOP_PRIZE_CASES
+  ) {
+    setupError.textContent = `Top prize cases must be a whole number from 1 to ${MAX_TOP_PRIZE_CASES}.`;
+    topCountInput.focus();
+    return;
+  }
 
   if (!maxPrize || maxPrize <= 0) {
     setupError.textContent = "Enter a top prize greater than 0.";
@@ -236,6 +254,8 @@ function startGame() {
     date: formatDateTime(gameStartTime),
 
     maximumPrize: maxPrize,
+
+    topPrizeCount: topPrizeCount,
 
     prizeBoard: [...prizes],
   });
@@ -399,6 +419,16 @@ function generatePrizeBoard(maximumPrize) {
     */
 
   generated[generated.length - 1] = maximumPrize;
+
+  /*
+        Top prize cases: overwrite the last N slots
+        (the right side, counted from the bottom)
+        with the jackpot amount.
+    */
+
+  for (let k = 0; k < topPrizeCount; k++) {
+    generated[generated.length - 1 - k] = maximumPrize;
+  }
 
   return generated;
 }
@@ -716,13 +746,12 @@ async function openCase(gameCase) {
 ========================================================= */
 
 function eliminatePrize(value) {
-  const matchingElements = document.querySelectorAll(
-    `.money-value[data-value="${value}"]`,
+  /* Only ONE board slot per opened case, even if values repeat. */
+  const slot = [...document.querySelectorAll(".money-value")].find(
+    (el) => Number(el.dataset.value) === value && !el.classList.contains("eliminated"),
   );
 
-  matchingElements.forEach((element) => {
-    element.classList.add("eliminated");
-  });
+  if (slot) slot.classList.add("eliminated");
 }
 
 /* =========================================================
@@ -763,17 +792,9 @@ function renderMoneyBoard() {
   */
 
   cases.forEach((gameCase) => {
-    if (!gameCase.opened) {
-      return;
+    if (gameCase.opened) {
+      eliminatePrize(gameCase.value);
     }
-
-    const matchingElements = document.querySelectorAll(
-      `.money-value[data-value="${gameCase.value}"]`,
-    );
-
-    matchingElements.forEach((element) => {
-      element.classList.add("eliminated");
-    });
   });
 }
 
@@ -1781,6 +1802,8 @@ function generateGameLog() {
 
   output += `Game Date: ${gameStart ? gameStart.date : "Unknown"}\n`;
 
+  output += `Top Prize Cases: ${gameStart ? gameStart.topPrizeCount || 1 : "Unknown"}\n`;
+
   output += `Maximum Prize: ${
     gameStart ? formatMoney(gameStart.maximumPrize) : "Unknown"
   }\n`;
@@ -2075,7 +2098,7 @@ let offerHistory = [];
 /* Prize tier by share of the top prize: drives colour on board + cases */
 function getTier(value) {
   const share = value / maxPrize;
-  if (share <= 0.13) return "low";
+  if (share <= 0.09) return "low";
   if (share <= 0.49) return "mid";
   return "high";
 }
@@ -2094,8 +2117,12 @@ function formatCompact(value) {
 
 /* Prizes still hidden = board minus opened cases (never reads your own case) */
 function refreshHud() {
-  const opened = new Set(cases.filter((c) => c.opened).map((c) => c.value));
-  const remaining = prizes.filter((v) => !opened.has(v));
+  const remaining = [...prizes];
+  cases.forEach((c) => {
+    if (!c.opened) return;
+    const idx = remaining.indexOf(c.value);
+    if (idx !== -1) remaining.splice(idx, 1);
+  });
 
   if (remaining.length) {
     topPrizeElement.textContent = formatMoney(Math.max(...remaining));
