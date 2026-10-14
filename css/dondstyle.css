@@ -3,7 +3,6 @@
    Stage: ink-indigo. Cases: brushed aluminium.
    Prize tiers: blue (low) → amber (mid) → red (high).
 ========================================================= */
-
 :root {
   --ink: #0d1024;
   --ink-2: #151a38;
@@ -22,7 +21,7 @@
   --you: #3d7bff;
   --radius: 10px;
   --gap: clamp(6px, 1.2vw, 12px);
-  --font: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --font: "Eurostile", "Helvetica Neue", Arial, sans-serif;
 }
 
 * { box-sizing: border-box; }
@@ -95,6 +94,11 @@ button:disabled { cursor: not-allowed; }
   font-weight: 600; font-variant-numeric: tabular-nums;
 }
 .presets button:hover { border-color: #daaa00; }
+.count-wrapper { margin-top: 0; }
+.count-wrapper input { text-align: left; }
+.setup-box label + .count-wrapper, .presets + label { margin-top: 18px; }
+.presets + label { margin-top: 20px; }
+.field-note { margin: 8px 0 0; font-size: 13px; color: var(--muted); line-height: 1.4; }
 .setup-error { min-height: 22px; margin: 12px 0 0; color: var(--stop); font-weight: 600; }
 .start-button {
   width: 100%; min-height: 56px; margin-top: 4px;
