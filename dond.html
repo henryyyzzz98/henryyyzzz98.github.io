@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap" rel="stylesheet" />
+    <link href="https://fonts.cdnfonts.com/css/eurostile" rel="stylesheet">
     <link rel="stylesheet" href="css/dondstyle.css" />
   </head>
   <body>
@@ -25,6 +26,11 @@
           <button type="button" data-amount="100000">$100,000</button>
           <button type="button" data-amount="1000000">$1,000,000</button>
         </div>
+        <label for="topCount">Cases holding the top prize</label>
+        <div class="input-wrapper count-wrapper">
+          <input type="number" id="topCount" value="1" min="1" max="10" step="1" inputmode="numeric" />
+        </div>
+        <p class="field-note">They replace the biggest prizes on the right side of the board, counting up from the bottom.</p>
         <p id="setupError" class="setup-error" role="alert"></p>
         <button id="startButton" class="start-button">Start game</button>
       </div>
