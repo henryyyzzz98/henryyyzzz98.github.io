@@ -27,6 +27,10 @@ button.primary{background:var(--ink);color:#fff;padding:8px}
 button.sm{padding:0 6px;border-color:var(--line)}
 .cs{width:18px;height:18px;box-sizing:border-box;border-radius:50%;background:#fff;border:3px solid var(--route);cursor:grab}
 .via{width:14px;height:14px;box-sizing:border-box;background:#fff;border:3px solid #16232b;border-radius:3px;transform:rotate(45deg);cursor:grab}
+#routes{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+#routes li{display:flex;gap:4px;align-items:center}
+.rt{flex:1;text-align:left}.rt[aria-pressed=true]{background:var(--ink);color:#fff}
+button:disabled{opacity:.4;cursor:default}
 #map.adding{cursor:crosshair}button[aria-pressed=true]{background:var(--route);border-color:var(--route);color:#fff}
 #status{min-height:2.8em}.err{color:var(--bad)}
 .row{display:flex;gap:6px}.row button{flex:1}
@@ -36,6 +40,8 @@ button.sm{padding:0 6px;border-color:var(--line)}
 <body>
 <aside id="side">
   <h1>Bus route builder</h1>
+  <div><ul id="routes" aria-label="Routes"></ul><div class="row" style="margin-top:4px"><button id="newroute">+ New route</button><button id="startover">Start over</button></div>
+  <small style="color:#5b6a72">Routes are saved automatically in this browser.</small></div>
   <input id="q" type="search" placeholder="Search stop name or code" aria-label="Search stops" autocomplete="off">
   <div id="results" role="listbox"></div>
   <label style="font-size:13px"><input type="checkbox" id="showstops" checked> Show all bus stops</label>
@@ -44,8 +50,8 @@ button.sm{padding:0 6px;border-color:var(--line)}
   <div id="status" role="status" aria-live="polite"></div>
   <div class="row">
     <button class="primary" id="go">Get road route</button>
-    <button id="export">Export GeoJSON</button>
-    <button id="clear">Clear</button>
+    <button id="export">Export all routes</button>
+    <button id="clear">Clear route</button>
   </div>
   <div class="row">
     <button id="addmode" aria-pressed="false">Add custom stop</button>
@@ -70,8 +76,7 @@ L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',
 const $ = id => document.getElementById(id);
 let stops = [], byCode = new Map(), picked = [], routeGeo = null;
 const cluster = L.markerClusterGroup({chunkedLoading: true});
-const routeLayer = L.layerGroup().addTo(map);
-const numLayer = L.layerGroup().addTo(map);
+let routeLayer, numLayer;   // belong to the active route, see "Multiple routes" below
 
 function loadXml(text){
   const xml = new DOMParser().parseFromString(text, 'application/xml');
@@ -88,7 +93,8 @@ function loadXml(text){
   stops.forEach(s => cluster.addLayer(makeMarker(s)));
   map.addLayer(cluster);
   loadCustom();
-  say(`${base} stops loaded` + (stops.length > base ? `, plus ${stops.length - base} custom.` : '.'));
+  const n = restored ? 0 : restoreRoutes();
+  say(`${base} stops loaded` + (stops.length > base ? `, plus ${stops.length - base} custom` : '') + (n ? `. Restored ${n} saved route${n > 1 ? 's' : ''}.` : '.'));
 }
 
 // ---- Custom stops ----
@@ -183,8 +189,9 @@ function say(msg, err){ $('status').textContent = msg; $('status').className = e
 function addStop(code){
   if (picked.length && picked[picked.length-1] === code) return;
   picked.push(code); invalidate(); render();
+  if (!cur.visible) { cur.visible = true; refreshRoutes(); }
 }
-function invalidate(){ routeGeo = null; lastMeta = []; routeLayer.clearLayers(); setStopsVisible(true); }
+function invalidate(){ routeGeo = null; lastMeta = []; lastSegs = []; routeLayer.clearLayers(); setStopsVisible(true); }
 // The stop layers (cluster bubbles + custom stops) can be hidden for a clean presentation view.
 function setStopsVisible(v){
   $('showstops').checked = v;
@@ -195,20 +202,25 @@ function setStopsVisible(v){
 }
 $('showstops').onchange = e => setStopsVisible(e.target.checked);
 
+function numMarker(s, n, color){
+  return L.marker([s.lat, s.lng], {interactive: false, icon: L.divIcon({className: '', iconSize: [24, 24], iconAnchor: [12, 12],
+    html: `<div style="background:${color};color:#fff;border-radius:50%;width:24px;height:24px;line-height:24px;text-align:center;font:600 12px system-ui;border:2px solid #fff">${n}</div>`})});
+}
 function render(){
   const ol = $('list'); ol.innerHTML = '';
   numLayer.clearLayers();
   picked.forEach((code, i) => {
     const s = byCode.get(code);
     const li = document.createElement('li');
-    li.innerHTML = `<span class="n">${i+1}</span><span class="t">${esc(s.name)}<small>${esc(s.code)}${s.custom ? ' (custom)' : ''}</small></span>`;
+    li.innerHTML = `<span class="n" style="background:${cur.color}">${i+1}</span><span class="t">${esc(s.name)}<small>${esc(s.code)}${s.custom ? ' (custom)' : ''}</small></span>`;
     for (const [label, aria, fn] of [['↑','Move up',()=>move(i,-1)],['↓','Move down',()=>move(i,1)],['✕','Remove',()=>{picked.splice(i,1);invalidate();render();}]]){
       const b = document.createElement('button'); b.className='sm'; b.textContent=label; b.setAttribute('aria-label',`${aria}: ${s.name}`); b.onclick=fn; li.append(b);
     }
     ol.append(li);
-    L.marker([s.lat, s.lng], {interactive:false, icon: L.divIcon({className:'', html:`<div style="background:#0a7c78;color:#fff;border-radius:50%;width:24px;height:24px;line-height:24px;text-align:center;font:600 12px system-ui;border:2px solid #fff">${i+1}</div>`, iconSize:[24,24], iconAnchor:[12,12]})}).addTo(numLayer);
+    numMarker(s, i + 1, cur.color).addTo(numLayer);
   });
   $('hint').style.display = picked.length ? 'none' : '';
+  saveRoutes();
 }
 function move(i, d){
   const j = i + d; if (j < 0 || j >= picked.length) return;
@@ -233,10 +245,27 @@ $('q').oninput = e => {
 
 // Routing, with draggable road adjustments.
 // Handles ("vias") are stored per leg, keyed by the two stop codes the leg runs between.
-let viasByLeg = new Map(), lastMeta = [];
+let viasByLeg = new Map(), lastMeta = [], lastSegs = [];
 const legKey = i => picked[i] + '|' + picked[i + 1];
 const cloneVias = () => new Map([...viasByLeg].map(([k, v]) => [k, v.map(x => ({...x}))]));
 
+function drawActive(){
+  routeLayer.clearLayers();
+  lastSegs.forEach((c, k) => L.polyline(c.map(([x, y]) => [y, x]), {color: cur.color, weight: 6, opacity: .85, bubblingMouseEvents: false})
+    .on('click', e => addVia(k, e.latlng)).addTo(routeLayer));
+  lastMeta.forEach(m => {
+    if (m.via < 0) return;
+    const v = viasByLeg.get(legKey(m.leg))[m.via];
+    const mk = L.marker([v.lat, v.lng], {draggable: true, icon: L.divIcon({className: '', html: '<div class="via"></div>', iconSize: [14, 14], iconAnchor: [7, 7]})})
+      .bindTooltip('Drag to reshape, right-click to remove').addTo(routeLayer);
+    mk.on('dragend', () => { const u = cloneVias(), p = mk.getLatLng(); v.lat = p.lat; v.lng = p.lng; route(false, u); });
+    mk.on('contextmenu', () => {
+      const u = cloneVias(), key = legKey(m.leg), arr = viasByLeg.get(key);
+      arr.splice(m.via, 1); if (!arr.length) viasByLeg.delete(key);
+      route(false, u);
+    });
+  });
+}
 async function route(fit, undo, note){
   if (picked.length < 2) return say('Add at least two stops.', true);
   const pts = [], meta = [];
@@ -245,40 +274,32 @@ async function route(fit, undo, note){
     if (i < picked.length - 1) (viasByLeg.get(legKey(i)) || []).forEach((v, j) => { pts.push([v.lng, v.lat]); meta.push({leg: i, via: j}); });
   });
   const hasVia = pts.length > picked.length;
+  const R = cur;   // the route being edited; ignore the answer if the user switches routes meanwhile
   say('Routing…');
   try {
     const url = `${OSRM}${pts.map(q => q.join(',')).join(';')}?overview=false&steps=true&geometries=geojson${hasVia ? '&continue_straight=true' : ''}`;
     const data = await (await fetch(url)).json();
+    if (R !== cur) return say('');
     if (data.code !== 'Ok') throw new Error(data.message || data.code);
     const r = data.routes[0];
-    routeLayer.clearLayers(); lastMeta = meta;
-    const all = [];
-    r.legs.forEach((leg, k) => {
-      const c = leg.steps.flatMap(st => st.geometry.coordinates);
-      all.push(...c);
-      L.polyline(c.map(([x, y]) => [y, x]), {color: '#0a7c78', weight: 6, opacity: .85, bubblingMouseEvents: false})
-        .on('click', e => addVia(k, e.latlng)).addTo(routeLayer);
-    });
-    meta.forEach((m, idx) => {
+    lastMeta = meta;
+    lastSegs = r.legs.map(leg => leg.steps.flatMap(st => st.geometry.coordinates));
+    const all = lastSegs.flat();
+    meta.forEach((m, idx) => {   // handles snap onto the road
       if (m.via < 0) return;
       const v = viasByLeg.get(legKey(m.leg))[m.via];
-      [v.lng, v.lat] = data.waypoints[idx].location;   // show the handle where it snapped onto a road
-      const mk = L.marker([v.lat, v.lng], {draggable: true, icon: L.divIcon({className: '', html: '<div class="via"></div>', iconSize: [14, 14], iconAnchor: [7, 7]})})
-        .bindTooltip('Drag to reshape, right-click to remove').addTo(routeLayer);
-      mk.on('dragend', () => { const u = cloneVias(), p = mk.getLatLng(); v.lat = p.lat; v.lng = p.lng; route(false, u); });
-      mk.on('contextmenu', () => {
-        const u = cloneVias(), key = legKey(m.leg), arr = viasByLeg.get(key);
-        arr.splice(m.via, 1); if (!arr.length) viasByLeg.delete(key);
-        route(false, u);
-      });
+      [v.lng, v.lat] = data.waypoints[idx].location;
     });
+    cur.visible = true; drawActive();
     const line = all.filter((c, i) => !i || c[0] !== all[i-1][0] || c[1] !== all[i-1][1]);
     routeGeo = {type: 'Feature', geometry: {type: 'LineString', coordinates: line},
       properties: {stops: [...picked], vias: [...viasByLeg].map(([leg, points]) => ({leg, points})), distance_m: r.distance, duration_s: r.duration}};
     if (fit) { map.fitBounds(L.geoJSON(routeGeo).getBounds(), {padding: [40, 40]}); setStopsVisible(false); }
     const stats = `${(r.distance/1000).toFixed(1)} km, about ${Math.round(r.duration/60)} min by road (car speeds, not bus timetables). Click the route to add a handle, then drag it.`;
     say(note ? note + ' ' + stats : stats, !!note);
+    refreshRoutes();
   } catch (e) {
+    if (R !== cur) return say('');
     if (undo) { viasByLeg = undo; return route(false, null, `That edit failed (${e.message}) and was undone.`); }
     say('Routing failed: ' + e.message, true);
   }
@@ -290,15 +311,136 @@ function addVia(k, ll){
   route(false, u);
 }
 $('go').onclick = () => route(true);
-$('resetvia').onclick = () => { viasByLeg = new Map(); if (routeGeo) route(false); else say('Road edits cleared.'); };
+$('resetvia').onclick = () => { viasByLeg = new Map(); if (routeGeo) route(false); else { say('Road edits cleared.'); refreshRoutes(); } };
 
 $('export').onclick = () => {
-  if (!routeGeo) return say('Get a road route first.', true);
+  syncActive();
+  const feats = routes.filter(r => r.geo).map(r => ({...r.geo, properties: {...r.geo.properties, name: r.name, color: r.color}}));
+  if (!feats.length) return say('Get a road route first.', true);
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([JSON.stringify(routeGeo)], {type: 'application/geo+json'}));
-  a.download = 'bus-route.geojson'; a.click(); URL.revokeObjectURL(a.href);
+  a.href = URL.createObjectURL(new Blob([JSON.stringify({type: 'FeatureCollection', features: feats})], {type: 'application/geo+json'}));
+  a.download = 'bus-routes.geojson'; a.click(); URL.revokeObjectURL(a.href);
 };
 $('clear').onclick = () => { picked = []; viasByLeg = new Map(); invalidate(); render(); say(''); };
+
+// ---- Multiple routes ----
+// The working variables (picked, viasByLeg, routeGeo, lastMeta, lastSegs, routeLayer, numLayer) always belong to the
+// active route; they are copied back into its record (syncActive) before switching.
+// Inactive routes are drawn as static "ghost" lines so only the active one can be edited.
+const PALETTE = ['#0a7c78', '#d1495b', '#3b5bdb', '#e08a00', '#7b2cbf', '#2b9348'];
+let routes = [], cur = null, seq = 0, restored = false, saveTimer;
+const RKEY = 'busplanner.routes';
+function makeRoute(){
+  seq++;
+  return {name: `Route ${seq}`, color: PALETTE[(seq - 1) % PALETTE.length], picked: [], vias: new Map(), geo: null, meta: [], segs: [],
+          visible: true, layer: L.layerGroup(), nums: L.layerGroup(), ghost: L.layerGroup()};
+}
+function syncActive(){ cur.picked = picked; cur.vias = viasByLeg; cur.geo = routeGeo; cur.meta = lastMeta; cur.segs = lastSegs; }
+function activate(r){
+  if (cur) syncActive();
+  const ok = r.picked.filter(c => byCode.has(c));   // a custom stop may have been deleted meanwhile
+  if (ok.length !== r.picked.length) { r.picked = ok; r.geo = null; r.meta = []; r.segs = []; r.layer.clearLayers(); }
+  cur = r; picked = r.picked; viasByLeg = r.vias; routeGeo = r.geo; lastMeta = r.meta; lastSegs = r.segs;
+  routeLayer = r.layer; numLayer = r.nums;
+  map.closePopup(); drawActive(); render(); refreshRoutes();
+}
+function drawGhost(r){
+  r.ghost.clearLayers();
+  if (r.geo) L.polyline(r.geo.geometry.coordinates.map(([x, y]) => [y, x]), {color: r.color, weight: 5, opacity: .7, interactive: false}).addTo(r.ghost);
+  r.picked.forEach((code, i) => { const st = byCode.get(code); if (st) numMarker(st, i + 1, r.color).addTo(r.ghost); });
+}
+function applyVisibility(){
+  const show = (layer, on) => {
+    if (on && !map.hasLayer(layer)) map.addLayer(layer);
+    if (!on && map.hasLayer(layer)) map.removeLayer(layer);
+  };
+  routes.forEach(r => {
+    const active = r === cur;
+    show(r.layer, active && r.visible); show(r.nums, active && r.visible);
+    if (!active) drawGhost(r);
+    show(r.ghost, !active && r.visible);
+  });
+}
+function refreshRoutes(){ if (cur) syncActive(); applyVisibility(); renderTabs(); saveRoutes(); }
+function dropRoute(r){ [r.layer, r.nums, r.ghost].forEach(l => map.removeLayer(l)); routes.splice(routes.indexOf(r), 1); }
+function renderTabs(){
+  const ul = $('routes'); ul.innerHTML = '';
+  routes.forEach(r => {
+    const li = document.createElement('li');
+    const mk = (txt, label, fn) => { const b = document.createElement('button'); b.className = 'sm'; b.textContent = txt; b.setAttribute('aria-label', label + ': ' + r.name); b.onclick = fn; return b; };
+    const vis = document.createElement('input'); vis.type = 'checkbox'; vis.checked = r.visible; vis.setAttribute('aria-label', 'Show ' + r.name);
+    vis.onchange = () => { r.visible = vis.checked; applyVisibility(); };
+    const b = document.createElement('button'); b.className = 'rt'; b.textContent = r.name;
+    b.style.borderLeft = `8px solid ${r.color}`; b.setAttribute('aria-pressed', r === cur);
+    b.onclick = () => { if (r !== cur) activate(r); };
+    const ren = mk('✎', 'Rename', () => {
+      const n = prompt('Route name:', r.name); if (n && n.trim()) { r.name = n.trim(); renderTabs(); }
+    });
+    const del = mk('✕', 'Delete', () => {
+      if (!confirm(`Delete ${r.name}?`)) return;
+      if (r === cur) { const next = routes[routes.indexOf(r) ? routes.indexOf(r) - 1 : 1]; dropRoute(r); cur = null; activate(next); }
+      else { dropRoute(r); refreshRoutes(); }
+    });
+    del.disabled = routes.length < 2;
+    li.append(vis, b, ren, del); ul.append(li);
+  });
+}
+$('newroute').onclick = () => {
+  const r = makeRoute(); routes.push(r); activate(r); setStopsVisible(true);
+  say(`${r.name} started. Pick its stops on the map.`);
+};
+
+// ---- Saving and loading (browser localStorage) ----
+function snapshot(){
+  syncActive();
+  return {v: 1, seq, active: routes.indexOf(cur), routes: routes.map(r => ({
+    name: r.name, color: r.color, visible: r.visible, picked: r.picked, vias: [...r.vias], meta: r.meta, segs: r.segs,
+    props: r.geo && {distance_m: r.geo.properties.distance_m, duration_s: r.geo.properties.duration_s}}))};
+}
+function saveRoutes(){
+  if (!restored || !cur) return;   // never overwrite the saved copy before it has been loaded
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    try { localStorage.setItem(RKEY, JSON.stringify(snapshot())); }
+    catch (e) { say('Routes could not be saved in this browser (storage full or blocked). Use "Export all routes" to keep them.', true); }
+  }, 300);
+}
+function makeGeo(segs, stopCodes, vias, d, t){
+  const all = segs.flat();
+  const line = all.filter((c, i) => !i || c[0] !== all[i-1][0] || c[1] !== all[i-1][1]);
+  return {type: 'Feature', geometry: {type: 'LineString', coordinates: line},
+    properties: {stops: [...stopCodes], vias: [...vias].map(([leg, points]) => ({leg, points})), distance_m: d, duration_s: t}};
+}
+function restoreRoutes(){
+  restored = true;
+  let d = null;
+  try { d = JSON.parse(localStorage.getItem(RKEY) || 'null'); } catch (e) {}
+  if (!d || d.v !== 1 || !Array.isArray(d.routes) || !d.routes.length) return 0;
+  [...routes].forEach(dropRoute); cur = null;
+  d.routes.forEach(x => {
+    const r = makeRoute();
+    Object.assign(r, {name: String(x.name || r.name), color: /^#[0-9a-f]{6}$/i.test(x.color) ? x.color : r.color, visible: x.visible !== false});
+    const all = x.picked || [];
+    r.picked = all.filter(c => byCode.has(c));
+    r.vias = new Map(x.vias || []);
+    const intact = r.picked.length === all.length && Array.isArray(x.segs) && Array.isArray(x.meta) && x.props && x.meta.length === x.segs.length + 1;
+    if (intact) { r.segs = x.segs; r.meta = x.meta; r.geo = makeGeo(r.segs, r.picked, r.vias, x.props.distance_m, x.props.duration_s); }
+    routes.push(r);
+  });
+  seq = Math.max(seq, d.seq || 0);
+  const act = routes[d.active] || routes[0];
+  activate(act);
+  if (act.geo) { map.fitBounds(L.geoJSON(act.geo).getBounds(), {padding: [40, 40]}); setStopsVisible(false); }
+  return routes.length;
+}
+$('startover').onclick = () => {
+  if (!confirm('Delete all routes, including the copy saved in this browser?')) return;
+  [...routes].forEach(dropRoute); cur = null; seq = 0;
+  try { localStorage.removeItem(RKEY); } catch (e) {}
+  const r = makeRoute(); routes.push(r); activate(r); setStopsVisible(true); say('Started over.');
+};
+
+const first = makeRoute(); routes.push(first); activate(first);
 </script>
 </body>
 </html>
