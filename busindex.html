@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bus route builder</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
+<style>
+:root{--ink:#16232b;--paper:#f5f6f2;--line:#d9dcd3;--route:#0a7c78;--stop:#f0b429;--bad:#b3261e}
+*{box-sizing:border-box}
+body{margin:0;display:flex;height:100vh;font:15px/1.4 system-ui,sans-serif;color:var(--ink)}
+#side{width:340px;max-width:45vw;background:var(--paper);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:14px;gap:10px}
+#map{flex:1}
+h1{font-size:18px;margin:0}
+input[type=search]{width:100%;padding:8px;border:1px solid var(--line);border-radius:4px;font:inherit}
+#results{max-height:140px;overflow:auto;border:1px solid var(--line);background:#fff;display:none}
+#results div{padding:6px 8px;cursor:pointer}#results div:hover,#results div:focus{background:#fdf1cf}
+#list{flex:1;overflow:auto;margin:0;padding:0;list-style:none}
+#list li{display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid var(--line)}
+#list .n{flex:0 0 22px;height:22px;border-radius:50%;background:var(--route);color:#fff;text-align:center;font-size:12px;line-height:22px}
+#list .t{flex:1;min-width:0}#list small{color:#5b6a72;display:block}
+button{font:inherit;border:1px solid var(--ink);background:#fff;border-radius:4px;padding:3px 8px;cursor:pointer}
+button:focus-visible,input:focus-visible,#results div:focus-visible{outline:2px solid var(--route);outline-offset:1px}
+button.primary{background:var(--ink);color:#fff;padding:8px}
+button.sm{padding:0 6px;border-color:var(--line)}
+.cs{width:18px;height:18px;box-sizing:border-box;border-radius:50%;background:#fff;border:3px solid var(--route);cursor:grab}
+.via{width:14px;height:14px;box-sizing:border-box;background:#fff;border:3px solid #16232b;border-radius:3px;transform:rotate(45deg);cursor:grab}
+#map.adding{cursor:crosshair}button[aria-pressed=true]{background:var(--route);border-color:var(--route);color:#fff}
+#status{min-height:2.8em}.err{color:var(--bad)}
+.row{display:flex;gap:6px}.row button{flex:1}
+@media(max-width:700px){body{flex-direction:column-reverse}#side{width:100%;max-width:none;height:45vh;border:0}}
+</style>
+</head>
+<body>
+<aside id="side">
+  <h1>Bus route builder</h1>
+  <input id="q" type="search" placeholder="Search stop name or code" aria-label="Search stops" autocomplete="off">
+  <div id="results" role="listbox"></div>
+  <p id="hint" style="margin:0;color:#5b6a72">Click a stop on the map, or search, to add it. Stops are visited in the order listed.</p>
+  <ol id="list"></ol>
+  <div id="status" role="status" aria-live="polite"></div>
+  <div class="row">
+    <button class="primary" id="go">Get road route</button>
+    <button id="export">Export GeoJSON</button>
+    <button id="clear">Clear</button>
+  </div>
+  <div class="row">
+    <button id="addmode" aria-pressed="false">Add custom stop</button>
+    <button id="dlxml">Download stops XML</button>
+  </div>
+  <div class="row"><button id="resetvia">Reset road edits</button></div>
+  <label style="font-size:13px">Stops file (only if auto-load fails):
+    <input type="file" id="file" accept=".xml"></label>
+</aside>
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<script>
+// Routing server. The public demo is for light testing only; point this at your own OSRM for real use.
+const OSRM = 'https://router.project-osrm.org/route/v1/driving/';
+
+const map = L.map('map').setView([1.3521, 103.8198], 12);
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+  {maxZoom: 19, attribution: '&copy; OpenStreetMap contributors'}).addTo(map);
+
+const $ = id => document.getElementById(id);
+let stops = [], byCode = new Map(), picked = [], routeGeo = null;
+const cluster = L.markerClusterGroup({chunkedLoading: true});
+const routeLayer = L.layerGroup().addTo(map);
+const numLayer = L.layerGroup().addTo(map);
+
+function loadXml(text){
+  const xml = new DOMParser().parseFromString(text, 'application/xml');
+  if (xml.querySelector('parsererror')) return say('Could not parse the XML file.', true);
+  stops = [...xml.querySelectorAll('busstop')].map(n => ({
+    code: n.getAttribute('name'), wab: n.getAttribute('wab') || 'true',
+    name: n.querySelector('details')?.textContent.trim() || '',
+    lat: parseFloat(n.querySelector('lat')?.textContent),
+    lng: parseFloat(n.querySelector('long')?.textContent)
+  })).filter(s => isFinite(s.lat) && isFinite(s.lng));
+  byCode = new Map(stops.map(s => [s.code, s]));
+  cluster.clearLayers(); customLayer.clearLayers(); markers.clear();
+  const base = stops.length;
+  stops.forEach(s => cluster.addLayer(makeMarker(s)));
+  map.addLayer(cluster);
+  loadCustom();
+  say(`${base} stops loaded` + (stops.length > base ? `, plus ${stops.length - base} custom.` : '.'));
+}
+
+// ---- Custom stops ----
+const KEY = 'busplanner.custom';
+let addMode = false, markers = new Map();
+const customLayer = L.layerGroup().addTo(map);
+const tipText = s => `${s.name} (${s.code})` + (s.custom ? ' - drag to move, right-click to edit' : '');
+function makeMarker(s){
+  let m;
+  if (s.custom) {
+    m = L.marker([s.lat, s.lng], {draggable: true, icon: L.divIcon({className: '', html: '<div class="cs"></div>', iconSize: [18, 18], iconAnchor: [9, 9]})});
+    m.on('contextmenu', () => editPopup(s, m));
+    m.on('dragend', () => {
+      const p = m.getLatLng(); s.lat = p.lat; s.lng = p.lng;
+      saveCustom(); invalidate(); render();
+      say(`Moved ${s.name}. Get the road route again to update the path.`);
+    });
+  } else {
+    m = L.circleMarker([s.lat, s.lng], {radius: 6, bubblingMouseEvents: false, color: '#16232b', weight: 1, fillColor: '#f0b429', fillOpacity: 1});
+  }
+  m.bindTooltip(tipText(s));
+  m.on('click', () => { if (!addMode) addStop(s.code); });
+  markers.set(s.code, m);
+  return m;
+}
+function editPopup(s, m){
+  const box = document.createElement('div');
+  const title = document.createElement('strong'); title.textContent = `${s.name} (${s.code})`;
+  const row = document.createElement('div'); row.style.cssText = 'display:flex;gap:6px;margin-top:6px';
+  const ren = document.createElement('button'); ren.textContent = 'Rename';
+  const del = document.createElement('button'); del.textContent = 'Delete';
+  ren.onclick = () => { map.closePopup(); renameCustom(s, m); };
+  del.onclick = () => { map.closePopup(); removeCustom(s.code); };
+  row.append(ren, del); box.append(title, row);
+  L.popup().setLatLng(m.getLatLng()).setContent(box).openOn(map);
+}
+function renameCustom(s, m){
+  const name = prompt('New name for this stop:', s.name);
+  if (!name || !name.trim()) return;
+  s.name = name.trim(); m.setTooltipContent(tipText(s));
+  saveCustom(); render(); say(`Renamed to ${s.name}.`);
+}
+function saveCustom(){
+  try { localStorage.setItem(KEY, JSON.stringify(stops.filter(s => s.custom))); }
+  catch (e) { say('Custom stops could not be saved in this browser. Use "Download stops XML" to keep them.', true); }
+}
+function loadCustom(){
+  let saved = [];
+  try { saved = JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) {}
+  saved.forEach(s => { if (!byCode.has(s.code)) registerStop(s); });
+}
+function registerStop(s){
+  stops.push(s); byCode.set(s.code, s);
+  (s.custom ? customLayer : cluster).addLayer(makeMarker(s));
+}
+function removeCustom(code){
+  if (!confirm('Delete custom stop ' + code + '?')) return;
+  customLayer.removeLayer(markers.get(code)); markers.delete(code);
+  stops = stops.filter(s => s.code !== code); byCode.delete(code);
+  picked = picked.filter(c => c !== code);
+  invalidate(); render(); saveCustom();
+}
+$('addmode').onclick = () => {
+  addMode = !addMode;
+  $('addmode').setAttribute('aria-pressed', addMode);
+  $('map').classList.toggle('adding', addMode);
+  say(addMode ? 'Click the map where the new stop should go.' : '');
+};
+map.on('click', e => {
+  if (!addMode) return;
+  const name = prompt('Name for this stop:');
+  if (!name || !name.trim()) return;
+  let n = 1; while (byCode.has('C' + n)) n++;
+  const s = {code: 'C' + n, name: name.trim(), lat: e.latlng.lat, lng: e.latlng.lng, wab: 'false', custom: true};
+  registerStop(s); saveCustom();
+  say(`Added ${s.name} (${s.code}). Click it to add it to your route.`);
+});
+const xa = t => t.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+$('dlxml').onclick = () => {
+  const body = stops.map(s => `\t<busstop name="${xa(s.code)}" wab="${xa(s.wab)}">\n\t\t<details>${xa(s.name)}</details>\n\t\t<coordinates>\n\t\t\t<lat>${s.lat}</lat>\n\t\t\t<long>${s.lng}</long>\n\t\t</coordinates>\n\t</busstop>\n`).join('');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([`<?xml version="1.0"?>\n<busstops>\n${body}</busstops>\n`], {type: 'application/xml'}));
+  a.download = 'bus_stops.xml'; a.click(); URL.revokeObjectURL(a.href);
+};
+
+fetch('bus_stops.xml').then(r => { if (!r.ok) throw 0; return r.text(); }).then(loadXml)
+  .catch(() => say('Could not load bus_stops.xml automatically. Serve this folder with a web server, or choose the file below.', true));
+$('file').onchange = e => e.target.files[0]?.text().then(loadXml);
+
+function say(msg, err){ $('status').textContent = msg; $('status').className = err ? 'err' : ''; }
+
+function addStop(code){
+  if (picked.length && picked[picked.length-1] === code) return;
+  picked.push(code); invalidate(); render();
+}
+function invalidate(){ routeGeo = null; lastMeta = []; routeLayer.clearLayers(); }
+
+function render(){
+  const ol = $('list'); ol.innerHTML = '';
+  numLayer.clearLayers();
+  picked.forEach((code, i) => {
+    const s = byCode.get(code);
+    const li = document.createElement('li');
+    li.innerHTML = `<span class="n">${i+1}</span><span class="t">${esc(s.name)}<small>${esc(s.code)}${s.custom ? ' (custom)' : ''}</small></span>`;
+    for (const [label, aria, fn] of [['↑','Move up',()=>move(i,-1)],['↓','Move down',()=>move(i,1)],['✕','Remove',()=>{picked.splice(i,1);invalidate();render();}]]){
+      const b = document.createElement('button'); b.className='sm'; b.textContent=label; b.setAttribute('aria-label',`${aria}: ${s.name}`); b.onclick=fn; li.append(b);
+    }
+    ol.append(li);
+    L.marker([s.lat, s.lng], {interactive:false, icon: L.divIcon({className:'', html:`<div style="background:#0a7c78;color:#fff;border-radius:50%;width:24px;height:24px;line-height:24px;text-align:center;font:600 12px system-ui;border:2px solid #fff">${i+1}</div>`, iconSize:[24,24], iconAnchor:[12,12]})}).addTo(numLayer);
+  });
+  $('hint').style.display = picked.length ? 'none' : '';
+}
+function move(i, d){
+  const j = i + d; if (j < 0 || j >= picked.length) return;
+  [picked[i], picked[j]] = [picked[j], picked[i]]; invalidate(); render();
+}
+const esc = t => t.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+// Search
+$('q').oninput = e => {
+  const q = e.target.value.trim().toLowerCase(), box = $('results');
+  if (q.length < 2) { box.style.display = 'none'; return; }
+  const hits = stops.filter(s => s.name.toLowerCase().includes(q) || s.code.toLowerCase().startsWith(q)).slice(0, 20);
+  box.innerHTML = '';
+  hits.forEach(s => {
+    const d = document.createElement('div'); d.tabIndex = 0; d.textContent = `${s.name} (${s.code})`;
+    const pick = () => { addStop(s.code); map.setView([s.lat, s.lng], 16); box.style.display='none'; $('q').value=''; };
+    d.onclick = pick; d.onkeydown = ev => ev.key === 'Enter' && pick();
+    box.append(d);
+  });
+  box.style.display = hits.length ? 'block' : 'none';
+};
+
+// Routing, with draggable road adjustments.
+// Handles ("vias") are stored per leg, keyed by the two stop codes the leg runs between.
+let viasByLeg = new Map(), lastMeta = [];
+const legKey = i => picked[i] + '|' + picked[i + 1];
+const cloneVias = () => new Map([...viasByLeg].map(([k, v]) => [k, v.map(x => ({...x}))]));
+
+async function route(fit, undo, note){
+  if (picked.length < 2) return say('Add at least two stops.', true);
+  const pts = [], meta = [];
+  picked.forEach((code, i) => {
+    const st = byCode.get(code); pts.push([st.lng, st.lat]); meta.push({leg: i, via: -1});
+    if (i < picked.length - 1) (viasByLeg.get(legKey(i)) || []).forEach((v, j) => { pts.push([v.lng, v.lat]); meta.push({leg: i, via: j}); });
+  });
+  const hasVia = pts.length > picked.length;
+  say('Routing…');
+  try {
+    const url = `${OSRM}${pts.map(q => q.join(',')).join(';')}?overview=false&steps=true&geometries=geojson${hasVia ? '&continue_straight=true' : ''}`;
+    const data = await (await fetch(url)).json();
+    if (data.code !== 'Ok') throw new Error(data.message || data.code);
+    const r = data.routes[0];
+    routeLayer.clearLayers(); lastMeta = meta;
+    const all = [];
+    r.legs.forEach((leg, k) => {
+      const c = leg.steps.flatMap(st => st.geometry.coordinates);
+      all.push(...c);
+      L.polyline(c.map(([x, y]) => [y, x]), {color: '#0a7c78', weight: 6, opacity: .85, bubblingMouseEvents: false})
+        .on('click', e => addVia(k, e.latlng)).addTo(routeLayer);
+    });
+    meta.forEach((m, idx) => {
+      if (m.via < 0) return;
+      const v = viasByLeg.get(legKey(m.leg))[m.via];
+      [v.lng, v.lat] = data.waypoints[idx].location;   // show the handle where it snapped onto a road
+      const mk = L.marker([v.lat, v.lng], {draggable: true, icon: L.divIcon({className: '', html: '<div class="via"></div>', iconSize: [14, 14], iconAnchor: [7, 7]})})
+        .bindTooltip('Drag to reshape, right-click to remove').addTo(routeLayer);
+      mk.on('dragend', () => { const u = cloneVias(), p = mk.getLatLng(); v.lat = p.lat; v.lng = p.lng; route(false, u); });
+      mk.on('contextmenu', () => {
+        const u = cloneVias(), key = legKey(m.leg), arr = viasByLeg.get(key);
+        arr.splice(m.via, 1); if (!arr.length) viasByLeg.delete(key);
+        route(false, u);
+      });
+    });
+    const line = all.filter((c, i) => !i || c[0] !== all[i-1][0] || c[1] !== all[i-1][1]);
+    routeGeo = {type: 'Feature', geometry: {type: 'LineString', coordinates: line},
+      properties: {stops: [...picked], vias: [...viasByLeg].map(([leg, points]) => ({leg, points})), distance_m: r.distance, duration_s: r.duration}};
+    if (fit) map.fitBounds(L.geoJSON(routeGeo).getBounds(), {padding: [40, 40]});
+    const stats = `${(r.distance/1000).toFixed(1)} km, about ${Math.round(r.duration/60)} min by road (car speeds, not bus timetables). Click the route to add a handle, then drag it.`;
+    say(note ? note + ' ' + stats : stats, !!note);
+  } catch (e) {
+    if (undo) { viasByLeg = undo; return route(false, null, `That edit failed (${e.message}) and was undone.`); }
+    say('Routing failed: ' + e.message, true);
+  }
+}
+function addVia(k, ll){
+  const m = lastMeta[k]; if (!m) return;
+  const u = cloneVias(), key = legKey(m.leg), arr = viasByLeg.get(key) || [];
+  arr.splice(m.via + 1, 0, {lat: ll.lat, lng: ll.lng}); viasByLeg.set(key, arr);
+  route(false, u);
+}
+$('go').onclick = () => route(true);
+$('resetvia').onclick = () => { viasByLeg = new Map(); if (routeGeo) route(false); else say('Road edits cleared.'); };
+
+$('export').onclick = () => {
+  if (!routeGeo) return say('Get a road route first.', true);
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(routeGeo)], {type: 'application/geo+json'}));
+  a.download = 'bus-route.geojson'; a.click(); URL.revokeObjectURL(a.href);
+};
+$('clear').onclick = () => { picked = []; viasByLeg = new Map(); invalidate(); render(); say(''); };
+</script>
+</body>
+</html>
