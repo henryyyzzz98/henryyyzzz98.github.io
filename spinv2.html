@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <title>Jyuubin318 Spin Simulator</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="css/seasons.css" />
+<body>
+  <main class="app">
+    <div class="stars stars-a"></div>
+    <div class="stars stars-b"></div>
+    <div class="nebula"></div>
+
+      <header class="topbar">
+        <div class="brand">Jyuubin318 Spin Simulator</div>
+        <div class="top-right">
+        <button class="icon-btn" id="bookBtn" aria-label="Collection book">📖</button>
+        <div class="ticket-pill score-pill">
+            <div class="ticket-count"><span id="scoreCount">0</span></div>
+            <div class="ticket-timer">SCORE</div>
+        </div>
+        <div class="ticket-pill" aria-live="polite">
+            <div class="ticket-count">🎟 <span id="ticketCount">20</span></div>
+            <div class="ticket-timer" id="ticketTimer"></div>
+        </div>
+      </div>
+    </header>
+    <div class="season-tag" id="seasonTag"></div>
+
+    <section class="stage" id="stage">
+      <div class="ambient-ring"></div>
+      <div class="carousel" id="carousel" aria-label="Objekt selection carousel"></div>
+
+      <div class="center-glow"></div>
+
+      <div class="hint" id="hint">
+          Choose the Objekt you want by swiping it left or right<br />or have
+          the simulator randomly select one for you.
+        </div>
+
+      <div class="controls">
+        <button class="primary-btn" id="spinBtn">Random Select</button>
+        <button class="secondary-btn" id="chooseBtn" disabled>Select</button>
+      </div>
+    </section>
+
+    <section class="result-panel" id="resultPanel" aria-live="polite">
+      <div class="reveal-bg" id="revealBg"></div>
+
+      <div class="reveal-stage" id="revealStage">
+        <div class="reveal-glow"></div>
+        <canvas class="orbit" id="orbitBack"></canvas>
+
+        <div class="result-card-wrap" id="resultWrap">
+          <div class="card-tilt">
+            <div class="result-card" id="resultCard">
+              <div class="card-face card-back"><div class="back-gloss"></div></div>
+              <div class="card-face card-front" id="resultFront">
+                <img class="front-img" id="resultImage" alt="" hidden>
+                <div class="collect-badge" id="collectBadge" hidden></div>
+                <div class="front-name" id="resultName" hidden></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <canvas class="orbit" id="orbitFront"></canvas>
+        <div class="reveal-flash" id="revealFlash"></div>
+      </div>
+
+      <div class="result-text" id="resultText">Your Objekt is waiting...</div>
+      <div class="result-actions">
+        <button class="primary-btn bonus-btn" id="bonusBtn" hidden>Bonus Pack Cost 2 Tickets</button>
+        <button class="secondary-btn" id="viewAllBtn">View The Pack</button>
+        <button class="primary-btn" id="againBtn">Try Again</button>
+      </div>
+    </section>
+
+    <section class="season-panel" id="seasonPanel">
+      <div class="season-box">
+        <div class="season-title">SELECT SEASON</div>
+        <div class="pack-stage">
+          <div class="pack-carousel" id="packCarousel" aria-label="Season packs"></div>
+        </div>
+        <div class="pack-nav">
+          <button class="icon-btn" id="packPrev" aria-label="Previous season">‹</button>
+          <div class="pack-info">
+            <div class="pack-name" id="packName"></div>
+            <div class="pack-sub" id="packSub"></div>
+          </div>
+          <button class="icon-btn" id="packNext" aria-label="Next season">›</button>
+        </div>
+        <div class="season-msg" id="seasonMsg"></div>
+        <button class="primary-btn" id="enterBtn">Every Spin Cost 1 Ticket</button>
+        <button class="secondary-btn" id="bookBtn2">📖 Collection Book</button>
+      </div>
+    </section>
+
+    <section class="grid-panel" id="gridPanel">
+      <div class="grid-title">Here's what in the pack:</div>
+      <div class="grid-4x4" id="gridBoard"></div>
+      <button class="secondary-btn" id="gridCloseBtn">Back</button>
+    </section>
+
+    <section class="book-panel" id="bookPanel" aria-label="Collection book">
+      <header class="book-head">
+        <div class="book-title">COLLECTION BOOK</div>
+        <button class="icon-btn" id="bookClose" aria-label="Close">✕</button>
+      </header>
+      <div class="book-tabs" id="bookTabs"></div>
+      <div class="book-progress">
+        <div class="book-progress-top">
+          <span id="bookSeasonName"></span>
+          <span id="bookPercent"></span>
+        </div>
+        <div class="book-bar"><div class="book-bar-fill" id="bookBarFill"></div></div>
+        <div class="book-stats" id="bookStats"></div>
+      </div>
+      <div class="book-scroll" id="bookScroll"></div>
+    </section>
+  </main>
+
+  <script src="js/spinv2.js"></script>
+</body>
+</html>
