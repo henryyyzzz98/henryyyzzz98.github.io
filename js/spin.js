@@ -76,7 +76,7 @@ function allowedInOriginal(card, seasonId) {
 }
 
 const REWARDS = {
-  first: 1,
+  first: 0,
   double: 2,
   motion: 3,
   unit: 4,
