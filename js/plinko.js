@@ -345,7 +345,7 @@ function draw(groupId) {
   let pool = poolByGroup[groupId] || [];
   let fallback = false;
   if (!pool.length) { pool = poolByGroup.first || ALL; fallback = true; }   // no  loaded for this type
-  if (!pool.length) return { : [], fallback, multi: false };
+  if (!pool.length) return { cards: [], fallback, multi: false };
   let n = 1;
   if (Math.random() < MULTI_CHANCE) n = Math.random() < THREE_CARD_SHARE ? 3 : 2;
   const  = Array.from({ length: n }, () => pool[Math.floor(Math.random() * pool.length)]);
@@ -380,7 +380,7 @@ function showResult(wins) {
   });
 
   if (!pulls.length) {
-    toast("No card data loaded. Serve this folder over http and reload.", 4000);
+    toast("No objekt data loaded. Serve this folder over http and reload.", 4000);
     panelOpen = false;
     afterResult();
     return;
@@ -394,7 +394,7 @@ function showResult(wins) {
   resPanel.style.setProperty("--tc", single ? first.color : "#ffffff");
   resTitle.style.setProperty("--tc", single ? first.color : "#ffffff");
   resKicker.textContent = anyMulti ? `Jackpot · ${pulls.length} ` : single ? "You landed on" : `${wins.length} chips landed`;
-  resTitle.textContent = single ? first.text : `${pulls.length} cards`;
+  resTitle.textContent = single ? first.text : `${pulls.length} objekts`;
   resTitle.classList.toggle("jackpot", anyMulti);
   const cols = Math.min(pulls.length, 4);
   resGrid.style.setProperty("--n", cols);
