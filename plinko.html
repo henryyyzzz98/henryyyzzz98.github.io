@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Plinko</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/plinko.css">
+</head>
+<body>
+  <main class="cabinet">
+    <header class="hud">
+      <h1 class="logo">Jyuubin318 Plinko Machine</h1>
+      <div class="hud-stats">
+        <div class="stat" title="Chips"><i class="coin-ico"></i><b id="ballCount">0</b></div>
+        <button class="icon-btn" id="bookBtn" aria-label="Collection book">📖</button>
+      </div>
+    </header>
+
+    <div class="board-wrap" id="boardWrap">
+      <canvas id="board" aria-label="Plinko board"></canvas>
+      <div class="toast" id="toast" hidden></div>
+    </div>
+
+    <footer class="controls">
+      <button class="btn drop" id="fireBtn">Drop Chip</button>
+    </footer>
+  </main>
+
+  <!-- Prize reveal -->
+  <section class="open-panel" id="resPanel" aria-live="polite">
+    <p class="res-kicker" id="resKicker"></p>
+    <h2 class="res-title" id="resTitle"></h2>
+    <div class="res-grid" id="resGrid"></div>
+    <p class="open-head" id="resSub"></p>
+    <div class="open-actions" id="resActions" hidden>
+      <button class="btn ghost" id="resBook">Collection Book</button>
+      <button class="btn drop small" id="resAgain">Drop Again</button>
+    </div>
+    <div class="open-flash" id="resFlash"></div>
+  </section>
+
+  <!-- Collection book -->
+  <section class="book-panel" id="bookPanel" aria-label="Collection book">
+    <header class="book-head">
+      <h2 class="book-title">Collection Book</h2>
+      <button class="icon-btn" id="bookClose" aria-label="Close">✕</button>
+    </header>
+    <div class="book-tabs" id="bookTabs"></div>
+    <div class="book-progress">
+      <div class="book-progress-top">
+        <span id="bookName"></span>
+        <span id="bookPercent"></span>
+      </div>
+      <div class="book-bar"><div class="book-bar-fill" id="bookBarFill"></div></div>
+      <div class="book-stats" id="bookStats"></div>
+    </div>
+    <div class="seg" id="bookFilter" role="radiogroup" aria-label="Show cards">
+      <button type="button" role="radio" data-f="all">All</button>
+      <button type="button" role="radio" data-f="have">Collected</button>
+      <button type="button" role="radio" data-f="missing">Not Collected</button>
+    </div>
+    <div class="book-scroll" id="bookScroll"></div>
+  </section>
+
+    <script src="js/plinko.js"></script>
+</body>
+</html>
