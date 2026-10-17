@@ -370,7 +370,7 @@ function showResult(wins) {
   let anyMulti = false, anyFallback = false;
   wins.forEach(idx => {
     const lab = LABELS[idx];
-    const { cards, fallback, multi } = draw(lab.id);
+    const { cards, fallback, multi } = drawCards(lab.id);
     anyMulti = anyMulti || multi; anyFallback = anyFallback || fallback;
     cards.forEach(card => {
       const before = countOf(card);
