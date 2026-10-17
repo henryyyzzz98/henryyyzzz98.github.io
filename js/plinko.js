@@ -633,7 +633,19 @@ bookFilterEl.addEventListener("click", e => {
 
 /* ---------- Main loop ---------- */
 let lastFrame = performance.now(), acc = 0, clock = 0;
-let nextFree = performance.now() + FREE_CHIP_EVERY * 1000;
+// Free chips are worked out from the clock, so they also arrive while the page is closed.
+function regenChips() {
+  const now = Date.now();
+  if (!Number.isFinite(save.lastRegen) || save.lastRegen > now) save.lastRegen = now;
+  if (save.chips >= FREE_CHIP_BELOW) { save.lastRegen = now; return; }
+  const earned = Math.floor((now - save.lastRegen) / (FREE_CHIP_EVERY * 1000));
+  if (earned <= 0) return;
+  const give = Math.min(earned, FREE_CHIP_BELOW - save.chips);
+  save.chips += give;
+  save.lastRegen = save.chips >= FREE_CHIP_BELOW ? now : save.lastRegen + earned * FREE_CHIP_EVERY * 1000;
+  persist();
+  if (document.visibilityState === "visible" && give > 1) toast(`Welcome back! ${give} free chips added`, 2600);
+}
 function frame(now) {
   const dt = Math.min((now - lastFrame) / 1000, 0.05);
   lastFrame = now; clock += dt; acc += dt;
@@ -641,15 +653,14 @@ function frame(now) {
   while (acc >= DT && n++ < 30) { simulate(DT); acc -= DT; }
   if (n >= 30) acc = 0;
   for (let i = floaters.length - 1; i >= 0; i--) { floaters[i].t += dt; if (floaters[i].t > 1.2) floaters.splice(i, 1); }
-  if (now > nextFree) {
-    nextFree = now + FREE_CHIP_EVERY * 1000;
-    if (save.chips < FREE_CHIP_BELOW) { save.chips++; persist(); }
-  }
+  regenChips();
   updateHud();
   draw(clock);
   requestAnimationFrame(frame);
 }
 resize();
+regenChips();
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") regenChips(); });
 loadCards().then(() => {
   if (!ALL.length) toast("Card data didn't load. Serve this folder over http and reload.", 5000);
   else toast("Slide along the top and let go to drop a chip.", 3800);
