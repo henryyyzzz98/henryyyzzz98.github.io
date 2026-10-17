@@ -370,9 +370,9 @@ function showResult(wins) {
   let anyMulti = false, anyFallback = false;
   wins.forEach(idx => {
     const lab = LABELS[idx];
-    const { , fallback, multi } = draw(lab.id);
+    const { cards, fallback, multi } = draw(lab.id);
     anyMulti = anyMulti || multi; anyFallback = anyFallback || fallback;
-    .forEach(card => {
+    cards.forEach(card => {
       const before = countOf(card);
       collection[card.key] = before + 1;       // a repeat inside the same batch shows ×2
       pulls.push({ card, lab, isNew: before === 0, n: before + 1 });
@@ -393,7 +393,7 @@ function showResult(wins) {
   const first = LABELS[wins[0]];
   resPanel.style.setProperty("--tc", single ? first.color : "#ffffff");
   resTitle.style.setProperty("--tc", single ? first.color : "#ffffff");
-  resKicker.textContent = anyMulti ? `Jackpot · ${pulls.length} ` : single ? "You landed on" : `${wins.length} chips landed`;
+  resKicker.textContent = anyMulti ? `Jackpot · ${pulls.length} objekt` : single ? "You landed on" : `${wins.length} chips landed`;
   resTitle.textContent = single ? first.text : `${pulls.length} objekts`;
   resTitle.classList.toggle("jackpot", anyMulti);
   const cols = Math.min(pulls.length, 4);
