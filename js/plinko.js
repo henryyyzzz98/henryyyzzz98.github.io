@@ -322,7 +322,7 @@ async function loadCards() {
       const res = await fetch(s.file);
       if (!res.ok) throw new Error(res.status);
       const arr = await res.json();
-      season[s.id] = arr.map(c => ({ ...c, season: s.id, key: s.id + "|" + c.name }));
+      seasonCards[s.id] = arr.map(c => ({ ...c, season: s.id, key: s.id + "|" + c.name }));
     } catch (_) { /* season not available */ }
   }));
   ALL = SEASON_FILES.flatMap(s => seasonCards[s.id] || []);
