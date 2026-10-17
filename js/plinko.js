@@ -313,8 +313,8 @@ window.addEventListener("keydown", e => {
 
 /* ---------- Card data ---------- */
 let ALL = [];                 // every card from every loaded season
-const season = {};       // season id -> 
-const poolByGroup = {};       // group ->  (all seasons)
+const seasonCards = {};       // season id -> cards
+const poolByGroup = {};       // group -> cards (all seasons)
 
 async function loadCards() {
   await Promise.all(SEASON_FILES.map(async s => {
