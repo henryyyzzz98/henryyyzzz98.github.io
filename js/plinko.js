@@ -394,7 +394,7 @@ function showResult(wins) {
   resPanel.style.setProperty("--tc", single ? first.color : "#ffffff");
   resTitle.style.setProperty("--tc", single ? first.color : "#ffffff");
   resKicker.textContent = anyMulti ? `Jackpot · ${pulls.length} ` : single ? "You landed on" : `${wins.length} chips landed`;
-  resTitle.textContent = single ? first.text : `${pulls.length} objekts`;
+  resTitle.textContent = single ? first.text : `${pulls.length} cards`;
   resTitle.classList.toggle("jackpot", anyMulti);
   const cols = Math.min(pulls.length, 4);
   resGrid.style.setProperty("--n", cols);
