@@ -316,7 +316,7 @@ let ALL = [];                 // every card from every loaded season
 const season = {};       // season id -> 
 const poolByGroup = {};       // group ->  (all seasons)
 
-async function load() {
+async function loadCards() {
   await Promise.all(SEASON_FILES.map(async s => {
     try {
       const res = await fetch(s.file);
@@ -325,7 +325,7 @@ async function load() {
       season[s.id] = arr.map(c => ({ ...c, season: s.id, key: s.id + "|" + c.name }));
     } catch (_) { /* season not available */ }
   }));
-  ALL = SEASON_FILES.flatMap(s => season[s.id] || []);
+  ALL = SEASON_FILES.flatMap(s => seasonCards[s.id] || []);
   ALL.forEach(c => { (poolByGroup[String(c.group || "").toLowerCase()] ||= []).push(c); });
 }
 
