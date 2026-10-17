@@ -341,15 +341,15 @@ const cardNumber = card => {
 
 
 /* ---------- Rewards ---------- */
-function draw(groupId) {
+function drawCards(groupId) {
   let pool = poolByGroup[groupId] || [];
   let fallback = false;
-  if (!pool.length) { pool = poolByGroup.first || ALL; fallback = true; }   // no  loaded for this type
+  if (!pool.length) { pool = poolByGroup.first || ALL; fallback = true; }   // no cards loaded for this type
   if (!pool.length) return { cards: [], fallback, multi: false };
   let n = 1;
   if (Math.random() < MULTI_CHANCE) n = Math.random() < THREE_CARD_SHARE ? 3 : 2;
-  const  = Array.from({ length: n }, () => pool[Math.floor(Math.random() * pool.length)]);
-  return { , fallback, multi: n > 1 };
+  const cards = Array.from({ length: n }, () => pool[Math.floor(Math.random() * pool.length)]);
+  return { cards, fallback, multi: n > 1 };
 }
 
 /* ---------- Prize reveal ---------- */
