@@ -313,19 +313,19 @@ window.addEventListener("keydown", e => {
 
 /* ---------- Card data ---------- */
 let ALL = [];                 // every card from every loaded season
-const seasonCards = {};       // season id -> cards
-const poolByGroup = {};       // group -> cards (all seasons)
+const season = {};       // season id -> 
+const poolByGroup = {};       // group ->  (all seasons)
 
-async function loadCards() {
+async function load() {
   await Promise.all(SEASON_FILES.map(async s => {
     try {
       const res = await fetch(s.file);
       if (!res.ok) throw new Error(res.status);
       const arr = await res.json();
-      seasonCards[s.id] = arr.map(c => ({ ...c, season: s.id, key: s.id + "|" + c.name }));
+      season[s.id] = arr.map(c => ({ ...c, season: s.id, key: s.id + "|" + c.name }));
     } catch (_) { /* season not available */ }
   }));
-  ALL = SEASON_FILES.flatMap(s => seasonCards[s.id] || []);
+  ALL = SEASON_FILES.flatMap(s => season[s.id] || []);
   ALL.forEach(c => { (poolByGroup[String(c.group || "").toLowerCase()] ||= []).push(c); });
 }
 
@@ -341,15 +341,15 @@ const cardNumber = card => {
 
 
 /* ---------- Rewards ---------- */
-function drawCards(groupId) {
+function draw(groupId) {
   let pool = poolByGroup[groupId] || [];
   let fallback = false;
-  if (!pool.length) { pool = poolByGroup.first || ALL; fallback = true; }   // no cards loaded for this type
-  if (!pool.length) return { cards: [], fallback, multi: false };
+  if (!pool.length) { pool = poolByGroup.first || ALL; fallback = true; }   // no  loaded for this type
+  if (!pool.length) return { : [], fallback, multi: false };
   let n = 1;
   if (Math.random() < MULTI_CHANCE) n = Math.random() < THREE_CARD_SHARE ? 3 : 2;
-  const cards = Array.from({ length: n }, () => pool[Math.floor(Math.random() * pool.length)]);
-  return { cards, fallback, multi: n > 1 };
+  const  = Array.from({ length: n }, () => pool[Math.floor(Math.random() * pool.length)]);
+  return { , fallback, multi: n > 1 };
 }
 
 /* ---------- Prize reveal ---------- */
@@ -370,9 +370,9 @@ function showResult(wins) {
   let anyMulti = false, anyFallback = false;
   wins.forEach(idx => {
     const lab = LABELS[idx];
-    const { cards, fallback, multi } = drawCards(lab.id);
+    const { , fallback, multi } = draw(lab.id);
     anyMulti = anyMulti || multi; anyFallback = anyFallback || fallback;
-    cards.forEach(card => {
+    .forEach(card => {
       const before = countOf(card);
       collection[card.key] = before + 1;       // a repeat inside the same batch shows ×2
       pulls.push({ card, lab, isNew: before === 0, n: before + 1 });
@@ -393,8 +393,8 @@ function showResult(wins) {
   const first = LABELS[wins[0]];
   resPanel.style.setProperty("--tc", single ? first.color : "#ffffff");
   resTitle.style.setProperty("--tc", single ? first.color : "#ffffff");
-  resKicker.textContent = anyMulti ? `Jackpot · ${pulls.length} cards` : single ? "You landed on" : `${wins.length} chips landed`;
-  resTitle.textContent = single ? first.text : `${pulls.length} cards`;
+  resKicker.textContent = anyMulti ? `Jackpot · ${pulls.length} ` : single ? "You landed on" : `${wins.length} chips landed`;
+  resTitle.textContent = single ? first.text : `${pulls.length} objekts`;
   resTitle.classList.toggle("jackpot", anyMulti);
   const cols = Math.min(pulls.length, 4);
   resGrid.style.setProperty("--n", cols);
@@ -457,7 +457,7 @@ function showResult(wins) {
     let text = fresh
       ? `${fresh} new card${fresh === 1 ? "" : "s"} added to your book`
       : (pulls.length === 1 ? "Already in your book" : "All duplicates this time");
-    if (anyFallback) text = "Some types have no cards loaded yet, so you got First cards instead. " + text;
+    if (anyFallback) text = "Some types have no objekts loaded yet, so you got FCOs instead. " + text;
     resSub.textContent = text;
     resActions.hidden = false;
   }, 450 + cells.length * gap + 650));
@@ -662,7 +662,7 @@ resize();
 regenChips();
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") regenChips(); });
 loadCards().then(() => {
-  if (!ALL.length) toast("Card data didn't load. Serve this folder over http and reload.", 5000);
+  if (!ALL.length) toast("Objekt data didn't load. Serve this folder over http and reload.", 5000);
   else toast("Slide along the top and let go to drop a chip.", 3800);
 });
 requestAnimationFrame(frame);
