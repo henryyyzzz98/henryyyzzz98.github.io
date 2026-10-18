@@ -1,0 +1,490 @@
+<title>Atom01 Card Catch</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,800&display=swap">
+<style>
+/* Layout: one-screen app. HUD strip on top, walkable canvas world fills the rest, overlays (encounter, book, shop) slide over it. Single committed "dusk plaza" look. */
+:root{
+  --ink:#15142c; --panel:#211f40; --panel-2:#2b2852; --line:#3d3a6e;
+  --text:#f3f0ff; --muted:#aaa5d4; --accent:#ff7aa8; --accent-ink:#2a0f1c;
+  --first:#7cc4ff; --double:#c49bff; --special:#ffcc4d; --good:#6fe0a8; --bad:#ff8a7a;
+  --f-display:"Unbounded","Arial Rounded MT Bold",system-ui,sans-serif;
+  --f-body:"Nunito Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--ink);color:var(--text);font-family:var(--f-body);font-size:15px;overflow:hidden}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#app{height:100%;display:grid;grid-template-rows:auto 1fr}
+.hud{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;padding-block:10px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  background:var(--panel);border-bottom:1px solid var(--line)}
+.place{display:flex;flex-direction:column;gap:2px;min-width:0;margin-right:auto}
+.place h1{font-family:var(--f-display);font-weight:700;font-size:17px;margin:0;letter-spacing:.01em}
+.place small{color:var(--muted);font-size:12px}
+.stats{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:flex;align-items:center;gap:6px;background:var(--panel-2);border:1px solid var(--line);border-radius:999px;padding:5px 11px;font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.chip b{font-weight:800}
+.chip .sub{color:var(--muted);font-size:11px}
+.ico{width:14px;height:18px;border-radius:3px;display:inline-block;flex:none}
+.ico.sleeve{background:linear-gradient(135deg,rgba(255,255,255,.55),rgba(255,255,255,.15));border:1px solid rgba(255,255,255,.6)}
+.ico.top{background:linear-gradient(135deg,#e8f6ff,#9fd3ff);border:2px solid #dff2ff}
+.ico.binder{background:linear-gradient(135deg,#ffb3cf,var(--accent));border:1px solid #ffd6e5}
+.ico.star{width:14px;height:14px;background:var(--special);clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)}
+.actions{display:flex;gap:8px}
+.btn{border:0;border-radius:12px;padding:9px 14px;font-weight:800;background:var(--panel-2);border:1px solid var(--line)}
+.btn:hover{background:var(--line)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+#stage{position:relative;overflow:hidden;min-height:0}
+#world{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+.hint{position:absolute;left:max(16px,env(safe-area-inset-left,0px));top:12px;background:rgba(21,20,44,.82);border:1px solid var(--line);border-radius:10px;padding:7px 11px;font-size:12.5px;color:var(--muted);max-width:min(340px,calc(100% - 32px));pointer-events:none}
+.hint b{color:var(--text)}
+/* d-pad */
+.pad{position:absolute;left:max(16px,env(safe-area-inset-left,0px));bottom:max(16px,env(safe-area-inset-bottom,0px));display:grid;grid-template-columns:repeat(3,52px);grid-template-rows:repeat(3,52px);gap:4px;opacity:.92}
+.pad button{border:1px solid var(--line);background:rgba(43,40,82,.85);border-radius:12px;font-size:20px;touch-action:none;user-select:none;-webkit-user-select:none}
+.pad button:active{background:var(--line)}
+.pad .u{grid-area:1/2}.pad .l{grid-area:2/1}.pad .r{grid-area:2/3}.pad .d{grid-area:3/2}
+@media (hover:hover) and (pointer:fine){.pad{display:none}}
+/* overlays */
+.overlay{position:fixed;inset:0;background:rgba(10,9,26,.78);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;z-index:20;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:calc(16px + env(safe-area-inset-top,0px)) calc(16px + env(safe-area-inset-bottom,0px))}
+.sheet{background:var(--panel);border:1px solid var(--line);border-radius:20px;width:min(560px,100%);max-height:100%;display:flex;flex-direction:column;overflow:hidden}
+.sheet.wide{width:min(1000px,100%);height:100%}
+.sheet header{display:flex;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid var(--line)}
+.sheet header h2{font-family:var(--f-display);font-size:17px;margin:0;margin-right:auto;text-wrap:balance}
+.x{border:0;background:var(--panel-2);border-radius:10px;width:36px;height:36px;font-size:18px}
+/* card */
+.card{position:relative;aspect-ratio:5/8;max-width:100%;border-radius:10px;overflow:hidden;background:var(--panel-2);border:2px solid var(--tier,var(--line));isolation:isolate}
+.card.t-First{--tier:var(--first)}.card.t-Double{--tier:var(--double)}.card.t-Special{--tier:var(--special)}
+.card .fb{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-between;padding:8% 9%;background:linear-gradient(160deg,var(--panel-2),color-mix(in srgb,var(--tier) 35%,var(--panel)))}
+.card .fb .num{font-family:var(--f-display);font-weight:700;font-size:clamp(14px,22cqw,40px);line-height:1}
+.card{container-type:inline-size}
+.card .fb .mem{font-weight:800;font-size:clamp(10px,12cqw,22px)}
+.card .fb .tr{font-size:clamp(8px,8cqw,13px);text-transform:uppercase;letter-spacing:.08em;color:var(--tier);font-weight:800}
+.card img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1}
+.card.shiny::after{content:"";position:absolute;inset:0;z-index:2;background:linear-gradient(115deg,transparent 20%,rgba(255,120,200,.35) 35%,rgba(120,220,255,.35) 50%,rgba(255,240,120,.35) 65%,transparent 80%);background-size:250% 100%;mix-blend-mode:screen;animation:holo 3s linear infinite}
+@keyframes holo{to{background-position:-250% 0}}
+.badge{position:absolute;z-index:3;top:5px;right:5px;background:rgba(10,9,26,.85);border-radius:999px;padding:2px 7px;font-size:11px;font-weight:800;font-variant-numeric:tabular-nums}
+.badge.shine{left:5px;right:auto;background:linear-gradient(90deg,#ff8fd0,#8fe1ff,#ffe78f);color:#1b1630}
+.card.locked img{filter:grayscale(1) brightness(.35)}
+.card.locked .fb{filter:grayscale(1) brightness(.5)}
+/* encounter */
+.enc{padding:18px;display:flex;flex-direction:column;align-items:center;gap:14px;overflow:auto}
+.enc .msg{font-weight:800;font-size:16px;text-align:center;min-height:2.6em;text-wrap:balance}
+.enc .msg small{display:block;font-weight:600;color:var(--muted);font-size:13px;margin-top:3px}
+.float{width:min(190px,48vw);position:relative;animation:bob 2.4s ease-in-out infinite}
+.float .card{box-shadow:0 0 34px 6px color-mix(in srgb,var(--tier) 60%,transparent)}
+.float.hidden-id .card img,.float.hidden-id .card .fb{filter:blur(9px) brightness(.85)}
+.float.shiny-glow .card{box-shadow:0 0 34px 8px #ff9fe0,0 0 60px 16px #8fe1ff55}
+@keyframes bob{50%{transform:translateY(-8px)}}
+.float .plastic{position:absolute;inset:-6px;border-radius:14px;z-index:5;background:linear-gradient(135deg,rgba(255,255,255,.5),rgba(255,255,255,.08) 45%,rgba(255,255,255,.3));border:2px solid rgba(255,255,255,.75);opacity:0;transform:scale(1.3);transition:opacity .25s,transform .25s;pointer-events:none}
+.float.sleeved .plastic{opacity:1;transform:scale(1)}
+.float.sleeved{animation:none}
+.float.wob{animation:wob .55s ease-in-out}
+@keyframes wob{25%{transform:rotate(-9deg)}75%{transform:rotate(9deg)}}
+.float.gone{transition:opacity .7s,transform .7s;opacity:0;transform:translateY(-40px) scale(.7)}
+.float.pop{animation:pop .4s}
+@keyframes pop{40%{transform:scale(1.12)}}
+.throws{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%}
+.throw{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 6px;border-radius:14px;background:var(--panel-2);border:1px solid var(--line)}
+.throw:hover:not(:disabled){border-color:var(--accent)}
+.throw .nm{font-weight:800;font-size:13px}
+.throw .ct{color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
+.throw:disabled{opacity:.4;cursor:not-allowed}
+.enc .row{display:flex;gap:8px;width:100%}
+.enc .row .btn{flex:1}
+.result{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center}
+.result .nm{font-family:var(--f-display);font-size:16px}
+.tag{display:inline-block;border-radius:999px;padding:2px 9px;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#1b1630;background:var(--tier)}
+.t-First{--tier:var(--first)}.t-Double{--tier:var(--double)}.t-Special{--tier:var(--special)}
+.new{color:var(--good);font-weight:800}
+/* book */
+.bookbar{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;padding:12px 18px;border-bottom:1px solid var(--line)}
+.prog{display:flex;flex-direction:column;gap:6px;min-width:200px;flex:1}
+.prog .lbl{display:flex;justify-content:space-between;font-size:13px;font-variant-numeric:tabular-nums}
+.prog .lbl b{font-family:var(--f-display);font-size:15px}
+.bar{height:8px;border-radius:999px;background:var(--panel-2);overflow:hidden;display:flex}
+.bar i{display:block;height:100%}
+.seg{display:flex;background:var(--panel-2);border-radius:12px;padding:3px;gap:2px;flex-wrap:wrap}
+.seg button{border:0;background:transparent;border-radius:9px;padding:6px 10px;font-size:13px;font-weight:700;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--line);color:var(--text)}
+.tiers{display:flex;gap:8px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.tiers span{display:flex;align-items:center;gap:5px}
+.tiers span::before{content:"";width:9px;height:9px;border-radius:3px;background:var(--tier)}
+.grid{overflow:auto;padding:16px 18px;display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px;align-content:start;flex:1}
+.grid .card{cursor:pointer;border-width:2px}
+.grid .card:hover{transform:translateY(-2px)}
+.empty{grid-column:1/-1;color:var(--muted);text-align:center;padding:40px 0}
+/* viewer */
+.viewer{padding:18px;display:flex;gap:18px;flex-wrap:wrap;justify-content:center;overflow:auto}
+.viewer .card{width:min(220px,60vw)}
+.viewer dl{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:0;align-content:start;min-width:0;font-variant-numeric:tabular-nums}
+.viewer dt{color:var(--muted)}.viewer dd{margin:0;font-weight:800}
+/* shop */
+.shop{padding:16px 18px;display:flex;flex-direction:column;gap:10px;overflow:auto}
+.item{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:12px;border-radius:14px;background:var(--panel-2);border:1px solid var(--line)}
+.item .ico{width:22px;height:28px}
+.item .ico.star{width:22px;height:22px}
+.item h3{margin:0;font-size:15px}
+.item p{margin:2px 0 0;color:var(--muted);font-size:13px}
+.shop .note{color:var(--muted);font-size:13px;margin:0}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--panel-2);border:1px solid var(--line);padding:10px 16px;border-radius:12px;font-weight:700;z-index:40;max-width:calc(100% - 32px);text-align:center}
+@media (max-width:640px){.hud{gap:8px}.place h1{font-size:15px}.chip{padding:4px 9px;font-size:12px}.btn{padding:8px 11px}}
+@media (prefers-reduced-motion:reduce){*,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+</style>
+
+<div id="app">
+  <div class="hud">
+    <div class="place"><h1>Atom01 Plaza</h1><small id="clock">Day</small></div>
+    <div class="stats">
+      <span class="chip" title="Sleeves refill 1 per minute, up to 30"><i class="ico sleeve"></i><b id="sSleeve">0</b><span class="sub" id="sNext"></span></span>
+      <span class="chip" title="Toploaders"><i class="ico top"></i><b id="sTop">0</b></span>
+      <span class="chip" title="Binder slots"><i class="ico binder"></i><b id="sBinder">0</b></span>
+      <span class="chip" title="Stars, spent in the shop"><i class="ico star"></i><b id="sStar">0</b></span>
+    </div>
+    <div class="actions">
+      <button class="btn" id="bShop">Shop</button>
+      <button class="btn primary" id="bBook">Collection <span id="sPct">0%</span></button>
+    </div>
+  </div>
+  <div id="stage">
+    <canvas id="world" aria-label="Atom01 Plaza map"></canvas>
+    <div class="hint" id="hint">Walk with <b>arrow keys / WASD</b>. Cards hide in the <b>sparkling grass</b>. The lilac patch by the stage hides rarer cards.</div>
+    <div class="pad" aria-label="Move">
+      <button class="u" data-d="up" aria-label="Up">▲</button>
+      <button class="l" data-d="left" aria-label="Left">◀</button>
+      <button class="r" data-d="right" aria-label="Right">▶</button>
+      <button class="d" data-d="down" aria-label="Down">▼</button>
+    </div>
+  </div>
+</div>
+<div id="layer"></div>
+
+<script>
+const TIER_ORDER=['First','Double','Special'];
+let CARDS=[],BY_TIER={},MEMBERS=[];
+function setCards(list){
+  CARDS=list; BY_TIER={First:[],Double:[],Special:[]}; MEMBERS=[];
+  list.forEach(c=>{(BY_TIER[c.tier]||(BY_TIER[c.tier]=[])).push(c); if(!MEMBERS.includes(c.member))MEMBERS.push(c.member);});
+  CARDS.sort((a,b)=>a.num-b.num||MEMBERS.indexOf(a.member)-MEMBERS.indexOf(b.member));
+}
+function parseJson(arr){
+  return arr.map(c=>{const m=c.name.match(/^(\S+)\s+(.+?)\s+(\d{3})([A-Z]?)$/); if(!m)return null;
+    const t=c.group.charAt(0).toUpperCase()+c.group.slice(1).toLowerCase();
+    return {name:c.name,member:m[2],code:m[3]+m[4],num:+m[3],tier:t,img:c.image};}).filter(Boolean);
+}
+setCards(RAW.map(r=>({member:r[0],code:r[1],num:parseInt(r[1]),tier:{F:'First',D:'Double',S:'Special'}[r[2]],img:IMG+r[3]+'/'+r[4],name:'Atom01 '+r[0]+' '+r[1]})));
+/* If the page sits next to a1triples.json on your own site, use that file instead */
+fetch('json/a1triples.json').then(r=>r.ok?r.json():null).then(j=>{if(Array.isArray(j)&&j.length){const p=parseJson(j);if(p.length){setCards(p);updateHud();}}}).catch(()=>{});
+
+/* ---------- save state ---------- */
+const KEY='atom01-card-catch-v1', CAP=30, REGEN=60000;
+let S={owned:{},sleeves:15,top:2,binder:0,stars:0,lastRegen:Date.now(),lure:0,x:12,y:5,caught:0};
+try{const s=JSON.parse(localStorage.getItem(KEY)||'null'); if(s)S=Object.assign(S,s);}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+function regen(){
+  const now=Date.now();
+  if(S.sleeves>=CAP){S.lastRegen=now;return;}
+  const n=Math.floor((now-S.lastRegen)/REGEN);
+  if(n>0){S.sleeves=Math.min(CAP,S.sleeves+n);S.lastRegen=S.sleeves>=CAP?now:S.lastRegen+n*REGEN;save();}
+}
+regen();
+
+/* ---------- map ---------- */
+const INNER=[
+"..........====.........*****..",
+".BBBBB....====....~~~~.*****..",
+".BBBBB....====....~~~~.*****..",
+".BBDBB....====....~~~~........",
+"..........====................",
+"=============================.",
+"=============================.",
+"..****....====..ff....PPPPP...",
+"..****....====..ff....PPPPP...",
+"..****....====........PPPPP...",
+"..........====....SSS.........",
+"..ff......====....SSS.....ff..",
+".....~~~..====....SSS.........",
+".....~~~..====................",
+"..........====..*****...****..",
+".****.....====..*****...****..",
+".****.....====..........****..",
+"..........====................"];
+const MAP=['#'.repeat(32),...INNER.map(r=>'#'+r.padEnd(30,'.').slice(0,30)+'#'),'#'.repeat(32)];
+const MW=32,MH=MAP.length;
+const tile=(x,y)=>(x<0||y<0||x>=MW||y>=MH)?'#':MAP[y][x];
+const BLOCK=new Set(['#','~','B','P']);
+if(BLOCK.has(tile(S.x,S.y))){S.x=12;S.y=5;}
+const P={x:S.x,y:S.y,fx:S.x,fy:S.y,tx:S.x,ty:S.y,t:1,dir:'down',walking:false};
+const isNight=()=>{const h=new Date().getHours();return h>=19||h<6;};
+
+/* ---------- input ---------- */
+const held=[];const KEYS={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',w:'up',s:'down',a:'left',d:'right',W:'up',S:'down',A:'left',D:'right'};
+let busy=false;
+addEventListener('keydown',e=>{
+  if(busy){encKey(e);return;}
+  const d=KEYS[e.key]; if(d){e.preventDefault(); if(!held.includes(d))held.push(d);}
+  if(e.key==='b'||e.key==='B')openBook();
+});
+addEventListener('keyup',e=>{const d=KEYS[e.key]; if(d){const i=held.indexOf(d); if(i>-1)held.splice(i,1);}});
+addEventListener('blur',()=>held.length=0);
+document.querySelectorAll('.pad button').forEach(b=>{
+  const d=b.dataset.d;
+  b.addEventListener('pointerdown',e=>{e.preventDefault();b.setPointerCapture(e.pointerId);if(!held.includes(d))held.push(d);});
+  const up=()=>{const i=held.indexOf(d);if(i>-1)held.splice(i,1);};
+  b.addEventListener('pointerup',up);b.addEventListener('pointercancel',up);b.addEventListener('lostpointercapture',up);
+});
+const DV={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]};
+
+/* ---------- world render ---------- */
+const cv=document.getElementById('world'),ctx=cv.getContext('2d');
+let TS=40,DPR=1;
+function resize(){DPR=Math.min(2,devicePixelRatio||1);const r=cv.getBoundingClientRect();cv.width=r.width*DPR;cv.height=r.height*DPR;TS=Math.max(30,Math.min(56,Math.floor(Math.min(r.width/11,r.height/8.5))));}
+addEventListener('resize',resize);
+const hsh=(x,y,k=0)=>{let h=(x*374761393+y*668265263+k*2147483647)|0;h=(h^(h>>>13))*1274126177;return ((h^(h>>>16))>>>0)/4294967296;};
+const STEP=150;
+let last=performance.now(),steps=0;
+function update(now){
+  if(!P.walking&&!busy&&held.length){
+    const d=held[held.length-1];P.dir=d;const nx=P.x+DV[d][0],ny=P.y+DV[d][1];
+    if(!BLOCK.has(tile(nx,ny))){P.fx=P.x;P.fy=P.y;P.tx=nx;P.ty=ny;P.t0=now;P.walking=true;}
+  }
+  if(P.walking){
+    const k=Math.min(1,(now-P.t0)/STEP);
+    if(k>=1){P.walking=false;P.x=P.tx;P.y=P.ty;S.x=P.x;S.y=P.y;arrive();}
+    P.rx=P.fx+(P.tx-P.fx)*k;P.ry=P.fy+(P.ty-P.fy)*k;
+  }else{P.rx=P.x;P.ry=P.y;}
+}
+function draw(now){
+  const W=cv.width/DPR,H=cv.height/DPR;ctx.setTransform(DPR,0,0,DPR,0,0);
+  ctx.fillStyle='#244a36';ctx.fillRect(0,0,W,H);
+  let cx=(P.rx+.5)*TS-W/2,cy=(P.ry+.5)*TS-H/2;
+  const mw=MW*TS,mh=MH*TS;
+  cx=mw<W?(mw-W)/2:Math.max(0,Math.min(mw-W,cx));cy=mh<H?(mh-H)/2:Math.max(0,Math.min(mh-H,cy));
+  cx=Math.round(cx);cy=Math.round(cy);
+  const x0=Math.max(0,Math.floor(cx/TS)),y0=Math.max(0,Math.floor(cy/TS)),x1=Math.min(MW-1,Math.ceil((cx+W)/TS)),y1=Math.min(MH-1,Math.ceil((cy+H)/TS));
+  for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)drawTile(x,y,x*TS-cx,y*TS-cy,now);
+  // labels
+  label('Card Shop',3.5,1.35,cx,cy);label('Stage',25,8.35,cx,cy);
+  drawPlayer(P.rx*TS-cx,P.ry*TS-cy,now);
+  if(isNight()){
+    const px=(P.rx+.5)*TS-cx,py=(P.ry+.5)*TS-cy;
+    const g=ctx.createRadialGradient(px,py,TS*1.2,px,py,TS*5);g.addColorStop(0,'rgba(12,10,40,0)');g.addColorStop(1,'rgba(12,10,40,.55)');
+    ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  }
+}
+function label(t,tx,ty,cx,cy){
+  ctx.font=`700 ${Math.round(TS*.3)}px Unbounded, system-ui, sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';
+  const x=tx*TS-cx,y=ty*TS-cy,w=ctx.measureText(t).width+TS*.4;
+  ctx.fillStyle='rgba(21,20,44,.85)';rr(x-w/2,y-TS*.24,w,TS*.48,TS*.12);ctx.fill();
+  ctx.fillStyle='#f3f0ff';ctx.fillText(t,x,y+1);
+}
+function rr(x,y,w,h,r){ctx.beginPath();ctx.roundRect?ctx.roundRect(x,y,w,h,r):ctx.rect(x,y,w,h);}
+function grass(x,y,px,py){
+  ctx.fillStyle=(x+y)%2?'#5e9c6b':'#62a270';ctx.fillRect(px,py,TS+1,TS+1);
+  if(hsh(x,y)<.35){ctx.fillStyle='#4f8a5c';const gx=px+hsh(x,y,1)*TS*.8,gy=py+hsh(x,y,2)*TS*.8;ctx.fillRect(gx,gy,2,5);ctx.fillRect(gx+3,gy+1,2,4);}
+}
+function drawTile(x,y,px,py,now){
+  const t=tile(x,y);
+  if(t==='='){ctx.fillStyle='#dcc9a0';ctx.fillRect(px,py,TS+1,TS+1);ctx.fillStyle='#cdb98e';if(hsh(x,y)<.4)ctx.fillRect(px+hsh(x,y,3)*TS*.8,py+hsh(x,y,4)*TS*.8,4,3);
+    if(tile(x,y-1)!=='=')ctx.fillRect(px,py,TS,2);if(tile(x,y+1)!=='=')ctx.fillRect(px,py+TS-2,TS,2);return;}
+  if(t==='~'){ctx.fillStyle='#4a86b8';ctx.fillRect(px,py,TS+1,TS+1);ctx.strokeStyle='rgba(220,240,255,.45)';ctx.lineWidth=2;
+    const o=Math.sin(now/700+x+y*1.7)*TS*.12;ctx.beginPath();ctx.moveTo(px+TS*.15+o,py+TS*.4);ctx.lineTo(px+TS*.45+o,py+TS*.4);ctx.moveTo(px+TS*.5-o,py+TS*.72);ctx.lineTo(px+TS*.8-o,py+TS*.72);ctx.stroke();return;}
+  grass(x,y,px,py);
+  if(t==='#'){ctx.fillStyle='rgba(0,0,0,.18)';ctx.beginPath();ctx.ellipse(px+TS/2,py+TS*.82,TS*.38,TS*.12,0,0,7);ctx.fill();
+    ctx.fillStyle='#2f6b46';ctx.beginPath();ctx.arc(px+TS/2,py+TS*.45,TS*.42,0,7);ctx.fill();
+    ctx.fillStyle='#3d8256';ctx.beginPath();ctx.arc(px+TS*.42,py+TS*.36,TS*.24,0,7);ctx.fill();return;}
+  if(t==='B'||t==='D'||t==='P'){
+    const shop=t!=='P';const wall=shop?'#efe7f7':'#ffe3ee',roof=shop?'#6d5cb0':'#e0568a',k=shop?'B':'P';
+    const top=!(tile(x,y-1)===k||tile(x,y-1)==='D');
+    ctx.fillStyle=wall;ctx.fillRect(px,py,TS+1,TS+1);
+    if(top){ctx.fillStyle=roof;ctx.fillRect(px,py,TS+1,TS*.45);ctx.fillStyle='rgba(255,255,255,.18)';ctx.fillRect(px,py+TS*.38,TS+1,TS*.07);}
+    else if(t==='D'){ctx.fillStyle='#8a5a3c';rr(px+TS*.22,py+TS*.15,TS*.56,TS*.85,4);ctx.fill();ctx.fillStyle='#ffcc4d';ctx.fillRect(px+TS*.62,py+TS*.55,3,3);}
+    else{ctx.fillStyle=shop?'#9ccfe8':'#ffd36b';ctx.fillRect(px+TS*.22,py+TS*.25,TS*.56,TS*.4);ctx.fillStyle='rgba(255,255,255,.4)';ctx.fillRect(px+TS*.22,py+TS*.25,TS*.18,TS*.4);}
+    return;}
+  if(t==='f'){const c=['#ffd6e5','#ffcc4d','#c49bff','#fff'];for(let i=0;i<4;i++){ctx.fillStyle=c[(x+y+i)%4];ctx.beginPath();ctx.arc(px+TS*(.2+hsh(x,y,i)*.6),py+TS*(.2+hsh(x,y,i+9)*.6),TS*.07,0,7);ctx.fill();}return;}
+  if(t==='*'||t==='S'){
+    const rare=t==='S';ctx.fillStyle=rare?'rgba(150,110,220,.35)':'rgba(30,80,45,.25)';ctx.fillRect(px,py,TS+1,TS+1);
+    ctx.fillStyle=rare?'#8f74c9':'#3f8a55';
+    for(let i=0;i<3;i++){const gx=px+TS*(.12+i*.3),gy=py+TS*(.3+(i%2)*.3);ctx.beginPath();ctx.moveTo(gx,gy+TS*.28);ctx.lineTo(gx+TS*.07,gy);ctx.lineTo(gx+TS*.14,gy+TS*.28);ctx.lineTo(gx+TS*.2,gy+TS*.05);ctx.lineTo(gx+TS*.26,gy+TS*.28);ctx.fill();}
+    const tw=(Math.sin(now/400+hsh(x,y)*20)+1)/2;
+    if(tw>.75){ctx.fillStyle=rare?'#ffcc4d':'#fff';ctx.globalAlpha=(tw-.75)*4;const sx=px+TS*(.2+hsh(x,y,5)*.6),sy=py+TS*(.15+hsh(x,y,6)*.4),s=TS*.08;
+      ctx.beginPath();ctx.moveTo(sx,sy-s*2);ctx.lineTo(sx+s*.5,sy);ctx.lineTo(sx,sy+s*2);ctx.lineTo(sx-s*.5,sy);ctx.closePath();ctx.moveTo(sx-s*2,sy);ctx.lineTo(sx,sy+s*.5);ctx.lineTo(sx+s*2,sy);ctx.lineTo(sx,sy-s*.5);ctx.fill();ctx.globalAlpha=1;}
+  }
+}
+function drawPlayer(px,py,now){
+  const bob=P.walking?Math.abs(Math.sin(now/60))*TS*.05:0,cx=px+TS/2;
+  ctx.fillStyle='rgba(0,0,0,.25)';ctx.beginPath();ctx.ellipse(cx,py+TS*.86,TS*.24,TS*.08,0,0,7);ctx.fill();
+  ctx.fillStyle='#ff7aa8';rr(cx-TS*.2,py+TS*.42-bob,TS*.4,TS*.38,TS*.12);ctx.fill();
+  ctx.fillStyle='#ffe0c9';ctx.beginPath();ctx.arc(cx,py+TS*.32-bob,TS*.19,0,7);ctx.fill();
+  ctx.fillStyle='#2c2340';ctx.beginPath();ctx.arc(cx,py+TS*.27-bob,TS*.2,Math.PI*1.05,Math.PI*1.95);ctx.fill();
+  const f={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]}[P.dir];
+  if(P.dir!=='up'){ctx.fillStyle='#2c2340';const ex=cx+f[0]*TS*.08,ey=py+TS*.35-bob;
+    if(P.dir==='down'){ctx.fillRect(ex-TS*.08,ey,2.5,3);ctx.fillRect(ex+TS*.06,ey,2.5,3);}else ctx.fillRect(ex+f[0]*TS*.05,ey,2.5,3);}
+}
+function loop(now){update(now);draw(now);requestAnimationFrame(loop);}
+
+/* ---------- arriving on a tile ---------- */
+function arrive(){
+  save();const t=tile(P.x,P.y);
+  if(t==='D'){held.length=0;openShop();return;}
+  if(t==='*'||t==='S'){
+    steps++;let rate=.14;if(S.lure>0){S.lure--;rate*=2;}
+    if(Math.random()<rate){held.length=0;startEncounter(t==='S');}
+  }
+}
+
+/* ---------- helpers ---------- */
+const $=s=>document.querySelector(s);const layer=$('#layer');
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function cardEl(c,o={}){
+  const d=document.createElement('div');d.className='card t-'+c.tier+(o.shiny?' shiny':'')+(o.locked?' locked':'');
+  d.innerHTML=`<div class="fb"><span class="tr">${c.tier}</span><span class="num">${esc(c.code)}</span><span class="mem">${esc(c.member)}</span></div>`;
+  const im=new Image();im.alt=c.name;im.loading='lazy';im.decoding='async';im.onerror=()=>im.remove();im.src=c.img;d.appendChild(im);
+  return d;
+}
+let toastT;function toast(msg){let t=$('.toast');if(!t){t=document.createElement('div');t.className='toast';t.setAttribute('role','status');document.body.appendChild(t);}t.textContent=msg;clearTimeout(toastT);t.hidden=false;toastT=setTimeout(()=>t.hidden=true,2400);}
+function closeLayer(){layer.innerHTML='';busy=false;held.length=0;}
+function ownedCount(){return CARDS.filter(c=>S.owned[c.name]).length;}
+function updateHud(){
+  regen();
+  $('#sSleeve').textContent=S.sleeves;$('#sTop').textContent=S.top;$('#sBinder').textContent=S.binder;$('#sStar').textContent=S.stars;
+  if(S.sleeves>=CAP)$('#sNext').textContent='full';else{const ms=REGEN-(Date.now()-S.lastRegen),s=Math.max(0,Math.ceil(ms/1000));$('#sNext').textContent=`+1 in ${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;}
+  $('#sPct').textContent=(CARDS.length?Math.floor(ownedCount()/CARDS.length*1000)/10:0)+'%';
+  $('#clock').textContent=(isNight()?'Night · Special cards appear more often':'Day · Special cards are rare')+(S.lure>0?` · Glow stick: ${S.lure} steps`:'');
+}
+setInterval(updateHud,1000);
+
+/* ---------- encounters ---------- */
+const BASE={First:.55,Double:.32,Special:.14},FLEE={First:.12,Double:.22,Special:.35};
+const ITEMS={sleeve:{nm:'Sleeve',mul:1,ico:'sleeve',k:'sleeves'},top:{nm:'Toploader',mul:1.6,ico:'top',k:'top'},binder:{nm:'Binder slot',mul:2.6,ico:'binder',k:'binder'}};
+const GLOW={First:'a soft blue glow',Double:'a lilac shimmer',Special:'a bright gold glare'};
+const STARS={First:1,Double:3,Special:8};
+let E=null;
+function pickTier(rare){
+  const w=rare?{First:40,Double:35,Special:25}:{First:72,Double:21,Special:7};if(isNight())w.Special*=1.8;
+  const tot=w.First+w.Double+w.Special;let r=Math.random()*tot;for(const t of TIER_ORDER){if((r-=w[t])<0&&BY_TIER[t]&&BY_TIER[t].length)return t;}return 'First';
+}
+function startEncounter(rare){
+  const tier=pickTier(rare),pool=BY_TIER[tier];const card=pool[Math.floor(Math.random()*pool.length)];
+  E={card,shiny:Math.random()<1/150,lock:false};busy=true;
+  layer.innerHTML=`<div class="overlay" role="dialog" aria-modal="true" aria-label="Card encounter"><div class="sheet"><div class="enc">
+    <div class="msg" id="eMsg">A card drifted out of the grass!<small>It gives off ${GLOW[tier]}${E.shiny?', and it is sparkling all over':''}.</small></div>
+    <div class="float hidden-id ${E.shiny?'shiny-glow':''}" id="eCard"><div class="plastic"></div></div>
+    <div class="throws" id="eThrows"></div>
+    <div class="row"><button class="btn" id="eRun">Walk away</button></div>
+  </div></div></div>`;
+  $('#eCard').prepend(cardEl(card,{shiny:E.shiny}));
+  renderThrows();$('#eRun').onclick=()=>{if(!E.lock)closeLayer();};
+}
+function chance(it){return Math.min(.95,BASE[E.card.tier]*ITEMS[it].mul);}
+function renderThrows(){
+  const el=$('#eThrows');if(!el)return;
+  el.innerHTML=Object.entries(ITEMS).map(([k,v],i)=>`<button class="throw" data-k="${k}" ${S[v.k]<1||E.lock?'disabled':''}><i class="ico ${v.ico}"></i><span class="nm">${i+1}. ${v.nm}</span><span class="ct">${S[v.k]} left · ${Math.round(chance(k)*100)}%</span></button>`).join('');
+  el.querySelectorAll('.throw').forEach(b=>b.onclick=()=>throwItem(b.dataset.k));
+}
+function encKey(e){
+  if(!E){if(e.key==='Escape')closeLayer();return;}
+  if(e.key==='Escape'&&!E.lock){closeLayer();return;}
+  const k={'1':'sleeve','2':'top','3':'binder'}[e.key];if(k)throwItem(k);
+  if(e.key==='Enter'&&E.done)closeLayer();
+}
+const wait=ms=>new Promise(r=>setTimeout(r,matchMedia('(prefers-reduced-motion: reduce)').matches?Math.min(ms,150):ms));
+async function throwItem(k){
+  const it=ITEMS[k];if(!E||E.lock||S[it.k]<1)return;
+  E.lock=true;S[it.k]--;save();updateHud();renderThrows();$('#eRun').disabled=true;
+  const ok=Math.random()<chance(k),f=$('#eCard'),msg=$('#eMsg');
+  msg.innerHTML=`You threw a ${it.nm.toLowerCase()}…`;
+  f.classList.add('sleeved');await wait(450);
+  const wobbles=ok?3:Math.floor(Math.random()*3);
+  for(let i=0;i<wobbles;i++){f.classList.remove('wob');void f.offsetWidth;f.classList.add('wob');msg.innerHTML='.'.repeat(i+1);await wait(700);}
+  f.classList.remove('wob');
+  if(ok){caught();return;}
+  f.classList.remove('sleeved');f.classList.add('pop');await wait(350);f.classList.remove('pop');
+  if(Math.random()<FLEE[E.card.tier]){
+    f.classList.add('gone');msg.innerHTML=`It slipped out and drifted away.<small>${E.card.tier} cards get away more often.</small>`;
+    E.done=true;E=null;$('#eThrows').innerHTML='';$('#eRun').disabled=false;$('#eRun').textContent='Back to the plaza';$('#eRun').onclick=closeLayer;return;
+  }
+  msg.innerHTML=`It slipped out of the ${it.nm.toLowerCase()}!<small>It is still here. Try again?</small>`;
+  E.lock=false;$('#eRun').disabled=false;renderThrows();
+  if(!S.sleeves&&!S.top&&!S.binder)msg.innerHTML+=`<small>You are out of catch items. Sleeves refill one per minute.</small>`;
+}
+function caught(){
+  const c=E.card,o=S.owned[c.name]||{n:0,s:0},isNew=!o.n;o.n++;if(E.shiny)o.s++;S.owned[c.name]=o;
+  const st=STARS[c.tier]*(E.shiny?5:1);S.stars+=st;S.caught++;save();updateHud();
+  const f=$('#eCard');f.classList.remove('hidden-id');f.classList.add('pop');
+  $('#eMsg').innerHTML=`Caught!`;
+  $('#eThrows').outerHTML=`<div class="result t-${c.tier}"><span class="tag">${c.tier}${E.shiny?' · Shiny':''}</span><span class="nm">${esc(c.member)} ${esc(c.code)}</span>
+    <span>${isNew?'<span class="new">New to your collection</span>':`You now have ×${o.n}`} · +${st} star${st>1?'s':''}</span></div>`;
+  E.done=true;const r=$('#eRun');r.disabled=false;r.textContent='Back to the plaza';r.className='btn primary';r.onclick=closeLayer;r.focus();
+}
+
+/* ---------- collection book ---------- */
+let bookTier='All',bookShow='all';
+function openBook(){
+  busy=true;E=null;
+  layer.innerHTML=`<div class="overlay" role="dialog" aria-modal="true" aria-label="Collection book"><div class="sheet wide">
+    <header><h2>Atom01 Collection</h2><button class="x" id="bx" aria-label="Close">✕</button></header>
+    <div class="bookbar">
+      <div class="prog"><div class="lbl"><b id="bPct"></b><span id="bCnt"></span></div><div class="bar" id="bBar"></div><div class="tiers" id="bTiers"></div></div>
+      <div class="seg" id="segT" aria-label="Tier">${['All',...TIER_ORDER].map(t=>`<button data-v="${t}" aria-pressed="${t===bookTier}">${t}</button>`).join('')}</div>
+      <div class="seg" id="segS" aria-label="Show">${[['all','All'],['have','Collected'],['miss','Not collected']].map(([v,l])=>`<button data-v="${v}" aria-pressed="${v===bookShow}">${l}</button>`).join('')}</div>
+    </div>
+    <div class="grid" id="bGrid"></div></div></div>`;
+  $('#bx').onclick=closeLayer;
+  $('#segT').onclick=e=>{const v=e.target.dataset.v;if(v){bookTier=v;$('#segT').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===v));renderBook();}};
+  $('#segS').onclick=e=>{const v=e.target.dataset.v;if(v){bookShow=v;$('#segS').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===v));renderBook();}};
+  renderBook();
+}
+function renderBook(){
+  const have=ownedCount(),tot=CARDS.length;
+  $('#bPct').textContent=(tot?Math.floor(have/tot*1000)/10:0)+'% complete';$('#bCnt').textContent=`${have} / ${tot} cards · ${S.caught} caught`;
+  $('#bBar').innerHTML=TIER_ORDER.map(t=>{const n=BY_TIER[t].filter(c=>S.owned[c.name]).length;return `<i class="t-${t}" style="width:${tot?n/tot*100:0}%;background:var(--tier)"></i>`;}).join('');
+  $('#bTiers').innerHTML=TIER_ORDER.map(t=>`<span class="t-${t}">${t} ${BY_TIER[t].filter(c=>S.owned[c.name]).length}/${BY_TIER[t].length}</span>`).join('');
+  const g=$('#bGrid');g.innerHTML='';
+  const list=CARDS.filter(c=>(bookTier==='All'||c.tier===bookTier)&&(bookShow==='all'||(bookShow==='have')===!!S.owned[c.name]));
+  if(!list.length){g.innerHTML=`<div class="empty">${bookShow==='have'?'Nothing caught here yet. Head for the sparkling grass.':'Every card here is collected.'}</div>`;return;}
+  const frag=document.createDocumentFragment();
+  list.forEach(c=>{const o=S.owned[c.name];const el=cardEl(c,{locked:!o,shiny:o&&o.s});
+    if(o&&o.n>1)el.insertAdjacentHTML('beforeend',`<span class="badge">×${o.n}</span>`);
+    if(o&&o.s)el.insertAdjacentHTML('beforeend',`<span class="badge shine">Shiny</span>`);
+    el.tabIndex=0;el.setAttribute('role','button');el.onclick=()=>viewCard(c);el.onkeydown=e=>{if(e.key==='Enter')viewCard(c);};frag.appendChild(el);});
+  g.appendChild(frag);
+}
+function viewCard(c){
+  const o=S.owned[c.name];const d=document.createElement('div');d.className='overlay';d.style.zIndex=30;d.setAttribute('role','dialog');
+  d.innerHTML=`<div class="sheet"><header><h2>${esc(c.member)} ${esc(c.code)}</h2><button class="x" aria-label="Close">✕</button></header><div class="viewer"><dl>
+    <dt>Tier</dt><dd><span class="tag t-${c.tier}">${c.tier}</span></dd><dt>Member</dt><dd>${esc(c.member)}</dd><dt>Number</dt><dd>${esc(c.code)}</dd>
+    <dt>Owned</dt><dd>${o?'×'+o.n:'Not yet'}</dd><dt>Shiny</dt><dd>${o&&o.s?'×'+o.s:'None'}</dd></dl></div></div>`;
+  d.querySelector('.viewer').prepend(cardEl(c,{locked:!o,shiny:o&&o.s}));
+  const close=()=>d.remove();d.querySelector('.x').onclick=close;d.onclick=e=>{if(e.target===d)close();};
+  document.body.appendChild(d);
+}
+
+/* ---------- shop ---------- */
+const SHOP=[
+  {k:'sleeves5',nm:'Sleeve pack ×5',ico:'sleeve',cost:3,desc:'Five basic sleeves. Can go over the 30 refill cap.',buy:()=>S.sleeves+=5},
+  {k:'top',nm:'Toploader',ico:'top',cost:5,desc:'1.6× catch chance.',buy:()=>S.top++},
+  {k:'binder',nm:'Binder slot',ico:'binder',cost:15,desc:'2.6× catch chance. Best for Special cards.',buy:()=>S.binder++},
+  {k:'lure',nm:'Glow stick',ico:'star',cost:8,desc:'Doubles encounters in the grass for your next 30 steps there.',buy:()=>S.lure+=30},
+];
+function openShop(){
+  busy=true;E=null;
+  layer.innerHTML=`<div class="overlay" role="dialog" aria-modal="true" aria-label="Card shop"><div class="sheet">
+    <header><h2>Card Shop</h2><span class="chip"><i class="ico star"></i><b id="shStars">${S.stars}</b></span><button class="x" id="sx" aria-label="Close">✕</button></header>
+    <div class="shop"><p class="note">Earn stars by catching cards: First 1, Double 3, Special 8. Shiny cards give 5× stars.</p><div id="shItems" style="display:flex;flex-direction:column;gap:10px"></div></div></div></div>`;
+  $('#sx').onclick=closeLayer;renderShop();
+}
+function renderShop(){
+  $('#shStars').textContent=S.stars;
+  $('#shItems').innerHTML=SHOP.map(i=>`<div class="item"><i class="ico ${i.ico}"></i><div><h3>${i.nm}</h3><p>${i.desc}</p></div><button class="btn ${S.stars>=i.cost?'primary':''}" data-k="${i.k}" ${S.stars<i.cost?'disabled':''}>${i.cost} ★</button></div>`).join('');
+  $('#shItems').querySelectorAll('button').forEach(b=>b.onclick=()=>{const i=SHOP.find(x=>x.k===b.dataset.k);if(S.stars<i.cost)return;S.stars-=i.cost;i.buy();save();updateHud();renderShop();toast(`Bought ${i.nm}`);});
+}
+
+$('#bBook').onclick=openBook;$('#bShop').onclick=openShop;
+resize();updateHud();requestAnimationFrame(loop);
+setTimeout(()=>{const h=$('#hint');if(h)h.style.transition='opacity 1s',h.style.opacity=0;},12000);
+</script>
