@@ -11,9 +11,9 @@ const SEASON_FILES = [
   { id: "cream02",  label: "Cream02",  file: "json/c2triples.json" }
 ];
 
-const START_CHIPS = 24;
-const FREE_CHIP_EVERY = 60;         // seconds between free chips...
-const FREE_CHIP_BELOW = 24;         // ...while you hold fewer than this
+const START_CHIPS = 25;
+const FREE_CHIP_EVERY = 10;         // seconds between free chips...
+const FREE_CHIP_BELOW = 25;         // ...while you hold fewer than this
 
 // Chance that a winning slot pays 2 or 3 cards instead of 1 (0.05% = 0.0005).
 // You can test it with ?multi=0.5 on the page URL.
@@ -35,13 +35,17 @@ const LABELS = [
 ];
 const NO_WIN = 6;
 const GROUP_ORDER = LABELS.slice(0, 6).map(l => l.id);
-// 9 slots, left to right. The centre is the most likely landing spot.
-// Default: first, double, motion, no win, special, no win, motion, double, first.
-// When a chip lands in Special, that centre slot turns into Unit or Premier (random)
-// until the next chip lands in it, then it goes back to Special.
-const DEFAULT_LAYOUT = [0, 2, 1, 6, 4, 6, 0, 2, 1];
-const CENTRE = 4;
-const SLOT_LAYOUT = DEFAULT_LAYOUT.slice();
+// 9 slots, left to right. Starting order: first, double, motion, no win, special, no win, motion, double, first.
+// The slots shuffle once every chip in play has landed (see endBatch). When a chip lands in
+// Special, that slot turns into Unit or Premier (random) for the next batch of chips, and goes
+// back to Special once every chip of that batch has landed.
+const NSLOT = 9;
+const DEFAULT_LAYOUT = [0, 1, 2, 6, 4, 6, 2, 1, 0];
+const SPECIAL = 4;
+const slotItems = [];            // one per slot, in position order: { idx, px } (px = drawn position, eases to its index)
+const SLOT_LAYOUT = [];          // label index per position (mirror of slotItems, used for scoring)
+let swapPos = -1;                // position of the slot currently standing in for Special (-1 = none)
+function syncLayout() { SLOT_LAYOUT.length = 0; slotItems.forEach(it => SLOT_LAYOUT.push(it.idx)); }
 
 /* ---------- Storage ---------- */
 const SAVE_KEY = "plinko.save";
@@ -50,8 +54,15 @@ const FILTER_KEY = "plinko.bookFilter";
 
 const save = { chips: START_CHIPS, drops: 0, wins: {}, centre: 4 };
 try { Object.assign(save, JSON.parse(localStorage.getItem(SAVE_KEY)) || {}); } catch (_) {}
-if (![4, 3, 5].includes(save.centre)) save.centre = 4;
-SLOT_LAYOUT[CENTRE] = save.centre;
+{
+  const ok = Array.isArray(save.layout) && save.layout.length === NSLOT && save.layout.every(v => Number.isInteger(v) && v >= 0 && v <= 6)
+    && Number.isInteger(save.swapPos) && save.swapPos >= -1 && save.swapPos < NSLOT
+    && (save.swapPos < 0 || [3, 5].includes(save.layout[save.swapPos]));
+  const lay = ok ? save.layout : DEFAULT_LAYOUT;
+  swapPos = ok ? save.swapPos : -1;
+  lay.forEach((idx, i) => slotItems.push({ idx, px: i, sw: i === swapPos }));
+  syncLayout();
+}
 let collection = {};
 try { collection = JSON.parse(localStorage.getItem(COLL_KEY)) || {}; } catch (_) {}
 const persist = () => { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (_) {} };
@@ -164,24 +175,47 @@ function stepChip(c, dt) {
 }
 
 function landed(c) {
-  const swapped = c.swap != null;
-  const idx = swapped && c.slot === CENTRE ? c.swap : SLOT_LAYOUT[c.slot];
+  const idx = SLOT_LAYOUT[c.slot];
   const lab = LABELS[idx];
   floaters.push({ x: SX0 + c.slot * SLOT_W + SLOT_W / 2, y: SLOT_TOP + 20, t: 0, text: lab.text, color: lab.color });
-  if (swapped) {
-    // that one drop is over (win or not): the middle slot goes back to Special
-    SLOT_LAYOUT[CENTRE] = save.centre = 4; centreClaimed = false;
-  } else if (c.slot === CENTRE && idx === 4) {
-    const next = Math.random() < 0.5 ? 3 : 5;   // landing in Special turns it into Unit or Premier
-    SLOT_LAYOUT[CENTRE] = save.centre = next; centreClaimed = false;
-    toast(`The middle slot is now ${LABELS[next].text} for your next drop`, 2400);
-  }
+  if (idx === SPECIAL) batchHitSpecial = true;
   if (idx === NO_WIN) { save.wins.nowin = (save.wins.nowin || 0) + 1; persist(); return; }
   save.wins[lab.id] = (save.wins[lab.id] || 0) + 1; persist();
   if (!window.__noResults) pendingResults.push(idx);
 }
 const pendingResults = [];
-let centreClaimed = false;
+let batchOpen = false;           // chips have been dropped and not all have landed yet
+let batchHitSpecial = false;     // a chip landed in Special during this batch
+
+// Runs once every chip in play has landed (and the result page, if any, is closed):
+// 1. a stand-in slot goes back to Special, or a Special that was hit turns into Unit/Premier;
+// 2. then the slots shuffle.
+function endBatch() {
+  batchOpen = false;
+  let note = "";
+  if (swapPos >= 0) {
+    slotItems[swapPos].idx = SPECIAL; slotItems[swapPos].sw = false; swapPos = -1;
+    note = "Special is back";
+  } else if (batchHitSpecial) {
+    const k = slotItems.findIndex(it => it.idx === SPECIAL);
+    if (k >= 0) { const next = Math.random() < 0.5 ? 3 : 5; slotItems[k].idx = next; slotItems[k].sw = true; swapPos = k; note = `Special slot becomes ${LABELS[next].text}`; }
+  }
+  batchHitSpecial = false;
+  shuffleSlots();
+  save.layout = slotItems.map(it => it.idx); save.swapPos = swapPos;
+  persist();
+  toast(note ? `Slots shuffled · ${note}` : "Slots shuffled", 2200);
+}
+function shuffleSlots() {
+  const before = slotItems.map(it => it.idx).join();
+  for (let tries = 0; tries < 20; tries++) {
+    for (let i = slotItems.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [slotItems[i], slotItems[j]] = [slotItems[j], slotItems[i]]; }
+    if (slotItems.map(it => it.idx).join() !== before) break;     // make sure the order really changed
+  }
+  swapPos = slotItems.findIndex(it => it.sw);
+  syncLayout();
+}
+
 
 function simulate(dt) {
   if (panelOpen) return;
@@ -201,16 +235,16 @@ function simulate(dt) {
   flushResults();
 }
 
-// Wait until every chip in play has landed, then show all the wins together.
+// Wait until every chip in play has landed, then show all the wins together and shuffle.
 function flushResults() {
-  if (!pendingResults.length || panelOpen) return;
+  if (!batchOpen || panelOpen) return;
   if (chips.some(c => c.state === "fall")) return;
-  showResult(pendingResults.splice(0));
+  if (pendingResults.length) showResult(pendingResults.splice(0));   // the shuffle happens when it closes
+  else endBatch();
 }
-
 function afterResult() {
   panelOpen = false;
-  if (pendingResults.length) showResult(pendingResults.shift());
+  if (batchOpen && !chips.some(c => c.state === "fall")) endBatch();
 }
 
 /* ---------- Rendering ---------- */
@@ -268,11 +302,12 @@ function draw(time) {
   }
   // slot floor and labels
   for (let k = 0; k < NSLOT; k++) {
-    const L = LABELS[SLOT_LAYOUT[k]], x = SX0 + k * SLOT_W;
+    const L = LABELS[slotItems[k].idx], x = SX0 + slotItems[k].px * SLOT_W;
+    const lift = Math.min(1, Math.abs(slotItems[k].px - k)) * 6;
     c.fillStyle = L.color; c.globalAlpha = 0.9;
-    c.fillRect(X(x), Y(8 + 40), S(SLOT_W), S(40));
+    c.fillRect(X(x), Y(8 + 40 + lift), S(SLOT_W), S(40));
     c.globalAlpha = 1;
-    c.save(); c.translate(X(x + SLOT_W / 2), Y(8 + 20)); c.rotate(-Math.PI / 2);
+    c.save(); c.translate(X(x + SLOT_W / 2), Y(8 + 20 + lift)); c.rotate(-Math.PI / 2);
     c.fillStyle = "#fff"; c.font = `800 ${S(7.5)}px "Chakra Petch", sans-serif`; c.textAlign = "center";
     c.fillText(L.text, 0, S(3)); c.restore();
   }
@@ -652,6 +687,7 @@ function frame(now) {
   let n = 0;
   while (acc >= DT && n++ < 30) { simulate(DT); acc -= DT; }
   if (n >= 30) acc = 0;
+  slotItems.forEach((it, k) => { it.px += (k - it.px) * Math.min(1, dt * 7); if (Math.abs(it.px - k) < 0.01) it.px = k; });
   for (let i = floaters.length - 1; i >= 0; i--) { floaters[i].t += dt; if (floaters[i].t > 1.2) floaters.splice(i, 1); }
   regenChips();
   updateHud();
