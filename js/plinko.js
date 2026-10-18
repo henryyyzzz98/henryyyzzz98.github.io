@@ -80,7 +80,7 @@ const bookBtn = $("bookBtn");
 
 /* ---------- Board + physics (board units, y up) ---------- */
 const BW = 300, BH = 470;
-const NSLOT = 9, SLOT_W = 30, SX0 = 15;           // slots span x 15..285
+const SLOT_W = 30, SX0 = 15;           // slots span x 15..285
 const SLOT_TOP = 52;                              // top of the slot dividers
 const CHIP_R = 9, PEG_R = 3;
 const GRAV = 520, DT = 1 / 240;
@@ -115,11 +115,11 @@ function toast(text, ms = 2600) {
 
 function dropChip(x = aimX) {
   if (save.chips <= 0 || panelOpen || bookPanel.classList.contains("show")) return false;
+  if (save.chips >= FREE_CHIP_BELOW) save.lastRegen = Date.now();   // clock starts when you drop below the cap
   save.chips--; save.drops++;
   chips.push({ x: clamp(x, SX0 + CHIP_R + 2, SX0 + NSLOT * SLOT_W - CHIP_R - 2), y: DROP_Y, vx: rand(-4, 4), vy: 0, rot: 0, vr: 0,
     color: CHIP_COLORS[save.drops % CHIP_COLORS.length], state: "fall", t: 0, still: 0 });
-  // the first chip dropped while the middle is Unit/Premier is judged on that slot, then it reverts
-  if (save.centre !== 4 && !centreClaimed) { chips[chips.length - 1].swap = save.centre; centreClaimed = true; }
+  batchOpen = true;
   persist();
   return true;
 }
