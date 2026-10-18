@@ -1,0 +1,729 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>The Color of Money</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=DM+Sans:wght@400;600&family=DM+Mono:wght@500&display=swap"
+    />
+    <style>
+      /* Layout: ATM grid on the left, money board + log on the right; collecting takes over the board area */
+      :root {
+        --bg: #ecebe6;
+        --surface: #f8f7f3;
+        --fg: #1d1c22;
+        --muted: #67646f;
+        --line: #d3d0c8;
+        --accent: #1f7a4d;
+        --bad: #c8385a;
+        --display: "Bricolage Grotesque", "Arial Black", system-ui, sans-serif;
+        --body: "DM Sans", system-ui, sans-serif;
+        --mono: "DM Mono", ui-monospace, monospace;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme="light"]) {
+          --bg: #17161b;
+          --surface: #222128;
+          --fg: #f1efe9;
+          --muted: #a29fa9;
+          --line: #38363f;
+          --accent: #5fd296;
+          --bad: #ff6f8c;
+          color-scheme: dark;
+        }
+      }
+      :root[data-theme="dark"] {
+        --bg: #17161b;
+        --surface: #222128;
+        --fg: #f1efe9;
+        --muted: #a29fa9;
+        --line: #38363f;
+        --accent: #5fd296;
+        --bad: #ff6f8c;
+        color-scheme: dark;
+      }
+      html,
+      body {
+        min-height: 100%;
+      }
+      body {
+        background: var(--bg);
+        color: var(--fg);
+        font-family: var(--body);
+        font-size: 15px;
+      }
+      .wrap {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding-block: 20px 40px;
+        padding-left: max(16px, env(safe-area-inset-left, 0px));
+        padding-right: max(16px, env(safe-area-inset-right, 0px));
+      }
+      h1 {
+        font-family: var(--display);
+        font-weight: 800;
+        font-size: clamp(28px, 5vw, 44px);
+        margin: 0;
+        letter-spacing: -0.02em;
+        text-wrap: balance;
+      }
+      h1 span {
+        color: var(--accent);
+      }
+      .status {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 22px;
+        margin: 14px 0 18px;
+        font-size: 14px;
+        color: var(--muted);
+      }
+      .status b {
+        font-family: var(--mono);
+        color: var(--fg);
+        font-size: 18px;
+        margin-left: 6px;
+        font-variant-numeric: tabular-nums;
+      }
+      .label {
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--muted);
+      }
+      button {
+        font: 600 15px var(--body);
+        border-radius: 10px;
+        padding: 12px 22px;
+        cursor: pointer;
+        border: 2px solid var(--fg);
+        background: var(--fg);
+        color: var(--bg);
+      }
+      button.ghost {
+        background: transparent;
+        color: var(--fg);
+      }
+      button:disabled {
+        opacity: 0.35;
+        cursor: not-allowed;
+      }
+      button:focus-visible,
+      .atm:focus-visible {
+        outline: 3px solid var(--accent);
+        outline-offset: 3px;
+      }
+
+      /* Setup */
+      .setup {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 28px;
+        max-width: 560px;
+      }
+      .setup p {
+        color: var(--muted);
+        line-height: 1.55;
+        margin: 6px 0 22px;
+        max-width: 60ch;
+      }
+      .target {
+        font-family: var(--display);
+        font-weight: 800;
+        font-size: 72px;
+        line-height: 1;
+        font-variant-numeric: tabular-nums;
+      }
+      #goal {
+        width: 100%;
+        margin: 16px 0 6px;
+        accent-color: var(--accent);
+      }
+      .ticks {
+        display: flex;
+        justify-content: space-between;
+        font: 12px var(--mono);
+        color: var(--muted);
+      }
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 24px;
+      }
+
+      /* Game */
+      .game {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 280px;
+        gap: 20px;
+        align-items: start;
+      }
+      .stage {
+        position: relative;
+        min-height: 360px;
+        border-radius: 16px;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        padding: clamp(10px, 2vw, 16px);
+        transition: background 0.4s;
+        container-type: inline-size;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: clamp(6px, 1.6cqi, 14px);
+      }
+      @container (max-width: 520px) {
+        .grid {
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+      }
+      .atm {
+        aspect-ratio: 5 / 4;
+        max-width: 100%;
+        border-radius: 10px;
+        border: 2px solid rgba(0, 0, 0, 0.55);
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: clamp(5px, 1.4cqi, 10px);
+        font: 700 clamp(8px, 2.15cqi, 15px)/1.1 var(--body);
+        letter-spacing: 0.02em;
+        text-align: left;
+        transition: transform 0.15s;
+        position: relative;
+        min-width: 0;
+      }
+      @container (max-width: 520px) {
+        .atm {
+          font-size: clamp(7.5px, 2.6cqi, 13px);
+          letter-spacing: 0;
+          padding: 5px;
+        }
+      }
+      .atm::after {
+        content: "";
+        height: 5px;
+        border-radius: 3px;
+        background: currentColor;
+        opacity: 0.35;
+        width: 60%;
+      } /* card slot */
+      .atm:hover {
+        transform: translateY(-3px);
+      }
+      .atm.used {
+        visibility: hidden;
+      }
+      .atm span {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+      }
+
+      .collect {
+        position: absolute;
+        inset: 0;
+        border-radius: 16px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 18px;
+        padding: 20px;
+        text-align: center;
+      }
+      .collect .name {
+        font: 700 14px var(--body);
+        letter-spacing: 0.14em;
+      }
+      .big {
+        font-family: var(--display);
+        font-weight: 800;
+        font-size: clamp(96px, 30cqi, 220px);
+        line-height: 0.9;
+        font-variant-numeric: tabular-nums;
+      }
+      .big.pop {
+        animation: pop 0.25s ease-out;
+      }
+      @keyframes pop {
+        from {
+          transform: scale(0.9);
+        }
+        to {
+          transform: scale(1);
+        }
+      }
+      .collect button {
+        border-color: currentColor;
+        background: currentColor;
+        min-width: 180px;
+        font-size: 17px;
+      }
+      .collect button span {
+        color: var(--btnfg);
+      }
+      .collect .msg {
+        font-weight: 600;
+        min-height: 1.4em;
+        max-width: 40ch;
+      }
+
+      aside {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        min-width: 0;
+      }
+      @media (max-width: 980px) {
+        .game {
+          grid-template-columns: 1fr;
+        }
+        aside {
+          display: grid;
+          grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+          align-items: start;
+        }
+        .amounts {
+          grid-template-columns: repeat(5, 1fr);
+        }
+      }
+      @media (max-width: 600px) {
+        aside {
+          grid-template-columns: 1fr;
+        }
+        .log {
+          max-height: 160px;
+        }
+      }
+      @media (min-width: 601px) and (max-width: 980px) {
+        .amounts {
+          grid-template-columns: repeat(5, 1fr);
+        }
+      }
+      .panel {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 16px;
+      }
+      .amounts {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 6px;
+        margin-top: 10px;
+      }
+      .amt {
+        text-align: center;
+        padding: 6px 0;
+        border-radius: 6px;
+        font: 500 14px var(--mono);
+        background: var(--bg);
+        border: 1px solid var(--line);
+        font-variant-numeric: tabular-nums;
+      }
+      .amt.gone {
+        background: var(--bad);
+        border-color: var(--bad);
+        color: #fff;
+        text-decoration: line-through;
+      }
+      .log {
+        list-style: none;
+        margin: 10px 0 0;
+        padding: 0;
+        font-size: 13px;
+        line-height: 1.5;
+        max-height: 220px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .log li {
+        color: var(--muted);
+      }
+      .log li b {
+        color: var(--fg);
+      }
+      .howto {
+        font-size: 13px;
+        color: var(--muted);
+        line-height: 1.5;
+        margin: 8px 0 0;
+        padding-left: 18px;
+      }
+
+      .end {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 20px;
+      }
+      .end h2 {
+        font-family: var(--display);
+        font-size: clamp(36px, 9cqi, 56px);
+        margin: 0 0 8px;
+      }
+      .end p {
+        color: var(--muted);
+        margin: 0 0 20px;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          animation: none !important;
+          transition: none !important;
+        }
+      }
+    </style>
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+      }
+      [hidden] {
+        display: none !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>The Color of <span>Money</span></h1>
+
+      <section id="setup" class="setup">
+        <div class="label">Your goal</div>
+        <div class="target">$<span id="goalOut">60</span></div>
+        <input
+          type="range"
+          id="goal"
+          min="50"
+          max="70"
+          step="1"
+          value="60"
+          aria-label="Goal amount"
+        />
+        <div class="ticks">
+          <span>$50</span><span>$60</span><span>$70</span>
+        </div>
+        <p>
+          Twenty colored ATMs each hide a different amount from $1 to $20. You
+          get 10 visits. At each ATM the counter climbs one dollar at a time:
+          press Stop to take what it shows, but if it climbs past what the ATM
+          holds, you leave with nothing.
+        </p>
+        <div class="row">
+          <button id="confirmBtn">Start with this goal</button>
+          <button id="randomBtn" class="ghost">Random goal</button>
+        </div>
+      </section>
+
+      <div id="statusBar" class="status" hidden>
+        <span>Goal<b id="sGoal"></b></span>
+        <span>Collected<b id="sWon"></b></span>
+        <span>Still need<b id="sNeed"></b></span>
+        <span>Visits left<b id="sLeft"></b></span>
+      </div>
+
+      <section id="game" class="game" hidden>
+        <div class="stage" id="stage">
+          <div class="grid" id="grid"></div>
+          <div class="collect" id="collect" hidden>
+            <div class="name" id="cName"></div>
+            <div class="big" id="cNum">0</div>
+            <button id="actBtn">
+              <span id="actLbl">Start collecting</span>
+            </button>
+            <div class="msg" id="cMsg"></div>
+          </div>
+          <div class="end" id="end" hidden>
+            <h2 id="endTitle"></h2>
+            <p id="endText"></p>
+            <button id="againBtn">Play again</button>
+          </div>
+        </div>
+        <aside>
+          <div class="panel">
+            <div class="label">Amounts in game</div>
+            <div class="amounts" id="amounts"></div>
+          </div>
+          <div class="panel">
+            <div class="label">Game log</div>
+            <ul class="log" id="log"></ul>
+          </div>
+        </aside>
+      </section>
+    </div>
+
+    <script>
+      const COLORS = [
+        ["ALMOND", "#EFDBC5"],
+        ["BLUSH", "#DE5D83"],
+        ["CORNFLOWER", "#9ACEEB"],
+        ["DANDELION", "#FDDB6D"],
+        ["EGGPLANT", "#6E5160"],
+        ["FERN", "#71BC78"],
+        ["GOLD", "#E7C697"],
+        ["HONEYDEW", "#F0FFF0"],
+        ["INDIGO", "#5D76CB"],
+        ["KHAKI", "#F0E68C"],
+        ["LAVENDER", "#FCB4D5"],
+        ["MAROON", "#C8385A"],
+        ["NAVY", "#000080"],
+        ["ORANGE", "#FF7538"],
+        ["PEACH", "#FFCFAB"],
+        ["RED", "#EE204D"],
+        ["SILVER", "#CDC5C2"],
+        ["TAN", "#FAA76C"],
+        ["WHITE", "#EDEDED"],
+        ["YELLOW", "#FFFF00"],
+      ];
+      const MAX_VISITS = 10,
+        STEP_MS = 1750;
+      const $ = (id) => document.getElementById(id);
+
+      function inkFor(hex) {
+        const n = parseInt(hex.slice(1), 16),
+          r = n >> 16,
+          g = (n >> 8) & 255,
+          b = n & 255;
+        return 0.299 * r + 0.587 * g + 0.114 * b > 150 ? "#1d1c22" : "#ffffff";
+      }
+      function shuffle(a) {
+        for (let i = a.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+      }
+
+      let S;
+      function newState(goal) {
+        const amounts = shuffle(Array.from({ length: 20 }, (_, i) => i + 1));
+        return {
+          goal,
+          won: 0,
+          visits: 0,
+          atms: COLORS.map(([name, color], i) => ({
+            name,
+            color,
+            amount: amounts[i],
+            used: false,
+          })),
+          current: null,
+          count: 0,
+          timer: null,
+          phase: "pick",
+        };
+      }
+
+      $("goal").addEventListener(
+        "input",
+        (e) => ($("goalOut").textContent = e.target.value),
+      );
+      $("confirmBtn").onclick = () => begin(+$("goal").value);
+      $("randomBtn").onclick = () => begin(50 + Math.floor(Math.random() * 21));
+      $("againBtn").onclick = () => {
+        clearTimeout(S && S.timer);
+        $("game").hidden = true;
+        $("statusBar").hidden = true;
+        $("setup").hidden = false;
+      };
+
+      function log(html) {
+        const li = document.createElement("li");
+        li.innerHTML = html;
+        $("log").prepend(li);
+      }
+
+      function begin(goal) {
+        S = newState(goal);
+        $("setup").hidden = true;
+        $("game").hidden = false;
+        $("statusBar").hidden = false;
+        $("end").hidden = true;
+        $("collect").hidden = true;
+        $("grid").style.visibility = "";
+        $("log").innerHTML = "";
+        log(`Target goal: <b>$${goal}</b>`);
+        $("amounts").innerHTML = Array.from(
+          { length: 20 },
+          (_, i) => `<div class="amt" id="amt${i + 1}">${i + 1}</div>`,
+        ).join("");
+        $("grid").innerHTML = "";
+        S.atms.forEach((a, i) => {
+          const b = document.createElement("button");
+          b.className = "atm";
+          b.style.background = a.color;
+          b.style.color = inkFor(a.color);
+          b.innerHTML = `<span>${a.name}</span>`;
+          b.setAttribute("aria-label", `${a.name} ATM`);
+          b.onclick = () => pick(i);
+          $("grid").appendChild(b);
+        });
+        resetStage();
+        updateStatus();
+      }
+
+      function updateStatus() {
+        $("sGoal").textContent = "$" + S.goal;
+        $("sWon").textContent = "$" + S.won;
+        $("sNeed").textContent = "$" + Math.max(0, S.goal - S.won);
+        $("sLeft").textContent = MAX_VISITS - S.visits;
+      }
+      function resetStage() {
+        $("stage").style.background = "";
+        $("stage").style.color = "";
+      }
+
+      function pick(i) {
+        if (S.phase !== "pick") return;
+        const a = S.atms[i];
+        S.current = i;
+        S.count = 0;
+        S.phase = "ready";
+        log(`ATM #${S.visits + 1}: <b>${a.name}</b>`);
+        const ink = inkFor(a.color);
+        $("stage").style.background = a.color;
+        $("stage").style.color = ink;
+        $("stage").style.setProperty("--btnfg", a.color);
+        $("grid").style.visibility = "hidden";
+        $("collect").hidden = false;
+        $("cName").textContent = a.name + " ATM";
+        $("cNum").textContent = "0";
+        $("cMsg").textContent =
+          "The counter starts at $0 and climbs $1 at a time.";
+        $("actLbl").textContent = "Start collecting";
+        $("actBtn").disabled = false;
+      }
+
+      $("actBtn").onclick = () => {
+        if (S.phase === "ready") {
+          S.phase = "counting";
+          $("actLbl").textContent = "Stop";
+          $("actBtn").disabled = true;
+          $("cMsg").textContent = "Press Stop to take the amount shown.";
+          S.timer = setTimeout(tick, STEP_MS);
+        } else if (S.phase === "counting") stop();
+      };
+
+      function show(n) {
+        const el = $("cNum");
+        el.textContent = n;
+        el.classList.remove("pop");
+        void el.offsetWidth;
+        el.classList.add("pop");
+      }
+
+      function tick() {
+        const a = S.atms[S.current];
+        S.count++;
+        if (S.count <= a.amount) {
+          show(S.count);
+          $("actBtn").disabled = false;
+          S.timer = setTimeout(tick, STEP_MS);
+        } else {
+          show("X");
+          $("actBtn").disabled = true;
+          S.phase = "done";
+          $("cMsg").textContent =
+            `Too late. This ATM held $${a.amount}, so you collected nothing.`;
+          log(`Missed out. Could have won <b>$${a.amount}</b>`);
+          finishAtm();
+        }
+      }
+
+      function stop() {
+        clearTimeout(S.timer);
+        const a = S.atms[S.current],
+          got = S.count;
+        S.phase = "done";
+        $("actBtn").disabled = true;
+        S.won += got;
+        $("cMsg").textContent =
+          got === a.amount
+            ? `You emptied it! Collected $${got}.`
+            : `Collected $${got}. This ATM held $${a.amount}.`;
+        log(
+          got === a.amount
+            ? `Emptied the ATM: <b>$${got}</b>`
+            : `Collected <b>$${got}</b> of $${a.amount}`,
+        );
+        finishAtm();
+      }
+
+      function finishAtm() {
+        const a = S.atms[S.current];
+        a.used = true;
+        S.visits++;
+        $("amt" + a.amount).classList.add("gone");
+        $("grid").children[S.current].classList.add("used");
+        updateStatus();
+        setTimeout(nextStep, 2400);
+      }
+
+      function nextStep() {
+        const remaining = MAX_VISITS - S.visits;
+        const left = S.atms
+          .filter((a) => !a.used)
+          .map((a) => a.amount)
+          .sort((x, y) => y - x);
+        const maxPossible = left.slice(0, remaining).reduce((s, v) => s + v, 0);
+        if (S.won >= S.goal)
+          return endGame(
+            true,
+            `You reached your $${S.goal} goal with $${S.won} collected.`,
+          );
+        if (remaining === 0)
+          return endGame(
+            false,
+            `No visits left. You collected $${S.won} of $${S.goal}.`,
+          );
+        if (S.goal - S.won > maxPossible)
+          return endGame(
+            false,
+            `Even the best remaining ATMs can only add $${maxPossible}, and you still need $${S.goal - S.won}.`,
+          );
+        S.phase = "pick";
+        resetStage();
+        $("collect").hidden = true;
+        $("grid").style.visibility = "";
+      }
+
+      function endGame(win, text) {
+        S.phase = "over";
+        resetStage();
+        $("collect").hidden = true;
+        $("grid").style.visibility = "hidden";
+        $("end").hidden = false;
+        $("endTitle").textContent = win ? "You win!" : "Game over";
+        $("endTitle").style.color = win ? "var(--accent)" : "var(--bad)";
+        $("endText").textContent = text;
+        log(
+          win
+            ? `<b>Goal achieved!</b> Total: $${S.won}`
+            : `<b>Goal not met.</b> Total: $${S.won}`,
+        );
+      }
+    </script>
+  </body>
+</html>
