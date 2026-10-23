@@ -598,7 +598,7 @@ function simRoute(st){
 function simTask(t,par,canPass,label){
   const d=DIFF[S.diff];
   if(canPass&&t.pass){t.pass=false;return {m:5,note:'Used the Express Pass'};}
-  let m=par*clamp(d.mean+gauss()*d.sd,.72,1.7), note=label;
+  let m=par*clamp(d.mean+gauss()*d.sd,.55,1.9), note=label;
   if(Math.random()<d.mishap){const add=ri(8,22);m+=add;note+=' · '+pick(MISHAPS).toLowerCase()+' (+'+add+'m)';}
   return {m:Math.round(m),note};
 }
@@ -620,8 +620,15 @@ function simScramble(t){
 }
 
 /* ---------- rendering ---------- */
+/* ---------- save & resume (this browser only) ---------- */
+const SAVE_KEY='psr-save-v1';
+function saveGame(){if(!S)return;try{S.savedAt=Date.now();localStorage.setItem(SAVE_KEY,JSON.stringify(S));}catch(e){}}
+function loadSave(){try{const v=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');return v&&v.L&&v.teams&&v.screen?v:null;}catch(e){return null;}}
+function clearSave(){try{localStorage.removeItem(SAVE_KEY);}catch(e){}}
+
 function render(top){
   token++;cleanups.forEach(f=>f());cleanups=[];
+  saveGame();
   main.classList.toggle('solo',!S);
   renderBoard();
   if(!S){side.innerHTML='';renderSetup();}
@@ -660,15 +667,30 @@ function renderSide(){
   <p class="side-note">${scrMode?'During the Scramble, only task progress is shown. Times are revealed at the Pit Stop.':'Times are total race time since the starting line.'}</p></div>`;
 }
 
+function savedCard(sv){
+  const racing=sv.teams.filter(t=>!t.out).length;
+  const head=sv.over?`Last race: ${esc(sv.L.from)} → ${esc(sv.L.to)}`:`Leg ${sv.leg+1} of ${sv.legsN}: ${esc(sv.L.from)} → ${esc(sv.L.to)}`;
+  const where=sv.over?'This race is over. You can still view the result and download the race log.'
+    :`${racing} teams still racing. Your race clock is ${fmt(sv.teams[0].clock)}.${sv.screen==='stage'||(sv.screen==='scramble'&&sv.scr&&sv.scr.phase==='task')?' A task you had open will start again from the beginning.':''}`;
+  return `<div class="card"><div class="band pit"><span>Saved race</span><span>${sv.over?'Finished':'In progress'}</span></div><div class="card-body">
+  <p class="eyebrow">${esc(sv.teams[0].name)} · ${DIFF[sv.diff].label} · ${sv.dir>0?'Eastbound':'Westbound'}</p><h3>${head}</h3>
+  <p class="lede">${where} Saved ${esc(new Date(sv.savedAt||Date.now()).toLocaleString())}.</p>
+  <button class="btn big" id="resume">${sv.over?'View race result':'Continue race'}</button>
+  <p class="hintline">Starting a new race below replaces this save.</p></div></div>`;
+}
+
 function renderSetup(){
-  app.innerHTML=`<div class="card"><div class="band route"><span>Race briefing</span><span>New race</span></div><div class="card-body">
+  const sv=loadSave();
+  app.innerHTML=`<div style="display:grid;gap:20px">${sv?savedCard(sv):''}<div class="card"><div class="band route"><span>Race briefing</span><span>New race</span></div><div class="card-body">
   <h2>Pit Stop Rally</h2>
   <p class="lede">Every race starts in one of ${CITIES.length} cities, heads either east or west around the globe, and pits you against a fresh set of rival teams. Pick flights, choose Detours and tackle Roadblocks. The last team to each Pit Stop is usually eliminated, but one leg is secretly a non-elimination leg. One leg is a Scramble: three tasks in any order.</p>
   <label class="field" for="tname"><span>Your team name</span><input id="tname" maxlength="22" value="${esc(prefs.name)}"></label>
   <fieldset><legend>Number of legs</legend><div class="chips">${[3,4,5,6,7,8,9,10].map(n=>`<label class="chip"><input type="radio" name="legs" id="legs-${n}" value="${n}" ${n===prefs.legs?'checked':''}><span>${n}</span></label>`).join('')}</div>
   <p class="hintline" id="legnote"></p></fieldset>
   <fieldset><legend>CPU difficulty</legend>${Object.entries(DIFF).map(([k,d])=>`<label class="dopt"><input type="radio" name="diff" id="diff-${k}" value="${k}" ${k===prefs.diff?'checked':''}><span><b>${d.label}</b><small>${d.blurb}</small></span></label>`).join('')}</fieldset>
-  <button class="btn big" id="go">Start the race</button></div></div>`;
+  <p class="hintline">Your progress saves automatically in this browser after every move. Close the tab and come back any time.</p>
+  <button class="btn big" id="go">Start the race</button></div></div></div>`;
+  const rs=$('#resume');if(rs)rs.onclick=()=>{S=sv;render(true);};
   const note=()=>{const n=+($('input[name=legs]:checked')||{value:4}).value;$('#legnote').textContent=`${n+1} teams (you + ${n} CPU). ${n-2} elimination${n-2===1?'':'s'}, then 3 teams race the final leg.`;};
   app.querySelectorAll('input[name=legs]').forEach(r=>r.onchange=note);note();
   $('#go').onclick=()=>{
@@ -722,12 +744,23 @@ function renderStage(){
   }
 }
 
+/* Race minutes for a task: your real time and your accuracy both count, with no fixed floor.
+   EXPECTED is a typical real-time finish in seconds. At that pace with ~86% accuracy you take
+   about the task's par time, which is what a Normal CPU team averages. */
+const EXPECTED={memory:40,simon:45,unscramble:60,gauge:22,quiz:40,maze:35,order:45,count:32,catch:21,recall:25,cipher:70};
+const fmtSecs=s=>{s=Math.round(s);return s>=60?Math.floor(s/60)+'m '+String(s%60).padStart(2,'0')+'s':s+'s';};
+function taskMinutes(game,par,res){
+  const acc=clamp(res.acc), ratio=clamp(res.secs/EXPECTED[game],.3,3);
+  const f=.35+.55*ratio+.7*(1-acc);
+  return {mins:Math.max(5,Math.round(par*f)),acc,ratio};
+}
+
 function startGame(el,task,cb){
   const my=token;el.innerHTML='';
-  GAMES[task.game](el,task.cfg,score=>{
+  GAMES[task.game](el,task.cfg,res=>{
     if(my!==token)return;
-    score=clamp(score);
-    cb(Math.round(task.par*(1.45-.65*score)),'task score '+Math.round(score*100)+'%');
+    const r=taskMinutes(task.game,task.par,res);
+    cb(r.mins,`${Math.round(r.acc*100)}% accuracy · ${fmtSecs(res.secs)} on the task`);
   },()=>my===token);
 }
 
@@ -883,7 +916,7 @@ function renderPit(){
   const c=$('#cont');if(c)c.onclick=()=>{S.leg++;startLeg();render(true);};
   if(S.over){
     $('#again').onclick=newGame;
-    $('#setup').onclick=()=>{S=null;render(true);};
+    $('#setup').onclick=()=>{clearSave();S=null;render(true);};
     $('#dl').onclick=downloadLog;
     $('#copy').onclick=()=>{
       const txt=buildLog(),msg=$('#dlmsg');
@@ -952,7 +985,7 @@ memory(el,cfg,done){
     const a=first;first=null;moves++;$('#mv',el).textContent=moves;
     if(deck[a]===deck[i]){
       cards[a].classList.add('done');b.classList.add('done');pairs++;$('#pr',el).textContent=pairs;
-      if(pairs===items.length){T.stop();const s=T.secs();setTimeout(()=>done(.6*clamp(1-(moves-items.length)/12)+.4*clamp(1-(s-25)/50)),500);}
+      if(pairs===items.length){T.stop();const s=T.secs();setTimeout(()=>done({acc:clamp(1-(moves-items.length)/12),secs:s}),500);}
     }else{
       lock=true;
       setTimeout(()=>{[cards[a],b].forEach(c=>{c.classList.remove('up');c.setAttribute('aria-label','Face-down card');});lock=false;},750);
@@ -965,7 +998,7 @@ simon(el,cfg,done,alive){
   el.innerHTML=`<div class="g-meta"><span>Round <b id="rd">1</b>/5</span><span>Misses <b id="ms">0</b>/3</span><span class="g-time">0s</span></div>
   <div class="status" id="st">Get ready…</div>
   <div class="simon">${cols.map((c,i)=>`<button class="pad" data-i="${i}" aria-label="${c[0]}" style="background:${c[1]}"></button>`).join('')}</div>`;
-  timer(el);
+  const T=timer(el);
   const pads=[...el.querySelectorAll('.pad')], st=$('#st',el);
   let seq=[Math.floor(Math.random()*4),Math.floor(Math.random()*4)],input=[],round=0,miss=0,locked=true;
   const flash=async(i,ms)=>{pads[i].classList.add('lit');await wait(ms);pads[i].classList.remove('lit');await wait(150);};
@@ -975,7 +1008,7 @@ simon(el,cfg,done,alive){
     if(!alive())return;input=[];locked=false;st.textContent='Your turn';
   }
   function next(){round++;if(round>5){finish();return;}$('#rd',el).textContent=round;seq.push(Math.floor(Math.random()*4));play();}
-  function finish(){locked=true;st.textContent='Done!';const completed=Math.min(5,round-1);setTimeout(()=>done(clamp(completed/5-miss*.1)),600);}
+  function finish(){locked=true;st.textContent='Done!';T.stop();const s=T.secs(),completed=Math.min(5,round-1);setTimeout(()=>done({acc:clamp(completed/5-miss*.1),secs:s}),600);}
   pads.forEach(p=>p.onclick=()=>{
     if(locked)return;const i=+p.dataset.i;
     p.classList.add('lit');setTimeout(()=>p.classList.remove('lit'),160);
@@ -1007,11 +1040,11 @@ unscramble(el,cfg,done){
     };
     $('#skip',area).onclick=nxt;
   }
-  function nxt(){i++;if(i<words.length)show();else{T.stop();const s=T.secs();done(.7*clamp(solved/words.length-wrong*.05)+.3*clamp(1-(s-35)/90));}}
+  function nxt(){i++;if(i<words.length)show();else{T.stop();const s=T.secs();done({acc:clamp(solved/words.length-wrong*.05),secs:s});}}
   show();
 },
 gauge(el,cfg,done,alive){
-  const {targets,max,unit,item}=cfg;let r=0,scores=[],v=0,phase=Math.random()*6,moving=false,last=0;
+  const {targets,max,unit,item}=cfg;const t0=performance.now();let r=0,scores=[],v=0,phase=Math.random()*6,moving=false,last=0;
   el.innerHTML=`<div class="g-meta"><span>Order <b id="gr">1</b>/${targets.length}</span><span>Accuracy <b id="ga">–</b></span></div>
   <p class="ask" id="ask"></p>
   <div><div class="scale-track"><div class="zone" id="zn"></div><div class="needle" id="nd"></div></div><div class="ticks"><span>0${unit}</span><span>${max/2}${unit}</span><span>${max}${unit}</span></div></div>
@@ -1038,7 +1071,7 @@ gauge(el,cfg,done,alive){
     fb.textContent=`${Math.round(v)}${unit} (target ${t}${unit}) · ${sc>.9?'Perfect':sc>.75?'Close':sc>.4?'A bit off':'Way off'}`;
     $('#ga',el).textContent=Math.round(scores.reduce((a,b)=>a+b,0)/scores.length*100)+'%';
     r++;
-    setTimeout(()=>{if(!alive())return;if(r<targets.length)round();else done(scores.reduce((a,b)=>a+b,0)/scores.length);},1100);
+    setTimeout(()=>{if(!alive())return;if(r<targets.length)round();else done({acc:scores.reduce((a,b)=>a+b,0)/scores.length,secs:(performance.now()-t0)/1000});},1100);
   };
   round();
 },
@@ -1053,7 +1086,7 @@ quiz(el,cfg,done){
     bs.forEach(b=>b.onclick=()=>{
       bs.forEach(x=>{x.disabled=true;if(x.dataset.v===q.a)x.classList.add('right');});
       if(b.dataset.v===q.a){correct++;$('#qc',el).textContent=correct;}else b.classList.add('wrong');
-      setTimeout(()=>{i++;if(i<qs.length)show();else{T.stop();const s=T.secs();done(.75*correct/qs.length+.25*clamp(1-(s-8*qs.length)/(12*qs.length)));}},800);
+      setTimeout(()=>{i++;if(i<qs.length)show();else{T.stop();const s=T.secs();done({acc:correct/qs.length,secs:s});}},800);
     });
   }
   show();
@@ -1074,7 +1107,7 @@ maze(el,cfg,done){
     if(over)return;const n=pos+d;
     if(!nbrs(pos).includes(n)||g[n]){mz.classList.remove('shake');void mz.offsetWidth;mz.classList.add('shake');return;}
     pos=n;moves++;seen.add(n);$('#mm',el).textContent=moves;draw();
-    if(pos===goal){over=true;T.stop();const s=T.secs();setTimeout(()=>done(.7*clamp(best/moves)+.3*clamp(1-(s-15)/40)),400);}
+    if(pos===goal){over=true;T.stop();const s=T.secs();setTimeout(()=>done({acc:clamp(best/moves),secs:s}),400);}
   };
   el.querySelectorAll('.arrows button').forEach(b=>b.onclick=()=>move(+b.dataset.d));
   const key=e=>{const m={ArrowUp:-W,ArrowDown:W,ArrowLeft:-1,ArrowRight:1}[e.key];if(m!==undefined){e.preventDefault();move(m);}};
@@ -1098,7 +1131,7 @@ order(el,cfg,done){
     $('#ol',el).innerHTML=shuffle(R.items).map(it=>`<button class="qopt" data-v="${it.v}">${esc(it.label)}</button>`).join('');
     el.querySelectorAll('#ol .qopt').forEach(b=>b.onclick=()=>{
       if(+b.dataset.v===sorted[step].v){step++;b.disabled=true;b.classList.add('right');b.innerHTML=`<span class="n">${step}</span>`+b.innerHTML;
-        if(step===sorted.length){r++;setTimeout(()=>{if(r<rounds.length)round();else{T.stop();const s=T.secs();done(.7*clamp(1-mist*.1)+.3*clamp(1-(s-30)/60));}},500);}}
+        if(step===sorted.length){r++;setTimeout(()=>{if(r<rounds.length)round();else{T.stop();const s=T.secs();done({acc:clamp(1-mist*.1),secs:s});}},500);}}
       else{mist++;$('#om',el).textContent=mist;const f=$('#of',el);f.className='fb bad';f.textContent='Not that one yet.';b.classList.add('wrong');setTimeout(()=>b.classList.remove('wrong'),400);}
     });
   }
@@ -1124,7 +1157,7 @@ count(el,cfg,done,alive){
         bs.forEach(x=>{x.disabled=true;if(+x.dataset.v===k)x.classList.add('right');});
         if(+b.dataset.v===k){correct++;$('#cc',el).textContent=correct;}else b.classList.add('wrong');
         cg.innerHTML=arr.map(c=>`<span class="sym ${c}"></span>`).join('');
-        r++;setTimeout(()=>{if(!alive())return;if(r<3)round();else{T.stop();const s=T.secs();done(.85*correct/3+.15*clamp(1-(s-25)/40));}},1200);
+        r++;setTimeout(()=>{if(!alive())return;if(r<3)round();else{T.stop();const s=T.secs();done({acc:correct/3,secs:s});}},1200);
       });
     },shows[r]);
   }
@@ -1149,7 +1182,7 @@ catch(el,cfg,done,alive){
     },620);
     const cd=setInterval(()=>{
       left--;$('#kt',el).textContent=left+'s';
-      if(left<=0){over=true;clearInterval(sp);clearInterval(cd);$('#ks',el).textContent='Time!';setTimeout(()=>done(clamp(hits/Math.max(1,shown)-bad*.08)),600);}
+      if(left<=0){over=true;clearInterval(sp);clearInterval(cd);$('#ks',el).textContent='Time!';setTimeout(()=>done({acc:clamp(hits/Math.max(1,shown)-bad*.08),secs:EXPECTED.catch}),600);}
     },1000);
     cleanups.push(()=>{clearInterval(sp);clearInterval(cd);});
   },1200);
@@ -1175,7 +1208,7 @@ recall(el,cfg,done,alive){
     sub.onclick=()=>{
       let right=0;bs.forEach(b=>{b.disabled=true;const v=b.dataset.v,inL=list.includes(v);if(picked.has(v)){if(inL){right++;b.classList.add('right');}else b.classList.add('wrong');}else if(inL)b.classList.add('missed');});
       sub.disabled=true;T.stop();const s=T.secs();
-      setTimeout(()=>done(.85*right/5+.15*clamp(1-(s-15)/30)),1100);
+      setTimeout(()=>done({acc:right/5,secs:s}),1100);
     };
   }
 },
@@ -1202,7 +1235,7 @@ cipher(el,cfg,done){
     };
     $('#cskip',area).onclick=nxt;
   }
-  function nxt(){i++;if(i<words.length)show();else{T.stop();const s=T.secs();done(.7*clamp(solved/words.length-wrong*.05)+.3*clamp(1-(s-40)/90));}}
+  function nxt(){i++;if(i<words.length)show();else{T.stop();const s=T.secs();done({acc:clamp(solved/words.length-wrong*.05),secs:s});}}
   show();
 }
 };
