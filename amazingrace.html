@@ -1,0 +1,1221 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Pit Stop Rally: race CPU teams around the world.">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Pit Stop Rally</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&family=IBM+Plex+Mono:wght@500;600&family=Public+Sans:wght@400;600;700&display=swap">
+<style>
+/* Layout: departures-board header strip, then clue card (left) + live race standings (right, stacks below on phones) */
+:root{
+  --bg:#E8EDF1; --surface:#FFFFFF; --sunk:#DCE3E9; --ink:#14202C; --muted:#56656F; --line:#C7D1DA;
+  --board:#14202C; --board-cell:#22313F; --board-ink:#F3F6F8;
+  --marker:#F2B705; --marker-ink:#1B1500; --stamp:#C2362D; --detour:#16707F; --scramble:#5B4BB7; --go:#2E7D4F; --on-color:#FFFFFF;
+  --you:#F2B705;
+  --display:"Big Shoulders Display","Arial Narrow",Impact,sans-serif;
+  --body:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0D141C; --surface:#16212C; --sunk:#1F2D3A; --ink:#E5ECF2; --muted:#93A3B1; --line:#2A3A48;
+  --board:#070B10; --board-cell:#17222D; --board-ink:#F3F6F8; --stamp:#D9473D; --detour:#1E8899; --scramble:#7363D1; --go:#3F9B66; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0D141C; --surface:#16212C; --sunk:#1F2D3A; --ink:#E5ECF2; --muted:#93A3B1; --line:#2A3A48;
+  --board:#070B10; --board-cell:#17222D; --board-ink:#F3F6F8; --stamp:#D9473D; --detour:#1E8899; --scramble:#7363D1; --go:#3F9B66; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:16px/1.5 var(--body)}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--marker);outline-offset:2px}
+
+.board{background:var(--board);color:var(--board-ink);padding-block:12px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.board-in{max-width:1000px;margin:0 auto;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px}
+.logo{font-family:var(--display);font-weight:900;font-size:28px;letter-spacing:.05em;text-transform:uppercase;display:flex;align-items:center;gap:10px;line-height:1}
+.logo i{width:22px;height:22px;border-radius:3px;background:linear-gradient(135deg,var(--marker) 50%,var(--stamp) 50%)}
+.flaps{display:flex;gap:6px;flex-wrap:wrap}
+.flap{font-family:var(--mono);font-size:12.5px;font-weight:600;background:var(--board-cell);padding:5px 9px;border-radius:4px;letter-spacing:.08em;text-transform:uppercase;font-variant-numeric:tabular-nums}
+.flap b{color:var(--marker);font-weight:600}
+
+main{max-width:1000px;margin:0 auto;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;grid-template-columns:minmax(0,1fr) 310px;gap:20px;align-items:start}
+main.solo{grid-template-columns:minmax(0,640px);justify-content:center}
+@media (max-width:780px){main{grid-template-columns:minmax(0,1fr)}}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden;min-width:0}
+.band{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 18px;font-family:var(--display);font-weight:900;text-transform:uppercase;letter-spacing:.09em;font-size:17px}
+.band span:last-child{font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:.06em;text-align:right}
+.band.route{background:var(--marker);color:var(--marker-ink)}
+.band.detour{background:var(--detour);color:var(--on-color)}
+.band.roadblock{background:var(--stamp);color:var(--on-color)}
+.band.scramble{background:var(--scramble);color:var(--on-color)}
+.band.pit{background:var(--board);color:var(--board-ink)}
+.card-body{padding:20px 18px 22px;display:grid;gap:14px}
+.eyebrow{margin:0;font-family:var(--mono);font-size:12.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+h2{margin:0;font-family:var(--display);font-weight:900;font-size:clamp(30px,6vw,44px);line-height:.98;text-transform:uppercase;letter-spacing:.01em;text-wrap:balance}
+h3{margin:0;font-family:var(--display);font-weight:900;font-size:26px;line-height:1.05;text-transform:uppercase;letter-spacing:.03em}
+.card-body p{margin:0;max-width:62ch}
+.lede{color:var(--muted)}
+
+.btn{appearance:none;border:0;border-radius:8px;background:var(--ink);color:var(--surface);padding:12px 18px;font-family:var(--display);font-weight:900;font-size:19px;letter-spacing:.07em;text-transform:uppercase;cursor:pointer;justify-self:start}
+.btn.big{width:100%;padding:15px 18px;font-size:22px}
+.btn.alt{background:transparent;color:var(--ink);border:2px solid var(--line)}
+.btn:disabled{opacity:.45;cursor:default}
+.btn-row{display:flex;flex-wrap:wrap;gap:10px}
+.btn-row .btn{flex:1 1 180px}
+.link{appearance:none;background:none;border:0;padding:4px 0;color:var(--muted);text-decoration:underline;cursor:pointer;justify-self:start;font-size:14px}
+
+.opts{display:grid;gap:10px}
+.opt{appearance:none;text-align:left;width:100%;background:var(--surface);border:2px solid var(--line);border-radius:9px;padding:14px 16px;cursor:pointer;display:grid;gap:3px;transition:border-color .15s,transform .15s}
+.opt:hover{border-color:var(--ink);transform:translateY(-1px)}
+.opt b{font-family:var(--display);font-weight:900;font-size:22px;text-transform:uppercase;letter-spacing:.04em;line-height:1.1}
+.opt small{color:var(--muted);font-size:14px}
+.opt .away{font-family:var(--mono);font-size:13px;color:var(--ink);font-weight:600}
+.pass-btn{appearance:none;border:2px dashed var(--marker);background:transparent;border-radius:9px;padding:11px 14px;cursor:pointer;text-align:left;font-weight:600}
+.pass-btn small{display:block;font-weight:400;color:var(--muted)}
+
+.tasklist{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.tasklist li{border:1px solid var(--line);border-left:4px solid var(--scramble);border-radius:0 8px 8px 0;padding:10px 14px;display:grid;gap:2px}
+.tasklist b{font-weight:700}
+.tasklist small{color:var(--muted);font-size:14px}
+.tasklist .away{font-family:var(--mono);font-size:13px;color:var(--ink);font-weight:600}
+.prog{display:flex;gap:6px;align-items:center;font-family:var(--mono);font-weight:600}
+.prog i{width:28px;height:10px;border-radius:3px;background:var(--sunk);border:1px solid var(--line)}
+.prog i.on{background:var(--scramble);border-color:var(--scramble)}
+
+.field{display:grid;gap:6px;font-weight:600}
+.field input{border:2px solid var(--line);background:var(--bg);border-radius:8px;padding:11px 12px;font-weight:600}
+fieldset{border:0;margin:0;padding:0;display:grid;gap:8px;min-width:0}
+fieldset legend{font-weight:600;margin-bottom:6px;padding:0}
+.dopt{display:flex;gap:12px;align-items:flex-start;border:2px solid var(--line);border-radius:9px;padding:12px 14px;cursor:pointer}
+.dopt:has(input:checked){border-color:var(--ink);background:var(--sunk)}
+.dopt input{margin-top:4px;accent-color:var(--stamp)}
+.dopt span{display:grid}
+.dopt b{font-family:var(--display);font-weight:900;font-size:21px;text-transform:uppercase;letter-spacing:.05em;line-height:1.1}
+.dopt small{color:var(--muted);font-size:14px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{position:relative}
+.chip input{position:absolute;opacity:0;inset:0;cursor:pointer}
+.chip span{display:grid;place-items:center;min-width:46px;height:46px;border:2px solid var(--line);border-radius:8px;font-family:var(--display);font-weight:900;font-size:22px}
+.chip input:checked+span{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.chip input:focus-visible+span{outline:3px solid var(--marker);outline-offset:2px}
+.hintline{color:var(--muted);font-size:14px;margin:0}
+.dot{width:12px;height:12px;border-radius:50%;flex:none;display:inline-block}
+
+/* mini-games */
+.play{display:grid;gap:14px}
+.g-meta{display:flex;flex-wrap:wrap;gap:8px 18px;font-family:var(--mono);font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.g-meta b{color:var(--ink)}
+.g-time{margin-left:auto}
+.status{font-family:var(--display);font-weight:900;font-size:24px;text-transform:uppercase;letter-spacing:.05em;min-height:1.2em}
+.mem{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.mcard{appearance:none;aspect-ratio:1/1;border:0;border-radius:8px;cursor:pointer;background:repeating-linear-gradient(45deg,var(--board) 0 8px,var(--board-cell) 8px 16px);color:var(--ink);font-weight:700;font-size:clamp(11px,3.2vw,15px);display:grid;place-items:center;padding:4px;transition:transform .2s;max-width:100%}
+.mcard span{visibility:hidden;overflow-wrap:anywhere}
+.mcard.up{background:var(--sunk)}
+.mcard.up span{visibility:visible}
+.mcard.done{background:color-mix(in srgb,var(--go) 22%,var(--surface));cursor:default}
+.mem.glyph .mcard{font-size:clamp(26px,8vw,40px)}
+.simon{display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:320px;width:100%;justify-self:center}
+.pad{appearance:none;aspect-ratio:1/1;border:0;border-radius:50% 50% 14px 14px;cursor:pointer;opacity:.32;transition:opacity .12s,transform .12s;box-shadow:inset 0 -10px 0 rgba(0,0,0,.18);max-width:100%}
+.pad.lit{opacity:1;transform:scale(1.04)}
+.tiles{display:flex;flex-wrap:wrap;gap:6px}
+.tile{width:36px;height:44px;display:grid;place-items:center;background:var(--board);color:var(--board-ink);font-family:var(--mono);font-weight:600;font-size:21px;border-radius:5px}
+.hint{color:var(--muted)}
+.uform{display:flex;gap:8px;flex-wrap:wrap}
+.uform input{flex:1 1 180px;min-width:0;border:2px solid var(--line);background:var(--bg);border-radius:8px;padding:11px 12px;font-family:var(--mono);font-weight:600;letter-spacing:.1em;text-transform:uppercase}
+.fb{min-height:1.5em;font-weight:600}
+.fb.bad{color:var(--stamp)} .fb.good{color:var(--go)}
+.shake{animation:shake .3s}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.scale-track{position:relative;height:38px;background:var(--sunk);border-radius:6px;overflow:hidden}
+.zone{position:absolute;top:0;bottom:0;background:color-mix(in srgb,var(--go) 40%,transparent);border-left:2px solid var(--go);border-right:2px solid var(--go)}
+.needle{position:absolute;top:0;bottom:0;width:4px;margin-left:-2px;background:var(--ink);left:0}
+.ticks{display:flex;justify-content:space-between;font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:4px}
+.readout{font-family:var(--mono);font-size:34px;font-weight:600;font-variant-numeric:tabular-nums}
+.ask{font-weight:600;font-size:18px}
+.qopts{display:grid;gap:8px}
+.qopt{appearance:none;text-align:left;border:2px solid var(--line);background:var(--surface);border-radius:8px;padding:12px 14px;cursor:pointer;font-weight:600}
+.qopt.right{border-color:var(--go);background:color-mix(in srgb,var(--go) 18%,var(--surface))}
+.qopt.wrong{border-color:var(--stamp);background:color-mix(in srgb,var(--stamp) 15%,var(--surface))}
+
+.maze{display:grid;gap:3px;max-width:320px;width:100%;justify-self:center}
+.mc{aspect-ratio:1/1;border-radius:4px;background:var(--sunk);display:grid;place-items:center;font-size:11px;font-weight:700;color:var(--marker-ink)}
+.mc.wall{background:var(--board)}
+.mc.seen{background:color-mix(in srgb,var(--marker) 28%,var(--sunk))}
+.mc.me{background:var(--marker)}
+.mc.goal{background:var(--go)}
+.arrows{display:grid;grid-template-columns:repeat(3,60px);grid-template-rows:repeat(2,52px);gap:6px;justify-content:center}
+.arrows button{appearance:none;border:2px solid var(--line);background:var(--surface);border-radius:8px;font-size:22px;cursor:pointer}
+.arrows .up{grid-column:2}
+.arrows .lf{grid-column:1;grid-row:2}.arrows .dn{grid-column:2;grid-row:2}.arrows .rt{grid-column:3;grid-row:2}
+.holes{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:320px;width:100%;justify-self:center}
+.hole{appearance:none;aspect-ratio:1/1;border-radius:50%;border:0;background:var(--sunk);display:grid;place-items:center;cursor:pointer;max-width:100%}
+.flagmk,.flagfk{width:52%;height:52%;border-radius:4px}
+.flagmk{background:linear-gradient(135deg,var(--marker) 50%,var(--stamp) 50%)}
+.flagfk{background:linear-gradient(135deg,var(--detour) 50%,var(--muted) 50%)}
+.cgrid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;max-width:340px;width:100%;justify-self:center}
+.sym{aspect-ratio:1/1;display:block;border-radius:4px}
+.sym.mk{background:linear-gradient(135deg,var(--marker) 50%,var(--stamp) 50%)}
+.sym.yc{background:var(--marker);border-radius:50%}
+.sym.rs{background:var(--stamp)}
+.sym.tt{background:var(--detour);clip-path:polygon(50% 0,100% 100%,0 100%)}
+.sym.hid{background:var(--sunk)}
+.legend{display:flex;align-items:center;gap:8px;font-weight:600}
+.legend .sym{width:22px}
+.memo{display:flex;flex-wrap:wrap;gap:8px}
+.memo span{background:var(--board);color:var(--board-ink);padding:8px 12px;border-radius:6px;font-weight:600}
+.rlist{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
+.rbtn{appearance:none;border:2px solid var(--line);background:var(--surface);border-radius:8px;padding:10px;cursor:pointer;font-weight:600}
+.rbtn.on{border-color:var(--ink);background:var(--sunk)}
+.rbtn.right{border-color:var(--go);background:color-mix(in srgb,var(--go) 18%,var(--surface))}
+.rbtn.wrong{border-color:var(--stamp);background:color-mix(in srgb,var(--stamp) 15%,var(--surface))}
+.rbtn.missed{border-style:dashed;border-color:var(--go)}
+.key{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:6px}
+.key span{display:flex;justify-content:center;align-items:center;gap:6px;border:1px solid var(--line);border-radius:6px;padding:6px;font-family:var(--mono);font-weight:600}
+.key b{font-size:18px;font-weight:400}
+.ctile{min-width:36px;height:44px;padding:0 4px;display:grid;place-items:center;background:var(--board);color:var(--board-ink);font-size:22px;border-radius:5px}
+.qopt .n{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--go);color:var(--on-color);font-size:13px;margin-right:8px}
+
+/* results + standings */
+.big-time{font-family:var(--mono);font-size:clamp(34px,8vw,48px);font-weight:600;font-variant-numeric:tabular-nums;line-height:1}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14.5px}
+th{text-align:left;font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:6px 8px;border-bottom:2px solid var(--line)}
+td{padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+td.num{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+td.num small{display:block;color:var(--muted);font-size:12px}
+th.num{text-align:right}
+tr.me td{background:color-mix(in srgb,var(--you) 16%,transparent)}
+tr.gone td{color:var(--stamp)}
+.tn{display:flex;align-items:center;gap:8px;font-weight:600}
+.note{color:var(--muted);font-size:13.5px}
+.callout{border-left:4px solid var(--marker);background:var(--sunk);padding:10px 14px;border-radius:0 8px 8px 0}
+.callout.red{border-color:var(--stamp)}
+.callout.green{border-color:var(--go)}
+.callout.purple{border-color:var(--scramble)}
+.routes{list-style:none;margin:0;padding:0;display:grid;gap:6px;font-size:14px}
+.routes li{display:flex;gap:8px;align-items:baseline}
+.routes .dot{transform:translateY(1px)}
+details.logbox{border:1px solid var(--line);border-radius:8px;padding:10px 14px}
+details.logbox summary{cursor:pointer;font-weight:600}
+pre.log{margin:10px 0;max-height:360px;overflow:auto;background:var(--sunk);padding:12px;border-radius:6px;font-family:var(--mono);font-size:12.5px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}
+
+.side-h{padding:12px 16px;font-family:var(--display);font-weight:900;font-size:18px;text-transform:uppercase;letter-spacing:.09em;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:8px;align-items:center}
+.side-h small{font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;color:var(--muted)}
+.stand{list-style:none;margin:0;padding:6px 0}
+.stand li{display:grid;grid-template-columns:22px 12px minmax(0,1fr) auto;gap:10px;align-items:center;padding:9px 16px}
+.stand li.me{background:color-mix(in srgb,var(--you) 16%,transparent)}
+.stand li.out{opacity:.55}
+.pos{font-family:var(--display);font-weight:900;font-size:22px;line-height:1}
+.nm{font-weight:600;line-height:1.25;min-width:0}
+.nm small{display:block;font-weight:400;color:var(--muted);font-size:12.5px}
+.nm em{font-style:normal;color:var(--ink);font-weight:600}
+.tm{font-family:var(--mono);font-size:13.5px;text-align:right;font-variant-numeric:tabular-nums;line-height:1.25}
+.tm small{display:block;color:var(--muted);font-size:12px}
+.side-note{margin:0;padding:0 16px 14px;color:var(--muted);font-size:12.5px}
+
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<header class="board"><div class="board-in"><div class="logo"><i></i>Pit Stop Rally</div><div class="flaps" id="flaps"></div></div></header>
+<main id="main" class="solo"><section id="stage" aria-live="polite"></section><aside id="side"></aside></main>
+
+<script>
+const $=(s,r=document)=>r.querySelector(s);
+const clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v));
+const rand=(a,b)=>a+Math.random()*(b-a);
+const ri=(a,b)=>Math.round(rand(a,b));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const gauss=()=>{let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);};
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+const fmt=m=>{m=Math.max(0,Math.round(m));const h=Math.floor(m/60);return (h?h+'h ':'')+String(m%60).padStart(h?2:1,'0')+'m';};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+const ordinal=n=>n+(['th','st','nd','rd'][(n%100>10&&n%100<14)?0:(n%10<4?n%10:0)]||'th');
+
+const DIFF={
+  easy:{label:'Easy',mean:1.24,sd:.12,mishap:.22,smart:.35,blurb:'CPU teams are slow, misread clues and often pick the worse route.'},
+  normal:{label:'Normal',mean:1.0,sd:.1,mishap:.1,smart:.65,blurb:'CPU teams race at about your pace and make the odd mistake.'},
+  hard:{label:'Hard',mean:.86,sd:.07,mishap:.04,smart:.92,blurb:'CPU teams are fast, pick smart routes and rarely slip.'}
+};
+const FIRST=['Mia','Theo','Rhys','Kai','Priya','Dev','Hana','Jo','Sam','Ava','Leo','Zara','Noah','Isla','Eli','Ruby','Omar','Lena','Finn','Maya','Jack','Nina','Luca','Tess','Raj','Amira','Ben','Chloe','Diego','Grace','Hugo','Ivy','Jonah','Kira','Liam','Mei','Nico','Olive','Pablo','Quinn','Rosa','Sofia','Tom','Uma','Vik','Will','Yuki','Zac','Ana','Bo','Cleo','Dan','Ella','Felix','Gia','Hamish','Ines','Jae','Kofi','Lola'];
+const TAGS=['Siblings','Cousins','Best friends','Dating','Married','Engaged','Roommates','Co-workers','Twins','Teachers','Nurses','Firefighters','Lifeguards','Pilots','Chefs','Gamers','Bandmates','Uni friends','Neighbours','Surfers'];
+const COLORS=['#3D7DD8','#2E9E6A','#B5539A','#D9772B','#7A5CC7','#1E9BB0','#8A9A2B','#D6457A','#6B7F92','#A0522D'];
+const MISHAPS=['Took a wrong turn','Dropped the clue and went back','Misread the clue','Argued over directions','Got stuck behind a tour group'];
+const GLYPH_COLORS=['#C2362D','#16707F','#D9A400','#3D7DD8','#2E7D4F','#B5539A'];
+const HUBS=[['Singapore',1.35,103.99],['Dubai',25.25,55.36],['Doha',25.27,51.61],['London',51.47,-0.45],['Frankfurt',50.03,8.56],['Hong Kong',22.31,113.91],['Istanbul',41.26,28.74],['Los Angeles',33.94,-118.41],['Paris',49.01,2.55],['Johannesburg',-26.14,28.24],['Panama City',9.07,-79.38],['Madrid',40.49,-3.57],['Atlanta',33.64,-84.43],['Lima',-12.02,-77.11],['Bangkok',13.69,100.75],['Seoul',37.46,126.44],['Auckland',-37.01,174.79],['Mexico City',19.44,-99.07]];
+
+const T=(place,label,detail,game,cfg,rb)=>({place,label,detail,game,cfg,rb});
+const Q=(q,a,...w)=>({q,a,o:[a,...w]});
+const W=(w,hint)=>({w,hint});
+const CITIES=[
+{name:'Brisbane',country:'Australia',lat:-27.47,lon:153.03,pit:'Kangaroo Point Cliffs',local:['CityCat ferry','Taxi'],tasks:[
+  T('South Bank Parklands','River Lights','Watch the riverfront lights, then repeat the order.','simon',{noun:'lights'}),
+  T('Lone Pine Koala Sanctuary','Wildlife Match','Flip cards and match every pair of animals.','memory',{items:['Koala','Kangaroo','Wombat','Platypus','Echidna','Cassowary']}),
+  T('Story Bridge','River City Quiz','Answer four questions about Brisbane.','quiz',{qs:[Q('Brisbane is the capital of which state?','Queensland','New South Wales','Victoria','Tasmania'),Q('Which river winds through the city?','Brisbane River','Yarra River','Swan River','Murray River'),Q('Which city hosts the 2032 Summer Olympics?','Brisbane','Sydney','Melbourne','Perth'),Q('What are Brisbane\'s fast river ferries called?','CityCats','RiverRats','Bay Runners','Q-Boats')]},'Who knows the river city?')]},
+{name:'Tokyo',country:'Japan',lat:35.68,lon:139.69,pit:'a temple garden in Asakusa',local:['Taxi','Metro'],tasks:[
+  T('an Asakusa festival street','Lantern Lines','Watch the lanterns light up, then repeat the order.','simon',{noun:'lanterns'}),
+  T('Tsukiji Outer Market','Sushi Sort','Flip order tickets and match every pair.','memory',{items:['Tamago','Ebi','Maguro','Sake','Unagi','Ikura']}),
+  T('Shinjuku Station','Station Scramble','Unscramble four station signs.','unscramble',{words:[W('SHIBUYA','Home of the famous scramble crossing'),W('UENO','Station beside a park with a zoo'),W('AKIHABARA','The electronics district'),W('SHINJUKU','One of the busiest stations on Earth')]},'Who can read the rail map?')]},
+{name:'Marrakech',country:'Morocco',lat:31.63,lon:-7.99,pit:'a riad courtyard in the medina',local:['Petit taxi','Walk the souks'],tasks:[
+  T('the Rahba Kedima spice square','Spice Scales','Stop the scale as close as you can to each order.','gauge',{targets:[250,400,150],max:500,unit:'g',item:'cumin'}),
+  T('Souk Semmarine','Souk Haggle','Work out the right price for four deals.','quiz',{qs:[Q('A brass lamp is 240 dirhams. You talk the seller down 25%. What do you pay?','180','200','215','160'),Q('Three scarves cost 45 dirhams each. You hand over 200. What change do you get?','65','55','75','45'),Q('A teapot is 300 dirhams, or 2 for 520. How much do you save buying two?','80','60','100','40'),Q('Your clue says 6 dirhams = 1 dollar. A rug costs 1,800 dirhams. How many dollars?','300','350','250','280')]}),
+  T('Bahia Palace','Riad Tiles','Match every pair of zellige tiles on the wall.','memory',{glyph:true,items:['◆','●','▲','■','✦','✚']},'Who has an eye for pattern?')]},
+{name:'Reykjavík',country:'Iceland',lat:64.15,lon:-21.94,pit:'the Sun Voyager sculpture',local:['City bus','Run the waterfront'],tasks:[
+  T('a geothermal lagoon','Lagoon Mix','Stop the thermometer at the right bathing temperature.','gauge',{targets:[38,41,36],max:60,unit:'°C',item:'water'}),
+  T('Harpa concert hall','Glacier Guide','Answer four questions to earn your next clue.','quiz',{qs:[Q('What is the currency of Iceland?','Króna','Euro','Krone','Pound'),Q('What heats most homes in Iceland?','Geothermal water','Coal','Nuclear power','Natural gas'),Q('Which two tectonic plates pull apart at Þingvellir?','North American and Eurasian','Pacific and African','Eurasian and African','Arabian and Indian'),Q('What is Iceland\'s largest glacier?','Vatnajökull','Langjökull','Mýrdalsjökull','Snæfellsjökull')]}),
+  T('Hallgrímskirkja','Guide Notes','Unscramble four words from a tour guide\'s notes.','unscramble',{words:[W('GEYSER','A hot spring that shoots water into the air'),W('PUFFIN','Seabird with a colourful beak'),W('GLACIER','A slow river of ice'),W('AURORA','Lights in the winter sky')]},'Who can speak like a local?')]},
+{name:'Sydney',country:'Australia',lat:-33.87,lon:151.21,pit:'Mrs Macquarie\'s Chair',local:['Ferry','Taxi'],tasks:[
+  T('Bondi Beach','Surf Signals','Repeat the lifeguard flag signals in order.','simon',{noun:'flags'}),
+  T('The Rocks','Harbour History','Answer four questions about the harbour city.','quiz',{qs:[Q('In what year did the Sydney Opera House open?','1973','1965','1981','1958'),Q('What is the Sydney Harbour Bridge\'s nickname?','The Coathanger','The Old Iron','The Big Arch','The Clothes Peg'),Q('Who designed the Sydney Opera House?','Jørn Utzon','Frank Gehry','Zaha Hadid','Le Corbusier'),Q('Sydney is the capital of which state?','New South Wales','Victoria','Queensland','South Australia')]}),
+  T('Circular Quay','Aussie Animals','Match every pair of native animals.','memory',{items:['Kookaburra','Wombat','Koala','Echidna','Wallaby','Platypus']},'Who knows their Aussie animals?')]},
+{name:'Rio de Janeiro',country:'Brazil',lat:-22.91,lon:-43.17,pit:'the Selarón Steps',local:['Taxi','Metrô'],tasks:[
+  T('Copacabana promenade','Samba Beat','Listen to the drums, then play the rhythm back.','simon',{noun:'drums'}),
+  T('a juice bar in Ipanema','Açaí Bowls','Stop the scale on each açaí order.','gauge',{targets:[300,450,200],max:600,unit:'g',item:'açaí'}),
+  T('Sugarloaf Mountain','Carioca Words','Unscramble four local words.','unscramble',{words:[W('SAMBA','The dance of Carnival'),W('IPANEMA','Beach from a famous bossa nova song'),W('FEIJOADA','Black bean and pork stew'),W('CORCOVADO','Mountain topped by Christ the Redeemer')]},'Who can talk like a carioca?')]},
+{name:'Cairo',country:'Egypt',lat:30.04,lon:31.24,pit:'the Cairo Citadel',local:['Taxi','Metro'],tasks:[
+  T('Khan el-Khalili bazaar','Bazaar Pairs','Match every pair of souvenir carvings.','memory',{items:['Ankh','Scarab','Lotus','Falcon','Papyrus','Sphinx']}),
+  T('a Nile felucca dock','Karkadeh Pour','Pour each hibiscus tea order to the line.','gauge',{targets:[250,400,150],max:500,unit:'ml',item:'hibiscus tea'}),
+  T('the Giza plateau','Pyramid Puzzle','Answer four questions from an Egyptologist.','quiz',{qs:[Q('Which pharaoh was the Great Pyramid of Giza built for?','Khufu','Tutankhamun','Ramesses II','Cleopatra'),Q('Which river flows through Cairo?','The Nile','The Euphrates','The Jordan','The Tigris'),Q('What is the currency of Egypt?','Egyptian pound','Dinar','Dirham','Lira'),Q('The Great Sphinx has the body of which animal?','A lion','A bull','A jackal','A horse')]},'Who knows their pharaohs?')]},
+{name:'Rome',country:'Italy',lat:41.90,lon:12.50,pit:'the Orange Garden on the Aventine Hill',local:['Taxi','Walk'],tasks:[
+  T('Campo de\' Fiori market','Pasta Weigh-in','Stop the scale on each pasta order.','gauge',{targets:[120,350,200],max:500,unit:'g',item:'pasta'}),
+  T('the Colosseum','Colosseum Quiz','Answer four questions about ancient Rome.','quiz',{qs:[Q('Under which emperor was the Colosseum completed in AD 80?','Titus','Nero','Augustus','Hadrian'),Q('Which river runs through Rome?','The Tiber','The Po','The Arno','The Danube'),Q('Which independent country sits inside Rome?','Vatican City','San Marino','Monaco','Malta'),Q('Which twins appear in Rome\'s founding legend?','Romulus and Remus','Castor and Pollux','Apollo and Artemis','Cain and Abel')]}),
+  T('Piazza Navona','Café Order','Unscramble four Italian words.','unscramble',{words:[W('GELATO','Italian ice cream'),W('ESPRESSO','Small, strong coffee'),W('PIAZZA','A town square'),W('CARBONARA','Roman pasta with egg and guanciale')]},'Who can order like a Roman?')]},
+{name:'New York City',country:'USA',lat:40.71,lon:-74.01,pit:'Brooklyn Bridge Park',local:['Yellow cab','Subway'],tasks:[
+  T('Times Square','Billboard Blink','Watch the billboards flash, then repeat the order.','simon',{noun:'lights'}),
+  T('Grand Central Terminal','Deli Match','Match every pair of deli orders.','memory',{items:['Bagel','Pretzel','Hot dog','Cheesecake','Pizza','Pastrami']}),
+  T('Central Park','Borough Signs','Unscramble the names of four boroughs.','unscramble',{words:[W('BROOKLYN','Across the famous 1883 bridge'),W('QUEENS','Home to JFK and LaGuardia airports'),W('BRONX','The only borough mostly on the mainland'),W('MANHATTAN','The island with Central Park')]},'Who knows the boroughs?')]},
+{name:'Bangkok',country:'Thailand',lat:13.76,lon:100.50,pit:'the riverside at Wat Arun',local:['Tuk-tuk','Skytrain'],tasks:[
+  T('Chatuchak Market','Fruit Stall Match','Match every pair of tropical fruit.','memory',{items:['Mango','Durian','Lychee','Rambutan','Longan','Mangosteen']}),
+  T('Yaowarat in Chinatown','Pad Thai Portions','Stop the scale on each noodle portion.','gauge',{targets:[150,250,100],max:300,unit:'g',item:'noodles'}),
+  T('the Grand Palace','Kingdom Quiz','Answer four questions about Thailand.','quiz',{qs:[Q('What is the currency of Thailand?','Baht','Ringgit','Rupiah','Dong'),Q('Which river flows through Bangkok?','Chao Phraya','Mekong','Irrawaddy','Salween'),Q('What was Thailand called before 1939?','Siam','Burma','Ceylon','Annam'),Q('Which temple houses the Emerald Buddha?','Wat Phra Kaew','Wat Arun','Wat Pho','Wat Saket')]},'Who knows the kingdom?')]},
+{name:'Seoul',country:'South Korea',lat:37.57,lon:126.98,pit:'the N Seoul Tower plaza',local:['Taxi','Subway'],tasks:[
+  T('Gwangjang Market','Kimchi Weigh-in','Stop the scale on each kimchi order.','gauge',{targets:[500,300,700],max:1000,unit:'g',item:'kimchi'}),
+  T('Gyeongbokgung Palace','Palace Quiz','Answer four questions about Korea.','quiz',{qs:[Q('What is the Korean alphabet called?','Hangul','Kanji','Hiragana','Hanzi'),Q('Which king created the Korean alphabet?','King Sejong','King Taejo','King Gojong','King Jeongjo'),Q('Which river runs through Seoul?','Han River','Yalu River','Nakdong River','Geum River'),Q('What is the currency of South Korea?','Won','Yen','Yuan','Ringgit')]}),
+  T('Myeongdong','Dance Break','Repeat the stage-light pattern to learn the routine.','simon',{noun:'lights'},'Who has the best moves?')]},
+{name:'Cape Town',country:'South Africa',lat:-33.92,lon:18.42,pit:'the V&A Waterfront',local:['Taxi','MyCiTi bus'],tasks:[
+  T('Boulders Beach','Wildlife Pairs','Match every pair of Cape wildlife.','memory',{items:['Penguin','Seal','Dassie','Baboon','Ostrich','Whale']}),
+  T('a Bo-Kaap spice shop','Curry Spice Mix','Stop the scale on each spice order.','gauge',{targets:[40,25,60],max:80,unit:'g',item:'curry spice'}),
+  T('Table Mountain','Summit Plaque','Unscramble four words on the summit plaque.','unscramble',{words:[W('PROTEA','South Africa\'s national flower'),W('BRAAI','A South African barbecue'),W('FYNBOS','Shrubland unique to the Cape'),W('ROBBEN','Island just off the coast')]},'Who can read the summit plaque?')]},
+{name:'Mexico City',country:'Mexico',lat:19.43,lon:-99.13,pit:'Chapultepec Castle',local:['Taxi','Metro'],tasks:[
+  T('the Xochimilco canals','Trajinera Bells','Listen to the boat bells, then ring them back.','simon',{noun:'bells'}),
+  T('Mercado de Coyoacán','Taco Stand Match','Match every pair of street-food orders.','memory',{items:['Taco','Tamal','Elote','Churro','Mole','Pozole']}),
+  T('Palacio de Bellas Artes','City History Quiz','Answer four questions about the city.','quiz',{qs:[Q('What was the Aztec capital built where Mexico City stands?','Tenochtitlan','Teotihuacan','Chichén Itzá','Tula'),Q('The Aztec capital was built on which lake?','Lake Texcoco','Lake Chapala','Lake Titicaca','Lake Pátzcuaro'),Q('Which painter lived in the Blue House in Coyoacán?','Frida Kahlo','Diego Velázquez','Pablo Picasso','Salvador Dalí'),Q('What is the currency of Mexico?','Peso','Real','Sol','Colón')]},'Who knows the city\'s history?')]},
+{name:'Istanbul',country:'Türkiye',lat:41.01,lon:28.98,pit:'Gülhane Park',local:['Ferry','Tram'],tasks:[
+  T('the Grand Bazaar','Sweet Shop Match','Match every pair of treats.','memory',{items:['Lokum','Simit','Baklava','Kebab','Pide','Börek']}),
+  T('the Spice Bazaar','Tea Pour','Pour each glass of tea to the line.','gauge',{targets:[100,150,80],max:200,unit:'ml',item:'tea'}),
+  T('Eminönü ferry pier','Ferry Board','Unscramble four words on the ferry board.','unscramble',{words:[W('BOSPHORUS','Strait between Europe and Asia'),W('BAZAAR','A covered market'),W('SIMIT','Sesame bread ring'),W('GALATA','Tower above the Golden Horn')]},'Who can read the ferry board?')]},
+{name:'Cusco',country:'Peru',lat:-13.53,lon:-71.97,pit:'the Plaza de Armas',local:['Taxi','Walk'],tasks:[
+  T('San Pedro Market','Quinoa Scoop','Stop the scale on each quinoa order.','gauge',{targets:[200,350,500],max:600,unit:'g',item:'quinoa'}),
+  T('Sacsayhuamán','Inca Quiz','Answer four questions about the Andes.','quiz',{qs:[Q('Cusco was the capital of which empire?','The Inca Empire','The Aztec Empire','The Maya','The Olmec'),Q('Which famous citadel is near Cusco?','Machu Picchu','Tikal','Petra','Angkor Wat'),Q('What is the currency of Peru?','Sol','Peso','Real','Bolívar'),Q('Which mountain range surrounds Cusco?','The Andes','The Rockies','The Alps','The Himalayas')]}),
+  T('a weaving cooperative','Weaving Pairs','Match every pair of animals woven into the cloth.','memory',{items:['Alpaca','Llama','Condor','Puma','Vicuña','Guanaco']},'Who has an eye for weaving?')]},
+{name:'Vancouver',country:'Canada',lat:49.28,lon:-123.12,pit:'Stanley Park',local:['Taxi','SkyTrain'],tasks:[
+  T('Canada Place','Harbour Lights','Watch the harbour lights, then repeat the order.','simon',{noun:'lights'}),
+  T('Granville Island Public Market','Maple Syrup Pour','Pour each bottle of syrup to the line.','gauge',{targets:[250,100,400],max:500,unit:'ml',item:'maple syrup'}),
+  T('Gastown','Street Signs','Unscramble four words on the street signs.','unscramble',{words:[W('MAPLE','Leaf on the national flag'),W('ORCA','Black-and-white whale of these waters'),W('STEAM','What powers Gastown\'s famous clock'),W('SEAWALL','Path around Stanley Park')]},'Who can read the street signs?')]},
+{name:'Amsterdam',country:'Netherlands',lat:52.37,lon:4.90,pit:'Vondelpark',local:['Bike','Tram'],tasks:[
+  T('the Bloemenmarkt','Bulb Match','Match every pair of flower bulbs.','memory',{items:['Tulip','Daffodil','Hyacinth','Crocus','Iris','Lily']}),
+  T('Albert Cuyp Market','Cheese Cut','Stop the scale on each cheese order.','gauge',{targets:[500,250,750],max:1000,unit:'g',item:'Gouda'}),
+  T('the canal ring','Canal Quiz','Answer four questions about the city.','quiz',{qs:[Q('In what year did the canal ring become a UNESCO World Heritage Site?','2010','1995','2004','2018'),Q('Whose wartime hiding place is a museum on the Prinsengracht?','Anne Frank','Rembrandt','Vincent van Gogh','Erasmus'),Q('Which painter has a museum on Museumplein?','Vincent van Gogh','Claude Monet','Henri Matisse','Edvard Munch'),Q('What is the currency of the Netherlands?','Euro','Guilder','Krone','Franc')]},'Who knows the canals?')]},
+{name:'Dubai',country:'United Arab Emirates',lat:25.20,lon:55.27,pit:'the Al Fahidi Historical District',local:['Abra water taxi','Metro'],tasks:[
+  T('the Gold Souk','Gold Weigh-in','Stop the scale on each gold order.','gauge',{targets:[20,50,35],max:60,unit:'g',item:'gold'}),
+  T('a desert camp','Desert Match','Match every pair of desert icons.','memory',{items:['Camel','Falcon','Oryx','Dates','Dune','Oasis']}),
+  T('the Burj Khalifa','Skyline Quiz','Answer four questions about the emirate.','quiz',{qs:[Q('In what year did the Burj Khalifa open?','2010','2001','2015','1999'),Q('What is the currency of the UAE?','Dirham','Riyal','Dinar','Rupee'),Q('Dubai is one of how many emirates?','Seven','Five','Nine','Three'),Q('Which body of water is Dubai on?','The Persian Gulf','The Red Sea','The Caspian Sea','The Mediterranean')]},'Who can handle heights?')]},
+{name:'Mumbai',country:'India',lat:19.08,lon:72.88,pit:'the Gateway of India',local:['Black-and-yellow taxi','Local train'],tasks:[
+  T('Dhobi Ghat','Laundry Match','Match every pair of garments on the lines.','memory',{items:['Sari','Kurta','Dupatta','Lungi','Shawl','Turban']}),
+  T('Crawford Market','Chai Masala','Stop the scale on each spice order.','gauge',{targets:[50,30,80],max:100,unit:'g',item:'chai masala'}),
+  T('Chhatrapati Shivaji Terminus','Station Board','Unscramble four words on the station board.','unscramble',{words:[W('CHAI','Spiced milk tea'),W('BOLLYWOOD','The city\'s film industry'),W('DABBAWALA','Lunchbox delivery worker'),W('MONSOON','The rainy season')]},'Who can read the station board?')]},
+{name:'Kathmandu',country:'Nepal',lat:27.72,lon:85.32,pit:'Swayambhunath stupa',local:['Taxi','Walk'],tasks:[
+  T('a shop in Thamel','Singing Bowls','Listen to the bowls, then play them back in order.','simon',{noun:'singing bowls'}),
+  T('Asan Bazaar','Momo Fillings','Stop the scale on each momo filling order.','gauge',{targets:[200,350,150],max:500,unit:'g',item:'momo filling'}),
+  T('Boudhanath Stupa','Himalaya Quiz','Answer four questions about Nepal.','quiz',{qs:[Q('What is the highest mountain in the world?','Mount Everest','K2','Kangchenjunga','Annapurna'),Q('What is the currency of Nepal?','Nepalese rupee','Taka','Kyat','Afghani'),Q('What shape is Nepal\'s flag?','Two stacked triangles','A square','A circle','A rectangle'),Q('Which town in Nepal is the birthplace of the Buddha?','Lumbini','Pokhara','Bhaktapur','Lukla')]},'Who knows the Himalaya?')]},
+{name:'Singapore',country:'Singapore',lat:1.29,lon:103.85,pit:'Gardens by the Bay',local:['MRT','Taxi'],tasks:[
+  T('Maxwell Food Centre','Hawker Match','Match every pair of hawker dishes.','memory',{items:['Laksa','Satay','Rojak','Popiah','Kaya toast','Chicken rice']}),
+  T('Marina Bay','Light Show','Watch the light show, then repeat the order.','simon',{noun:'lights'}),
+  T('Merlion Park','Hawker Signs','Unscramble four words on the hawker signs.','unscramble',{words:[W('MERLION','Half lion, half fish'),W('HAWKER','Open-air food centre'),W('SENTOSA','Island resort to the south'),W('DURIAN','Spiky fruit banned on the MRT')]},'Who can read the hawker signs?')]},
+{name:'Hanoi',country:'Vietnam',lat:21.03,lon:105.85,pit:'Hoan Kiem Lake',local:['Motorbike taxi','Cyclo'],tasks:[
+  T('the Old Quarter','Pho Broth','Ladle each bowl of broth to the line.','gauge',{targets:[400,250,500],max:600,unit:'ml',item:'broth'}),
+  T('a water puppet theatre','Puppet Cues','Listen to the drums, then repeat the cues.','simon',{noun:'drums'}),
+  T('the Temple of Literature','Vietnam Quiz','Answer four questions about Vietnam.','quiz',{qs:[Q('What is the currency of Vietnam?','Dong','Baht','Kip','Riel'),Q('Which river flows through Hanoi?','Red River','Mekong','Perfume River','Yangtze'),Q('The Temple of Literature honours which thinker?','Confucius','Buddha','Laozi','Mencius'),Q('Which famous bay is in northern Vietnam?','Ha Long Bay','Phang Nga Bay','Manila Bay','Bengal Bay')]},'Who knows Vietnam?')]},
+{name:'Hong Kong',country:'China',lat:22.32,lon:114.17,pit:'Victoria Peak',local:['Star Ferry','MTR'],tasks:[
+  T('Temple Street Night Market','Dim Sum Match','Match every pair of dim sum baskets.','memory',{items:['Har gow','Siu mai','Char siu bao','Cheung fun','Egg tart','Lo mai gai']}),
+  T('a dai pai dong','Milk Tea Pour','Pour each milk tea to the line.','gauge',{targets:[200,300,150],max:400,unit:'ml',item:'milk tea'}),
+  T('the Tsim Sha Tsui promenade','Harbour Words','Unscramble four harbour words.','unscramble',{words:[W('KOWLOON','Peninsula across from the island'),W('DIMSUM','Small dishes served with tea'),W('TRAM','The "ding ding" on the island'),W('JUNK','Sailing boat with red sails')]},'Who can read the harbour signs?')]},
+{name:'Auckland',country:'New Zealand',lat:-36.85,lon:174.76,pit:'the Mount Eden summit',local:['Ferry','Bus'],tasks:[
+  T('Viaduct Harbour','Sailing Signals','Repeat the sailing flag signals in order.','simon',{noun:'flags'}),
+  T('a Ponsonby craft market','Kiwi Icons','Match every pair of New Zealand icons.','memory',{items:['Kiwi','Tūī','Fern','Pāua','Pōhutukawa','Kererū']}),
+  T('One Tree Hill','Aotearoa Quiz','Answer four questions about New Zealand.','quiz',{qs:[Q('What is the Māori name for New Zealand?','Aotearoa','Te Ika','Rarotonga','Hawaiki'),Q('Auckland is built on what kind of field?','A volcanic field','A glacier field','A coral reef','A salt flat'),Q('What is the currency of New Zealand?','New Zealand dollar','Pound','Kina','Rupee'),Q('What is Auckland\'s tallest freestanding structure?','Sky Tower','Harbour Bridge','Te Papa','Beehive')]},'Who knows Aotearoa?')]},
+{name:'Honolulu',country:'USA (Hawaiʻi)',lat:21.31,lon:-157.86,pit:'Kapiʻolani Park',local:['TheBus','Taxi'],tasks:[
+  T('a Waikīkī shave ice stand','Shave Ice Syrup','Pour each syrup to the line.','gauge',{targets:[60,40,90],max:120,unit:'ml',item:'syrup'}),
+  T('a lei stand','Lei Match','Match every pair of lei flowers.','memory',{items:['Plumeria','Hibiscus','Orchid','Pīkake','Ginger','Tuberose']}),
+  T('Diamond Head','Island Words','Unscramble four Hawaiian words.','unscramble',{words:[W('ALOHA','Hello and goodbye'),W('MAHALO','Thank you'),W('OHANA','Family'),W('LUAU','A Hawaiian feast')]},'Who can speak a little Hawaiian?')]},
+{name:'San Francisco',country:'USA',lat:37.77,lon:-122.42,pit:'Crissy Field',local:['Cable car','Muni bus'],tasks:[
+  T('Fisherman\'s Wharf','Pier Match','Match every pair of wharf sights.','memory',{items:['Sea lion','Crab','Sourdough','Cable car','Fog','Pelican']}),
+  T('Lombard Street','Cable Car Bells','Listen to the bells, then ring them back.','simon',{noun:'bells'}),
+  T('the Alcatraz ferry pier','Bay Quiz','Answer four questions about the Bay.','quiz',{qs:[Q('In what year did the Golden Gate Bridge open?','1937','1912','1955','1968'),Q('What is the official name of the bridge\'s colour?','International Orange','Golden Red','Bay Rust','Pacific Coral'),Q('Until what year was Alcatraz a federal prison?','1963','1945','1979','1990'),Q('Which bay is San Francisco on?','San Francisco Bay','Monterey Bay','Hudson Bay','Chesapeake Bay')]},'Who knows the Bay?')]},
+{name:'Havana',country:'Cuba',lat:23.11,lon:-82.37,pit:'the Malecón seawall',local:['Classic car taxi','Coco taxi'],tasks:[
+  T('Old Havana','Salsa Beat','Listen to the drums, then play the rhythm back.','simon',{noun:'drums'}),
+  T('a café on Calle Obispo','Cafecito Pour','Pour each Cuban coffee to the line.','gauge',{targets:[60,30,90],max:120,unit:'ml',item:'coffee'}),
+  T('a farmers\' market in Vedado','Market Match','Match every pair of market finds.','memory',{items:['Guava','Mango','Plantain','Sugarcane','Coconut','Papaya']},'Who has a sharp eye?')]},
+{name:'Buenos Aires',country:'Argentina',lat:-34.60,lon:-58.38,pit:'Plaza de Mayo',local:['Subte','Taxi'],tasks:[
+  T('La Boca','Tango Steps','Watch the footlights, then repeat the steps.','simon',{noun:'footlights'}),
+  T('a parrilla in San Telmo','Asado Cut','Stop the scale on each cut of beef.','gauge',{targets:[400,250,600],max:800,unit:'g',item:'beef'}),
+  T('Teatro Colón','Porteño Quiz','Answer four questions about Argentina.','quiz',{qs:[Q('What is the currency of Argentina?','Peso','Real','Sol','Bolívar'),Q('Buenos Aires sits on which estuary?','Río de la Plata','Amazon','Orinoco','Paraná Delta'),Q('Which dance was born in Buenos Aires?','Tango','Salsa','Samba','Flamenco'),Q('What herbal drink is shared from a gourd?','Mate','Chai','Kava','Horchata')]},'Who knows the porteños?')]},
+{name:'Nairobi',country:'Kenya',lat:-1.29,lon:36.82,pit:'Uhuru Park',local:['Matatu','Taxi'],tasks:[
+  T('Nairobi National Park','Safari Match','Match every pair of animals in the park.','memory',{items:['Lion','Giraffe','Rhino','Zebra','Buffalo','Ostrich']}),
+  T('a tea house','Kenyan Chai','Pour each cup of chai to the line.','gauge',{targets:[250,150,300],max:400,unit:'ml',item:'chai'}),
+  T('the KICC rooftop','Swahili Words','Unscramble four Swahili words.','unscramble',{words:[W('JAMBO','Hello'),W('SAFARI','Journey'),W('ASANTE','Thank you'),W('RAFIKI','Friend')]},'Who can speak some Swahili?')]},
+{name:'London',country:'United Kingdom',lat:51.51,lon:-0.13,pit:'Primrose Hill',local:['Black cab','Tube'],tasks:[
+  T('Borough Market','Tea Leaves','Stop the scale on each loose-leaf tea order.','gauge',{targets:[50,100,25],max:150,unit:'g',item:'tea'}),
+  T('Covent Garden','Landmark Match','Match every pair of London icons.','memory',{items:['Big Ben','Tower Bridge','Red bus','Black cab','Phone box','Beefeater']}),
+  T('King\'s Cross St Pancras','Tube Map','Unscramble the names of four Tube lines.','unscramble',{words:[W('PICCADILLY','The line to Heathrow'),W('VICTORIA','Named after a queen'),W('JUBILEE','Named for a royal anniversary'),W('CIRCLE','Yellow line that is no longer a full loop')]},'Who can read the Tube map?')]},
+{name:'Paris',country:'France',lat:48.86,lon:2.35,pit:'the Champ de Mars',local:['Taxi','Métro'],tasks:[
+  T('a Montmartre boulangerie','Pâtisserie Match','Match every pair of pastries.','memory',{items:['Croissant','Macaron','Éclair','Baguette','Madeleine','Crêpe']}),
+  T('the Seine riverbank','Bridge Lights','Watch the bridge lights, then repeat the order.','simon',{noun:'lights'}),
+  T('the Louvre','Art Quiz','Answer four questions about Paris.','quiz',{qs:[Q('Who painted the Mona Lisa?','Leonardo da Vinci','Michelangelo','Raphael','Botticelli'),Q('The Eiffel Tower was built for the World\'s Fair of which year?','1889','1900','1867','1925'),Q('Which river flows through Paris?','The Seine','The Loire','The Rhône','The Rhine'),Q('Who designed the Louvre\'s glass pyramid?','I. M. Pei','Gustave Eiffel','Renzo Piano','Jean Nouvel')]},'Who knows their art?')]},
+{name:'Barcelona',country:'Spain',lat:41.39,lon:2.17,pit:'Park Güell',local:['Metro','Bike'],tasks:[
+  T('La Boqueria market','Jamón Slicer','Stop the scale on each ham order.','gauge',{targets:[100,200,150],max:300,unit:'g',item:'jamón'}),
+  T('the Sagrada Família','Gaudí Quiz','Answer four questions about Barcelona.','quiz',{qs:[Q('Who designed the Sagrada Família?','Antoni Gaudí','Pablo Picasso','Joan Miró','Salvador Dalí'),Q('Besides Spanish, which language is official in Barcelona?','Catalan','Basque','Galician','Portuguese'),Q('In what year did Barcelona host the Summer Olympics?','1992','1984','2000','1972'),Q('What is the currency of Spain?','Euro','Peseta','Franc','Lira')]}),
+  T('Barceloneta beach','Tapas Order','Unscramble four Spanish dishes.','unscramble',{words:[W('PAELLA','Rice dish from Valencia'),W('TAPAS','Small shared plates'),W('CHURROS','Fried dough sticks'),W('GAZPACHO','Cold tomato soup')]},'Who can order tapas?')]},
+{name:'Prague',country:'Czechia',lat:50.08,lon:14.43,pit:'Petřín Hill',local:['Tram','Walk'],tasks:[
+  T('Old Town Square','Clock Figures','Watch the clock figures move, then repeat the order.','simon',{noun:'clock figures'}),
+  T('Havelská Market','Puppet Match','Match every pair of marionettes.','memory',{items:['Knight','King','Witch','Jester','Devil','Princess']}),
+  T('Prague Castle','Bohemia Quiz','Answer four questions about Czechia.','quiz',{qs:[Q('What is the currency of Czechia?','Czech koruna','Euro','Złoty','Forint'),Q('Which river flows through Prague?','Vltava','Danube','Elbe','Oder'),Q('What is Prague\'s astronomical clock called?','Orloj','Zytglogge','Big Ben','Rathaus'),Q('Which country split peacefully from Czechoslovakia in 1993?','Slovakia','Slovenia','Hungary','Austria')]},'Who knows Bohemia?')]},
+{name:'Lisbon',country:'Portugal',lat:38.72,lon:-9.14,pit:'Belém Tower',local:['Tram 28','Tuk-tuk'],tasks:[
+  T('a pastelaria in Belém','Custard Pour','Pour the custard filling to the line for each tart tray.','gauge',{targets:[80,50,120],max:150,unit:'ml',item:'custard'}),
+  T('a fado house in Alfama','Fado Notes','Listen to the guitar, then play the notes back.','simon',{noun:'guitar strings'}),
+  T('Praça do Comércio','Lisbon Quiz','Answer four questions about Lisbon.','quiz',{qs:[Q('Which river flows past Lisbon?','The Tagus','The Douro','The Guadalquivir','The Ebro'),Q('In what year did the great earthquake strike Lisbon?','1755','1666','1812','1906'),Q('Which explorer sailed from Lisbon to India in 1497?','Vasco da Gama','Christopher Columbus','Ferdinand Magellan','James Cook'),Q('What is Lisbon\'s famous custard tart called?','Pastel de nata','Churro','Crème brûlée','Flan')]},'Who knows Lisbon?')]},
+{name:'Edinburgh',country:'Scotland, UK',lat:55.95,lon:-3.19,pit:'Calton Hill',local:['Bus','Walk'],tasks:[
+  T('the Royal Mile','Tartan Match','Match every pair of Scottish icons.','memory',{items:['Thistle','Bagpipes','Kilt','Unicorn','Haggis','Shortbread']}),
+  T('a sweet shop on Victoria Street','Tablet Weigh-in','Stop the scale on each bag of tablet fudge.','gauge',{targets:[100,250,175],max:300,unit:'g',item:'tablet'}),
+  T('Edinburgh Castle','Castle Plaques','Unscramble four words on the castle plaques.','unscramble',{words:[W('THISTLE','Scotland\'s national flower'),W('HOLYROOD','Palace at the foot of the Royal Mile'),W('FRINGE','The city\'s August arts festival'),W('BAGPIPES','Instrument with drones')]},'Who can read the castle plaques?')]},
+{name:'Athens',country:'Greece',lat:37.98,lon:23.73,pit:'Philopappos Hill',local:['Metro','Taxi'],tasks:[
+  T('Monastiraki flea market','Myth Match','Match every pair of Greek gods.','memory',{items:['Zeus','Athena','Poseidon','Hermes','Apollo','Artemis']}),
+  T('a taverna in Plaka','Olive Oil Pour','Pour each bottle of olive oil to the line.','gauge',{targets:[50,120,80],max:150,unit:'ml',item:'olive oil'}),
+  T('the Acropolis','Myth Quiz','Answer four questions about ancient Athens.','quiz',{qs:[Q('Which goddess was the Parthenon built for?','Athena','Hera','Aphrodite','Demeter'),Q('In what year did Athens host the first modern Olympics?','1896','1900','1924','1876'),Q('Which sea lies east of mainland Greece?','The Aegean','The Adriatic','The Black Sea','The Tyrrhenian'),Q('What is the currency of Greece?','Euro','Drachma','Lira','Dinar')]},'Who knows their myths?')]},
+{name:'Vienna',country:'Austria',lat:48.21,lon:16.37,pit:'the Prater Ferris wheel',local:['U-Bahn','Tram'],tasks:[
+  T('the State Opera','Waltz Notes','Listen to the orchestra, then play the notes back.','simon',{noun:'notes'}),
+  T('the Naschmarkt','Coffee Beans','Stop the scale on each bag of coffee beans.','gauge',{targets:[250,100,500],max:600,unit:'g',item:'coffee beans'}),
+  T('Schönbrunn Palace','Palace Guide','Unscramble four words from the palace guide.','unscramble',{words:[W('WALTZ','Dance made famous in Vienna'),W('MOZART','Composer who lived and worked here'),W('DANUBE','River that runs through the city'),W('SCHNITZEL','Breaded veal cutlet')]},'Who can read the palace guide?')]},
+{name:'Copenhagen',country:'Denmark',lat:55.68,lon:12.57,pit:'Nyhavn harbour',local:['Bike','Harbour bus'],tasks:[
+  T('Tivoli Gardens','Ride Lights','Watch the ride lights, then repeat the order.','simon',{noun:'lights'}),
+  T('Torvehallerne market','Smørrebrød Match','Match every pair of open sandwich toppings.','memory',{items:['Herring','Shrimp','Egg','Rye bread','Roast beef','Salmon']}),
+  T('The Little Mermaid statue','Denmark Quiz','Answer four questions about Denmark.','quiz',{qs:[Q('Who wrote The Little Mermaid?','Hans Christian Andersen','The Brothers Grimm','Charles Perrault','Selma Lagerlöf'),Q('What is the currency of Denmark?','Danish krone','Euro','Swedish krona','Pound'),Q('What Danish word means a cosy, content feeling?','Hygge','Lagom','Sisu','Fika'),Q('Which famous toy bricks were invented in Denmark?','LEGO','Meccano','K\'Nex','Lincoln Logs')]},'Who knows Denmark?')]},
+{name:'Jaipur',country:'India',lat:26.91,lon:75.79,pit:'the Hawa Mahal',local:['Auto-rickshaw','Taxi'],tasks:[
+  T('Johari Bazaar','Gem Match','Match every pair of gemstones.','memory',{items:['Ruby','Emerald','Sapphire','Garnet','Topaz','Pearl']}),
+  T('a block-print workshop','Block Print','Watch the stamps press, then repeat the pattern.','simon',{noun:'stamps'}),
+  T('Amber Fort','Pink City Quiz','Answer four questions about Jaipur.','quiz',{qs:[Q('What is Jaipur\'s nickname?','The Pink City','The Blue City','The Golden City','The White City'),Q('Jaipur is the capital of which state?','Rajasthan','Gujarat','Punjab','Kerala'),Q('What does Hawa Mahal mean?','Palace of Winds','Palace of Mirrors','Lake Palace','Moon Palace'),Q('What is the Jantar Mantar in Jaipur?','An astronomical observatory','A temple','A market','A stepwell')]},'Who knows the Pink City?')]},
+{name:'Ubud',country:'Indonesia (Bali)',lat:-8.51,lon:115.26,pit:'the Campuhan Ridge Walk',local:['Scooter taxi','Walk'],tasks:[
+  T('the Tegallalang rice terraces','Rice Harvest','Stop the scale on each basket of rice.','gauge',{targets:[500,300,750],max:1000,unit:'g',item:'rice'}),
+  T('a gamelan hall','Gamelan Gongs','Listen to the gongs, then play them back.','simon',{noun:'gongs'}),
+  T('the Sacred Monkey Forest','Temple Signs','Unscramble four Balinese words.','unscramble',{words:[W('SUBAK','Bali\'s traditional rice irrigation system'),W('GAMELAN','Bronze percussion orchestra'),W('BATIK','Cloth dyed using wax'),W('SARONG','Wrap worn when visiting temples')]},'Who can read the temple signs?')]},
+{name:'Taipei',country:'Taiwan',lat:25.03,lon:121.56,pit:'Elephant Mountain',local:['MRT','YouBike'],tasks:[
+  T('Shilin Night Market','Night Market Match','Match every pair of night-market snacks.','memory',{items:['Bubble tea','Stinky tofu','Gua bao','Oyster omelette','Pineapple cake','Beef noodles']}),
+  T('a bubble tea shop','Tapioca Pearls','Stop the scale on each cup of pearls.','gauge',{targets:[60,40,90],max:120,unit:'g',item:'tapioca pearls'}),
+  T('Taipei 101','Skyscraper Quiz','Answer four questions about Taiwan.','quiz',{qs:[Q('How many floors does Taipei 101 have above ground?','101','88','110','99'),Q('What is the currency of Taiwan?','New Taiwan dollar','Yuan','Yen','Hong Kong dollar'),Q('Which drink was invented in Taiwan in the 1980s?','Bubble tea','Matcha latte','Thai iced tea','Yakult'),Q('Which ocean lies east of Taiwan?','The Pacific','The Indian','The Atlantic','The Arctic')]},'Who can reach the top?')]},
+{name:'Kyoto',country:'Japan',lat:35.01,lon:135.77,pit:'Kiyomizu-dera',local:['Bus','Bike'],tasks:[
+  T('a tea house in Gion','Matcha Whisk','Stop the scale on each scoop of matcha.','gauge',{targets:[2,4,3],max:6,unit:'g',item:'matcha'}),
+  T('the Arashiyama Bamboo Grove','Bamboo Chimes','Listen to the chimes, then play them back.','simon',{noun:'chimes'}),
+  T('Nishiki Market','Kyoto Sweets','Match every pair of Kyoto treats.','memory',{items:['Mochi','Yatsuhashi','Dango','Matcha','Tofu','Tsukemono']},'Who has an eye for detail?')]},
+{name:'Nadi',country:'Fiji',lat:-17.80,lon:177.42,pit:'Port Denarau',local:['Bus','Taxi'],tasks:[
+  T('a coral reef boat','Reef Match','Match every pair of reef creatures.','memory',{items:['Clownfish','Turtle','Manta ray','Starfish','Coral','Reef shark']}),
+  T('Nadi Municipal Market','Coconut Pour','Pour each coconut to the line.','gauge',{targets:[300,200,400],max:500,unit:'ml',item:'coconut water'}),
+  T('a village meeting house','Bula Quiz','Answer four questions about Fiji.','quiz',{qs:[Q('What is the Fijian word for hello?','Bula','Aloha','Kia ora','Talofa'),Q('What is the capital of Fiji?','Suva','Nadi','Lautoka','Levuka'),Q('What is the currency of Fiji?','Fijian dollar','Australian dollar','Pa\'anga','Tala'),Q('In which sport has Fiji won Olympic gold?','Rugby sevens','Sailing','Swimming','Boxing')]},'Who knows Fiji?')]},
+{name:'Queenstown',country:'New Zealand',lat:-45.03,lon:168.66,pit:'the top of the Skyline Gondola',local:['Gondola','Water taxi'],tasks:[
+  T('the Shotover River','Jet Boat Signals','Watch the driver\'s signals, then repeat them.','simon',{noun:'signals'}),
+  T('a bungy platform','Bungy Cord','Stop the counter on the right cord length.','gauge',{targets:[43,30,47],max:60,unit:'m',item:'cord'}),
+  T('the Kawarau Bridge','Adventure Quiz','Answer four questions about the region.','quiz',{qs:[Q('Where did the world\'s first commercial bungy jump open in 1988?','Kawarau Bridge','Victoria Falls Bridge','Macau Tower','Verzasca Dam'),Q('Queenstown sits on which lake?','Lake Wakatipu','Lake Taupō','Lake Tekapo','Lake Wānaka'),Q('Which mountain range rises above Queenstown?','The Remarkables','The Kaikōuras','The Tararuas','The Ruahines'),Q('Which famous fiord can you visit from Queenstown?','Milford Sound','Geirangerfjord','Doubtful Strait','Puget Sound')]},'Who will take the leap?')]},
+{name:'Los Angeles',country:'USA',lat:34.05,lon:-118.24,pit:'Griffith Observatory',local:['Rideshare','Metro'],tasks:[
+  T('the Hollywood Walk of Fame','Film Set Match','Match every pair of film-set props.','memory',{items:['Camera','Film reel','Clapper','Spotlight','Popcorn','Ticket']}),
+  T('the Venice Beach boardwalk','Boardwalk Beats','Listen to the speakers, then play the beat back.','simon',{noun:'speakers'}),
+  T('Santa Monica Pier','Boardwalk Signs','Unscramble four LA words.','unscramble',{words:[W('HOLLYWOOD','The famous sign on the hills'),W('MALIBU','Beach city to the west'),W('FREEWAY','LA\'s multi-lane highways'),W('PIER','Santa Monica\'s landmark over the water')]},'Who can read the boardwalk signs?')]},
+{name:'Chicago',country:'USA',lat:41.88,lon:-87.63,pit:'Navy Pier',local:['L train','Water taxi'],tasks:[
+  T('a pizzeria near Millennium Park','Deep Dish Cheese','Stop the scale on each pizza\'s cheese.','gauge',{targets:[300,450,200],max:600,unit:'g',item:'cheese'}),
+  T('the Chicago Riverwalk','Bridge Bells','Listen to the bridge bells, then ring them back.','simon',{noun:'bells'}),
+  T('the Willis Tower Skydeck','Windy City Quiz','Answer four questions about Chicago.','quiz',{qs:[Q('Which lake does Chicago sit on?','Lake Michigan','Lake Erie','Lake Superior','Lake Ontario'),Q('What is Chicago\'s best-known nickname?','The Windy City','The Big Apple','The Big Easy','Motor City'),Q('What was the Willis Tower called before 2009?','Sears Tower','Hancock Tower','Trump Tower','Aon Tower'),Q('What do locals call the elevated train?','The L','The T','The Tube','The El Metro')]},'Who can handle heights?')]},
+{name:'Toronto',country:'Canada',lat:43.65,lon:-79.38,pit:'Nathan Phillips Square',local:['Streetcar','Subway'],tasks:[
+  T('St. Lawrence Market','Market Match','Match every pair of Canadian treats.','memory',{items:['Peameal bacon','Butter tart','Maple syrup','Poutine','Bagel','Nanaimo bar']}),
+  T('the Hockey Hall of Fame','Goal Lights','Watch the goal lights, then repeat the order.','simon',{noun:'goal lights'}),
+  T('the CN Tower','Toronto Quiz','Answer four questions about Toronto.','quiz',{qs:[Q('Which lake is Toronto on?','Lake Ontario','Lake Huron','Lake Erie','Lake Michigan'),Q('Toronto is the capital of which province?','Ontario','Quebec','Manitoba','Alberta'),Q('In what year did the CN Tower open?','1976','1967','1988','1999'),Q('What is the currency of Canada?','Canadian dollar','US dollar','Pound','Euro')]},'Who can handle heights?')]},
+{name:'Santiago',country:'Chile',lat:-33.45,lon:-70.67,pit:'Cerro San Cristóbal',local:['Metro','Funicular'],tasks:[
+  T('the Mercado Central','Empanada Filling','Stop the scale on each tray of filling.','gauge',{targets:[150,100,200],max:250,unit:'g',item:'empanada filling'}),
+  T('Barrio Bellavista','Mural Match','Match every pair of Chilean icons in the murals.','memory',{items:['Condor','Huemul','Copihue','Moai','Andes','Llama']}),
+  T('the Plaza de Armas','Chile Quiz','Answer four questions about Chile.','quiz',{qs:[Q('Which mountain range runs along Chile\'s east?','The Andes','The Alps','The Rockies','The Urals'),Q('What are Easter Island\'s giant statues called?','Moai','Tiki','Totems','Olmec heads'),Q('What is the currency of Chile?','Chilean peso','Sol','Real','Boliviano'),Q('Which country borders Chile along most of its east?','Argentina','Brazil','Peru','Bolivia')]},'Who knows Chile?')]},
+{name:'Zanzibar',country:'Tanzania',lat:-6.16,lon:39.19,pit:'Forodhani Gardens',local:['Dala-dala','Walk'],tasks:[
+  T('a spice farm','Clove Weigh-in','Stop the scale on each bag of cloves.','gauge',{targets:[100,50,150],max:200,unit:'g',item:'cloves'}),
+  T('the carved doors of Stone Town','Door Patterns','Match every pair of carved door patterns.','memory',{glyph:true,items:['✿','❖','✺','✹','❂','✤']}),
+  T('Darajani Market','Market Swahili','Unscramble four Swahili words.','unscramble',{words:[W('KARIBU','Welcome'),W('SOKO','Market'),W('DHOW','Traditional sailing boat'),W('POLE','Slowly, as in "pole pole"')]},'Who can bargain in Swahili?')]}
+];
+
+/* Six task types that work in any city. Each leg mixes three of these into the city's own tasks. */
+const norm=s=>s.normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase();
+function wordsFor(c){
+  const set=new Set(),add=s=>{const w=norm(s);if(/^[A-Z]{4,10}$/.test(w))set.add(w);};
+  add(c.name);
+  c.tasks.forEach(t=>{if(t.cfg.words)t.cfg.words.forEach(x=>add(x.w));if(t.cfg.items&&!t.cfg.glyph)t.cfg.items.forEach(add);});
+  const a=[...set];return a.length>=3?a:a.concat(['ROUTE','DETOUR','CLUE']);
+}
+const RECALL_POOL=[...new Set(CITIES.flatMap(c=>c.tasks.filter(t=>t.game==='memory'&&!t.cfg.glyph).flatMap(t=>t.cfg.items)))];
+function genericTasks(c){
+  const mem=c.tasks.find(t=>t.game==='memory'&&!t.cfg.glyph);
+  return [
+    T(`the back streets of ${c.name}`,'Street Navigator','Find a path through the maze of streets to the clue box.','maze',{},'Who can find the way?'),
+    T('a travel agency','Departure Board','Put flights, fares and cities in the right order.','order',{from:c.name}),
+    T('a busy intersection','Marker Count','Count the route markers before they vanish.','count',{}),
+    T('a rooftop terrace','Marker Hunt','Tap the real route markers as they pop up. Avoid the fakes.','catch',{},'Who has the quickest hands?'),
+    T('a corner shop','Shopping List','Memorise the shopping list, then pick every item.','recall',{items:mem?mem.cfg.items:null}),
+    T('the city archives','Code Breaker','Use the symbol key to decode three words.','cipher',{words:wordsFor(c)},'Who can crack the code?')
+  ];
+}
+function taskPool(c){return c.tasks.concat(shuffle(genericTasks(c)).slice(0,3));}
+function pickDistinct(pool,n){
+  const out=[];
+  for(const t of shuffle(pool))if(out.length<n&&!out.some(o=>o.game===t.game))out.push(t);
+  for(const t of shuffle(pool))if(out.length<n&&!out.includes(t))out.push(t);
+  return out;
+}
+
+let S=null, token=0, cleanups=[];
+let prefs={name:'Team Roam',diff:'normal',legs:4};
+try{const p=JSON.parse(localStorage.getItem('psr-prefs')||'null');if(p)prefs={...prefs,...p};}catch(e){}
+const savePrefs=()=>{try{localStorage.setItem('psr-prefs',JSON.stringify(prefs));}catch(e){}};
+
+const app=$('#stage'), side=$('#side'), main=$('#main');
+const active=()=>S.teams.filter(t=>!t.out);
+const me=()=>S.teams[0];
+const teamById=id=>S.teams.find(t=>t.id===id);
+const dot=c=>`<i class="dot" style="background:${c}"></i>`;
+const log=(...l)=>S.log.push(...l);
+
+function hav(a,b){const R=6371,r=Math.PI/180,dl=(b.lat-a.lat)*r,dn=(b.lon-a.lon)*r;const x=Math.sin(dl/2)**2+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dn/2)**2;return 2*R*Math.asin(Math.sqrt(x));}
+
+/* ---------- game setup ---------- */
+function newGame(){
+  const N=prefs.legs;
+  const {route,dir}=planRoute(N);
+  const names=shuffle(FIRST), tags=shuffle(TAGS), cols=shuffle(COLORS);
+  const cpus=Array.from({length:N},(_,i)=>({name:names[2*i]+' & '+names[2*i+1],tag:tags[i%tags.length],color:cols[i]}));
+  S={diff:prefs.diff,legsN:N,route,dir,leg:0,screen:'leg',stage:0,scr:null,res:null,pit:null,over:false,log:[],
+     nonElim:Math.floor(Math.random()*(N-1)),            // any leg except the final
+     scramble:1+Math.floor(Math.random()*(N-1)),         // any leg except the first
+     teams:[{id:0,name:prefs.name,tag:'You',color:'var(--you)',cpu:false,clock:0,out:false,pass:false},
+            ...cpus.map((t,i)=>({...t,id:i+1,cpu:true,clock:0,out:false,pass:false}))]};
+  const start=CITIES[route[0]];
+  log('PIT STOP RALLY · RACE LOG','='.repeat(40),
+      'Date:            '+new Date().toLocaleString(),
+      'Your team:       '+prefs.name,
+      'CPU difficulty:  '+DIFF[S.diff].label,
+      'Legs:            '+N,
+      'Starting line:   '+start.name+', '+start.country,
+      'Direction:       '+(dir>0?'Eastbound':'Westbound')+' around the globe',
+      'Teams ('+S.teams.length+'):',
+      ...S.teams.map(t=>'  - '+t.name+' ('+t.tag+')'),'');
+  startLeg();
+  render(true);
+}
+
+/* Route: pick a random start and direction, then step steadily east (or west) by longitude.
+   Each leg aims for an even share of the total span, so the race never doubles back. */
+function planRoute(N){
+  for(let tries=0;tries<40;tries++){const r=tryRoute(N);if(r.ok)return r;}
+  return tryRoute(N);
+}
+function tryRoute(N){
+  const dir=Math.random()<.5?1:-1;let ok=true;
+  const start=Math.floor(Math.random()*CITIES.length), s=CITIES[start];
+  const prog=c=>((((c.lon-s.lon)*dir)%360)+360)%360;
+  const span=Math.min(335,Math.max(150,N*42+rand(-10,20)));
+  const route=[start],used=new Set([start]);let prev=0;
+  for(let k=1;k<=N;k++){
+    const target=k*span/N+rand(-12,12), all=CITIES.map((c,i)=>({i,p:prog(c)}));
+    const ahead=p=>all.filter(o=>!used.has(o.i)&&o.p>p+6&&o.p<=352).length;
+    let cands=all.filter(o=>!used.has(o.i)&&o.p>prev+6&&o.p<=352&&ahead(o.p)>=N-k);
+    if(!cands.length){ok=false;cands=all.filter(o=>!used.has(o.i)&&o.p>prev);}
+    if(!cands.length)cands=all.filter(o=>!used.has(o.i));
+    cands.sort((a,b)=>Math.abs(a.p-target)-Math.abs(b.p-target));
+    const ch=pick(cands.slice(0,3));
+    if(ch.p<=prev)ok=false;
+    route.push(ch.i);used.add(ch.i);prev=ch.p;
+  }
+  return {route,dir,ok};
+}
+
+function buildLeg(i){
+  const from=CITIES[S.route[i]], to=CITIES[S.route[i+1]], final=i===S.legsN-1;
+  const base=Math.round(hav(from,to)/820*60+80);
+  const hubs=HUBS.filter(h=>h[0]!==from.name&&h[0]!==to.name)
+    .map(h=>({n:h[0],d:hav(from,{lat:h[1],lon:h[2]})+hav({lat:h[1],lon:h[2]},to)})).sort((a,b)=>a.d-b.d);
+  const hub=pick(hubs.slice(0,2)).n, cut=ri(25,55), add=ri(60,100);
+  const flight={type:'route',title:`Fly to ${to.name}, ${to.country}`,text:`Make your way to ${to.name}. Pick your flight at the departures desk.`,options:[
+    {label:'Direct flight',detail:`${fmt(base)} · almost always on time`,mins:base,risk:{p:.06,add:30,msg:'Gate change. You sprinted and boarded last.',short:'gate change'}},
+    {label:`Connect via ${hub}`,detail:`${fmt(base-cut)} · tight connection`,mins:base-cut,risk:{p:.3,add,msg:`You missed the connection in ${hub} and were rebooked.`,short:`missed connection in ${hub}`}}]};
+  const pitName=final?`the finish line at ${to.pit}`:to.pit;
+  const da=ri(16,28), db=da+ri(6,10);
+  const dash={type:'route',title:final?'Run for the finish line':'Dash to the Pit Stop',text:`Get to ${pitName}.`,options:[
+    {label:to.local[0],detail:`About ${fmt(da)} · can get held up`,mins:da,risk:{p:.35,add:ri(15,25),msg:'You got held up on the way.',short:'held up'}},
+    {label:to.local[1],detail:`About ${fmt(db)} · steady`,mins:db,risk:{p:.08,add:ri(8,12),msg:'A short delay on the way.',short:'short delay'}}]};
+  const L={i,from:from.name,to:to.name,country:to.country,pit:pitName,final,nonElim:i===S.nonElim,scramble:i===S.scramble,flight,dash};
+  if(L.scramble){
+    L.tasks=pickDistinct(taskPool(to),3).map(t=>({...t,par:40}));
+    L.fromAir=[0,1,2].map(()=>ri(14,40));
+    const m=[[0,0,0],[0,0,0],[0,0,0]];
+    for(let a=0;a<3;a++)for(let b=a+1;b<3;b++)m[a][b]=m[b][a]=ri(10,34);
+    L.between=m;
+  }else{
+    const pool=taskPool(to), rb=pick(pool.filter(t=>t.rb)), rest=pool.filter(t=>t!==rb);
+    const d1=pick(rest.filter(t=>t.game!==rb.game).length?rest.filter(t=>t.game!==rb.game):rest);
+    const left=rest.filter(t=>t!==d1), varied=left.filter(t=>t.game!==d1.game&&t.game!==rb.game);
+    const d2=pick(varied.length?varied:left);
+    L.stages=[flight,
+      {type:'detour',title:`${d1.label} or ${d2.label}`,text:`In ${to.name}, choose one of two tasks.`,options:[{...d1,par:55},{...d2,par:55}]},
+      {type:'roadblock',title:rb.rb||'Who is up for this?',text:`At ${rb.place}, one team member must take on ${rb.label}. ${rb.detail}`,task:{...rb,par:45}},
+      dash];
+  }
+  return L;
+}
+
+function startLeg(){
+  S.L=buildLeg(S.leg);S.stage=0;S.scr=null;S.res=null;S.pit=null;S.screen='leg';
+  S.teams.forEach(t=>t.legStart=t.clock);
+  const L=S.L, act=active().sort((a,b)=>a.clock-b.clock), lead=act[0].clock;
+  log('','='.repeat(40),`LEG ${L.i+1} of ${S.legsN} · ${L.from} → ${L.to}, ${L.country}${L.scramble?' · SCRAMBLE LEG':''}${L.final?' · FINAL LEG':''}`,'='.repeat(40),
+      'Departure order:',...act.map((t,i)=>`  ${i+1}. ${t.name}  ${i?'+'+fmt(t.clock-lead):'first out'}`));
+  if(L.scramble) act.filter(t=>t.cpu).forEach(simScramble);
+}
+
+/* ---------- CPU simulation ---------- */
+function simRoute(st){
+  const d=DIFF[S.diff], ev=o=>o.mins+(o.risk?o.risk.p*o.risk.add:0);
+  const best=st.options.reduce((a,b)=>ev(a)<=ev(b)?a:b);
+  const o=Math.random()<d.smart?best:pick(st.options);
+  let m=o.mins,note=o.label;
+  if(o.risk&&Math.random()<o.risk.p){m+=o.risk.add;note+=' · '+o.risk.short;}
+  return {m,note};
+}
+function simTask(t,par,canPass,label){
+  const d=DIFF[S.diff];
+  if(canPass&&t.pass){t.pass=false;return {m:5,note:'Used the Express Pass'};}
+  let m=par*clamp(d.mean+gauss()*d.sd,.72,1.7), note=label;
+  if(Math.random()<d.mishap){const add=ri(8,22);m+=add;note+=' · '+pick(MISHAPS).toLowerCase()+' (+'+add+'m)';}
+  return {m:Math.round(m),note};
+}
+function simScramble(t){
+  const L=S.L,d=DIFF[S.diff];
+  let clk=t.clock;const f=simRoute(L.flight);clk+=f.m;
+  const perms=[[0,1,2],[0,2,1],[1,0,2],[1,2,0],[2,0,1],[2,1,0]];
+  const cost=p=>L.fromAir[p[0]]+L.between[p[0]][p[1]]+L.between[p[1]][p[2]];
+  const best=perms.reduce((a,b)=>cost(a)<=cost(b)?a:b);
+  const order=Math.random()<d.smart?best:pick(perms);
+  const ends=[],notes=[];let at=-1;
+  for(const k of order){
+    const tr=at<0?L.fromAir[k]:L.between[at][k];
+    const r=simTask(t,L.tasks[k].par,true,L.tasks[k].label);
+    clk+=tr+r.m;ends.push(clk);notes.push(`${r.note} (${fmt(tr)} travel + ${fmt(r.m)})`);at=k;
+  }
+  const ds=simRoute(L.dash);clk+=ds.m;
+  t.scr={flight:f,order,ends,notes,dash:ds,finish:clk};
+}
+
+/* ---------- rendering ---------- */
+function render(top){
+  token++;cleanups.forEach(f=>f());cleanups=[];
+  main.classList.toggle('solo',!S);
+  renderBoard();
+  if(!S){side.innerHTML='';renderSetup();}
+  else{renderSide();({leg:renderLeg,stage:renderStage,result:renderResult,scramble:renderScramble,pit:renderPit})[S.screen]();}
+  if(top)window.scrollTo({top:0});
+}
+
+function renderBoard(){
+  const f=$('#flaps');
+  if(!S){f.innerHTML='<span class="flap">Random start · random rivals</span>';return;}
+  f.innerHTML=`<span class="flap">Leg <b>${S.leg+1}/${S.legsN}</b></span><span class="flap"><b>${S.dir>0?'Eastbound →':'← Westbound'}</b></span><span class="flap">CPU <b>${DIFF[S.diff].label}</b></span><span class="flap">Your clock <b>${fmt(me().clock)}</b></span>`;
+}
+
+function scrProgress(t){
+  if(!t.cpu)return S.scr?S.scr.done.length:0;
+  if(!S.scr||S.scr.phase==='flight')return 0;
+  return t.scr.ends.filter(x=>x<=me().clock).length;
+}
+
+function renderSide(){
+  const scrMode=S.screen==='scramble';
+  let act=active();
+  if(scrMode){const base=act.slice().sort((a,b)=>a.legStart-b.legStart);act=base.sort((a,b)=>scrProgress(b)-scrProgress(a));}
+  else act.sort((a,b)=>a.clock-b.clock);
+  const out=S.teams.filter(t=>t.out).sort((a,b)=>b.outLeg-a.outLeg);
+  const lead=act.length?act[0].clock:0;
+  const right=t=>{
+    if(t.out)return '';
+    if(scrMode){const p=scrProgress(t);return `${p}/3${p===3?'<small>To the Pit Stop</small>':''}`;}
+    return fmt(t.clock)+(t.clock>lead?`<small>+${fmt(t.clock-lead)}</small>`:'');
+  };
+  const row=(t,i)=>`<li class="${t.cpu?'':'me'} ${t.out?'out':''}"><span class="pos">${t.out||scrMode?'–':i+1}</span>${dot(t.color)}
+    <span class="nm">${esc(t.name)}<small>${t.out?'Eliminated · Leg '+t.outLeg:esc(t.tag)}${t.pass?' · <em>Express Pass</em>':''}</small></span>
+    <span class="tm">${right(t)}</span></li>`;
+  side.innerHTML=`<div class="card"><div class="side-h">${scrMode?'Scramble progress':'Race standings'}<small>${active().length} racing</small></div><ol class="stand">${act.map(row).join('')}${out.map(row).join('')}</ol>
+  <p class="side-note">${scrMode?'During the Scramble, only task progress is shown. Times are revealed at the Pit Stop.':'Times are total race time since the starting line.'}</p></div>`;
+}
+
+function renderSetup(){
+  app.innerHTML=`<div class="card"><div class="band route"><span>Race briefing</span><span>New race</span></div><div class="card-body">
+  <h2>Pit Stop Rally</h2>
+  <p class="lede">Every race starts in one of ${CITIES.length} cities, heads either east or west around the globe, and pits you against a fresh set of rival teams. Pick flights, choose Detours and tackle Roadblocks. The last team to each Pit Stop is usually eliminated, but one leg is secretly a non-elimination leg. One leg is a Scramble: three tasks in any order.</p>
+  <label class="field" for="tname"><span>Your team name</span><input id="tname" maxlength="22" value="${esc(prefs.name)}"></label>
+  <fieldset><legend>Number of legs</legend><div class="chips">${[3,4,5,6,7,8,9,10].map(n=>`<label class="chip"><input type="radio" name="legs" id="legs-${n}" value="${n}" ${n===prefs.legs?'checked':''}><span>${n}</span></label>`).join('')}</div>
+  <p class="hintline" id="legnote"></p></fieldset>
+  <fieldset><legend>CPU difficulty</legend>${Object.entries(DIFF).map(([k,d])=>`<label class="dopt"><input type="radio" name="diff" id="diff-${k}" value="${k}" ${k===prefs.diff?'checked':''}><span><b>${d.label}</b><small>${d.blurb}</small></span></label>`).join('')}</fieldset>
+  <button class="btn big" id="go">Start the race</button></div></div>`;
+  const note=()=>{const n=+($('input[name=legs]:checked')||{value:4}).value;$('#legnote').textContent=`${n+1} teams (you + ${n} CPU). ${n-2} elimination${n-2===1?'':'s'}, then 3 teams race the final leg.`;};
+  app.querySelectorAll('input[name=legs]').forEach(r=>r.onchange=note);note();
+  $('#go').onclick=()=>{
+    prefs.name=($('#tname').value.trim()||'Team Roam').slice(0,22);
+    prefs.diff=($('input[name=diff]:checked')||{}).value||'normal';
+    prefs.legs=+($('input[name=legs]:checked')||{value:4}).value;
+    savePrefs();newGame();
+  };
+}
+
+function renderLeg(){
+  const L=S.L, act=active().sort((a,b)=>a.clock-b.clock), lead=act[0].clock;
+  const deps=`<div><p class="eyebrow" style="margin-bottom:6px">Departure order</p><div class="tbl-wrap"><table><tbody>${act.map((t,i)=>`<tr class="${t.cpu?'':'me'}"><td class="num" style="text-align:left;width:28px">${i+1}</td><td><span class="tn">${dot(t.color)}${esc(t.name)}</span></td><td class="num">${i?'+'+fmt(t.clock-lead):'First out'}</td></tr>`).join('')}</tbody></table></div></div>`;
+  const intro=L.i===0?`Your race starts at the starting line in ${L.from} and heads ${S.dir>0?'east':'west'} around the globe. Your first destination is ${L.to}, ${L.country}.`
+    :L.final?`The final ${act.length} teams race to ${L.to}. There is no elimination here: the first team across the finish line wins.`
+    :`Teams leave ${L.from} for ${L.to}, ${L.country}, in the order they arrived at the last Pit Stop.`;
+  app.innerHTML=`<div class="card"><div class="band ${L.scramble?'scramble':'pit'}"><span>Leg ${L.i+1} of ${S.legsN}${L.scramble?' · Scramble':''}</span><span>${act.length} teams racing</span></div><div class="card-body">
+  <p class="eyebrow">${esc(L.from)} → ${esc(L.to)}</p><h2>${L.i===0?'Starting line: '+esc(L.from):'Next stop: '+esc(L.to)}</h2><p>${intro}</p>
+  ${L.scramble?`<div class="callout purple"><b>This is a Scramble leg.</b> Your first clue lists three tasks. Do them in any order. You only get the Pit Stop clue after all three are done, and you won't see rival times until the Pit Stop.</div>`:''}
+  ${deps}<button class="btn big" id="open">Tear open the first clue</button></div></div>`;
+  $('#open').onclick=()=>{
+    if(L.scramble){S.scr={phase:'flight',at:-1,done:[],cur:null,last:null};S.screen='scramble';}
+    else{S.screen='stage';S.stage=0;}
+    render(true);
+  };
+}
+
+const BAND={route:'Route Info',detour:'Detour',roadblock:'Roadblock'};
+const passBtn=()=>me().pass?`<button class="pass-btn" id="pass">Use your Express Pass<small>Skip this task. Takes 5 minutes.</small></button>`:'';
+
+function rollOption(o){let m=o.mins,note='';if(o.risk&&Math.random()<o.risk.p){m+=o.risk.add;note=o.risk.msg+' (+'+fmt(o.risk.add)+')';}return {m,note};}
+function optButtons(opts){return `<div class="opts">${opts.map((o,i)=>`<button class="opt" data-i="${i}"><b>${esc(o.label)}</b><small>${esc(o.detail)}</small></button>`).join('')}</div>`;}
+
+function renderStage(){
+  const L=S.L, st=L.stages[S.stage];
+  app.innerHTML=`<div class="card"><div class="band ${st.type}"><span>${BAND[st.type]}</span><span>Clue ${S.stage+1}/${L.stages.length}</span></div><div class="card-body">
+  <h2>${esc(st.title)}</h2><p>${esc(st.text)}</p><div class="play" id="play"></div></div></div>`;
+  const play=$('#play');
+  const hookPass=()=>{const b=$('#pass');if(b)b.onclick=()=>{me().pass=false;finishStage(5,'Used the Express Pass','');};};
+  if(st.type==='route'){
+    play.innerHTML=optButtons(st.options);
+    play.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{const o=st.options[+b.dataset.i],r=rollOption(o);finishStage(r.m,o.label,r.note);});
+  }else if(st.type==='detour'){
+    play.innerHTML=`<div class="opts">${st.options.map((o,i)=>`<button class="opt" data-i="${i}"><b>${esc(o.label)}</b><small>At ${esc(o.place)}. ${esc(o.detail)}</small></button>`).join('')}</div>${passBtn()}`;
+    hookPass();
+    play.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{const o=st.options[+b.dataset.i];startGame(play,o,(m,n)=>finishStage(m,o.label,n));});
+  }else{
+    play.innerHTML=`<button class="btn big" id="rb">I'll do it. Start</button>${passBtn()}`;
+    hookPass();
+    $('#rb').onclick=()=>startGame(play,st.task,(m,n)=>finishStage(m,st.task.label,n));
+  }
+}
+
+function startGame(el,task,cb){
+  const my=token;el.innerHTML='';
+  GAMES[task.game](el,task.cfg,score=>{
+    if(my!==token)return;
+    score=clamp(score);
+    cb(Math.round(task.par*(1.45-.65*score)),'task score '+Math.round(score*100)+'%');
+  },()=>my===token);
+}
+
+function finishStage(mins,label,note){
+  const L=S.L, st=L.stages[S.stage];
+  me().clock+=mins;
+  const rows=[{id:0,mins,note:label+(note?' · '+note:'')}];
+  active().filter(t=>t.cpu).forEach(t=>{
+    let r;
+    if(st.type==='route')r=simRoute(st);
+    else if(st.type==='detour')r=simTask(t,55,false,pick(st.options).label);
+    else r=simTask(t,45,true,st.task.label);
+    t.clock+=r.m;rows.push({id:t.id,mins:r.m,note:r.note});
+  });
+  log(`[${BAND[st.type]}] ${st.title}`,`  You: ${label}${note?' · '+note:''} · took ${fmt(mins)} · race clock ${fmt(me().clock)}`,
+      ...rows.slice(1).map(r=>`  ${teamById(r.id).name}: ${r.note} · ${fmt(r.mins)}`));
+  S.res={rows,mins,label,note,type:st.type};S.screen='result';render(true);
+}
+
+function renderResult(){
+  const L=S.L, R=S.res, last=S.stage===L.stages.length-1;
+  const rows=R.rows.slice().sort((a,b)=>a.mins-b.mins);
+  const rank=rows.findIndex(r=>r.id===0)+1;
+  app.innerHTML=`<div class="card"><div class="band ${R.type}"><span>${BAND[R.type]} complete</span><span>Clue ${S.stage+1}/${L.stages.length}</span></div><div class="card-body">
+  <p class="eyebrow">${esc(R.label)}</p><div class="big-time">${fmt(R.mins)}</div>
+  ${R.note?`<p class="lede">${esc(R.note)}</p>`:''}
+  <p>${rank===1?'Fastest team on this clue.':`You were ${ordinal(rank)} fastest on this clue.`}</p>
+  <div class="tbl-wrap"><table><thead><tr><th>Team</th><th>What happened</th><th class="num">Time</th></tr></thead><tbody>
+  ${rows.map(r=>{const t=teamById(r.id);return `<tr class="${t.cpu?'':'me'}"><td><span class="tn">${dot(t.color)}${esc(t.name)}</span></td><td class="note">${esc(r.note)}</td><td class="num">${fmt(r.mins)}</td></tr>`;}).join('')}
+  </tbody></table></div>
+  <button class="btn big" id="nx">${last?(L.final?'Cross the finish line':'Check in at the Pit Stop'):'Open the next clue'}</button></div></div>`;
+  $('#nx').onclick=()=>{if(last)arrivePit();else{S.stage++;S.screen='stage';render(true);}};
+}
+
+/* ---------- scramble leg ---------- */
+function renderScramble(){
+  const L=S.L, sc=S.scr, m=me();
+  const here=sc.at<0?`the airport in ${L.to}`:L.tasks[sc.at].place;
+  const travel=k=>sc.at<0?L.fromAir[k]:L.between[sc.at][k];
+  const prog=`<div class="prog" aria-label="${sc.done.length} of 3 tasks done">${[0,1,2].map(i=>`<i class="${i<sc.done.length?'on':''}"></i>`).join('')}<span>${sc.done.length}/3</span></div>`;
+  const last=sc.last?`<div class="callout ${sc.lastGood?'green':''}">${esc(sc.last)}</div>`:'';
+  let band='route', bandL='Route Info', body='';
+  if(sc.phase==='flight'){
+    body=`<h2>Scramble in ${esc(L.to)}</h2>
+    <p>Fly to ${esc(L.to)}, ${esc(L.country)}. When you land, complete all three tasks below in any order. Only after all three are done will you get the clue to the Pit Stop.</p>
+    <p class="eyebrow">Your three tasks · travel time from the airport</p>
+    <ul class="tasklist">${L.tasks.map((t,k)=>`<li><b>${esc(t.label)}</b><span class="away">${fmt(L.fromAir[k])} from the airport · ${esc(t.place)}</span><small>${esc(t.detail)}</small></li>`).join('')}</ul>
+    <p class="eyebrow">First, choose your flight</p>${optButtons(L.flight.options)}`;
+  }else if(sc.phase==='pick'){
+    const rem=[0,1,2].filter(k=>!sc.done.includes(k));
+    body=`${last}<h2>${rem.length===3?'Pick your first task':'Pick your next task'}</h2>${prog}
+    <p class="eyebrow">Remaining tasks · travel time from ${esc(here)}</p>
+    <div class="opts">${rem.map(k=>{const t=L.tasks[k];return `<button class="opt" data-k="${k}"><b>${esc(t.label)}</b><span class="away">${fmt(travel(k))} away · ${esc(t.place)}</span><small>${esc(t.detail)}</small></button>`;}).join('')}</div>`;
+  }else if(sc.phase==='task'){
+    const t=L.tasks[sc.cur];band='scramble';bandL='Scramble task';
+    body=`${last}<h2>${esc(t.label)}</h2>${prog}<p>At ${esc(t.place)}. ${esc(t.detail)}</p><div class="play" id="play"><button class="btn big" id="gotask">Start task</button>${passBtn()}</div>`;
+  }else{
+    body=`${last}<div class="callout purple"><b>All three tasks complete.</b> Here is your clue to the ${L.final?'finish line':'Pit Stop'}.</div>${prog}
+    <h2>${esc(L.dash.title)}</h2><p>${esc(L.dash.text)}</p>${optButtons(L.dash.options)}`;
+  }
+  app.innerHTML=`<div class="card"><div class="band ${band}"><span>${bandL}</span><span>Scramble leg · ${sc.done.length}/3</span></div><div class="card-body">${body}</div></div>`;
+
+  if(sc.phase==='flight'){
+    app.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{
+      const o=L.flight.options[+b.dataset.i],r=rollOption(o);m.clock+=r.m;
+      sc.last=`You landed in ${L.to} after ${fmt(r.m)} (${o.label}).${r.note?' '+r.note:''}`;sc.lastGood=false;sc.phase='pick';
+      log(`[Route Info] ${L.flight.title} · Scramble: complete 3 tasks in any order`,`  You: ${o.label}${r.note?' · '+r.note:''} · took ${fmt(r.m)} · race clock ${fmt(m.clock)}`);
+      render(true);
+    });
+  }else if(sc.phase==='pick'){
+    app.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{
+      const k=+b.dataset.k,tr=travel(k);m.clock+=tr;
+      log(`  You travelled ${fmt(tr)} from ${here} to ${L.tasks[k].place}.`);
+      sc.cur=k;sc.last=`You travelled ${fmt(tr)} to ${L.tasks[k].place}.`;sc.lastGood=false;sc.phase='task';render(true);
+    });
+  }else if(sc.phase==='task'){
+    const t=L.tasks[sc.cur];
+    const finish=(mins,note)=>{
+      m.clock+=mins;sc.done.push(sc.cur);sc.at=sc.cur;
+      sc.last=`${t.label} done in ${fmt(mins)}${note?' ('+note+')':''}. Progress ${sc.done.length}/3.`;sc.lastGood=true;
+      log(`[Scramble task ${sc.done.length}/3] ${t.label} at ${t.place} · ${note||''} · took ${fmt(mins)} · race clock ${fmt(m.clock)}`);
+      sc.phase=sc.done.length===3?'dash':'pick';sc.cur=null;render(true);
+    };
+    $('#gotask').onclick=()=>startGame($('#play'),t,finish);
+    const p=$('#pass');if(p)p.onclick=()=>{m.pass=false;finish(5,'used the Express Pass');};
+  }else{
+    app.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{
+      const o=L.dash.options[+b.dataset.i],r=rollOption(o);m.clock+=r.m;
+      log(`[Route Info] ${L.dash.title}`,`  You: ${o.label}${r.note?' · '+r.note:''} · took ${fmt(r.m)} · race clock ${fmt(m.clock)}`);
+      arrivePit();
+    });
+  }
+}
+
+/* ---------- pit stop ---------- */
+function arrivePit(){
+  const L=S.L;
+  if(L.scramble)active().filter(t=>t.cpu).forEach(t=>{t.clock=t.scr.finish;});
+  const act=active().sort((a,b)=>a.clock-b.clock);
+  const lastT=act[act.length-1];
+  let elim=null;
+  if(!L.final&&!L.nonElim){elim=lastT;elim.out=true;elim.outLeg=L.i+1;elim.pass=false;}
+  let passTo=null;
+  if(L.i===0&&!L.final){passTo=act[0];passTo.pass=true;}
+  const scrRoutes=L.scramble?act.map(t=>({id:t.id,order:t.cpu?t.scr.order:S.scr.done})):null;
+  S.pit={order:act.map(t=>({id:t.id,clock:t.clock,leg:t.clock-t.legStart})),elim:elim?elim.id:null,last:lastT.id,passTo:passTo?passTo.id:null,final:L.final,nonElim:L.nonElim,scrRoutes};
+  const lead=act[0].clock;
+  if(L.scramble){
+    log('','Scramble routes (rivals):');
+    act.filter(t=>t.cpu).forEach(t=>{log(`  ${t.name}: flight ${t.scr.flight.note} (${fmt(t.scr.flight.m)})`,...t.scr.order.map((k,j)=>`    ${j+1}. ${L.tasks[k].label} · ${t.scr.notes[j]}`),`    Dash: ${t.scr.dash.note} (${fmt(t.scr.dash.m)})`);});
+  }
+  log('',`-- ${L.final?'FINISH LINE':'PIT STOP'}: ${L.pit} --`,
+      ...act.map((t,i)=>`  ${String(i+1).padStart(2)}. ${t.name.padEnd(24)} leg ${fmt(t.clock-t.legStart).padStart(8)}   race ${fmt(t.clock).padStart(8)}${i?'  (+'+fmt(t.clock-lead)+')':''}`));
+  if(L.nonElim&&!L.final)log(`  NON-ELIMINATION LEG: ${lastT.name} arrived last but stays in the race.`);
+  if(elim)log(`  ELIMINATED: ${elim.name}`);
+  if(passTo)log(`  EXPRESS PASS won by ${passTo.name}`);
+  const place=act.findIndex(t=>t.id===0)+1;
+  if(L.final||(elim&&elim.id===0)){
+    S.over=true;
+    log('','='.repeat(40),
+      L.final?(place===1?`RESULT: ${me().name} WON THE RACE in ${fmt(me().clock)}!`:`RESULT: ${me().name} finished ${ordinal(place)} of ${act.length}. ${act[0].name} won in ${fmt(act[0].clock)}.`)
+             :`RESULT: ${me().name} was eliminated at the end of Leg ${L.i+1} in ${L.to}.`,
+      '='.repeat(40));
+  }
+  S.screen='pit';render(true);
+}
+
+function renderPit(){
+  const P=S.pit, L=S.L, lead=P.order[0].clock;
+  const place=P.order.findIndex(o=>o.id===0)+1, n=P.order.length;
+  let msg='';
+  if(P.final){
+    msg=place===1?`<div class="callout green"><b>You won the race!</b> ${esc(me().name)} crossed the finish line first.</div>`
+      :`<div class="callout"><b>You finished ${ordinal(place)} of ${n}.</b> ${esc(teamById(P.order[0].id).name)} won the race.</div>`;
+  }else if(P.elim===0){
+    msg=`<div class="callout red"><b>You arrived last and have been eliminated.</b> Better luck in the next race.</div>`;
+  }else{
+    msg=`<div class="callout ${place===1?'green':''}"><b>You are team number ${place}.</b> ${place===1?'First to the mat!':'You are still in the race.'}</div>`;
+    if(P.nonElim)msg+=`<div class="callout purple"><b>Surprise: this is a non-elimination leg.</b> ${P.last===0?'You arrived last, but you are still in the race!':esc(teamById(P.last).name)+' arrived last but stay in the race.'}</div>`;
+    else msg+=`<div class="callout red">${esc(teamById(P.elim).name)} arrived last and are eliminated.</div>`;
+    if(P.passTo!==null)msg+=`<div class="callout">${P.passTo===0?'<b>You won the Express Pass.</b> Use it to skip any Detour, Roadblock or Scramble task later in the race.':`<b>${esc(teamById(P.passTo).name)} won the Express Pass.</b> Expect them to skip a task later.`}</div>`;
+  }
+  const routes=P.scrRoutes?`<div><p class="eyebrow" style="margin-bottom:6px">How each team ran the Scramble</p><ul class="routes">${P.scrRoutes.map(r=>{const t=teamById(r.id);return `<li>${dot(t.color)}<span><b>${esc(t.name)}:</b> ${r.order.map(k=>esc(L.tasks[k].label)).join(' → ')}</span></li>`;}).join('')}</ul></div>`:'';
+  const btns=S.over?`<div class="btn-row"><button class="btn big" id="dl">Download race log</button></div><p class="fb" id="dlmsg"></p>
+    <details class="logbox" id="logbox"><summary>View race log</summary><pre class="log" id="logtext">${esc(buildLog())}</pre><button class="btn alt" id="copy">Copy log</button></details>
+    <div class="btn-row"><button class="btn big alt" id="again">Race again</button><button class="btn big alt" id="setup">Change settings</button></div>`
+    :`<button class="btn big" id="cont">Start Leg ${L.i+2}</button>`;
+  app.innerHTML=`<div class="card"><div class="band pit"><span>${P.final?'Finish line':'Pit Stop'} · Leg ${L.i+1} results</span><span>${esc(L.to)}</span></div><div class="card-body">
+  <p class="eyebrow">${esc(L.pit)}</p><h2>${P.final?'The race is over':'Welcome to '+esc(L.to)}</h2>${msg}
+  <div class="tbl-wrap"><table><thead><tr><th>#</th><th>Team</th><th class="num">Leg time</th><th class="num">Race time</th></tr></thead><tbody>
+  ${P.order.map((o,i)=>{const t=teamById(o.id);return `<tr class="${t.cpu?'':'me'} ${o.id===P.elim?'gone':''}"><td>${i+1}</td><td><span class="tn">${dot(t.color)}${esc(t.name)}</span></td><td class="num">${fmt(o.leg)}</td><td class="num">${fmt(o.clock)}<small>${i?'+'+fmt(o.clock-lead):'Leader'}</small></td></tr>`;}).join('')}
+  </tbody></table></div>${routes}${btns}</div></div>`;
+  const c=$('#cont');if(c)c.onclick=()=>{S.leg++;startLeg();render(true);};
+  if(S.over){
+    $('#again').onclick=newGame;
+    $('#setup').onclick=()=>{S=null;render(true);};
+    $('#dl').onclick=downloadLog;
+    $('#copy').onclick=()=>{
+      const txt=buildLog(),msg=$('#dlmsg');
+      const sel=()=>{const r=document.createRange();r.selectNodeContents($('#logtext'));const s=getSelection();s.removeAllRanges();s.addRange(r);msg.className='fb';msg.textContent='Log selected. Copy it with your device\'s copy command.';};
+      try{navigator.clipboard.writeText(txt).then(()=>{msg.className='fb good';msg.textContent='Log copied.';},sel);}catch(e){sel();}
+    };
+  }
+}
+
+/* ---------- race log download ---------- */
+function buildLog(){return S.log.join('\n')+'\n';}
+let dlPromise=null;
+function getDownloads(){
+  if(!dlPromise)dlPromise=(window.claude&&window.claude.use?Promise.resolve(window.claude.use('downloads')):Promise.resolve(null)).catch(()=>null);
+  return dlPromise;
+}
+async function downloadLog(){
+  const msg=$('#dlmsg'),btn=$('#dl');
+  const showFallback=t=>{msg.className='fb bad';msg.textContent=t;const d=$('#logbox');if(d)d.open=true;};
+  btn.disabled=true;
+  const d=await getDownloads();
+  const date=new Date().toISOString().slice(0,10);
+  const slug=me().name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'team';
+  const filename=`pit-stop-rally-${slug}-${date}.txt`;
+  if(!d){
+    // Outside Claude (e.g. on your own website): use a normal browser download.
+    try{
+      const url=URL.createObjectURL(new Blob([buildLog()],{type:'text/plain'}));
+      const a=document.createElement('a');a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url),2000);
+      msg.className='fb good';msg.textContent='Race log downloaded.';
+    }catch(e){showFallback('The download couldn\'t start here. Open the log below and copy it instead.');}
+    btn.disabled=false;return;
+  }
+  try{
+    await d.save({filename,data:buildLog()});
+    msg.className='fb good';msg.textContent='Race log saved.';
+  }catch(e){
+    const code=e&&e.code;
+    if(code==='declined'){msg.className='fb';msg.textContent='Download cancelled.';}
+    else if(code==='rate_limited'){msg.className='fb';msg.textContent='A save prompt is already open. Try again in a moment.';}
+    else showFallback('The download couldn\'t start here. Open the log below and copy it instead.');
+  }
+  btn.disabled=false;
+}
+
+/* ---------- mini-games ---------- */
+function timer(el){
+  const t0=performance.now();
+  const id=setInterval(()=>{const g=el.querySelector('.g-time');if(g)g.textContent=Math.floor((performance.now()-t0)/1000)+'s';},250);
+  cleanups.push(()=>clearInterval(id));
+  return {secs:()=>(performance.now()-t0)/1000,stop:()=>clearInterval(id)};
+}
+const GAMES={
+memory(el,cfg,done){
+  const items=cfg.items,deck=shuffle([...items,...items]);
+  el.innerHTML=`<div class="g-meta"><span>Moves <b id="mv">0</b></span><span>Pairs <b id="pr">0</b>/${items.length}</span><span class="g-time">0s</span></div>
+  <div class="mem ${cfg.glyph?'glyph':''}">${deck.map((v,i)=>`<button class="mcard" data-i="${i}" aria-label="Face-down card"><span ${cfg.glyph?`style="color:${GLYPH_COLORS[items.indexOf(v)]}"`:''}>${esc(v)}</span></button>`).join('')}</div>`;
+  const T=timer(el), cards=[...el.querySelectorAll('.mcard')];
+  let first=null,lock=false,moves=0,pairs=0;
+  cards.forEach(b=>b.onclick=()=>{
+    const i=+b.dataset.i;
+    if(lock||b.classList.contains('up'))return;
+    b.classList.add('up');b.setAttribute('aria-label',deck[i]);
+    if(first===null){first=i;return;}
+    const a=first;first=null;moves++;$('#mv',el).textContent=moves;
+    if(deck[a]===deck[i]){
+      cards[a].classList.add('done');b.classList.add('done');pairs++;$('#pr',el).textContent=pairs;
+      if(pairs===items.length){T.stop();const s=T.secs();setTimeout(()=>done(.6*clamp(1-(moves-items.length)/12)+.4*clamp(1-(s-25)/50)),500);}
+    }else{
+      lock=true;
+      setTimeout(()=>{[cards[a],b].forEach(c=>{c.classList.remove('up');c.setAttribute('aria-label','Face-down card');});lock=false;},750);
+    }
+  });
+},
+simon(el,cfg,done,alive){
+  const noun=cfg.noun||'lights';
+  const cols=[['Red','var(--stamp)'],['Gold','var(--marker)'],['Teal','var(--detour)'],['Green','var(--go)']];
+  el.innerHTML=`<div class="g-meta"><span>Round <b id="rd">1</b>/5</span><span>Misses <b id="ms">0</b>/3</span><span class="g-time">0s</span></div>
+  <div class="status" id="st">Get ready…</div>
+  <div class="simon">${cols.map((c,i)=>`<button class="pad" data-i="${i}" aria-label="${c[0]}" style="background:${c[1]}"></button>`).join('')}</div>`;
+  timer(el);
+  const pads=[...el.querySelectorAll('.pad')], st=$('#st',el);
+  let seq=[Math.floor(Math.random()*4),Math.floor(Math.random()*4)],input=[],round=0,miss=0,locked=true;
+  const flash=async(i,ms)=>{pads[i].classList.add('lit');await wait(ms);pads[i].classList.remove('lit');await wait(150);};
+  async function play(){
+    locked=true;st.textContent=`Watch the ${noun}…`;await wait(600);
+    for(const i of seq){if(!alive())return;await flash(i,Math.max(260,460-round*35));}
+    if(!alive())return;input=[];locked=false;st.textContent='Your turn';
+  }
+  function next(){round++;if(round>5){finish();return;}$('#rd',el).textContent=round;seq.push(Math.floor(Math.random()*4));play();}
+  function finish(){locked=true;st.textContent='Done!';const completed=Math.min(5,round-1);setTimeout(()=>done(clamp(completed/5-miss*.1)),600);}
+  pads.forEach(p=>p.onclick=()=>{
+    if(locked)return;const i=+p.dataset.i;
+    p.classList.add('lit');setTimeout(()=>p.classList.remove('lit'),160);
+    input.push(i);
+    if(i!==seq[input.length-1]){
+      miss++;$('#ms',el).textContent=miss;locked=true;
+      if(miss>=3){finish();return;}
+      st.textContent='Wrong order. Watch again.';setTimeout(()=>alive()&&play(),700);return;
+    }
+    if(input.length===seq.length){locked=true;st.textContent='Correct!';setTimeout(()=>alive()&&next(),600);}
+  });
+  next();
+},
+unscramble(el,cfg,done){
+  const words=cfg.words;let i=0,solved=0,wrong=0;
+  el.innerHTML=`<div class="g-meta"><span>Word <b id="wn">1</b>/${words.length}</span><span>Wrong guesses <b id="wg">0</b></span><span class="g-time">0s</span></div><div id="ua" style="display:grid;gap:12px"></div>`;
+  const T=timer(el), area=$('#ua',el);
+  function show(){
+    const w=words[i];let s;do{s=shuffle(w.w.split('')).join('');}while(s===w.w);
+    $('#wn',el).textContent=i+1;
+    area.innerHTML=`<div class="tiles">${s.split('').map(c=>`<span class="tile">${c}</span>`).join('')}</div><p class="hint">Hint: ${esc(w.hint)}</p>
+    <form class="uform" id="uf"><input id="ui" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Your answer" placeholder="Type the word"><button class="btn">Check</button></form>
+    <p class="fb" id="fb"></p><button class="link" id="skip" type="button">Skip this word (adds time)</button>`;
+    const inp=$('#ui',area);try{inp.focus({preventScroll:true});}catch(e){}
+    $('#uf',area).onsubmit=e=>{
+      e.preventDefault();const v=inp.value.toUpperCase().replace(/[^A-Z]/g,'');if(!v)return;
+      if(v===w.w){solved++;$('#fb',area).className='fb good';$('#fb',area).textContent='Correct!';setTimeout(nxt,450);}
+      else{wrong++;$('#wg',el).textContent=wrong;const f=$('#fb',area);f.className='fb bad';f.textContent='Not quite. Try again.';inp.classList.remove('shake');void inp.offsetWidth;inp.classList.add('shake');inp.select();}
+    };
+    $('#skip',area).onclick=nxt;
+  }
+  function nxt(){i++;if(i<words.length)show();else{T.stop();const s=T.secs();done(.7*clamp(solved/words.length-wrong*.05)+.3*clamp(1-(s-35)/90));}}
+  show();
+},
+gauge(el,cfg,done,alive){
+  const {targets,max,unit,item}=cfg;let r=0,scores=[],v=0,phase=Math.random()*6,moving=false,last=0;
+  el.innerHTML=`<div class="g-meta"><span>Order <b id="gr">1</b>/${targets.length}</span><span>Accuracy <b id="ga">–</b></span></div>
+  <p class="ask" id="ask"></p>
+  <div><div class="scale-track"><div class="zone" id="zn"></div><div class="needle" id="nd"></div></div><div class="ticks"><span>0${unit}</span><span>${max/2}${unit}</span><span>${max}${unit}</span></div></div>
+  <div class="readout" id="ro">0${unit}</div><button class="btn big" id="stp">Stop</button><p class="fb" id="fb"></p>`;
+  const nd=$('#nd',el),ro=$('#ro',el),stp=$('#stp',el),fb=$('#fb',el);
+  function round(){
+    const t=targets[r],w=max*.04;
+    $('#gr',el).textContent=r+1;
+    $('#ask',el).textContent=`Stop at ${t}${unit} of ${item}.`;
+    const zn=$('#zn',el);zn.style.left=((t-w)/max*100)+'%';zn.style.width=(2*w/max*100)+'%';
+    fb.textContent='';fb.className='fb';stp.disabled=false;moving=true;last=performance.now();requestAnimationFrame(tick);
+  }
+  function tick(now){
+    if(!moving||!alive())return;
+    phase+=(now-last)/1000*(1.7+r*.55);last=now;
+    v=max*(.5-.5*Math.cos(phase));
+    nd.style.left=(v/max*100)+'%';ro.textContent=Math.round(v)+unit;
+    requestAnimationFrame(tick);
+  }
+  stp.onclick=()=>{
+    if(!moving)return;moving=false;stp.disabled=true;
+    const t=targets[r],sc=clamp(1-Math.abs(v-t)/max*6);scores.push(sc);
+    fb.className='fb '+(sc>.75?'good':sc>.4?'':'bad');
+    fb.textContent=`${Math.round(v)}${unit} (target ${t}${unit}) · ${sc>.9?'Perfect':sc>.75?'Close':sc>.4?'A bit off':'Way off'}`;
+    $('#ga',el).textContent=Math.round(scores.reduce((a,b)=>a+b,0)/scores.length*100)+'%';
+    r++;
+    setTimeout(()=>{if(!alive())return;if(r<targets.length)round();else done(scores.reduce((a,b)=>a+b,0)/scores.length);},1100);
+  };
+  round();
+},
+quiz(el,cfg,done){
+  const qs=cfg.qs;let i=0,correct=0;
+  el.innerHTML=`<div class="g-meta"><span>Question <b id="qn">1</b>/${qs.length}</span><span>Correct <b id="qc">0</b></span><span class="g-time">0s</span></div><div id="qa" style="display:grid;gap:12px"></div>`;
+  const T=timer(el),area=$('#qa',el);
+  function show(){
+    const q=qs[i];$('#qn',el).textContent=i+1;
+    area.innerHTML=`<p class="ask">${esc(q.q)}</p><div class="qopts">${shuffle(q.o).map(o=>`<button class="qopt" data-v="${esc(o)}">${esc(o)}</button>`).join('')}</div>`;
+    const bs=[...area.querySelectorAll('.qopt')];
+    bs.forEach(b=>b.onclick=()=>{
+      bs.forEach(x=>{x.disabled=true;if(x.dataset.v===q.a)x.classList.add('right');});
+      if(b.dataset.v===q.a){correct++;$('#qc',el).textContent=correct;}else b.classList.add('wrong');
+      setTimeout(()=>{i++;if(i<qs.length)show();else{T.stop();const s=T.secs();done(.75*correct/qs.length+.25*clamp(1-(s-8*qs.length)/(12*qs.length)));}},800);
+    });
+  }
+  show();
+},
+maze(el,cfg,done){
+  const W=7,H=7,N=W*H,goal=N-1;
+  const bfs=g=>{const d=Array(N).fill(-1);d[0]=0;const q=[0];while(q.length){const c=q.shift();for(const n of nbrs(c))if(!g[n]&&d[n]<0){d[n]=d[c]+1;q.push(n);}}return d[goal];};
+  const nbrs=c=>{const x=c%W,y=Math.floor(c/W),o=[];if(x>0)o.push(c-1);if(x<W-1)o.push(c+1);if(y>0)o.push(c-W);if(y<H-1)o.push(c+W);return o;};
+  let g,best;do{g=Array.from({length:N},()=>Math.random()<.34?1:0);g[0]=0;g[goal]=0;best=bfs(g);}while(best<14);
+  let pos=0,moves=0,over=false;const seen=new Set([0]);
+  el.innerHTML=`<div class="g-meta"><span>Moves <b id="mm">0</b></span><span>Best possible <b>${best}</b></span><span class="g-time">0s</span></div>
+  <p class="hint">Get from the yellow square to the green clue box. Dark squares are blocked.</p>
+  <div class="maze" id="mz" style="grid-template-columns:repeat(${W},1fr)"></div>
+  <div class="arrows"><button class="up" data-d="-${W}" aria-label="Up">↑</button><button class="lf" data-d="-1" aria-label="Left">←</button><button class="dn" data-d="${W}" aria-label="Down">↓</button><button class="rt" data-d="1" aria-label="Right">→</button></div>`;
+  const T=timer(el),mz=$('#mz',el);
+  const draw=()=>{mz.innerHTML=g.map((w,i)=>`<span class="mc ${w?'wall':''} ${i===pos?'me':i===goal?'goal':seen.has(i)?'seen':''}"></span>`).join('');};
+  const move=d=>{
+    if(over)return;const n=pos+d;
+    if(!nbrs(pos).includes(n)||g[n]){mz.classList.remove('shake');void mz.offsetWidth;mz.classList.add('shake');return;}
+    pos=n;moves++;seen.add(n);$('#mm',el).textContent=moves;draw();
+    if(pos===goal){over=true;T.stop();const s=T.secs();setTimeout(()=>done(.7*clamp(best/moves)+.3*clamp(1-(s-15)/40)),400);}
+  };
+  el.querySelectorAll('.arrows button').forEach(b=>b.onclick=()=>move(+b.dataset.d));
+  const key=e=>{const m={ArrowUp:-W,ArrowDown:W,ArrowLeft:-1,ArrowRight:1}[e.key];if(m!==undefined){e.preventDefault();move(m);}};
+  document.addEventListener('keydown',key);cleanups.push(()=>document.removeEventListener('keydown',key));
+  draw();
+},
+order(el,cfg,done){
+  const from=CITIES.find(c=>c.name===cfg.from)||CITIES[0];
+  const codes=['PS','RX','WG','TB','KO','LM','QV','ZA'];
+  const uniq=(gen,n)=>{const s=new Set();while(s.size<n)s.add(gen());return [...s];};
+  const times=uniq(()=>ri(72,264)*5,5).map(m=>({label:`${pick(codes)} ${ri(100,989)} · ${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`,v:m}));
+  const fares=uniq(()=>ri(12,99)*10,5).map(v=>({label:'$'+v,v}));
+  const near=[];for(const c of shuffle(CITIES.filter(c=>c!==from))){const d=hav(from,c);if(near.every(o=>Math.abs(o.v-d)>900))near.push({label:c.name,v:d});if(near.length===4)break;}
+  const rounds=[{ask:'Tap the departures from earliest to latest.',items:times},{ask:'Tap the fares from cheapest to most expensive.',items:fares},{ask:`Tap these cities from nearest to farthest from ${from.name}.`,items:near}];
+  let r=0,mist=0;
+  el.innerHTML=`<div class="g-meta"><span>Board <b id="ob">1</b>/3</span><span>Mistakes <b id="om">0</b></span><span class="g-time">0s</span></div><p class="ask" id="oa"></p><div class="qopts" id="ol"></div><p class="fb" id="of"></p>`;
+  const T=timer(el);
+  function round(){
+    const R=rounds[r],sorted=R.items.slice().sort((a,b)=>a.v-b.v);let step=0;
+    $('#ob',el).textContent=r+1;$('#oa',el).textContent=R.ask;$('#of',el).textContent='';
+    $('#ol',el).innerHTML=shuffle(R.items).map(it=>`<button class="qopt" data-v="${it.v}">${esc(it.label)}</button>`).join('');
+    el.querySelectorAll('#ol .qopt').forEach(b=>b.onclick=()=>{
+      if(+b.dataset.v===sorted[step].v){step++;b.disabled=true;b.classList.add('right');b.innerHTML=`<span class="n">${step}</span>`+b.innerHTML;
+        if(step===sorted.length){r++;setTimeout(()=>{if(r<rounds.length)round();else{T.stop();const s=T.secs();done(.7*clamp(1-mist*.1)+.3*clamp(1-(s-30)/60));}},500);}}
+      else{mist++;$('#om',el).textContent=mist;const f=$('#of',el);f.className='fb bad';f.textContent='Not that one yet.';b.classList.add('wrong');setTimeout(()=>b.classList.remove('wrong'),400);}
+    });
+  }
+  round();
+},
+count(el,cfg,done,alive){
+  const shows=[3600,3000,2500];let r=0,correct=0;
+  el.innerHTML=`<div class="g-meta"><span>Round <b id="cr">1</b>/3</span><span>Correct <b id="cc">0</b></span><span class="g-time">0s</span></div>
+  <p class="legend"><span class="sym mk"></span> Count only the route markers</p><p class="ask" id="ca"></p><div class="cgrid" id="cg"></div><div class="qopts" id="co"></div>`;
+  const T=timer(el),cg=$('#cg',el),co=$('#co',el);
+  function round(){
+    const k=ri(4,10),arr=shuffle([...Array(k).fill('mk'),...Array.from({length:24-k},()=>pick(['yc','rs','tt']))]);
+    $('#cr',el).textContent=r+1;$('#ca',el).textContent='Memorise the grid…';co.innerHTML='';
+    cg.innerHTML=arr.map(c=>`<span class="sym ${c}"></span>`).join('');
+    setTimeout(()=>{
+      if(!alive())return;
+      cg.innerHTML=arr.map(()=>'<span class="sym hid"></span>').join('');
+      $('#ca',el).textContent='How many route markers were there?';
+      const o=new Set([k]);while(o.size<4){const v=k+pick([-2,-1,1,2]);if(v>0)o.add(v);}
+      co.innerHTML=[...o].sort((a,b)=>a-b).map(v=>`<button class="qopt" data-v="${v}">${v}</button>`).join('');
+      const bs=[...co.querySelectorAll('.qopt')];
+      bs.forEach(b=>b.onclick=()=>{
+        bs.forEach(x=>{x.disabled=true;if(+x.dataset.v===k)x.classList.add('right');});
+        if(+b.dataset.v===k){correct++;$('#cc',el).textContent=correct;}else b.classList.add('wrong');
+        cg.innerHTML=arr.map(c=>`<span class="sym ${c}"></span>`).join('');
+        r++;setTimeout(()=>{if(!alive())return;if(r<3)round();else{T.stop();const s=T.secs();done(.85*correct/3+.15*clamp(1-(s-25)/40));}},1200);
+      });
+    },shows[r]);
+  }
+  round();
+},
+catch(el,cfg,done,alive){
+  let left=20,shown=0,hits=0,bad=0,over=false;const state=Array(9).fill(null);
+  el.innerHTML=`<div class="g-meta"><span>Markers caught <b id="kh">0</b></span><span>Fakes tapped <b id="kb">0</b></span><span>Time left <b id="kt">20s</b></span></div>
+  <p class="legend"><span class="flagmk" style="width:22px;height:22px;display:inline-block"></span> Tap these · <span class="flagfk" style="width:22px;height:22px;display:inline-block"></span> Avoid these</p>
+  <div class="status" id="ks">Get ready…</div><div class="holes">${state.map((_,i)=>`<button class="hole" data-i="${i}" aria-label="Spot ${i+1}"></button>`).join('')}</div>`;
+  const holes=[...el.querySelectorAll('.hole')];
+  const set=(i,v)=>{state[i]=v;holes[i].innerHTML=v?`<span class="${v==='t'?'flagmk':'flagfk'}"></span>`:'';};
+  holes.forEach(h=>h.onclick=()=>{const i=+h.dataset.i;if(over||!state[i])return;
+    if(state[i]==='t'){hits++;$('#kh',el).textContent=hits;}else{bad++;$('#kb',el).textContent=bad;}set(i,null);});
+  setTimeout(()=>{
+    if(!alive())return;$('#ks',el).textContent='Go!';
+    const sp=setInterval(()=>{
+      if(over||!alive())return;
+      const free=state.map((v,i)=>v?null:i).filter(i=>i!==null);if(!free.length)return;
+      const i=pick(free),v=Math.random()<.72?'t':'d';if(v==='t')shown++;set(i,v);
+      setTimeout(()=>{if(state[i]===v)set(i,null);},Math.max(650,1000-(20-left)*15));
+    },620);
+    const cd=setInterval(()=>{
+      left--;$('#kt',el).textContent=left+'s';
+      if(left<=0){over=true;clearInterval(sp);clearInterval(cd);$('#ks',el).textContent='Time!';setTimeout(()=>done(clamp(hits/Math.max(1,shown)-bad*.08)),600);}
+    },1000);
+    cleanups.push(()=>{clearInterval(sp);clearInterval(cd);});
+  },1200);
+},
+recall(el,cfg,done,alive){
+  const src=(cfg.items&&cfg.items.length>=5?cfg.items:shuffle(RECALL_POOL).slice(0,6));
+  const list=shuffle(src).slice(0,5),dist=shuffle(RECALL_POOL.filter(x=>!src.includes(x))).slice(0,5);
+  let secs=7,phase='show';
+  el.innerHTML=`<div class="g-meta"><span>Items <b>5</b></span><span class="g-time">0s</span></div><p class="ask" id="ra"></p><div id="rb" style="display:grid;gap:12px"></div>`;
+  const T=timer(el),ra=$('#ra',el),rb=$('#rb',el);
+  ra.textContent=`Memorise this shopping list. It disappears in ${secs}s.`;
+  rb.innerHTML=`<div class="memo">${list.map(x=>`<span>${esc(x)}</span>`).join('')}</div><button class="btn alt" id="rr">I've got it</button>`;
+  const cd=setInterval(()=>{secs--;if(phase==='show'){if(secs<=0)ask();else ra.textContent=`Memorise this shopping list. It disappears in ${secs}s.`;}},1000);
+  cleanups.push(()=>clearInterval(cd));
+  $('#rr',el).onclick=ask;
+  function ask(){
+    if(phase!=='show'||!alive())return;phase='ask';clearInterval(cd);
+    ra.textContent='Pick the 5 items that were on the list.';
+    const opts=shuffle(list.concat(dist));const picked=new Set();
+    rb.innerHTML=`<div class="rlist">${opts.map(o=>`<button class="rbtn" data-v="${esc(o)}">${esc(o)}</button>`).join('')}</div><button class="btn" id="rs" disabled>Check list</button>`;
+    const bs=[...rb.querySelectorAll('.rbtn')],sub=$('#rs',el);
+    bs.forEach(b=>b.onclick=()=>{const v=b.dataset.v;if(picked.has(v)){picked.delete(v);b.classList.remove('on');}else if(picked.size<5){picked.add(v);b.classList.add('on');}sub.disabled=picked.size!==5;});
+    sub.onclick=()=>{
+      let right=0;bs.forEach(b=>{b.disabled=true;const v=b.dataset.v,inL=list.includes(v);if(picked.has(v)){if(inL){right++;b.classList.add('right');}else b.classList.add('wrong');}else if(inL)b.classList.add('missed');});
+      sub.disabled=true;T.stop();const s=T.secs();
+      setTimeout(()=>done(.85*right/5+.15*clamp(1-(s-15)/30)),1100);
+    };
+  }
+},
+cipher(el,cfg,done){
+  const SYM=['☀','☂','☘','♠','♣','♥','♦','♪','♫','☾','★','✈','⚓','⚑','✿','❄','☕','⌘','✚','◆','●','▲','■','✦','✱','☯'].map(s=>s+'︎');
+  const A='ABCDEFGHIJKLMNOPQRSTUVWXYZ',map={};shuffle(SYM).forEach((s,i)=>map[A[i]]=s);
+  const words=shuffle(cfg.words).slice(0,3);let i=0,solved=0,wrong=0;
+  const used=[...new Set(words.join(''))],decoy=shuffle([...A].filter(c=>!used.includes(c))).slice(0,4);
+  const keyLetters=used.concat(decoy).sort();
+  el.innerHTML=`<div class="g-meta"><span>Word <b id="cn">1</b>/${words.length}</span><span>Wrong guesses <b id="cw">0</b></span><span class="g-time">0s</span></div>
+  <div><p class="eyebrow" style="margin-bottom:6px">Symbol key</p><div class="key">${keyLetters.map(c=>`<span><b>${map[c]}</b>${c}</span>`).join('')}</div></div><div id="ca2" style="display:grid;gap:12px"></div>`;
+  const T=timer(el),area=$('#ca2',el);
+  function show(){
+    const w=words[i];$('#cn',el).textContent=i+1;
+    area.innerHTML=`<div class="tiles">${[...w].map(c=>`<span class="ctile">${map[c]}</span>`).join('')}</div>
+    <form class="uform" id="cf"><input id="ci" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Decoded word" placeholder="Type the word"><button class="btn">Check</button></form>
+    <p class="fb" id="cfb"></p><button class="link" id="cskip" type="button">Skip this word (adds time)</button>`;
+    const inp=$('#ci',area);try{inp.focus({preventScroll:true});}catch(e){}
+    $('#cf',area).onsubmit=e=>{
+      e.preventDefault();const v=norm(inp.value).replace(/[^A-Z]/g,'');if(!v)return;
+      const f=$('#cfb',area);
+      if(v===w){solved++;f.className='fb good';f.textContent='Correct!';setTimeout(nxt,450);}
+      else{wrong++;$('#cw',el).textContent=wrong;f.className='fb bad';f.textContent='Not quite. Check the key.';inp.classList.remove('shake');void inp.offsetWidth;inp.classList.add('shake');inp.select();}
+    };
+    $('#cskip',area).onclick=nxt;
+  }
+  function nxt(){i++;if(i<words.length)show();else{T.stop();const s=T.secs();done(.7*clamp(solved/words.length-wrong*.05)+.3*clamp(1-(s-40)/90));}}
+  show();
+}
+};
+
+function start(data){
+  if(data&&data.S&&data.S.L){S=data.S;if(S.screen==='scramble'&&S.scr&&S.scr.phase==='task'){/* restart the current task fresh */}}
+  if(data&&data.prefs)prefs=data.prefs;
+  render();
+  setTimeout(getDownloads,0);
+}
+try{window.claude?.hot?.snapshot?.(()=>({S,prefs}));}catch(e){}
+window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
+</script>
+
+</body>
+</html>
