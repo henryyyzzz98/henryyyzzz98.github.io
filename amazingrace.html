@@ -548,15 +548,24 @@ function buildLeg(i){
   const base=Math.round(hav(from,to)/820*60+80);
   const hubs=HUBS.filter(h=>h[0]!==from.name&&h[0]!==to.name)
     .map(h=>({n:h[0],d:hav(from,{lat:h[1],lon:h[2]})+hav({lat:h[1],lon:h[2]},to)})).sort((a,b)=>a.d-b.d);
-  const hub=pick(hubs.slice(0,2)).n, cut=ri(25,55), add=ri(60,100);
-  const flight={type:'route',title:`Fly to ${to.name}, ${to.country}`,text:`Make your way to ${to.name}. Pick your flight at the departures desk.`,options:[
+  const [h1,h2,h3]=shuffle(hubs.slice(0,4).map(h=>h.n));
+  const c1=ri(25,55),c2=ri(8,24),c3=ri(60,95);
+  const flight={type:'route',title:`Fly to ${to.name}, ${to.country}`,text:`Make your way to ${to.name}. Pick your flight at the departures desk.`,options:shuffle([
     {label:'Direct flight',detail:`${fmt(base)} · almost always on time`,mins:base,risk:{p:.06,add:30,msg:'Gate change. You sprinted and boarded last.',short:'gate change'}},
-    {label:`Connect via ${hub}`,detail:`${fmt(base-cut)} · tight connection`,mins:base-cut,risk:{p:.3,add,msg:`You missed the connection in ${hub} and were rebooked.`,short:`missed connection in ${hub}`}}]};
+    {label:`Connect via ${h1}`,detail:`${fmt(base-c1)} · tight connection`,mins:base-c1,risk:{p:.3,add:ri(60,100),msg:`You missed the connection in ${h1} and were rebooked.`,short:`missed connection in ${h1}`}},
+    {label:`Connect via ${h2}`,detail:`${fmt(base-c2)} · comfortable connection`,mins:base-c2,risk:{p:.15,add:ri(45,75),msg:`A late inbound flight held you up in ${h2}.`,short:`delay in ${h2}`}},
+    {label:`Budget airline via ${h3}`,detail:`${fmt(base-c3)} · cheapest seats, often delayed`,mins:base-c3,risk:{p:.45,add:ri(100,150),msg:`Your budget flight out of ${h3} was badly delayed.`,short:`budget delay in ${h3}`}}])};
   const pitName=final?`the finish line at ${to.pit}`:to.pit;
   const da=ri(16,28), db=da+ri(6,10);
+  const has=w=>to.local.some(l=>l.toLowerCase().includes(w));
+  const ride=has('taxi')||has('rideshare')?'City bus':'Rideshare';
+  const foot=has('walk')?'Run on foot':'Walk';
   const dash={type:'route',title:final?'Run for the finish line':'Dash to the Pit Stop',text:`Get to ${pitName}.`,options:[
     {label:to.local[0],detail:`About ${fmt(da)} · can get held up`,mins:da,risk:{p:.35,add:ri(15,25),msg:'You got held up on the way.',short:'held up'}},
-    {label:to.local[1],detail:`About ${fmt(db)} · steady`,mins:db,risk:{p:.08,add:ri(8,12),msg:'A short delay on the way.',short:'short delay'}}]};
+    {label:to.local[1],detail:`About ${fmt(db)} · steady`,mins:db,risk:{p:.08,add:ri(8,12),msg:'A short delay on the way.',short:'short delay'}},
+    ...(()=>{const dc=Math.max(10,da+ri(-5,1)),dd=db+ri(8,15);return [
+    {label:ride,detail:`About ${fmt(dc)} · ${ride==='Rideshare'?'surge traffic is common':'stops often'}`,mins:dc,risk:{p:.28,add:ri(14,24),msg:ride==='Rideshare'?'Your driver got stuck in traffic.':'The bus crawled through every stop.',short:ride==='Rideshare'?'stuck in traffic':'slow bus'}},
+    {label:foot,detail:`About ${fmt(dd)} · slowest, but nothing can go wrong`,mins:dd,risk:{p:.03,add:6,msg:'You took one wrong turn.',short:'wrong turn'}}];})()]};
   const L={i,from:from.name,to:to.name,country:to.country,pit:pitName,final,nonElim:i===S.nonElim,scramble:i===S.scramble,flight,dash};
   if(L.scramble){
     L.tasks=pickDistinct(taskPool(to),3).map(t=>({...t,par:40}));
