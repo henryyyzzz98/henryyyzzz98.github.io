@@ -872,7 +872,7 @@ function renderStage(){
 /* Race minutes for a task: your real time and your accuracy both count, with no fixed floor.
    EXPECTED is a typical real-time finish in seconds. At that pace with ~86% accuracy you take
    about the task's par time, which is what a Normal CPU team averages. */
-const EXPECTED={memory:40,simon:45,unscramble:60,gauge:22,quiz:40,maze:35,order:45,count:32,catch:21,recall:25,cipher:70,exchange:60,luggage:40,compass:40,slide:70,react:16,odd:30,numbers:24};
+const EXPECTED={memory:40,simon:45,unscramble:60,gauge:22,quiz:40,maze:35,order:45,count:32,catch:21,recall:25,cipher:70,exchange:60,luggage:40,compass:40,slide:40,react:16,odd:30,numbers:24};
 const fmtSecs=s=>{s=Math.round(s);return s>=60?Math.floor(s/60)+'m '+String(s%60).padStart(2,'0')+'s':s+'s';};
 function taskMinutes(game,par,res){
   const acc=clamp(res.acc), ratio=clamp(res.secs/EXPECTED[game],.3,3);
@@ -1462,14 +1462,17 @@ compass(el,cfg,done){
 slide(el,cfg,done){
   const solved=[1,2,3,4,5,6,7,8,0];let b=solved.slice(),blank=8,last=-1;
   const nb=i=>{const x=i%3,y=Math.floor(i/3),o=[];if(x>0)o.push(i-1);if(x<2)o.push(i+1);if(y>0)o.push(i-3);if(y<2)o.push(i+3);return o;};
-  do{b=solved.slice();blank=8;last=-1;for(let k=0;k<36;k++){const o=nb(blank).filter(i=>i!==last);const n=pick(o);[b[blank],b[n]]=[b[n],b[blank]];last=blank;blank=n;}}while(b.join()===solved.join());
-  const md=b.reduce((a,v,i)=>v?a+Math.abs((v-1)%3-i%3)+Math.abs(Math.floor((v-1)/3)-Math.floor(i/3)):a,0);
+  const dist=a=>a.reduce((t,v,i)=>v?t+Math.abs((v-1)%3-i%3)+Math.abs(Math.floor((v-1)/3)-Math.floor(i/3)):t,0);
+  // A short shuffle (12 moves) so the puzzle can be solved in about a dozen slides.
+  do{b=solved.slice();blank=8;last=-1;for(let k=0;k<12;k++){const o=nb(blank).filter(i=>i!==last);const n=pick(o);[b[blank],b[n]]=[b[n],b[blank]];last=blank;blank=n;}}while(dist(b)<5);
+  const md=dist(b);
   let moves=0,over=false;
-  el.innerHTML=`<div class="g-meta"><span>Moves <b id="sm">0</b></span><span class="g-time">0s</span></div><p class="hint">Tap a tile next to the gap to slide it. Put the tiles in order from 1 to 8.</p><div class="pgrid" id="sg" style="grid-template-columns:repeat(3,minmax(0,1fr));max-width:280px"></div>`;
+  el.innerHTML=`<div class="g-meta"><span>Moves <b id="sm">0</b></span><span class="g-time">0s</span></div><p class="hint">Tap a tile next to the gap to slide it. Put the tiles in order: 1 2 3 on top, 4 5 6 in the middle, 7 8 and the gap on the bottom.</p><div class="pgrid" id="sg" style="grid-template-columns:repeat(3,minmax(0,1fr));max-width:280px"></div><button class="link" id="sskip" type="button">Skip this puzzle (adds time)</button>`;
   const T=timer(el),g=$('#sg',el);
   const draw=()=>{g.innerHTML=b.map((v,i)=>`<button class="pcell ${v?'tile':'blank'}" data-i="${i}" ${v?'':'disabled aria-label="Gap"'}>${v||''}</button>`).join('');
     g.querySelectorAll('.pcell.tile').forEach(t=>t.onclick=()=>{if(over)return;const i=+t.dataset.i;if(!nb(i).includes(blank))return;[b[i],b[blank]]=[b[blank],b[i]];blank=i;moves++;$('#sm',el).textContent=moves;draw();
       if(b.join()===solved.join()){over=true;T.stop();g.querySelectorAll('.pcell').forEach(x=>{x.disabled=true;if(x.classList.contains('tile'))x.classList.add('done');});setTimeout(()=>done({acc:clamp(1.5*md/moves),secs:T.secs()}),600);}});};
+  $('#sskip',el).onclick=()=>{if(over)return;over=true;T.stop();g.querySelectorAll('.pcell').forEach(x=>x.disabled=true);done({acc:0,secs:Math.max(T.secs(),EXPECTED.slide),label:'puzzle skipped'});};
   draw();
 },
 react(el,cfg,done,alive){
