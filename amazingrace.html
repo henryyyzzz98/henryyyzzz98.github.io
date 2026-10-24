@@ -193,6 +193,11 @@ fieldset legend{font-weight:600;margin-bottom:6px;padding:0}
 .light.green{background:var(--go)}
 .ratecard{display:inline-flex;gap:10px;align-items:baseline;background:var(--board);color:var(--board-ink);padding:10px 16px;border-radius:8px;font-family:var(--mono);font-weight:600;font-size:20px;justify-self:start}
 .total{font-family:var(--mono);font-weight:600;font-size:22px;font-variant-numeric:tabular-nums}
+.pairs{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px 14px}
+.pairs .col{display:grid;gap:8px;align-content:start}
+.tf{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tf .qopt{text-align:center;font-family:var(--display);font-weight:900;font-size:22px;letter-spacing:.06em;text-transform:uppercase}
+.qopt.sel{border-color:var(--ink);background:var(--sunk)}
 .qopt .n{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--go);color:var(--on-color);font-size:13px;margin-right:8px}
 
 /* results + standings */
@@ -532,7 +537,7 @@ const CITIES=[
 ];
 
 /* Generic task types that work in any city. Each leg mixes five of these into the city's own tasks. */
-const norm=s=>s.normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase();
+const norm=s=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
 function wordsFor(c){
   const set=new Set(),add=s=>{const w=norm(s);if(/^[A-Z]{4,10}$/.test(w))set.add(w);};
   add(c.name);
@@ -874,8 +879,16 @@ function renderStage(){
    about the task's par time, which is what a Normal CPU team averages. */
 const EXPECTED={memory:40,simon:45,unscramble:60,gauge:22,quiz:40,maze:35,order:45,count:32,catch:21,recall:25,cipher:70,exchange:60,luggage:40,compass:40,slide:40,react:16,odd:30,numbers:24};
 const fmtSecs=s=>{s=Math.round(s);return s>=60?Math.floor(s/60)+'m '+String(s%60).padStart(2,'0')+'s':s+'s';};
-function taskMinutes(game,par,res){
-  const acc=clamp(res.acc), ratio=clamp(res.secs/EXPECTED[game],.3,3);
+function expectedSecs(game,cfg){
+  cfg=cfg||{};
+  if(game==='typein')return 15*(cfg.qs||[]).length||45;
+  if(game==='sequence')return (cfg.rounds||[]).reduce((a,r)=>a+6+3*r.items.length,0)||30;
+  if(game==='pairs')return 6*(cfg.pairs||[]).length||30;
+  if(game==='truefalse')return 7*(cfg.qs||[]).length||35;
+  return EXPECTED[game]||40;
+}
+function taskMinutes(game,par,res,cfg){
+  const acc=clamp(res.acc), ratio=clamp(res.secs/expectedSecs(game,cfg),.3,3);
   const f=.35+.55*ratio+.7*(1-acc);
   return {mins:Math.max(5,Math.round(par*f)),acc,ratio};
 }
@@ -884,7 +897,7 @@ function startGame(el,task,cb){
   const my=token;el.innerHTML='';
   GAMES[task.game](el,task.cfg,res=>{
     if(my!==token)return;
-    const r=taskMinutes(task.game,task.par,res);
+    const r=taskMinutes(task.game,task.par,res,task.cfg);
     cb(r.mins,`${Math.round(r.acc*100)}% accuracy · ${res.label||fmtSecs(res.secs)+' on the task'}`);
   },()=>my===token);
 }
@@ -1380,18 +1393,18 @@ cipher(el,cfg,done){
   show();
 },
 exchange(el,cfg,done){
-  const rate=pick([1.5,2,2.5,4,5,7.5,8,12,15,20,25,40]), even=rate%1!==0;
+  const rate=typeof cfg.rate==='number'&&cfg.rate>0?cfg.rate:pick([1.5,2,2.5,4,5,7.5,8,12,15,20,25,40]), even=rate%1!==0, cur=cfg.currency&&String(cfg.currency).trim()?String(cfg.currency).trim():'local notes';
   const nf=v=>Number(v.toFixed(2)).toLocaleString('en-US');
   const ds=even?[4,6,8,12,16,20]:[3,5,6,9,12,15,25], mult=rate>=10?10:1;
   const a1=pick([10,20,30,40,50,60,80,100]), d=pick(ds), p=ri(13,87)*mult, d1=pick(ds), d2=pick(ds.filter(x=>x!==d1));
   const qs=shuffle([
-    {q:`You swap $${a1}. How many local notes do you get?`,a:a1*rate},
-    {q:`A taxi costs ${nf(d*rate)} local notes. How many dollars is that?`,a:d},
-    {q:`Lunch costs ${nf(p)} local notes. You pay with a ${nf(100*mult)} note. How much change do you get, in local notes?`,a:100*mult-p},
-    {q:`A souvenir costs ${nf(d1*rate)} and a snack costs ${nf(d2*rate)} local notes. What do they cost together, in dollars?`,a:d1+d2}]);
+    {q:`You swap $${a1}. How many ${cur} do you get?`,a:a1*rate},
+    {q:`A taxi costs ${nf(d*rate)} ${cur}. How many dollars is that?`,a:d},
+    {q:`Lunch costs ${nf(p)} ${cur}. You pay with ${nf(100*mult)}. How much change do you get, in ${cur}?`,a:100*mult-p},
+    {q:`A souvenir costs ${nf(d1*rate)} and a snack costs ${nf(d2*rate)} ${cur}. What do they cost together, in dollars?`,a:d1+d2}]);
   let i=0,solved=0,wrong=0;
   el.innerHTML=`<div class="g-meta"><span>Question <b id="xn">1</b>/4</span><span>Wrong answers <b id="xw">0</b></span><span class="g-time">0s</span></div>
-  <div class="ratecard">$1 <span>=</span> ${nf(rate)} local notes</div><div id="xa" style="display:grid;gap:12px"></div>`;
+  <div class="ratecard">$1 <span>=</span> ${nf(rate)} ${esc(cur)}</div><div id="xa" style="display:grid;gap:12px"></div>`;
   const T=timer(el),area=$('#xa',el);
   function show(){
     $('#xn',el).textContent=i+1;
@@ -1408,7 +1421,7 @@ exchange(el,cfg,done){
   show();
 },
 luggage(el,cfg,done){
-  const NAMES=['Backpack','Duffel bag','Camera case','Tent','Suitcase','Guitar case','Shoe bag','Cooler','Laptop bag','Souvenir box','Sleeping bag','Toiletry kit'];
+  const NAMES=Array.isArray(cfg.names)&&cfg.names.filter(Boolean).length>=6?cfg.names.filter(Boolean):['Backpack','Duffel bag','Camera case','Tent','Suitcase','Guitar case','Shoe bag','Cooler','Laptop bag','Souvenir box','Sleeping bag','Toiletry kit'];
   let r=0,mist=0;
   el.innerHTML=`<div class="g-meta"><span>Check-in <b id="lr">1</b>/3</span><span>Overweight <b id="lm">0</b></span><span class="g-time">0s</span></div><div id="la" style="display:grid;gap:12px"></div>`;
   const T=timer(el),area=$('#la',el);
@@ -1524,6 +1537,77 @@ numbers(el,cfg,done){
       if(next>16){T.stop();setTimeout(()=>done({acc:clamp(1-wrong*.08),secs:T.secs()}),400);}}
     else{wrong++;$('#nw',el).textContent=wrong;b.classList.add('wrong');setTimeout(()=>b.classList.remove('wrong'),300);}
   });
+},
+typein(el,cfg,done){
+  const qs=cfg.qs||[],clean=x=>norm(String(x)).replace(/[^A-Z0-9]/g,'');let i=0,solved=0,wrong=0;
+  el.innerHTML=`<div class="g-meta"><span>Clue <b id="tn">1</b>/${qs.length}</span><span>Wrong answers <b id="tw">0</b></span><span class="g-time">0s</span></div><div id="ta" style="display:grid;gap:12px"></div>`;
+  const T=timer(el),area=$('#ta',el);
+  function show(){
+    $('#tn',el).textContent=i+1;
+    area.innerHTML=`<p class="ask">${esc(qs[i].q)}</p><form class="uform" id="tf"><input id="ti" autocomplete="off" spellcheck="false" aria-label="Your answer" placeholder="Type your answer"><button class="btn">Check</button></form><p class="fb" id="tfb"></p><button class="link" id="ts" type="button">Skip this clue (adds time)</button>`;
+    const inp=$('#ti',area);try{inp.focus({preventScroll:true});}catch(e){}
+    $('#tf',area).onsubmit=e=>{
+      e.preventDefault();const v=clean(inp.value);if(!v)return;const f=$('#tfb',area);
+      if((qs[i].a||[]).some(x=>clean(x)===v)){solved++;f.className='fb good';f.textContent='Correct!';setTimeout(nxt,450);}
+      else{wrong++;$('#tw',el).textContent=wrong;f.className='fb bad';f.textContent='Not quite. Try again.';inp.classList.remove('shake');void inp.offsetWidth;inp.classList.add('shake');inp.select();}
+    };
+    $('#ts',area).onclick=()=>{const f=$('#tfb',area);f.className='fb';f.textContent='Answer: '+(qs[i].a||[''])[0];area.querySelectorAll('button,input').forEach(x=>x.disabled=true);setTimeout(nxt,1100);};
+  }
+  function nxt(){i++;if(i<qs.length)show();else{T.stop();done({acc:clamp(solved/qs.length-wrong*.05),secs:T.secs()});}}
+  show();
+},
+sequence(el,cfg,done){
+  const rounds=cfg.rounds||[];let r=0,mist=0;
+  el.innerHTML=`<div class="g-meta"><span>Round <b id="sqr">1</b>/${rounds.length}</span><span>Mistakes <b id="sqm">0</b></span><span class="g-time">0s</span></div><p class="ask" id="sqa"></p><div class="qopts" id="sql"></div><p class="fb" id="sqf"></p>`;
+  const T=timer(el);
+  function round(){
+    const R=rounds[r],items=R.items;let order;do{order=shuffle(items.map((_,k)=>k));}while(order.every((k,j)=>k===j));let step=0;
+    $('#sqr',el).textContent=r+1;$('#sqa',el).textContent=R.prompt;$('#sqf',el).textContent='';
+    $('#sql',el).innerHTML=order.map(k=>`<button class="qopt" data-k="${k}">${esc(items[k])}</button>`).join('');
+    el.querySelectorAll('#sql .qopt').forEach(b=>b.onclick=()=>{
+      if(+b.dataset.k===step){step++;b.disabled=true;b.classList.add('right');b.innerHTML=`<span class="n">${step}</span>`+b.innerHTML;
+        if(step===items.length){r++;setTimeout(()=>{if(r<rounds.length)round();else{T.stop();done({acc:clamp(1-mist*.1),secs:T.secs()});}},600);}}
+      else{mist++;$('#sqm',el).textContent=mist;const f=$('#sqf',el);f.className='fb bad';f.textContent='Not that one yet.';b.classList.add('wrong');setTimeout(()=>b.classList.remove('wrong'),400);}
+    });
+  }
+  round();
+},
+pairs(el,cfg,done){
+  const P=cfg.pairs||[];let mist=0,left=null,right=null,matched=0;
+  const L=shuffle(P.map((_,k)=>k)),R=shuffle(P.map((_,k)=>k));
+  el.innerHTML=`<div class="g-meta"><span>Matched <b id="pm">0</b>/${P.length}</span><span>Mistakes <b id="px">0</b></span><span class="g-time">0s</span></div>
+  ${cfg.prompt?`<p class="ask">${esc(cfg.prompt)}</p>`:'<p class="hint">Tap one item on each side to match them.</p>'}
+  <div class="pairs"><div class="col">${L.map(k=>`<button class="qopt" data-s="l" data-k="${k}">${esc(P[k][0])}</button>`).join('')}</div><div class="col">${R.map(k=>`<button class="qopt" data-s="r" data-k="${k}">${esc(P[k][1])}</button>`).join('')}</div></div><p class="fb" id="pf"></p>`;
+  const T=timer(el),f=$('#pf',el);
+  const tryMatch=()=>{
+    if(!left||!right)return;
+    if(left.dataset.k===right.dataset.k){matched++;[left,right].forEach(b=>{b.classList.remove('sel');b.classList.add('right');b.disabled=true;b.innerHTML=`<span class="n">${matched}</span>`+b.innerHTML;});$('#pm',el).textContent=matched;f.textContent='';
+      if(matched===P.length){T.stop();setTimeout(()=>done({acc:clamp(1-mist*.1),secs:T.secs()}),500);}}
+    else{mist++;$('#px',el).textContent=mist;f.className='fb bad';f.textContent='Those two don\'t match.';const a=left,b=right;[a,b].forEach(x=>{x.classList.remove('sel');x.classList.add('wrong');});setTimeout(()=>[a,b].forEach(x=>x.classList.remove('wrong')),400);}
+    left=right=null;
+  };
+  el.querySelectorAll('.pairs .qopt').forEach(b=>b.onclick=()=>{
+    if(b.dataset.s==='l'){if(left)left.classList.remove('sel');left=b;}else{if(right)right.classList.remove('sel');right=b;}
+    b.classList.add('sel');tryMatch();
+  });
+},
+truefalse(el,cfg,done){
+  const qs=shuffle(cfg.qs||[]);let i=0,correct=0;
+  el.innerHTML=`<div class="g-meta"><span>Statement <b id="fn">1</b>/${qs.length}</span><span>Correct <b id="fc">0</b></span><span class="g-time">0s</span></div><div id="fa" style="display:grid;gap:12px"></div>`;
+  const T=timer(el),area=$('#fa',el);
+  function show(){
+    const q=qs[i];$('#fn',el).textContent=i+1;
+    area.innerHTML=`<p class="ask">${esc(q.s)}</p><div class="tf"><button class="qopt" data-v="true">True</button><button class="qopt" data-v="false">False</button></div><p class="fb" id="ff"></p>`;
+    const bs=[...area.querySelectorAll('.tf .qopt')];
+    bs.forEach(b=>b.onclick=()=>{
+      const pickT=b.dataset.v==='true',ok=pickT===!!q.t;
+      bs.forEach(x=>{x.disabled=true;if((x.dataset.v==='true')===!!q.t)x.classList.add('right');});
+      if(ok){correct++;$('#fc',el).textContent=correct;}else b.classList.add('wrong');
+      const f=$('#ff',area);f.className='fb '+(ok?'good':'bad');f.textContent=(ok?'Correct. ':'Not quite. ')+(q.why||'');
+      setTimeout(()=>{i++;if(i<qs.length)show();else{T.stop();done({acc:correct/qs.length,secs:T.secs()});}},q.why?1800:900);
+    });
+  }
+  show();
 }
 };
 
