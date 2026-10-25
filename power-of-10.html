@@ -169,10 +169,12 @@ button:disabled { opacity: 0.4; cursor: default; }
   font-family: var(--f-display); font-weight: 400; font-size: 20px;
   padding: 10px 24px; letter-spacing: 0.02em;
 }
+.walk { background: transparent; border-color: var(--brass); color: var(--brass); }
+.walk:hover { background: var(--brass-soft); border-color: var(--brass); }
 .primary:hover { filter: brightness(1.08); border-color: var(--brass); }
 @media (max-width: 480px) {
   .controls { justify-content: space-between; }
-  .primary { margin-left: 0; width: 100%; }
+  .primary, .walk { margin-left: 0; width: 100%; }
 }
 
 /* Verdict */
@@ -232,6 +234,7 @@ footer b { color: var(--ink); font-weight: 600; }
         <button id="r1" type="button" aria-label="Move range 1 right">1›</button>
         <button id="r5" type="button" aria-label="Move range 5 right">5»</button>
       </div>
+      <button class="walk" id="walk" type="button" hidden>Walk away</button>
       <button class="primary" id="lock" type="button">Lock it in</button>
     </div>
 
@@ -242,7 +245,7 @@ footer b { color: var(--ink); font-weight: 600; }
   </section>
 
   <footer>
-    A secret number from <b>1 to 100</b> is drawn when the game starts and never changes. Each round you lock in a range. If the number is inside it, you bank the prize and your range becomes the next round's scale. If it isn't, the game is over. Drag or tap the scale, or use the arrow keys, to move your range.
+    A secret number from <b>1 to 100</b> is drawn when the game starts and never changes. Each round you lock in a range. If the number is inside it, you bank the prize and your range becomes the next round's scale. If it isn't, the game is over. From Round 2 on you can walk away with what you've banked, then make one fun guess to see what would have happened. Drag or tap the scale, or use the arrow keys, to move your range.
   </footer>
 </div>
 
@@ -277,8 +280,9 @@ const size = () => S.hi - S.lo + 1;
 const pick = () => ROUNDS[S.round].pick;
 const maxStart = () => size() - pick();
 function centre() { S.start = Math.floor(maxStart() / 2); }
+const canMove = () => S.phase === "pick" || S.phase === "walkpick";
 function setStart(v) {
-  if (S.phase !== "pick") return;
+  if (!canMove()) return;
   S.start = Math.max(0, Math.min(maxStart(), v));
   renderWindow();
 }
@@ -300,7 +304,7 @@ function renderLadder() {
     const li = document.createElement("li");
     const done = i < S.round || (i === S.round && (S.phase === "hit" || S.phase === "won"));
     if (done) li.className = "done";
-    else if (i === S.round && S.phase !== "miss") li.className = "now";
+    else if (i === S.round && !["miss", "walkpick", "walkcheck", "walked"].includes(S.phase)) li.className = "now";
     li.innerHTML = `<span>Round ${i + 1}</span><b>${money(r.prize)}</b>`;
     ol.appendChild(li);
   });
@@ -356,8 +360,8 @@ function renderWindow() {
   const w = $("win");
   w.style.left = `calc(${(S.start / n) * 100}% - 2px)`;
   w.style.width = `calc(${(pick() / n) * 100}% + 4px)`;
-  w.classList.toggle("hit", S.phase === "hit" || S.phase === "won");
-  w.classList.toggle("miss", S.phase === "miss");
+  w.classList.toggle("hit", S.phase === "hit" || S.phase === "won" || (S.phase === "walked" && S.funHit));
+  w.classList.toggle("miss", S.phase === "miss" || (S.phase === "walked" && !S.funHit));
   [...$("track").querySelectorAll(".cell")].forEach((c, i) => {
     c.classList.toggle("in", i >= S.start && i < S.start + pick());
   });
@@ -371,7 +375,7 @@ function renderWindow() {
   t.setAttribute("aria-valuemax", S.hi - pick() + 1);
   t.setAttribute("aria-valuenow", rangeLo());
   t.setAttribute("aria-valuetext", $("readout").textContent);
-  const atL = S.start <= 0, atR = S.start >= maxStart(), locked = S.phase !== "pick";
+  const atL = S.start <= 0, atR = S.start >= maxStart(), locked = !canMove();
   $("l1").disabled = $("l5").disabled = atL || locked;
   $("r1").disabled = $("r5").disabled = atR || locked;
 }
@@ -391,6 +395,12 @@ function showSecret(win) {
 function renderHead() {
   const r = ROUNDS[S.round];
   const exact = r.pick === 1;
+  if (S.phase.startsWith("walk")) {
+    $("eyebrow").textContent = `Walked away · ${money(S.banked)} banked`;
+    $("headline").innerHTML = exact ? `Just for fun: <em>which number?</em>` : `Just for fun: <em>where is it?</em>`;
+    $("sub").textContent = `Your ${money(S.banked)} is safe. Make one last guess to see if you'd have won ${money(r.prize)}.`;
+    return;
+  }
   $("eyebrow").textContent = `Round ${S.round + 1} of 6 · for ${money(r.prize)}`;
   $("headline").innerHTML = exact
     ? `Name the <em>exact number</em>`
@@ -407,6 +417,38 @@ function renderVerdict() {
   const btn = $("lock");
   v.className = "verdict";
   bulbs.className = "bulbs";
+  const walk = $("walk");
+  walk.hidden = !(S.phase === "pick" && S.banked > 0);
+  walk.textContent = `Walk away with ${money(S.banked)}`;
+  if (S.phase === "walkpick") {
+    v.hidden = true;
+    btn.textContent = "Reveal the number";
+    btn.disabled = false;
+    return;
+  }
+  if (S.phase === "walkcheck") {
+    v.hidden = false;
+    v.classList.add("checking");
+    bulbs.classList.add("chase");
+    $("vTitle").textContent = "Your fun guess…";
+    $("vText").textContent = pick() === 1 ? `Would it have been ${rangeLo()}?` : `Would it have been between ${rangeLo()} and ${rangeHi()}?`;
+    btn.textContent = "Revealing";
+    btn.disabled = true;
+    return;
+  }
+  if (S.phase === "walked") {
+    v.hidden = false;
+    v.classList.add(S.funHit ? "hit" : "miss");
+    $("vTitle").textContent = S.funHit
+      ? `It was ${S.secret}. You'd have won ${money(ROUNDS[S.round].prize)}!`
+      : `It was ${S.secret}. Good call walking away!`;
+    $("vText").textContent = S.funHit
+      ? `So close. You still leave with ${money(S.banked)}.`
+      : `Your guess would have missed. You leave with ${money(S.banked)}.`;
+    btn.textContent = "Play again";
+    btn.disabled = false;
+    return;
+  }
   if (S.phase === "pick") {
     v.hidden = true;
     btn.textContent = pick() === 1 ? "Final answer" : "Lock it in";
@@ -453,6 +495,7 @@ function render() {
   renderVerdict();
   if (S.phase === "miss") showSecret(false);
   if (S.phase === "won") showSecret(true);
+  if (S.phase === "walked") showSecret(S.funHit);
 }
 
 /* ---------- flow ---------- */
@@ -470,9 +513,24 @@ function lockIn() {
     S.phase = "pick";
     centre();
     render();
-  } else if (S.phase === "miss" || S.phase === "won") {
+  } else if (S.phase === "walkpick") {
+    S.phase = "walkcheck";
+    renderWindow(); renderVerdict();
+    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    timer = setTimeout(walkReveal, reduce ? 500 : 2200);
+  } else if (S.phase === "miss" || S.phase === "won" || S.phase === "walked") {
     newGame();
   }
+}
+function walkAway() {
+  if (S.phase !== "pick" || S.banked <= 0) return;
+  S.phase = "walkpick";
+  render();
+}
+function walkReveal() {
+  S.funHit = S.secret >= rangeLo() && S.secret <= rangeHi();
+  S.phase = "walked";
+  render();
 }
 function reveal() {
   const inside = S.secret >= rangeLo() && S.secret <= rangeHi();
@@ -494,7 +552,7 @@ function idxFromEvent(e) {
 }
 let dragging = false;
 track.addEventListener("pointerdown", e => {
-  if (S.phase !== "pick") return;
+  if (!canMove()) return;
   dragging = true;
   track.setPointerCapture(e.pointerId);
   setStart(idxFromEvent(e) - Math.floor(pick() / 2));
@@ -518,13 +576,15 @@ $("l1").onclick = () => setStart(S.start - 1);
 $("r1").onclick = () => setStart(S.start + 1);
 $("r5").onclick = () => setStart(S.start + 5);
 $("lock").onclick = lockIn;
-window.addEventListener("resize", () => { if (S) renderTrack(); if (S && (S.phase === "miss" || S.phase === "won")) showSecret(S.phase === "won"); });
+$("walk").onclick = walkAway;
+window.addEventListener("resize", () => { if (S) renderTrack(); if (S && (S.phase === "miss" || S.phase === "won")) showSecret(S.phase === "won"); if (S && S.phase === "walked") showSecret(S.funHit); });
 
 /* keep an in-progress game across live updates */
 function start(saved) {
   if (saved && saved.S && typeof saved.S.secret === "number") {
     S = saved.S;
     if (S.phase === "checking") { S.phase = "pick"; }
+    if (S.phase === "walkcheck") { S.phase = "walkpick"; }
     render();
   } else newGame();
   }
