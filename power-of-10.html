@@ -1,0 +1,534 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Power of 10</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Barlow+Condensed:wght@500;600;700&family=Chakra+Petch:wght@500;600;700&display=swap">
+<style>
+/* Layout: one stage card under a 6-step money ladder; the number scale is the centrepiece, controls sit beneath it. Single dark "studio" look by choice. */
+:root {
+  --stage: #0c1a22;
+  --panel: #12262f;
+  --panel-2: #183340;
+  --line: #2a4a58;
+  --brass: #f2b544;
+  --brass-soft: rgba(242, 181, 68, 0.18);
+  --ink: #eef4f1;
+  --muted: #8ea8ad;
+  --hit: #5ad0b8;
+  --miss: #ff6b5b;
+  --f-display: "Bungee", "Impact", "Arial Black", sans-serif;
+  --f-ui: "Barlow Condensed", "Arial Narrow", "Helvetica Neue", sans-serif;
+  --f-num: "Chakra Petch", "Consolas", ui-monospace, monospace;
+  color-scheme: dark;
+}
+html, body { background: var(--stage); color: var(--ink); }
+body {
+  font-family: var(--f-ui);
+  font-size: 18px;
+  line-height: 1.4;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 40px;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% 0%, rgba(242,181,68,0.10), transparent 70%),
+    var(--stage);
+  min-height: 100%;
+}
+.wrap { max-width: 860px; margin: 0 auto; display: grid; gap: 20px; }
+
+header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+h1 {
+  font-family: var(--f-display);
+  font-weight: 400;
+  font-size: clamp(30px, 7vw, 48px);
+  line-height: 1;
+  margin: 0;
+  color: var(--brass);
+  text-shadow: 0 0 18px rgba(242,181,68,0.35);
+  letter-spacing: 0.01em;
+}
+h1 sup { font-size: 0.5em; vertical-align: 0.9em; }
+.bank { text-align: right; }
+.bank small { display: block; text-transform: uppercase; letter-spacing: 0.12em; font-size: 13px; color: var(--muted); font-weight: 600; }
+.bank b { font-family: var(--f-num); font-size: 26px; font-variant-numeric: tabular-nums; }
+
+/* Money ladder */
+.ladder { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; list-style: none; margin: 0; padding: 0; }
+.ladder li {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 8px 6px;
+  text-align: center;
+  background: var(--panel);
+  color: var(--muted);
+  min-width: 0;
+}
+.ladder li span { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600; }
+.ladder li b { display: block; font-family: var(--f-num); font-size: 15px; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ladder li.done { background: var(--brass); border-color: var(--brass); color: #2a1d05; }
+.ladder li.now { border-color: var(--brass); color: var(--ink); box-shadow: 0 0 0 1px var(--brass), 0 0 16px rgba(242,181,68,0.3); }
+.ladder li.top b { color: inherit; }
+@media (max-width: 560px) { .ladder { grid-template-columns: repeat(3, 1fr); } }
+
+/* Stage */
+.stage {
+  background: linear-gradient(180deg, var(--panel-2), var(--panel));
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px 16px 22px;
+  display: grid;
+  gap: 18px;
+}
+.bulbs { display: flex; justify-content: space-between; gap: 4px; }
+.bulbs i { width: 10px; height: 10px; border-radius: 50%; background: var(--brass-soft); }
+.bulbs.lit i { background: var(--brass); box-shadow: 0 0 8px var(--brass); }
+.bulbs.chase i { animation: chase 0.8s linear infinite; }
+@keyframes chase { 0%, 70%, 100% { background: var(--brass-soft); box-shadow: none; } 15% { background: var(--brass); box-shadow: 0 0 10px var(--brass); } }
+
+.round-head { display: grid; gap: 4px; }
+.eyebrow { font-size: 14px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--muted); font-weight: 600; }
+.round-head h2 { margin: 0; font-family: var(--f-display); font-weight: 400; font-size: clamp(22px, 5vw, 30px); line-height: 1.1; text-wrap: balance; }
+.round-head h2 em { font-style: normal; color: var(--brass); }
+.round-head p { margin: 0; color: var(--muted); max-width: 60ch; }
+
+/* Number scale */
+.scale-wrap { display: grid; gap: 8px; }
+.readout { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.readout .range { font-family: var(--f-num); font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--brass); }
+.readout .meta { color: var(--muted); font-size: 15px; }
+.track {
+  position: relative;
+  height: 64px;
+  display: flex;
+  border-radius: 8px;
+  background: #0a161d;
+  border: 1px solid var(--line);
+  touch-action: none;
+  cursor: pointer;
+  user-select: none;
+  outline: none;
+}
+.track:focus-visible { box-shadow: 0 0 0 3px var(--brass-soft), 0 0 0 1px var(--brass); }
+.cell { flex: 1 1 0; min-width: 0; position: relative; }
+.track.fine .cell + .cell { box-shadow: inset 1px 0 rgba(142,168,173,0.18); }
+.cell.tick::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 1px; background: rgba(142,168,173,0.35); }
+.cell .n {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  font-family: var(--f-num); font-size: 15px; font-weight: 600; color: var(--muted);
+  font-variant-numeric: tabular-nums; pointer-events: none;
+}
+.cell.in .n { color: var(--ink); }
+.track.big .cell .n { font-size: 22px; }
+.window {
+  position: absolute; top: -4px; bottom: -4px;
+  border: 3px solid var(--brass);
+  border-radius: 8px;
+  background: var(--brass-soft);
+  box-shadow: 0 0 18px rgba(242,181,68,0.35);
+  transition: left 0.12s ease-out, width 0.25s ease-out;
+  pointer-events: none;
+}
+.window.hit { border-color: var(--hit); background: rgba(90,208,184,0.18); box-shadow: 0 0 22px rgba(90,208,184,0.5); }
+.window.miss { border-color: var(--miss); background: rgba(255,107,91,0.12); box-shadow: none; }
+.secret {
+  position: absolute; top: -10px; bottom: -10px;
+  background: var(--miss);
+  border-radius: 4px;
+  min-width: 4px;
+  box-shadow: 0 0 14px var(--miss);
+  pointer-events: none;
+}
+.secret.win { background: var(--hit); box-shadow: 0 0 18px var(--hit); }
+.axis { position: relative; height: 18px; }
+.axis span {
+  position: absolute; transform: translateX(-50%);
+  font-family: var(--f-num); font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums;
+}
+
+/* Controls */
+.controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.nudges { display: flex; gap: 6px; }
+button {
+  font-family: var(--f-ui); font-weight: 700; font-size: 18px;
+  border-radius: 8px; border: 1px solid var(--line);
+  background: var(--panel); color: var(--ink);
+  padding: 10px 14px; cursor: pointer; min-height: 46px;
+  letter-spacing: 0.04em;
+}
+button:hover { border-color: var(--muted); }
+button:focus-visible { outline: 3px solid var(--brass); outline-offset: 2px; }
+button:disabled { opacity: 0.4; cursor: default; }
+.nudges button { font-family: var(--f-num); min-width: 50px; padding-inline: 10px; }
+.primary {
+  margin-left: auto;
+  background: var(--brass); color: #2a1d05; border-color: var(--brass);
+  font-family: var(--f-display); font-weight: 400; font-size: 20px;
+  padding: 10px 24px; letter-spacing: 0.02em;
+}
+.primary:hover { filter: brightness(1.08); border-color: var(--brass); }
+@media (max-width: 480px) {
+  .controls { justify-content: space-between; }
+  .primary { margin-left: 0; width: 100%; }
+}
+
+/* Verdict */
+.verdict {
+  border-radius: 10px; padding: 14px 16px;
+  display: grid; gap: 4px;
+  border: 1px solid var(--line); background: #0a161d;
+}
+.verdict h3 { margin: 0; font-family: var(--f-display); font-weight: 400; font-size: 22px; }
+.verdict p { margin: 0; color: var(--muted); }
+.verdict.hit h3 { color: var(--hit); }
+.verdict.miss h3 { color: var(--miss); }
+.verdict.won h3 { color: var(--brass); font-size: 28px; }
+.verdict.checking h3 { color: var(--brass); }
+
+footer { color: var(--muted); font-size: 15px; max-width: 65ch; }
+footer b { color: var(--ink); font-weight: 600; }
+
+@media (prefers-reduced-motion: reduce) {
+  .bulbs.chase i { animation: none; background: var(--brass); }
+  .window { transition: none; }
+}
+</style>
+<style>*,*::before,*::after{box-sizing:border-box}html,body{margin:0}[hidden]{display:none!important}</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <h1>Power of 10</h1>
+    <div class="bank"><small>Banked</small><b id="bank">$0</b></div>
+  </header>
+
+  <ol class="ladder" id="ladder" aria-label="Money ladder"></ol>
+
+  <section class="stage" aria-live="polite">
+    <div class="bulbs" id="bulbs" aria-hidden="true"></div>
+    <div class="round-head">
+      <div class="eyebrow" id="eyebrow"></div>
+      <h2 id="headline"></h2>
+      <p id="sub"></p>
+    </div>
+
+    <div class="scale-wrap">
+      <div class="readout">
+        <span class="range" id="readout"></span>
+        <span class="meta" id="meta"></span>
+      </div>
+      <div class="track" id="track" tabindex="0" role="slider" aria-label="Position of your range on the number scale"></div>
+      <div class="axis" id="axis" aria-hidden="true"></div>
+    </div>
+
+    <div class="controls" id="controls">
+      <div class="nudges">
+        <button id="l5" type="button" aria-label="Move range 5 left">«5</button>
+        <button id="l1" type="button" aria-label="Move range 1 left">‹1</button>
+        <button id="r1" type="button" aria-label="Move range 1 right">1›</button>
+        <button id="r5" type="button" aria-label="Move range 5 right">5»</button>
+      </div>
+      <button class="primary" id="lock" type="button">Lock it in</button>
+    </div>
+
+    <div class="verdict" id="verdict" hidden>
+      <h3 id="vTitle"></h3>
+      <p id="vText"></p>
+    </div>
+  </section>
+
+  <footer>
+    A secret number from <b>1 to 100</b> is drawn when the game starts and never changes. Each round you lock in a range. If the number is inside it, you bank the prize and your range becomes the next round's scale. If it isn't, the game is over. Drag or tap the scale, or use the arrow keys, to move your range.
+  </footer>
+</div>
+
+<script>
+const ROUNDS = [
+  { prize: 100,        pick: 80 },
+  { prize: 1000,       pick: 60 },
+  { prize: 10000,      pick: 40 },
+  { prize: 100000,     pick: 20 },
+  { prize: 1000000,    pick: 10 },
+  { prize: 10000000,   pick: 1  },
+];
+const money = n => "$" + n.toLocaleString("en-US");
+const $ = id => document.getElementById(id);
+
+let S;
+
+function newGame() {
+  S = {
+    secret: 1 + Math.floor(Math.random() * 100),
+    round: 0,
+    lo: 1, hi: 100,
+    start: 0,
+    phase: "pick",   // pick | checking | hit | miss | won
+    banked: 0,
+  };
+  centre();
+  render();
+}
+
+const size = () => S.hi - S.lo + 1;
+const pick = () => ROUNDS[S.round].pick;
+const maxStart = () => size() - pick();
+function centre() { S.start = Math.floor(maxStart() / 2); }
+function setStart(v) {
+  if (S.phase !== "pick") return;
+  S.start = Math.max(0, Math.min(maxStart(), v));
+  renderWindow();
+}
+const rangeLo = () => S.lo + S.start;
+const rangeHi = () => S.lo + S.start + pick() - 1;
+
+/* ---------- rendering ---------- */
+const bulbs = $("bulbs");
+for (let i = 0; i < 24; i++) {
+  const b = document.createElement("i");
+  b.style.animationDelay = (i * 0.8 / 24) + "s";
+  bulbs.appendChild(b);
+}
+
+function renderLadder() {
+  const ol = $("ladder");
+  ol.innerHTML = "";
+  ROUNDS.forEach((r, i) => {
+    const li = document.createElement("li");
+    const done = i < S.round || (i === S.round && (S.phase === "hit" || S.phase === "won"));
+    if (done) li.className = "done";
+    else if (i === S.round && S.phase !== "miss") li.className = "now";
+    li.innerHTML = `<span>Round ${i + 1}</span><b>${money(r.prize)}</b>`;
+    ol.appendChild(li);
+  });
+  $("bank").textContent = money(S.banked);
+}
+
+function renderTrack() {
+  const t = $("track");
+  const n = size();
+  t.innerHTML = "";
+  t.classList.toggle("fine", n <= 40);
+  t.classList.toggle("big", n <= 10);
+  const labelEvery = n > 40 ? 0 : n > 20 ? 5 : 1;
+  for (let i = 0; i < n; i++) {
+    const c = document.createElement("div");
+    c.className = "cell";
+    const v = S.lo + i;
+    if (n > 40 && v % 10 === 1 && i !== 0) c.classList.add("tick");
+    if (labelEvery === 1) c.innerHTML = `<span class="n">${v}</span>`;
+    t.appendChild(c);
+  }
+  const w = document.createElement("div");
+  w.className = "window"; w.id = "win";
+  t.appendChild(w);
+
+  // axis labels
+  const ax = $("axis");
+  ax.innerHTML = "";
+  if (labelEvery !== 1) {
+    const marks = [];
+    if (n > 40) { marks.push(S.lo); for (let v = Math.ceil(S.lo / 10) * 10; v <= S.hi; v += 10) if (v !== S.lo) marks.push(v); if (!marks.includes(S.hi)) marks.push(S.hi); }
+    else { for (let v = S.lo; v <= S.hi; v++) if ((v - S.lo) % 5 === 0 || v === S.hi) marks.push(v); }
+    // drop labels that would collide with the last one
+    const pct = v => ((v - S.lo + 0.5) / n) * 100;
+    let last = -100;
+    marks.forEach((v, idx) => {
+      const p = pct(v);
+      const isEnd = idx === marks.length - 1;
+      if (p - last < 6 && !isEnd) return;
+      if (isEnd && p - last < 6) ax.lastChild && ax.removeChild(ax.lastChild);
+      const s = document.createElement("span");
+      s.style.left = p + "%";
+      s.textContent = v;
+      ax.appendChild(s);
+      last = p;
+    });
+  }
+  renderWindow();
+}
+
+function renderWindow() {
+  const n = size();
+  const w = $("win");
+  w.style.left = `calc(${(S.start / n) * 100}% - 2px)`;
+  w.style.width = `calc(${(pick() / n) * 100}% + 4px)`;
+  w.classList.toggle("hit", S.phase === "hit" || S.phase === "won");
+  w.classList.toggle("miss", S.phase === "miss");
+  [...$("track").querySelectorAll(".cell")].forEach((c, i) => {
+    c.classList.toggle("in", i >= S.start && i < S.start + pick());
+  });
+  const exact = pick() === 1;
+  $("readout").textContent = exact ? `${rangeLo()}` : `${rangeLo()} – ${rangeHi()}`;
+  $("meta").textContent = exact
+    ? `Your exact guess · scale ${S.lo}–${S.hi}`
+    : `${pick()} of ${n} numbers · scale ${S.lo}–${S.hi}`;
+  const t = $("track");
+  t.setAttribute("aria-valuemin", S.lo);
+  t.setAttribute("aria-valuemax", S.hi - pick() + 1);
+  t.setAttribute("aria-valuenow", rangeLo());
+  t.setAttribute("aria-valuetext", $("readout").textContent);
+  const atL = S.start <= 0, atR = S.start >= maxStart(), locked = S.phase !== "pick";
+  $("l1").disabled = $("l5").disabled = atL || locked;
+  $("r1").disabled = $("r5").disabled = atR || locked;
+}
+
+function showSecret(win) {
+  const n = size();
+  const i = S.secret - S.lo;
+  if (i < 0 || i >= n) return;
+  const m = document.createElement("div");
+  m.className = "secret" + (win ? " win" : "");
+  const cw = 100 / n;
+  m.style.left = `calc(${i * cw + cw / 2}% - ${n > 40 ? 2 : 3}px)`;
+  m.style.width = n > 40 ? "4px" : "6px";
+  $("track").appendChild(m);
+}
+
+function renderHead() {
+  const r = ROUNDS[S.round];
+  const exact = r.pick === 1;
+  $("eyebrow").textContent = `Round ${S.round + 1} of 6 · for ${money(r.prize)}`;
+  $("headline").innerHTML = exact
+    ? `Name the <em>exact number</em>`
+    : `Lock in <em>${r.pick} numbers</em> out of ${size()}`;
+  $("sub").textContent = exact
+    ? `Ten numbers left. Pick one. Get it right for ${money(r.prize)}.`
+    : S.round === 0
+      ? `The number is somewhere from 1 to 100. Slide your range to where you think it is.`
+      : `The number is somewhere from ${S.lo} to ${S.hi}. Narrow it down.`;
+}
+
+function renderVerdict() {
+  const v = $("verdict");
+  const btn = $("lock");
+  v.className = "verdict";
+  bulbs.className = "bulbs";
+  if (S.phase === "pick") {
+    v.hidden = true;
+    btn.textContent = pick() === 1 ? "Final answer" : "Lock it in";
+    btn.disabled = false;
+    return;
+  }
+  v.hidden = false;
+  if (S.phase === "checking") {
+    v.classList.add("checking");
+    bulbs.classList.add("chase");
+    $("vTitle").textContent = "Locked in…";
+    $("vText").textContent = pick() === 1 ? `Is it ${rangeLo()}?` : `Is the number between ${rangeLo()} and ${rangeHi()}?`;
+    btn.textContent = "Checking";
+    btn.disabled = true;
+  } else if (S.phase === "hit") {
+    v.classList.add("hit");
+    bulbs.classList.add("lit");
+    $("vTitle").textContent = `It's in there! ${money(ROUNDS[S.round].prize)}`;
+    $("vText").textContent = `The number is somewhere from ${rangeLo()} to ${rangeHi()}. That becomes your next scale.`;
+    btn.textContent = `Play for ${money(ROUNDS[S.round + 1].prize)}`;
+    btn.disabled = false;
+  } else if (S.phase === "miss") {
+    v.classList.add("miss");
+    $("vTitle").textContent = "Game over";
+    $("vText").textContent = pick() === 1
+      ? `You said ${rangeLo()}. The number was ${S.secret}.`
+      : `The number was ${S.secret}, outside your range of ${rangeLo()}–${rangeHi()}. You leave with nothing this time.`;
+    btn.textContent = "Play again";
+    btn.disabled = false;
+  } else if (S.phase === "won") {
+    v.classList.add("won");
+    bulbs.classList.add("chase");
+    $("vTitle").textContent = `${S.secret}! ${money(10000000)}`;
+    $("vText").textContent = "You found the number. Ten million dollars.";
+    btn.textContent = "Play again";
+    btn.disabled = false;
+  }
+}
+
+function render() {
+  renderLadder();
+  renderHead();
+  renderTrack();
+  renderVerdict();
+  if (S.phase === "miss") showSecret(false);
+  if (S.phase === "won") showSecret(true);
+}
+
+/* ---------- flow ---------- */
+let timer = null;
+function lockIn() {
+  if (S.phase === "pick") {
+    S.phase = "checking";
+    renderWindow(); renderVerdict();
+    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    timer = setTimeout(reveal, reduce ? 500 : 2200);
+  } else if (S.phase === "hit") {
+    S.lo = rangeLo(); S.hi = rangeHi();
+    S.round++;
+    S.phase = "pick";
+    centre();
+    render();
+  } else if (S.phase === "miss" || S.phase === "won") {
+    newGame();
+  }
+}
+function reveal() {
+  const inside = S.secret >= rangeLo() && S.secret <= rangeHi();
+  if (inside) {
+    S.banked = ROUNDS[S.round].prize;
+    S.phase = S.round === ROUNDS.length - 1 ? "won" : "hit";
+  } else {
+    S.banked = 0;
+    S.phase = "miss";
+  }
+  render();
+}
+
+/* ---------- input ---------- */
+const track = $("track");
+function idxFromEvent(e) {
+  const r = track.getBoundingClientRect();
+  return Math.floor(((e.clientX - r.left) / r.width) * size());
+}
+let dragging = false;
+track.addEventListener("pointerdown", e => {
+  if (S.phase !== "pick") return;
+  dragging = true;
+  track.setPointerCapture(e.pointerId);
+  setStart(idxFromEvent(e) - Math.floor(pick() / 2));
+});
+track.addEventListener("pointermove", e => {
+  if (!dragging) return;
+  setStart(idxFromEvent(e) - Math.floor(pick() / 2));
+});
+const endDrag = () => { dragging = false; };
+track.addEventListener("pointerup", endDrag);
+track.addEventListener("pointercancel", endDrag);
+track.addEventListener("keydown", e => {
+  const step = { ArrowLeft: -1, ArrowRight: 1, PageDown: -5, PageUp: 5 }[e.key];
+  if (step) { e.preventDefault(); setStart(S.start + step); }
+  else if (e.key === "Home") { e.preventDefault(); setStart(0); }
+  else if (e.key === "End") { e.preventDefault(); setStart(maxStart()); }
+  else if (e.key === "Enter") { e.preventDefault(); lockIn(); }
+});
+$("l5").onclick = () => setStart(S.start - 5);
+$("l1").onclick = () => setStart(S.start - 1);
+$("r1").onclick = () => setStart(S.start + 1);
+$("r5").onclick = () => setStart(S.start + 5);
+$("lock").onclick = lockIn;
+window.addEventListener("resize", () => { if (S) renderTrack(); if (S && (S.phase === "miss" || S.phase === "won")) showSecret(S.phase === "won"); });
+
+/* keep an in-progress game across live updates */
+function start(saved) {
+  if (saved && saved.S && typeof saved.S.secret === "number") {
+    S = saved.S;
+    if (S.phase === "checking") { S.phase = "pick"; }
+    render();
+  } else newGame();
+  }
+start({});
+</script>
+
+</body>
+</html>
