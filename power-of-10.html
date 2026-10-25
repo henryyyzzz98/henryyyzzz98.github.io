@@ -464,7 +464,8 @@ function lockIn() {
     const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
     timer = setTimeout(reveal, reduce ? 500 : 2200);
   } else if (S.phase === "hit") {
-    S.lo = rangeLo(); S.hi = rangeHi();
+    const newLo = rangeLo(), newHi = rangeHi();
+    S.lo = newLo; S.hi = newHi;
     S.round++;
     S.phase = "pick";
     centre();
