@@ -1,0 +1,608 @@
+<title>Gold Rush</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ultra&family=Barlow+Condensed:wght@400;500;600;700&family=Barlow:wght@400;500;600&display=swap">
+<style>
+/* Layout: one centred "assay office" column; the board is the hero, scoreboard sits above it like a claim ledger. Single deliberate dark look: a lamp-lit mine. */
+:root{
+  --ore:#1c1612; --shaft:#28201a; --seam:#3b3029; --rock:#4a3d33;
+  --quartz:#f4ead4; --dust:#bba98d;
+  --gold:#e9b934; --gold-hi:#ffe18a; --gold-deep:#9c6b12;
+  --pyrite:#9a9142; --pyrite-hi:#d2c870; --rust:#d0553a;
+  --lantern:#7fc1d6; --lantern-deep:#2f6d80;
+  --display:"Ultra", "Rockwell Extra Bold", "Rockwell", Georgia, serif;
+  --ui:"Barlow Condensed", "Arial Narrow", "Roboto Condensed", system-ui, sans-serif;
+  --body:"Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{min-height:100%}
+body{
+  background:var(--ore);
+  background-image:radial-gradient(120% 60% at 50% -10%, #3a2a17 0%, transparent 60%),
+    radial-gradient(80% 50% at 50% 110%, #241a12 0%, transparent 70%);
+  background-attachment:fixed;
+  color:var(--quartz); font-family:var(--body); font-size:15px; line-height:1.5;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));
+  padding-right:max(16px, env(safe-area-inset-right, 0px));
+  padding-block:20px 40px;
+}
+.wrap{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+h1,h2,h3{margin:0;text-wrap:balance}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--gold-hi);outline-offset:2px}
+.label{font-family:var(--ui);text-transform:uppercase;letter-spacing:.12em;font-size:12px;color:var(--dust);font-weight:600}
+.num{font-variant-numeric:tabular-nums}
+
+/* Buttons */
+.btn{font-family:var(--ui);font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-size:16px;
+  border:0;border-radius:6px;padding:12px 20px;background:linear-gradient(180deg,var(--gold-hi),var(--gold) 45%,var(--gold-deep));
+  color:#2a1a04;box-shadow:0 2px 0 #5c3d07, 0 6px 18px rgba(233,185,52,.25)}
+.btn:hover{filter:brightness(1.06)}
+.btn:active{transform:translateY(1px)}
+.btn.ghost{background:transparent;color:var(--quartz);border:1px solid var(--rock);box-shadow:none}
+.btn.ghost:hover{border-color:var(--dust)}
+.btn.small{font-size:13px;padding:8px 12px}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+
+/* Hero */
+.hero{text-align:center;display:flex;flex-direction:column;gap:6px;align-items:center;padding-top:8px}
+.logo{font-family:var(--display);font-size:clamp(46px,13vw,88px);line-height:.95;letter-spacing:.01em;
+  background:linear-gradient(180deg,var(--gold-hi) 10%,var(--gold) 50%,var(--gold-deep) 92%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 3px 0 #3b2606)}
+.tag{font-family:var(--ui);font-size:18px;color:var(--dust);letter-spacing:.04em}
+
+/* Panels */
+.panel{background:var(--shaft);border:1px solid var(--seam);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:14px}
+.panel h2{font-family:var(--ui);font-size:22px;letter-spacing:.04em;text-transform:uppercase}
+.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--ore);border:1px solid var(--seam);border-radius:8px;padding:3px;gap:3px}
+.seg button{border:0;background:transparent;border-radius:6px;padding:10px 8px;font-family:var(--ui);font-weight:600;font-size:15px;letter-spacing:.04em;color:var(--dust)}
+.seg button[aria-pressed="true"]{background:var(--seam);color:var(--quartz);box-shadow:inset 0 -2px 0 var(--gold)}
+.seats{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:560px){.seats{grid-template-columns:1fr}}
+.seat{display:flex;flex-direction:column;gap:8px;min-width:0}
+.seat .who{display:flex;align-items:center;gap:8px;font-family:var(--ui);font-weight:700;font-size:17px;letter-spacing:.04em}
+.dot{width:10px;height:10px;border-radius:50%}
+.dot.p1{background:var(--gold)} .dot.p2{background:var(--lantern)}
+input[type=text],select{width:100%;background:var(--ore);border:1px solid var(--rock);color:var(--quartz);
+  border-radius:6px;padding:11px 12px;font:500 16px var(--body)}
+.hint{font-size:13px;color:var(--dust)}
+.err{color:#ff9b84;font-size:14px;min-height:1.2em;margin:0}
+.save-card{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;
+  border:1px dashed var(--gold-deep);background:rgba(233,185,52,.06)}
+.rules{font-size:14px;color:var(--dust)}
+.rules summary{cursor:pointer;font-family:var(--ui);font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--quartz);font-size:15px}
+.rules ul{padding-left:18px;margin:8px 0 0;display:flex;flex-direction:column;gap:4px}
+.rules b{color:var(--quartz)}
+
+/* Scoreboard */
+.score{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pcard{background:var(--shaft);border:1px solid var(--seam);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:2px;min-width:0;position:relative;transition:border-color .2s, box-shadow .2s}
+.pcard.on.p1{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold),0 0 22px rgba(233,185,52,.18)}
+.pcard.on.p2{border-color:var(--lantern);box-shadow:0 0 0 1px var(--lantern),0 0 22px rgba(127,193,214,.18)}
+.pname{font-family:var(--ui);font-weight:700;font-size:18px;display:flex;gap:6px;align-items:center;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.pcash{font-family:var(--display);font-size:clamp(22px,6.4vw,32px);line-height:1.15}
+.p1 .pcash{color:var(--gold)} .p2 .pcash{color:var(--lantern)}
+.badge{font-family:var(--ui);font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:2px 6px;border-radius:4px;background:var(--gold-deep);color:var(--gold-hi);font-weight:700;flex:none}
+.badge.cpu{background:var(--lantern-deep);color:#d9f2f9}
+.career{font-size:12px;color:var(--dust)}
+.turnflag{font-family:var(--ui);font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:700}
+.p1 .turnflag{color:var(--gold)} .p2 .turnflag{color:var(--lantern)}
+
+/* Gap meter */
+.gap{display:flex;flex-direction:column;gap:6px}
+.gaptrack{position:relative;height:12px;border-radius:6px;background:var(--ore);border:1px solid var(--seam);overflow:hidden}
+.gaptrack::after{content:"";position:absolute;left:50%;top:-2px;bottom:-2px;width:2px;background:var(--rock)}
+.gapfill{position:absolute;top:0;bottom:0;transition:all .4s ease}
+.gaplabels{display:flex;justify-content:space-between;font-family:var(--ui);font-size:13px;color:var(--dust)}
+
+/* Board */
+.board{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;width:100%;max-width:480px;margin:0 auto}
+.board.bonus{max-width:520px}
+.tile{position:relative;aspect-ratio:1;max-width:100%;border:0;border-radius:9px;padding:0;
+  background:
+    radial-gradient(circle at 30% 25%, rgba(255,255,255,.10), transparent 40%),
+    radial-gradient(circle at 70% 80%, rgba(0,0,0,.35), transparent 55%),
+    linear-gradient(145deg,#5a4a3d,#3a2f27 60%,#2c241e);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.12), inset 0 -3px 0 rgba(0,0,0,.35), 0 3px 6px rgba(0,0,0,.4);
+  display:grid;place-items:center;transition:transform .12s}
+.board.bonus .tile{aspect-ratio:1/1.05}
+.tile .n{font-family:var(--display);font-size:clamp(18px,5.4vw,28px);color:#d9c7a8;text-shadow:0 2px 0 rgba(0,0,0,.5)}
+.tile:not([disabled]):hover{transform:translateY(-2px)}
+.tile[disabled]{cursor:default}
+.board.locked .tile:not(.rev){opacity:.75}
+.tile.rev{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:0}
+.tile .face{font-family:var(--ui);font-weight:700;font-size:clamp(14px,4.2vw,21px);line-height:1;letter-spacing:.01em}
+.tile .sub{font-family:var(--ui);font-size:clamp(9px,2.4vw,11px);letter-spacing:.1em;text-transform:uppercase;font-weight:600;margin-top:3px}
+.tile .corner{position:absolute;top:4px;left:6px;font-family:var(--ui);font-size:10px;opacity:.7;font-weight:600}
+.tile .owner{position:absolute;bottom:5px;right:6px;width:7px;height:7px;border-radius:50%}
+.tile.cash{background:linear-gradient(150deg,var(--gold-hi),var(--gold) 45%,var(--gold-deep));color:#2b1a03}
+.tile.x2{background:linear-gradient(150deg,#bfe9f5,var(--lantern) 45%,var(--lantern-deep));color:#06232c}
+.tile.fool{background:repeating-linear-gradient(135deg,rgba(0,0,0,.12) 0 4px,transparent 4px 9px),linear-gradient(150deg,var(--pyrite-hi),var(--pyrite) 50%,#5d5726);color:#1f1d06}
+.tile.fool .face{text-decoration:line-through;text-decoration-thickness:2px}
+.tile.ghost{opacity:.42;filter:saturate(.6)}
+.tile.hit{box-shadow:0 0 0 3px var(--quartz),0 0 18px rgba(255,225,138,.6)}
+.tile.flip{animation:flip .45s ease}
+@keyframes flip{0%{transform:rotateY(90deg) scale(.9)}100%{transform:none}}
+@media (prefers-reduced-motion:reduce){.tile.flip{animation:none}.gapfill{transition:none}}
+
+.status{min-height:52px;text-align:center;font-family:var(--ui);font-size:19px;font-weight:600;letter-spacing:.02em;display:flex;align-items:center;justify-content:center;padding:6px}
+.status.bad{color:#ffb09c} .status.good{color:var(--gold-hi)} .status.blue{color:var(--lantern)}
+.counts{display:flex;justify-content:center;gap:18px;flex-wrap:wrap;font-family:var(--ui);font-size:14px;color:var(--dust)}
+.counts b{color:var(--quartz);font-weight:700}
+.toolbar{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+
+/* Result card */
+.result{text-align:center;align-items:center;border-color:var(--gold-deep);background:linear-gradient(180deg,rgba(233,185,52,.12),var(--shaft) 70%)}
+.result .big{font-family:var(--display);font-size:clamp(30px,9vw,52px);color:var(--gold);line-height:1.05}
+.result p{margin:0;max-width:52ch}
+
+/* Bonus trackers */
+.track{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+@media (max-width:480px){.track{grid-template-columns:repeat(2,1fr)}}
+.tk{background:var(--shaft);border:1px solid var(--seam);border-radius:8px;padding:8px 10px;display:flex;flex-direction:column;gap:6px;align-items:center}
+.tk .v{font-family:var(--ui);font-weight:700;font-size:17px}
+.pips{display:flex;gap:5px}
+.pip{width:14px;height:14px;border-radius:50%;border:2px solid var(--rock)}
+.tk.gold .pip.on{background:var(--gold);border-color:var(--gold-hi)}
+.tk.fool .pip.on{background:var(--pyrite-hi);border-color:var(--pyrite)}
+.tk.fool .v{color:var(--pyrite-hi)}
+.superline{text-align:center;font-family:var(--ui);font-size:15px;color:var(--dust)}
+.superline b{color:var(--gold-hi)}
+.bonushead{text-align:center;display:flex;flex-direction:column;gap:4px;align-items:center}
+.bonushead .t{font-family:var(--display);font-size:clamp(32px,9vw,54px);line-height:1;
+  background:linear-gradient(180deg,var(--gold-hi),var(--gold) 55%,var(--gold-deep));-webkit-background-clip:text;background-clip:text;color:transparent}
+
+/* Leaderboard */
+.lbwrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th{font-family:var(--ui);text-transform:uppercase;letter-spacing:.1em;font-size:12px;color:var(--dust);text-align:left;padding:8px;border-bottom:1px solid var(--rock);font-weight:600}
+td{padding:10px 8px;border-bottom:1px solid var(--seam);font-variant-numeric:tabular-nums}
+td.r,th.r{text-align:right}
+tr.top td:first-child{color:var(--gold);font-family:var(--display)}
+td.nm{font-weight:600;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.empty{color:var(--dust);text-align:center;padding:20px 0}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--seam);border:1px solid var(--gold-deep);
+  color:var(--quartz);padding:10px 16px;border-radius:8px;font-family:var(--ui);font-weight:600;letter-spacing:.04em;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+</style>
+
+<div class="wrap">
+
+  <!-- TITLE / SETUP -->
+  <section id="sTitle" class="wrap">
+    <header class="hero">
+      <div class="label">The game show</div>
+      <h1 class="logo">Gold Rush</h1>
+      <div class="tag">Stake your claim. Dodge the fool's gold. Strike it rich.</div>
+    </header>
+
+    <div id="saveCard" class="panel save-card" hidden>
+      <div>
+        <div class="label">Saved game found</div>
+        <div id="saveInfo" style="font-family:var(--ui);font-size:18px;font-weight:600"></div>
+      </div>
+      <div class="row">
+        <button class="btn" id="btnContinue">Continue</button>
+        <button class="btn ghost small" id="btnDiscard">Discard</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>New game</h2>
+      <div class="seg" role="group" aria-label="Game mode">
+        <button type="button" id="mHot" aria-pressed="true">2 players · one device</button>
+        <button type="button" id="mCpu" aria-pressed="false">Versus CPU</button>
+      </div>
+      <div class="seats">
+        <div class="seat">
+          <div class="who"><span class="dot p1"></span>Player 1</div>
+          <div class="seg" role="group" aria-label="Player 1 type" id="p1Seg">
+            <button type="button" id="p1New" aria-pressed="true">New contestant</button>
+            <button type="button" id="p1Ret" aria-pressed="false">Returning champion</button>
+          </div>
+          <input type="text" id="p1Name" maxlength="18" placeholder="Enter a name" autocomplete="off">
+          <select id="p1Pick" hidden></select>
+          <div class="hint" id="p1Hint">New names are checked against the all-time board.</div>
+        </div>
+        <div class="seat">
+          <div class="who"><span class="dot p2"></span>Player 2</div>
+          <input type="text" id="p2Name" maxlength="18" placeholder="Enter a name" autocomplete="off">
+          <div class="hint" id="p2Hint">Takes the second pick.</div>
+        </div>
+      </div>
+      <p class="err" id="setupErr" role="alert"></p>
+      <div class="row">
+        <button class="btn" id="btnStart">Start the rush</button>
+        <button class="btn ghost" id="btnLB1">All-time leaderboard</button>
+      </div>
+    </div>
+
+    <details class="panel rules">
+      <summary>How to play</summary>
+      <ul>
+        <li><b>Main game:</b> players take turns picking from 25 numbered claims. 18 hide cash from $500 to $5,000, <b>2 are X2</b> (doubles your total) and <b>5 are Fool's Gold</b> (your total drops to $0).</li>
+        <li>Open a lead of <b>$25,000 or more</b> and you win on the spot. Otherwise, once every cash claim is open, the higher total wins. A dead heat means a fresh board for both players.</li>
+        <li><b>Super Rush:</b> the winner faces 15 claims: three each of $10,000, $25,000 and $100,000, plus six Fool's Gold. Match three of the same cash amount before three Fool's Gold to win it.</li>
+        <li>Match three in your <b>first three picks</b> and the prize is multiplied <b>×10</b>, up to $1,000,000.</li>
+        <li>Winners keep their main-game cash plus any Super Rush prize. Returning champions add to their career total on the board.</li>
+      </ul>
+    </details>
+  </section>
+
+  <!-- MAIN GAME -->
+  <section id="sGame" class="wrap" hidden>
+    <div class="toolbar">
+      <div class="label" id="gTitle" style="align-self:center">Gold Rush · Main game</div>
+      <div class="row">
+        <button class="btn ghost small" id="btnLB2">Leaderboard</button>
+        <button class="btn ghost small" id="btnSaveQuit">Save &amp; quit</button>
+      </div>
+    </div>
+    <div class="score" id="score"></div>
+    <div class="gap">
+      <div class="gaptrack"><div class="gapfill" id="gapFill"></div></div>
+      <div class="gaplabels"><span id="gapL"></span><span id="gapMid" class="num"></span><span id="gapR"></span></div>
+    </div>
+    <div class="status" id="status" aria-live="polite"></div>
+    <div class="board" id="board"></div>
+    <div class="counts" id="counts"></div>
+    <div id="mainResult"></div>
+  </section>
+
+  <!-- SUPER RUSH -->
+  <section id="sBonus" class="wrap" hidden>
+    <div class="toolbar">
+      <div class="label" style="align-self:center">Gold Rush · Bonus round</div>
+      <div class="row">
+        <button class="btn ghost small" id="btnLB3">Leaderboard</button>
+        <button class="btn ghost small" id="btnSaveQuit2">Save &amp; quit</button>
+      </div>
+    </div>
+    <div class="bonushead">
+      <div class="t">Super Rush</div>
+      <div id="bWho" style="font-family:var(--ui);font-size:18px;font-weight:600"></div>
+    </div>
+    <div class="track" id="track"></div>
+    <div class="superline" id="superline"></div>
+    <div class="status" id="bStatus" aria-live="polite"></div>
+    <div class="board bonus" id="bBoard"></div>
+    <div id="bResult"></div>
+  </section>
+
+  <!-- LEADERBOARD -->
+  <section id="sLB" class="wrap" hidden>
+    <div class="toolbar">
+      <h2 style="font-family:var(--display);font-size:clamp(26px,7vw,38px);color:var(--gold)">All-Time Leaderboard</h2>
+      <button class="btn ghost small" id="btnLBBack">Back</button>
+    </div>
+    <div class="panel">
+      <div class="lbwrap"><table>
+        <thead><tr><th>#</th><th>Contestant</th><th class="r">Career winnings</th><th class="r">Wins</th><th class="r">Played</th><th class="r">Best game</th><th class="r">Super Rush</th></tr></thead>
+        <tbody id="lbBody"></tbody>
+      </table></div>
+      <div class="row" style="justify-content:flex-end">
+        <button class="btn ghost small" id="btnClearLB">Clear leaderboard</button>
+      </div>
+    </div>
+  </section>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(function(){
+const KEY_LB='goldrush.leaderboard.v1', KEY_SAVE='goldrush.save.v1';
+const GAP_TO_WIN=25000;
+const CPU_NAME='Prospector Pete';
+const LS={
+  get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}},
+  del(k){try{localStorage.removeItem(k)}catch(e){}}
+};
+const $=id=>document.getElementById(id);
+const fmt=n=>'$'+Math.round(n).toLocaleString('en-US');
+const short=n=>n>=1000?('$'+(n/1000).toLocaleString('en-US',{maximumFractionDigits:1})+'K'):('$'+n);
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const norm=s=>s.trim().replace(/\s+/g,' ');
+
+let G=null;          // current game state (saved)
+let busy=false;      // CPU thinking / animation lock
+let lastReturnScreen='sTitle';
+let setup={mode:'hot',p1:'new'};
+
+/* ---------- Leaderboard ---------- */
+function getLB(){const l=LS.get(KEY_LB,[]);return Array.isArray(l)?l:[]}
+function findLB(name){const k=name.toLowerCase();return getLB().find(e=>e.name.toLowerCase()===k)}
+function upsert(name,fn){
+  const lb=getLB();const k=name.toLowerCase();
+  let e=lb.find(x=>x.name.toLowerCase()===k);
+  if(!e){e={name,total:0,wins:0,games:0,best:0,bonusWins:0,millions:0,last:''};lb.push(e)}
+  fn(e);e.last=new Date().toISOString();
+  LS.set(KEY_LB,lb);
+}
+
+/* ---------- Boards ---------- */
+function newMainBoard(){
+  const vals=[];for(let v=500;v<=5000;v+=500)vals.push(v);
+  const cash=vals.slice();
+  for(let i=0;i<8;i++)cash.push(vals[Math.floor(Math.random()*vals.length)]);
+  const tiles=cash.map(v=>({t:'cash',v}));
+  tiles.push({t:'x2'},{t:'x2'});
+  for(let i=0;i<5;i++)tiles.push({t:'fool'});
+  return shuffle(tiles).map(x=>({...x,r:false,by:-1}));
+}
+function newBonusBoard(){
+  const t=[];
+  [10000,25000,100000].forEach(v=>{for(let i=0;i<3;i++)t.push({t:'cash',v})});
+  for(let i=0;i<6;i++)t.push({t:'fool'});
+  return shuffle(t).map(x=>({...x,r:false}));
+}
+
+/* ---------- Setup screen ---------- */
+function show(id){['sTitle','sGame','sBonus','sLB'].forEach(s=>$(s).hidden=(s!==id));window.scrollTo(0,0)}
+function setMode(m){setup.mode=m;$('mHot').setAttribute('aria-pressed',m==='hot');$('mCpu').setAttribute('aria-pressed',m==='cpu');
+  $('p2Name').disabled=(m==='cpu');
+  if(m==='cpu'){$('p2Name').value=CPU_NAME;$('p2Hint').textContent='Normal difficulty. Picks claims at random, just like you.'}
+  else{if($('p2Name').value===CPU_NAME)$('p2Name').value='';$('p2Hint').textContent='Takes the second pick.'}
+  $('setupErr').textContent='';
+}
+function setP1(t){
+  const lb=getLB();
+  if(t==='ret'&&!lb.length){$('setupErr').textContent='No champions yet. Win a game to put a name on the all-time board.';return}
+  setup.p1=t;$('p1New').setAttribute('aria-pressed',t==='new');$('p1Ret').setAttribute('aria-pressed',t==='ret');
+  $('p1Name').hidden=(t==='ret');$('p1Pick').hidden=(t!=='ret');
+  if(t==='ret'){
+    const sorted=lb.slice().sort((a,b)=>b.total-a.total);
+    $('p1Pick').innerHTML=sorted.map(e=>`<option value="${esc(e.name)}">${esc(e.name)} — ${fmt(e.total)}</option>`).join('');
+    updRetHint();
+  } else $('p1Hint').textContent='New names are checked against the all-time board.';
+  $('setupErr').textContent='';
+}
+function updRetHint(){const e=findLB($('p1Pick').value);if(e)$('p1Hint').textContent=`Returns with career winnings of ${fmt(e.total)} · ${e.wins} win${e.wins===1?'':'s'} from ${e.games} game${e.games===1?'':'s'}.`}
+function refreshSaveCard(){
+  const s=LS.get(KEY_SAVE,null);
+  if(s&&s.players&&s.phase&&s.phase!=='over'){
+    $('saveCard').hidden=false;
+    const where=s.phase==='bonus'?'Super Rush':'Main game';
+    $('saveInfo').textContent=`${s.players[0].name} ${fmt(s.players[0].cash)} vs ${s.players[1].name} ${fmt(s.players[1].cash)} · ${where}`;
+  } else $('saveCard').hidden=true;
+}
+function startGame(){
+  const err=$('setupErr');err.textContent='';
+  let n1,champ=false,bank=0;
+  if(setup.p1==='ret'){n1=$('p1Pick').value;const e=findLB(n1);if(!e){err.textContent='Choose a champion from the list.';return}n1=e.name;champ=true;bank=e.total}
+  else{
+    n1=norm($('p1Name').value);
+    if(!n1){err.textContent='Enter a name for Player 1.';$('p1Name').focus();return}
+    if(findLB(n1)){err.textContent=`"${n1}" is already on the all-time board. Choose it under Returning champion, or pick a different name.`;return}
+  }
+  let n2;const cpu=setup.mode==='cpu';
+  if(cpu)n2=CPU_NAME;
+  else{
+    n2=norm($('p2Name').value);
+    if(!n2){err.textContent='Enter a name for Player 2.';$('p2Name').focus();return}
+    if(findLB(n2)){err.textContent=`"${n2}" is already on the all-time board. Choose a different name for Player 2.`;return}
+  }
+  if(n1.toLowerCase()===n2.toLowerCase()){err.textContent='The two players need different names.';return}
+  if(!cpu&&n2.toLowerCase()===CPU_NAME.toLowerCase()){err.textContent=`"${CPU_NAME}" is reserved for the CPU.`;return}
+  G={v:1,phase:'main',mode:setup.mode,turn:0,ties:0,
+    players:[{name:n1,cash:0,cpu:false,champ,bank},{name:n2,cash:0,cpu,champ:false,bank:0}],
+    board:newMainBoard(),last:-1,msg:`${n1} picks first. Choose a claim.`,tone:'',winner:-1,reason:'',bonus:null,recorded:false};
+  save();show('sGame');renderMain();
+}
+
+/* ---------- Saving ---------- */
+function save(){if(G&&G.phase!=='over'&&!G.recorded)LS.set(KEY_SAVE,G)}
+function toast(t){const el=$('toast');el.textContent=t;el.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>el.hidden=true,2000)}
+function saveQuit(){const ok=G&&LS.set(KEY_SAVE,G);G=null;busy=false;refreshSaveCard();show('sTitle');toast(ok?'Game saved':'Could not save in this browser')}
+
+/* ---------- Main game ---------- */
+function cashLeft(){return G.board.filter(t=>t.t==='cash'&&!t.r).length}
+function renderMain(){
+  const P=G.players;
+  $('score').innerHTML=P.map((p,i)=>{
+    const on=G.phase==='main'&&G.turn===i;
+    const badges=(p.champ?'<span class="badge">Champion</span>':'')+(p.cpu?'<span class="badge cpu">CPU</span>':'');
+    const career=p.champ?`<div class="career">Career winnings ${fmt(p.bank)}</div>`:'<div class="career">&nbsp;</div>';
+    return `<div class="pcard p${i+1} ${on?'on':''}">
+      <div class="turnflag">${on?(p.cpu?'Thinking…':'Your pick'):(G.phase==='main'?'Waiting':(G.winner===i?'Winner':'&nbsp;'))}</div>
+      <div class="pname"><span style="overflow:hidden;text-overflow:ellipsis">${esc(p.name)}</span>${badges}</div>
+      <div class="pcash num">${fmt(p.cash)}</div>${career}</div>`}).join('');
+  // gap meter: centre = level; fills toward the leader, full at $25k
+  const d=P[0].cash-P[1].cash, frac=Math.min(Math.abs(d)/GAP_TO_WIN,1)*50, f=$('gapFill');
+  if(d>=0){f.style.left=(50-frac)+'%';f.style.width=frac+'%';f.style.background='linear-gradient(90deg,var(--gold-hi),var(--gold))'}
+  else{f.style.left='50%';f.style.width=frac+'%';f.style.background='linear-gradient(90deg,var(--lantern),#bfe9f5)'}
+  $('gapL').textContent=P[0].name;$('gapR').textContent=P[1].name;
+  $('gapMid').textContent=d===0?`Level · gap needed ${fmt(GAP_TO_WIN)}`:`Gap ${fmt(Math.abs(d))} of ${fmt(GAP_TO_WIN)}`;
+  const st=$('status');st.textContent=G.msg;st.className='status '+(G.tone||'');
+  const locked=G.phase!=='main'||busy||P[G.turn].cpu;
+  const b=$('board');b.className='board'+(locked?' locked':'');
+  b.innerHTML=G.board.map((t,i)=>{
+    if(!t.r){
+      const show=G.phase!=='main';
+      if(show)return tileFace(t,i,'ghost');
+      return `<button class="tile" data-i="${i}" ${locked?'disabled':''} aria-label="Claim ${i+1}"><span class="n">${i+1}</span></button>`;
+    }
+    return tileFace(t,i,(i===G.last?'flip hit':''),t.by);
+  }).join('');
+  const x2=G.board.filter(t=>t.t==='x2'&&!t.r).length, fl=G.board.filter(t=>t.t==='fool'&&!t.r).length;
+  $('counts').innerHTML=`<span>Cash claims left <b>${cashLeft()}</b>/18</span><span>X2 left <b>${x2}</b></span><span>Fool's Gold left <b>${fl}</b></span>${G.ties?`<span>Re-racks <b>${G.ties}</b></span>`:''}`;
+  renderMainResult();
+}
+function tileFace(t,i,extra,by){
+  const own=(by===0||by===1)?`<span class="owner" style="background:${by===0?'var(--gold-deep)':'var(--lantern-deep)'}"></span>`:'';
+  const corner=`<span class="corner">${i+1}</span>`;
+  if(t.t==='cash')return `<div class="tile rev cash ${extra}">${corner}<span class="face num">${short(t.v)}</span><span class="sub">Cash</span>${own}</div>`;
+  if(t.t==='x2')return `<div class="tile rev x2 ${extra}">${corner}<span class="face">X2</span><span class="sub">Double</span>${own}</div>`;
+  return `<div class="tile rev fool ${extra}">${corner}<span class="face">$0</span><span class="sub">Fool's Gold</span>${own}</div>`;
+}
+function pickMain(i){
+  if(!G||G.phase!=='main')return;
+  const t=G.board[i];if(!t||t.r)return;
+  t.r=true;t.by=G.turn;G.last=i;
+  const p=G.players[G.turn],o=G.players[1-G.turn];
+  if(t.t==='cash'){p.cash+=t.v;G.msg=`${p.name} strikes ${fmt(t.v)}!`;G.tone='good'}
+  else if(t.t==='x2'){const before=p.cash;p.cash*=2;G.msg=before?`X2! ${p.name} doubles to ${fmt(p.cash)}.`:`X2… but double $0 is still $0 for ${p.name}.`;G.tone='blue'}
+  else{const lost=p.cash;p.cash=0;G.msg=lost?`Fool's Gold! ${p.name} loses ${fmt(lost)}.`:`Fool's Gold! Lucky ${p.name} had nothing to lose.`;G.tone='bad'}
+  const gap=Math.abs(p.cash-o.cash);
+  if(gap>=GAP_TO_WIN){
+    G.winner=p.cash>o.cash?G.turn:1-G.turn;G.reason='gap';G.phase='mainEnd';
+  } else if(cashLeft()===0){
+    if(p.cash===o.cash){
+      G.ties++;const lvl=p.cash;
+      G.board=newMainBoard();G.last=-1;G.players.forEach(x=>x.cash=0);G.turn=1-G.turn;
+      G.msg=`Dead heat at ${fmt(lvl)}! Fresh board, totals back to $0. ${G.players[G.turn].name} picks first.`;G.tone='';
+    } else {G.winner=G.players[0].cash>G.players[1].cash?0:1;G.reason='cleared';G.phase='mainEnd'}
+  } else G.turn=1-G.turn;
+  if(G.phase==='mainEnd'){
+    const w=G.players[G.winner];
+    G.msg=G.reason==='gap'?`${w.name} pulls ${fmt(gap)} clear and wins!`:`All cash claimed. ${w.name} wins with ${fmt(w.cash)}!`;G.tone='good';
+    if(w.cpu)finishGame(0); // CPU winners don't play the bonus; record now
+  }
+  save();renderMain();maybeCPU();
+}
+function maybeCPU(){
+  if(!G||G.phase!=='main'||!G.players[G.turn].cpu||busy)return;
+  busy=true;renderMain();
+  setTimeout(()=>{busy=false;if(!G||G.phase!=='main')return;
+    const open=G.board.map((t,i)=>t.r?-1:i).filter(i=>i>=0);
+    pickMain(open[Math.floor(Math.random()*open.length)]);
+  },1100);
+}
+function renderMainResult(){
+  const el=$('mainResult');
+  if(G.phase==='main'){el.innerHTML='';return}
+  const w=G.players[G.winner];
+  if(w.cpu){
+    el.innerHTML=`<div class="panel result"><div class="label">The claim goes to the CPU</div><div class="big num">${fmt(w.cash)}</div>
+      <p>${esc(w.name)} wins the main game. No Super Rush this time. ${esc(G.players[0].name)}, try again for the gold.</p>
+      <div class="row" style="justify-content:center"><button class="btn" data-act="again">Play again</button><button class="btn ghost" data-act="lb">Leaderboard</button></div></div>`;
+  } else {
+    el.innerHTML=`<div class="panel result"><div class="label">${esc(w.name)} wins the main game</div><div class="big num">${fmt(w.cash)}</div>
+      <p>That cash is banked. Now head into the Super Rush for up to ${fmt(1000000)} more.</p>
+      <div class="row" style="justify-content:center"><button class="btn" data-act="bonus">Enter the Super Rush</button></div></div>`;
+  }
+}
+
+/* ---------- Super Rush ---------- */
+function startBonus(){
+  G.phase='bonus';
+  G.bonus={board:newBonusBoard(),picks:0,c:{10000:0,25000:0,100000:0,fool:0},done:false,won:0,mult:1,matched:0,last:-1};
+  G.msg='';save();show('sBonus');renderBonus();
+}
+function renderBonus(){
+  const B=G.bonus,w=G.players[G.winner];
+  $('bWho').innerHTML=`${esc(w.name)} · banked <span class="num" style="color:var(--gold)">${fmt(w.cash)}</span>`;
+  const pips=n=>[0,1,2].map(k=>`<span class="pip ${k<n?'on':''}"></span>`).join('');
+  $('track').innerHTML=[10000,25000,100000].map(v=>`<div class="tk gold"><span class="v num">${fmt(v)}</span><div class="pips">${pips(B.c[v])}</div></div>`).join('')
+    +`<div class="tk fool"><span class="v">Fool's Gold</span><div class="pips">${pips(B.c.fool)}</div></div>`;
+  $('superline').innerHTML=B.picks<3&&!B.done
+    ?`Pick ${B.picks+1}. Match three in your first three picks for a <b>×10 super bonus</b>.`
+    :(B.done?'':'Super bonus window closed. Keep digging for a match.');
+  const st=$('bStatus');st.textContent=B.msg||'Pick a claim. Three of a kind wins it.';st.className='status '+(B.tone||'');
+  const bb=$('bBoard');bb.className='board bonus'+(B.done?' locked':'');
+  bb.innerHTML=B.board.map((t,i)=>{
+    if(!t.r){
+      if(B.done)return bonusFace(t,i,'ghost');
+      return `<button class="tile" data-b="${i}" aria-label="Super Rush claim ${i+1}"><span class="n">${i+1}</span></button>`;
+    }
+    const hit=B.done&&((t.t==='cash'&&t.v===B.matched)||(t.t==='fool'&&B.matched==='fool'));
+    return bonusFace(t,i,(i===B.last?'flip ':'')+(hit?'hit':''));
+  }).join('');
+  renderBonusResult();
+}
+function bonusFace(t,i,extra){
+  const corner=`<span class="corner">${i+1}</span>`;
+  if(t.t==='cash')return `<div class="tile rev cash ${extra}">${corner}<span class="face num">${short(t.v)}</span><span class="sub">Cash</span></div>`;
+  return `<div class="tile rev fool ${extra}">${corner}<span class="face">$0</span><span class="sub">Fool's Gold</span></div>`;
+}
+function pickBonus(i){
+  const B=G&&G.bonus;if(!B||B.done)return;
+  const t=B.board[i];if(!t||t.r)return;
+  t.r=true;B.picks++;B.last=i;
+  const key=t.t==='cash'?t.v:'fool';B.c[key]++;
+  if(t.t==='cash'){
+    if(B.c[key]===3){
+      B.done=true;B.matched=t.v;B.mult=B.picks===3?10:1;B.won=t.v*B.mult;
+      B.msg=B.mult===10?`Three ${fmt(t.v)} in three picks! ×10 super bonus: ${fmt(B.won)}!`:`Three ${fmt(t.v)} claims! You win ${fmt(B.won)}!`;B.tone='good';
+    } else {B.msg=`${fmt(t.v)}. That's ${B.c[key]} of 3.`;B.tone='good'}
+  } else {
+    if(B.c.fool===3){B.done=true;B.matched='fool';B.won=0;B.msg='Three Fool\'s Gold. The Super Rush is over.';B.tone='bad'}
+    else {B.msg=`Fool's Gold, ${B.c.fool} of 3. Careful now.`;B.tone='bad'}
+  }
+  if(B.done)finishGame(B.won);
+  save();renderBonus();
+}
+function renderBonusResult(){
+  const B=G.bonus,el=$('bResult');
+  if(!B.done){el.innerHTML='';return}
+  const w=G.players[G.winner],total=w.cash+B.won,e=findLB(w.name);
+  const head=B.won?(B.mult===10?'Super bonus!':'Super Rush won'):'Super Rush missed';
+  const line=B.won?`${fmt(w.cash)} main game + ${fmt(B.won)} Super Rush${B.mult===10?` (${fmt(B.matched)} ×10)`:''}`:`You still leave with your ${fmt(w.cash)} from the main game.`;
+  el.innerHTML=`<div class="panel result"><div class="label">${head}</div><div class="big num">${fmt(total)}</div>
+    <p>${line}</p>${e?`<p class="hint">${esc(w.name)}'s career winnings are now <b style="color:var(--gold)">${fmt(e.total)}</b>.</p>`:''}
+    <div class="row" style="justify-content:center"><button class="btn" data-act="defend">Return as champion</button><button class="btn ghost" data-act="again">New game</button><button class="btn ghost" data-act="lb">Leaderboard</button></div></div>`;
+}
+
+/* ---------- Results ---------- */
+function finishGame(bonusWon){
+  if(G.recorded)return;
+  const w=G.players[G.winner],l=G.players[1-G.winner];
+  const winnings=w.cpu?0:w.cash+bonusWon;
+  if(!w.cpu)upsert(w.name,e=>{e.total+=winnings;e.wins++;e.games++;e.best=Math.max(e.best,winnings);if(bonusWon>0)e.bonusWins++;if(G.bonus&&G.bonus.mult===10&&G.bonus.matched===100000)e.millions++});
+  if(!l.cpu)upsert(l.name,e=>{e.games++});
+  G.recorded=true;
+  if(G.phase==='bonus'||w.cpu){G.phase=w.cpu?'mainEnd':G.phase;LS.del(KEY_SAVE)}
+}
+function endAndReset(){LS.del(KEY_SAVE);G=null;busy=false;refreshSaveCard()}
+function defend(){
+  const name=G.players[G.winner].name,cpu=G.mode==='cpu',other=G.players[1-G.winner].name;
+  endAndReset();show('sTitle');setMode(cpu?'cpu':'hot');setP1('ret');$('p1Pick').value=name;updRetHint();
+  if(!cpu)$('p2Name').value='';
+  $('setupErr').textContent=cpu?'':'Enter a new challenger for Player 2.';
+  (cpu?$('btnStart'):$('p2Name')).focus();
+}
+
+/* ---------- Leaderboard view ---------- */
+function showLB(from){
+  lastReturnScreen=from;
+  const lb=getLB().sort((a,b)=>b.total-a.total||b.wins-a.wins);
+  $('lbBody').innerHTML=lb.length?lb.map((e,i)=>`<tr class="${i===0?'top':''}"><td>${i+1}</td><td class="nm">${esc(e.name)}</td><td class="r">${fmt(e.total)}</td><td class="r">${e.wins}</td><td class="r">${e.games}</td><td class="r">${fmt(e.best)}</td><td class="r">${e.bonusWins}${e.millions?` · ${e.millions}× $1M`:''}</td></tr>`).join('')
+    :`<tr><td colspan="7" class="empty">No contestants yet. Win a main game to get on the board.</td></tr>`;
+  $('btnClearLB').textContent='Clear leaderboard';$('btnClearLB').dataset.arm='';
+  show('sLB');
+}
+
+/* ---------- Events ---------- */
+$('mHot').onclick=()=>setMode('hot');$('mCpu').onclick=()=>setMode('cpu');
+$('p1New').onclick=()=>setP1('new');$('p1Ret').onclick=()=>setP1('ret');
+$('p1Pick').onchange=updRetHint;
+$('btnStart').onclick=startGame;
+['p1Name','p2Name'].forEach(id=>$(id).addEventListener('keydown',e=>{if(e.key==='Enter')startGame()}));
+$('btnLB1').onclick=()=>showLB('sTitle');
+$('btnLB2').onclick=()=>showLB('sGame');
+$('btnLB3').onclick=()=>showLB('sBonus');
+$('btnLBBack').onclick=()=>{show(lastReturnScreen);if(G&&lastReturnScreen==='sGame')renderMain();if(G&&lastReturnScreen==='sBonus')renderBonus();if(lastReturnScreen==='sTitle')refreshSaveCard()};
+$('btnSaveQuit').onclick=saveQuit;$('btnSaveQuit2').onclick=saveQuit;
+$('btnClearLB').onclick=e=>{const b=e.currentTarget;
+  if(b.dataset.arm){LS.del(KEY_LB);showLB(lastReturnScreen);toast('Leaderboard cleared');setP1('new')}
+  else{b.dataset.arm='1';b.textContent='Tap again to erase every record'}};
+$('btnContinue').onclick=()=>{const s=LS.get(KEY_SAVE,null);if(!s)return refreshSaveCard();G=s;busy=false;
+  if(G.phase==='bonus'){show('sBonus');renderBonus()}else{show('sGame');renderMain();maybeCPU()}};
+$('btnDiscard').onclick=()=>{LS.del(KEY_SAVE);refreshSaveCard();toast('Saved game discarded')};
+$('board').addEventListener('click',e=>{const t=e.target.closest('[data-i]');if(!t||busy||!G||G.players[G.turn].cpu)return;pickMain(+t.dataset.i)});
+$('bBoard').addEventListener('click',e=>{const t=e.target.closest('[data-b]');if(t)pickBonus(+t.dataset.b)});
+document.addEventListener('click',e=>{const a=e.target.closest('[data-act]');if(!a||!G)return;
+  const act=a.dataset.act;
+  if(act==='bonus')startBonus();
+  else if(act==='again'){endAndReset();show('sTitle')}
+  else if(act==='lb')showLB(G.phase==='bonus'?'sBonus':'sGame');
+  else if(act==='defend')defend();
+});
+
+setMode('hot');refreshSaveCard();show('sTitle');
+})();
+</script>
