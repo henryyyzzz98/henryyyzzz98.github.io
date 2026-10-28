@@ -185,6 +185,7 @@ body.drag .stage{border-color:var(--accent);border-style:dashed}
     <div class="tabs" role="tablist" id="tabs">
       <button role="tab" data-t="crop">Crop</button>
       <button role="tab" data-t="ai">AI</button>
+      <button role="tab" data-t="light">Light</button>
       <button role="tab" data-t="colour">Colour</button>
       <button role="tab" data-t="detail">Detail</button>
       <button role="tab" data-t="masks">Masks</button>
@@ -197,6 +198,7 @@ body.drag .stage{border-color:var(--accent);border-style:dashed}
   </aside>
 </div>
 <input type="file" id="fileIn" accept="image/*" multiple hidden>
+<input type="file" id="lrIn" multiple hidden>
 <input type="file" id="logoIn" accept="image/png,image/webp,image/svg+xml,image/jpeg" hidden>
 <div class="toast" id="toast" hidden></div>
 <div class="sheet" id="sheet" hidden>
@@ -213,10 +215,15 @@ const view = $('#view'), vctx = view.getContext('2d');
 const isPhone = () => window.innerWidth < 860;
 
 /* ---------- defaults ---------- */
-const ADJ0 = {brightness:0,contrast:0,highlights:0,shadows:0,fade:0,saturation:0,vibrance:0,warmth:0,tint:0};
+const ADJ0 = {brightness:0,contrast:0,highlights:0,shadows:0,whites:0,blacks:0,fade:0,texture:0,clarity:0,dehaze:0,saturation:0,vibrance:0,warmth:0,tint:0};
+const HSL_COLORS = [['red','Red','#e5484d',0],['orange','Orange','#f08c3a',30],['yellow','Yellow','#e9c440',60],['green','Green','#46a758',120],['aqua','Aqua','#3cb4c6',180],['blue','Blue','#3e7be6',240],['purple','Purple','#8e5cd9',270],['magenta','Magenta','#d6409f',300]];
+const HSL0 = ()=>({hue:[0,0,0,0,0,0,0,0],sat:[0,0,0,0,0,0,0,0],lum:[0,0,0,0,0,0,0,0]});
+const CURVE0 = ()=>({rgb:[[0,0],[255,255]],r:[[0,0],[255,255]],g:[[0,0],[255,255]],b:[[0,0],[255,255]],param:{highlights:0,lights:0,darks:0,shadows:0,s1:25,s2:50,s3:75}});
+const GRADE0 = ()=>({shadows:{h:220,s:0,l:0},mid:{h:30,s:0,l:0},high:{h:40,s:0,l:0},global:{h:0,s:0,l:0},blending:50,balance:0});
+const clone=o=>JSON.parse(JSON.stringify(o));
 const FX0  = {grain:0,glow:0,vignette:0,leak:0,leakColor:'peach'};
 const DET0 = {sharpen:0,radius:10,detail:25,masking:0,nr:0,nrDetail:50,color:0};
-const TABS = ['crop','ai','colour','detail','masks','presets','effects','wm','export'];
+const TABS = ['crop','ai','light','colour','detail','masks','presets','effects','wm','export'];
 const LADJ0 = {exposure:0,contrast:0,highlights:0,shadows:0,texture:0,saturation:0,warmth:0,tint:0};
 const MASK_LOOKS = [
   ['Brighten face',{exposure:25,shadows:15,highlights:-5}],
@@ -247,7 +254,7 @@ const S = {
   photos:[], cur:0, tab:'colour', comparing:false, zoom:'100', loupe:{x:.5,y:.4}, showMask:false, lastLoupe:null, maskOverlay:true, brush:{size:8,feather:60,erase:false},
   wm: Object.assign({on:true,text:'© YOUR FANSITE',sub:'DO NOT EDIT · DO NOT CROP LOGO',font:'Montserrat',bold:true,color:'#ffffff',opacity:80,size:4,pos:'br',margin:3,shadow:true,
         logo:null,logoSize:14,logoOpacity:90,logoPos:'bl'}, saved.wm||{}),
-  exp: Object.assign({format:'jpg',quality:92,size:'2048',prefix:'preview'}, saved.exp||{}),
+  exp: Object.assign({format:'jpg',quality:92,size:'2048',customSize:1350,prefix:'preview'}, saved.exp||{}),
   custom: Array.isArray(saved.custom)?saved.custom:[],
 };
 function persist(){ try{ localStorage.setItem(KEY, JSON.stringify({wm:S.wm,exp:S.exp,custom:S.custom})); }catch(e){
@@ -272,11 +279,13 @@ function cur(){ return S.photos[S.cur]; }
 function addPhoto(srcEl,w,h,name,opts={}){
   const k=Math.min(1,4096/Math.max(w,h));
   const src=mk(w*k,h*k); const x=src.getContext('2d'); x.imageSmoothingQuality='high'; x.drawImage(srcEl,0,0,src.width,src.height);
-  const p={id:opts.id||uid(),name,src,prev:scaled(src,1600),crop:{x:0,y:0,w:src.width,h:src.height},aspect:'orig',adj:{...ADJ0},fx:{...FX0},det:{...DET0},masks:[],maskSel:null,look:'Original'};
+  const p={id:opts.id||uid(),name,src,prev:scaled(src,1600),crop:{x:0,y:0,w:src.width,h:src.height},aspect:'orig',adj:{...ADJ0},fx:{...FX0},det:{...DET0},hsl:HSL0(),curve:CURVE0(),grade:GRADE0(),masks:[],maskSel:null,look:'Original'};
   S.photos.push(p); if(opts.store!==false) storeSrc(p); return p;
 }
 async function loadFiles(files){
-  const list=[...files].filter(f=>f.type.startsWith('image/'));
+  const all=[...files], presets=all.filter(f=>LR_EXT.test(f.name));
+  if(presets.length){ await importLR(presets); if(presets.length===all.length) return; }
+  const list=all.filter(f=>!LR_EXT.test(f.name)&&f.type.startsWith('image/'));
   if(!list.length){ toast('Those files aren’t images. Try JPG, PNG, WEBP or HEIC.'); return; }
   const first=S.photos.length; let bad=0;
   for(const f of list){
@@ -322,19 +331,97 @@ function buildTone(a){
   for(let i=0;i<=1024;i++){ let v=i/1024; v=Math.pow(v,g); v=0.5+(v-0.5)*cf; v=clamp(v,0,1); v=fa*0.14+v*(1-fa*0.24); L[i]=v; }
   toneKey=key; toneLUT=L; return L;
 }
-function applyAdj(ctx,W,H,a,grainAmt){
-  const any=Object.keys(ADJ0).some(k=>a[k]); if(!any && !grainAmt) return;
-  const id=ctx.getImageData(0,0,W,H), d=id.data;
+/* monotone cubic (Fritsch–Carlson) through points [[x,y]...] in 0..255 → 1025-entry LUT in 0..1 */
+function splineLUT(pts){
+  const P=pts.slice().sort((a,b)=>a[0]-b[0]).filter((p,i,a)=>i===0||p[0]>a[i-1][0]);
+  const L=new Float32Array(1025), n=P.length;
+  if(n<2){ for(let i=0;i<=1024;i++) L[i]=i/1024; return L; }
+  const xs=P.map(p=>p[0]/255), ys=P.map(p=>p[1]/255), dx=[], m=[], t=new Array(n);
+  for(let i=0;i<n-1;i++){ dx[i]=xs[i+1]-xs[i]; m[i]=(ys[i+1]-ys[i])/dx[i]; }
+  t[0]=m[0]; t[n-1]=m[n-2];
+  for(let i=1;i<n-1;i++) t[i]=m[i-1]*m[i]<=0?0:(m[i-1]+m[i])/2;
+  for(let i=0;i<n-1;i++){ if(m[i]===0){ t[i]=t[i+1]=0; continue; } const a=t[i]/m[i], b=t[i+1]/m[i], s=a*a+b*b; if(s>9){ const k=3/Math.sqrt(s); t[i]=k*a*m[i]; t[i+1]=k*b*m[i]; } }
+  let seg=0;
+  for(let i=0;i<=1024;i++){ const x=i/1024;
+    if(x<=xs[0]){ L[i]=ys[0]; continue; } if(x>=xs[n-1]){ L[i]=ys[n-1]; continue; }
+    while(seg<n-2&&x>xs[seg+1]) seg++;
+    const h=dx[seg], u=(x-xs[seg])/h, u2=u*u, u3=u2*u;
+    L[i]=clamp((2*u3-3*u2+1)*ys[seg]+(u3-2*u2+u)*h*t[seg]+(-2*u3+3*u2)*ys[seg+1]+(u3-u2)*h*t[seg+1],0,1); }
+  return L;
+}
+const isIdent=pts=>pts.length===2&&pts[0][0]===0&&pts[0][1]===0&&pts[1][0]===255&&pts[1][1]===255;
+function paramActive(q){ return !!(q.highlights||q.lights||q.darks||q.shadows); }
+function bump(x,a,c,b){ if(x<=a||x>=b) return 0; return x<c?Math.sin(Math.PI/2*(x-a)/(c-a)):Math.sin(Math.PI/2*(b-x)/(b-c)); }
+let curveCache={key:'',v:null};
+function curveLUTs(cv){
+  const key=JSON.stringify(cv); if(key===curveCache.key) return curveCache.v;
+  const q=cv.param, s1=q.s1/100, s2=q.s2/100, s3=q.s3/100, A=0.16;
+  const M=splineLUT(cv.rgb);
+  if(paramActive(q)){ const P=new Float32Array(1025);
+    for(let i=0;i<=1024;i++){ const x=i/1024;
+      P[i]=clamp(x+A*(q.shadows/100*bump(x,-0.02,s1*0.8,s2)+q.darks/100*bump(x,0.02,(s1+s2)/2,s3)+q.lights/100*bump(x,s1,(s2+s3)/2,0.98)+q.highlights/100*bump(x,s2,(s3+1)/2*1.02,1.12)),0,1); }
+    for(let i=1;i<=1024;i++) if(P[i]<P[i-1]) P[i]=P[i-1];
+    for(let i=0;i<=1024;i++) P[i]=M[(P[i]*1024)|0]; // parametric first, then point curve
+    for(let i=0;i<=1024;i++) M[i]=P[i]; }
+  const v={M:(isIdent(cv.rgb)&&!paramActive(q))?null:M, R:isIdent(cv.r)?null:splineLUT(cv.r), G:isIdent(cv.g)?null:splineLUT(cv.g), B:isIdent(cv.b)?null:splineLUT(cv.b)};
+  curveCache={key,v}; return v;
+}
+function curveActive(cv){ return !!cv&&(!isIdent(cv.rgb)||!isIdent(cv.r)||!isIdent(cv.g)||!isIdent(cv.b)||paramActive(cv.param)); }
+function hslActive(h){ return !!h&&(h.hue.some(Boolean)||h.sat.some(Boolean)||h.lum.some(Boolean)); }
+function gradeActive(g){ return !!g&&(g.shadows.s||g.mid.s||g.high.s||g.global.s||g.shadows.l||g.mid.l||g.high.l||g.global.l); }
+function hueRGB(h){ h=((h%360)+360)%360/60; const x=1-Math.abs(h%2-1); const c=[[1,x,0],[x,1,0],[0,1,x],[0,x,1],[x,0,1],[1,0,x]][Math.floor(h)%6]; const m=(c[0]+c[1]+c[2])/3; return [c[0]-m,c[1]-m,c[2]-m]; }
+
+/* p supplies adj, fx.grain, hsl, curve, grade; frameW = width of the whole frame in output pixels (sets clarity/texture radius) */
+function applyAdj(ctx,W,H,p,frameW){
+  const a=p.adj, grainAmt=p.fx.grain, hsl=p.hsl||HSL0(), cv=p.curve||CURVE0(), gd=p.grade||GRADE0();
+  const any=Object.keys(ADJ0).some(k=>a[k]), doH=hslActive(hsl), doC=curveActive(cv), doG=gradeActive(gd);
+  if(!any&&!grainAmt&&!doH&&!doC&&!doG) return;
+  const id=ctx.getImageData(0,0,W,H), d=id.data, N=W*H;
   const T=buildTone(a);
-  const hl=a.highlights/100, sh=a.shadows/100, sat=a.saturation/100, vib=a.vibrance/100, wa=a.warmth/100, ti=a.tint/100;
+  const hl=a.highlights/100, sh=a.shadows/100, wh=a.whites/100, bl=a.blacks/100, sat=a.saturation/100, vib=a.vibrance/100, wa=a.warmth/100, ti=a.tint/100, dh=a.dehaze/100;
   const rW=1+wa*0.13+ti*0.03, gW=1-ti*0.09, bW=1-wa*0.13+ti*0.05;
-  const gr=grainAmt/100*0.24, doHS=hl||sh, doS=sat||vib;
-  for(let i=0;i<d.length;i+=4){
+  const gr=grainAmt/100*0.24, doHS=hl||sh||wh||bl, doS=sat||vib||dh;
+  // local contrast (clarity: wide radius, midtones; texture: fine radius)
+  let Y0=null, Yc=null, Yt=null; const cl=a.clarity/100, tx=a.texture/100;
+  if(cl||tx){ Y0=new Float32Array(N); for(let i=0,j=0;j<N;i+=4,j++) Y0[j]=(0.299*d[i]+0.587*d[i+1]+0.114*d[i+2])/255;
+    const fw=frameW||W;
+    if(cl) Yc=boxBlur(Y0,W,H,Math.max(1,Math.round(fw*0.012)),2);
+    if(tx) Yt=boxBlur(Y0,W,H,Math.max(1,Math.round(fw*0.003)),2); }
+  const C=doC?curveLUTs(cv):null;
+  // HSL tables
+  const HC=[0,30,60,120,180,240,270,300,360], HH=[...hsl.hue,hsl.hue[0]].map(v=>v*0.3), HS=[...hsl.sat,hsl.sat[0]].map(v=>v/100), HL=[...hsl.lum,hsl.lum[0]].map(v=>v/100*0.28);
+  // grading
+  const zs=[['shadows',gd.shadows],['mid',gd.mid],['high',gd.high]].map(([k,z])=>({k,c:hueRGB(z.h),s:z.s/100*0.32,l:z.l/100*0.22}));
+  const gz={c:hueRGB(gd.global.h),s:gd.global.s/100*0.25,l:gd.global.l/100*0.2};
+  const bw=0.12+gd.blending/100*0.38, piv=0.5-gd.balance/100*0.22;
+  for(let i=0,j=0;j<N;i+=4,j++){
     let r=d[i]/255*rW, g=d[i+1]/255*gW, b=d[i+2]/255*bW;
-    if(doHS){ const L=0.299*r+0.587*g+0.114*b, iL=1-L; const dl=sh*0.45*iL*iL*iL + hl*0.4*L*L*L; r+=dl; g+=dl; b+=dl; }
+    if(doHS){ const L=clamp(0.299*r+0.587*g+0.114*b,0,1), iL=1-L, L2=L*L, i2=iL*iL;
+      const dl=sh*0.45*i2*iL + hl*0.4*L2*L + wh*0.22*L2*L2 + bl*0.2*i2*i2; r+=dl; g+=dl; b+=dl; }
+    if(Yc||Yt){ const y=Y0[j]; let add=0;
+      if(Yc){ const mw=1-Math.pow(Math.abs(2*y-1),2); add+=cl*(cl>0?1.1:0.9)*(y-Yc[j])*mw; }
+      if(Yt) add+=tx*(tx>0?1.4:0.95)*(y-Yt[j]);
+      r+=add; g+=add; b+=add; }
+    if(dh){ if(dh>0){ const k=dh*0.12; r=(r-k)/(1-k); g=(g-k)/(1-k); b=(b-k)/(1-k); } else { const k=-dh*0.25; r=r*(1-k)+k*0.88; g=g*(1-k)+k*0.88; b=b*(1-k)+k*0.9; } }
     r=T[(clamp(r,0,1)*1024)|0]; g=T[(clamp(g,0,1)*1024)|0]; b=T[(clamp(b,0,1)*1024)|0];
-    if(doS){ const L=0.299*r+0.587*g+0.114*b; let s=1+sat;
-      if(vib){ const mx=r>g?(r>b?r:b):(g>b?g:b), mn=r<g?(r<b?r:b):(g<b?g:b); s*=1+vib*(1-(mx-mn))*0.9; }
+    if(C){ if(C.M){ r=C.M[(r*1024)|0]; g=C.M[(g*1024)|0]; b=C.M[(b*1024)|0]; }
+      if(C.R) r=C.R[(r*1024)|0]; if(C.G) g=C.G[(g*1024)|0]; if(C.B) b=C.B[(b*1024)|0]; }
+    if(doH){ // RGB → HSL, shift by colour band, back
+      const mx=Math.max(r,g,b), mn=Math.min(r,g,b), dd=mx-mn;
+      if(dd>0.002){ let l=(mx+mn)/2, s=dd/(1-Math.abs(2*l-1)), h;
+        if(mx===r) h=((g-b)/dd)%6; else if(mx===g) h=(b-r)/dd+2; else h=(r-g)/dd+4; h*=60; if(h<0) h+=360;
+        let k=0; while(k<7&&h>=HC[k+1]) k++; let u=(h-HC[k])/(HC[k+1]-HC[k]); u=u*u*(3-2*u);
+        const hv=HH[k]+(HH[k+1]-HH[k])*u, sv=HS[k]+(HS[k+1]-HS[k])*u, lv=HL[k]+(HL[k+1]-HL[k])*u;
+        h=(h+hv+360)%360; s=clamp(s*(1+sv),0,1); l=clamp(l+lv*s*(1-Math.abs(2*l-1)),0,1);
+        const c=(1-Math.abs(2*l-1))*s, x=c*(1-Math.abs((h/60)%2-1)), m=l-c/2, z=Math.floor(h/60)%6;
+        const rr=[c,x,0,0,x,c][z], gg=[x,c,c,x,0,0][z], bb=[0,0,x,c,c,x][z]; r=rr+m; g=gg+m; b=bb+m; } }
+    if(doG){ const L=clamp(0.299*r+0.587*g+0.114*b,0,1);
+      const ws=1-smooth(piv-bw,piv+bw*0.35,L), wh2=smooth(piv-bw*0.35,piv+bw,L), wm=Math.max(0,1-ws-wh2)*0.9+0.1*(1-Math.abs(2*L-1));
+      const W3=[ws,wm,wh2];
+      for(let z=0;z<3;z++){ const Z=zs[z], w=W3[z]; if(!w) continue; if(Z.s){ r+=Z.c[0]*Z.s*w; g+=Z.c[1]*Z.s*w; b+=Z.c[2]*Z.s*w; } if(Z.l){ r+=Z.l*w; g+=Z.l*w; b+=Z.l*w; } }
+      if(gz.s){ r+=gz.c[0]*gz.s; g+=gz.c[1]*gz.s; b+=gz.c[2]*gz.s; } if(gz.l){ r+=gz.l; g+=gz.l; b+=gz.l; } }
+    if(doS){ const L=0.299*r+0.587*g+0.114*b; let s=(1+sat)*(1+dh*(dh>0?0.3:0.4));
+      if(vib){ const mx=r>g?(r>b?r:b):(g>b?g:b), mn=r<g?(r<b?r:b):(g<b?g:b); s*=1+vib*(1-clamp(mx-mn,0,1))*0.9; }
       r=L+(r-L)*s; g=L+(g-L)*s; b=L+(b-L)*s; }
     if(gr){ const n=(Math.random()-0.5)*gr; r+=n; g+=n; b+=n; }
     d[i]=r*255; d[i+1]=g*255; d[i+2]=b*255; // Uint8Clamped clamps
@@ -558,14 +645,15 @@ function renderTo(out,p,crop,maxSide,o){
   ctx.clearRect(0,0,W,H); ctx.drawImage(src,cx,cy,cw,ch,0,0,W,H);
   if(o.adj!==false && o.detail!==false){ const ew=exportDims(p)[0]; applyDetail(ctx,W,H,p.det,(W/crop.w)/(ew/p.crop.w),o.mask); }
   if(o.mask) return out;
-  if(o.adj!==false) applyAdj(ctx,W,H,p.adj,p.fx.grain);
+  if(o.adj!==false) applyAdj(ctx,W,H,p,W*p.crop.w/crop.w);
   if(o.adj!==false && o.masks!==false) applyMasks(ctx,W,H,p,crop);
   if(o.adj!==false) applyFx(ctx,W,H,p.fx);
   if(o.wm) drawWM(ctx,W,H);
   return out;
 }
 function exportDims(p){
-  const L=Math.max(p.crop.w,p.crop.h), t= S.exp.size==='orig'?Math.min(4096,L):Math.min(+S.exp.size,L), k=t/L;
+  const want=S.exp.size==='orig'?4096:S.exp.size==='custom'?clamp(Math.round(+S.exp.customSize||1350),100,4096):+S.exp.size;
+  const L=Math.max(p.crop.w,p.crop.h), t=Math.min(want,L), k=t/L;
   return [Math.round(p.crop.w*k),Math.round(p.crop.h*k)];
 }
 
@@ -613,7 +701,7 @@ function renderLoupe(p){
   S.lastLoupe={sw,sh};
   if(S.comparing) return;
   applyDetail(ctx,tw,th,p.det,1,S.showMask);
-  if(!S.showMask){ applyAdj(ctx,tw,th,p.adj,p.fx.grain); applyMasks(ctx,tw,th,p,{x:sx,y:sy,w:sw,h:sh}); }
+  if(!S.showMask){ applyAdj(ctx,tw,th,p,ew); applyMasks(ctx,tw,th,p,{x:sx,y:sy,w:sw,h:sh}); }
 }
 let pan=null;
 view.addEventListener('pointerdown',e=>{
@@ -853,14 +941,15 @@ Reply with only JSON in this shape: {"adj":{"brightness":0,...},"det":{...},"fx"
 async function aiLook(style){
   const r=await aiCall('look','Editing.',AI_LOOK_PROMPT(style||'clean, bright and natural'),style||'clean, bright and natural'); if(!r) return;
   const {p,out}=r; if(!out||typeof out!=='object'){ AI.msg='Claude’s answer didn’t come through in the right format. Try again.'; aiStatus(); return; }
-  const prev={adj:{...p.adj},fx:{...p.fx},det:{...p.det},look:p.look};
+  const prev={adj:{...p.adj},fx:{...p.fx},det:{...p.det},hsl:p.hsl,curve:p.curve,grade:p.grade,look:p.look};
   const A=out.adj||{}, D=out.det||{}, F=out.fx||{};
-  p.adj={brightness:num(A.brightness,-100,100),contrast:num(A.contrast,-100,100),highlights:num(A.highlights,-100,100),shadows:num(A.shadows,-100,100),fade:num(A.fade,0,100),
+  p.adj={...ADJ0,brightness:num(A.brightness,-100,100),contrast:num(A.contrast,-100,100),highlights:num(A.highlights,-100,100),shadows:num(A.shadows,-100,100),fade:num(A.fade,0,100),
     saturation:num(A.saturation,-100,100),vibrance:num(A.vibrance,-100,100),warmth:num(A.warmth,-100,100),tint:num(A.tint,-100,100)};
   p.det={sharpen:num(D.sharpen,0,150),radius:num(D.radius,5,30,10),detail:num(D.detail,0,100,25),masking:num(D.masking,0,100),nr:num(D.nr,0,100),nrDetail:num(D.nrDetail,0,100,50),color:num(D.color,0,100)};
   p.fx={grain:num(F.grain,0,100),glow:num(F.glow,0,100),vignette:num(F.vignette,-100,100),leak:num(F.leak,0,100),leakColor:LEAKS[F.leakColor]?F.leakColor:'peach'};
+  p.hsl=HSL0(); p.curve=CURVE0(); p.grade=GRADE0();
   p.look='AI · '+(style||'Natural').slice(0,24);
-  AI.undo=()=>Object.assign(p,{adj:prev.adj,fx:prev.fx,det:prev.det,look:prev.look});
+  AI.undo=()=>Object.assign(p,{adj:prev.adj,fx:prev.fx,det:prev.det,hsl:prev.hsl,curve:prev.curve,grade:prev.grade,look:prev.look});
   AI.msg=typeof out.summary==='string'&&out.summary.trim()?out.summary.trim().slice(0,240):'Done. Fine-tune any slider in Colour, Detail or Effects.';
   buildPanel(); requestRender(true);
 }
@@ -893,6 +982,99 @@ async function aiSubject(background){
   buildPanel(); requestRender(true);
 }
 
+/* ---------- Lightroom preset import (.dng / .xmp / .lrtemplate) ---------- */
+const LR_EXT=/\.(dng|xmp|lrtemplate)$/i;
+async function readLR(f){
+  if(/\.dng$/i.test(f.name)){ // XMP packet is stored as plain text inside the DNG
+    const buf=new Uint8Array(await f.arrayBuffer()), s=new TextDecoder('latin1').decode(buf);
+    let i=s.indexOf('<x:xmpmeta'), best='';
+    while(i>=0){ const e=s.indexOf('</x:xmpmeta>',i); if(e<0) break; const pk=new TextDecoder('utf-8').decode(buf.subarray(i,e+12)); if(pk.includes('crs:')&&pk.length>best.length) best=pk; i=s.indexOf('<x:xmpmeta',e); }
+    return best;
+  }
+  return await f.text();
+}
+function lrParseXMP(t){
+  const kv={}, curves={};
+  // drop nested blocks we don't import, so their crs: attributes don't leak into the main settings
+  const main=t.replace(/<crs:Look>[\s\S]*?<\/crs:Look>/g,'').replace(/<crs:(MaskGroupBasedCorrections|GradientBasedCorrections|CircularGradientBasedCorrections|PaintBasedCorrections)>[\s\S]*?<\/crs:\1>/g,'');
+  for(const m of main.matchAll(/crs:([A-Za-z0-9]+)="([^"]*)"/g)) kv[m[1]]=m[2];
+  for(const m of main.matchAll(/<crs:([A-Za-z0-9]+)>([^<]*)<\/crs:\1>/g)) kv[m[1]]=m[2].trim();
+  for(const m of t.matchAll(/<crs:(ToneCurvePV2012(?:Red|Green|Blue)?)>\s*<rdf:Seq>([\s\S]*?)<\/rdf:Seq>/g))
+    curves[m[1]]=[...m[2].matchAll(/<rdf:li>\s*(-?[\d.]+)\s*,\s*(-?[\d.]+)\s*<\/rdf:li>/g)].map(x=>[+x[1],+x[2]]);
+  const nm=t.match(/<crs:Name>\s*<rdf:Alt>\s*<rdf:li[^>]*>([^<]*)<\/rdf:li>/);
+  const look=t.match(/<crs:Look>[\s\S]*?crs:Name="([^"]*)"/);
+  return {kv,curves,name:nm&&nm[1].trim(),profile:look&&look[1],hasLocal:/crs:(MaskGroupBasedCorrections|GradientBasedCorrections|CircularGradientBasedCorrections|PaintBasedCorrections)>/.test(t)};
+}
+function lrParseLua(t){
+  const kv={}, curves={};
+  for(const m of t.matchAll(/(\w+)\s*=\s*(-?[\d.]+|true|false|"(?:[^"\\]|\\.)*")\s*,/g)) kv[m[1]]=m[2].replace(/^"|"$/g,'');
+  for(const m of t.matchAll(/(ToneCurvePV2012(?:Red|Green|Blue)?)\s*=\s*\{([^}]*)\}/g)){ const ns=m[2].split(',').map(v=>parseFloat(v)).filter(Number.isFinite); const pts=[]; for(let i=0;i+1<ns.length;i+=2) pts.push([ns[i],ns[i+1]]); curves[m[1]]=pts; }
+  const nm=t.match(/title\s*=\s*(?:ZSTR\s*)?"([^"]*)"/);
+  return {kv,curves,name:nm&&nm[1],profile:null,hasLocal:/(MaskGroupBasedCorrections|GradientBasedCorrections|CircularGradientBasedCorrections|PaintBasedCorrections)\s*=\s*\{\s*\{/.test(t)};
+}
+function lrMap(P,fname){
+  const kv=P.kv, f=k=>{ const v=kv[k]; if(v===undefined||v==='') return undefined; if(/^true$/i.test(v)) return 1; if(/^false$/i.test(v)) return 0; const n=parseFloat(v); return Number.isFinite(n)?n:undefined; };
+  const pick=(...ks)=>{ for(const k of ks){ const v=f(k); if(v!==undefined) return v; } }, nz=v=>v!==undefined&&v!==0;
+  const adj={...ADJ0}, det={...DET0}, fx={...FX0}, hsl=HSL0(), curve=CURVE0(), grade=GRADE0(), approx=[], skipped=[]; let count=0;
+  const A=(key,v,scale=1,lo=-100,hi=100,note)=>{ if(nz(v)){ adj[key]=num(v*scale,lo,hi); count++; if(note) approx.push(note); } };
+  A('brightness',pick('Exposure2012','Exposure'),45,-100,100,'Exposure');
+  A('contrast',pick('Contrast2012','Contrast'),0.55);
+  A('highlights',pick('Highlights2012','HighlightRecovery'),1);
+  A('shadows',pick('Shadows2012','FillLight'),0.9);
+  A('whites',f('Whites2012')); A('blacks',f('Blacks2012'));
+  A('texture',f('Texture')); A('clarity',pick('Clarity2012','Clarity')); A('dehaze',f('Dehaze'),1,-100,100,'Dehaze');
+  A('vibrance',f('Vibrance')); A('saturation',f('Saturation'));
+  if(f('ConvertToGrayscale')===1){ adj.saturation=-100; count++; }
+  const it=f('IncrementalTemperature'), T=f('Temperature');
+  if(nz(it)){ adj.warmth=num(it*0.9,-100,100); count++; }
+  else if(T!==undefined&&kv.WhiteBalance!=='As Shot'){ adj.warmth=num((T-5500)/40,-100,100); count++; approx.push('Temperature (made for RAW files)'); }
+  const itn=f('IncrementalTint'), Tn=f('Tint');
+  if(nz(itn)){ adj.tint=num(itn,-100,100); count++; } else if(nz(Tn)&&kv.WhiteBalance!=='As Shot'){ adj.tint=num(Tn/1.5,-100,100); count++; }
+  const D=(key,v,scale=1,lo=0,hi=150)=>{ if(v!==undefined){ det[key]=num(v*scale,lo,hi,det[key]); if(v) count++; } };
+  D('sharpen',f('Sharpness')); D('radius',f('SharpenRadius'),10,5,30); D('detail',f('SharpenDetail'),1,0,100); D('masking',f('SharpenEdgeMasking'),1,0,100);
+  D('nr',f('LuminanceSmoothing'),1,0,100); D('nrDetail',f('LuminanceNoiseReductionDetail'),1,0,100); D('color',f('ColorNoiseReduction'),1,0,100);
+  if(nz(f('GrainAmount'))){ fx.grain=num(f('GrainAmount'),0,100); count++; if(nz(f('GrainSize'))&&f('GrainSize')!==25) approx.push('Grain size and roughness'); }
+  if(nz(f('PostCropVignetteAmount'))){ fx.vignette=num(-f('PostCropVignetteAmount'),-100,100); count++; approx.push('Vignette shape'); }
+  HSL_COLORS.forEach(([,cap],i)=>{ const h=f('HueAdjustment'+cap), s=f('SaturationAdjustment'+cap), l=f('LuminanceAdjustment'+cap);
+    if(nz(h)){ hsl.hue[i]=num(h,-100,100); count++; } if(nz(s)){ hsl.sat[i]=num(s,-100,100); count++; } if(nz(l)){ hsl.lum[i]=num(l,-100,100); count++; } });
+  for(const [k,src] of [['rgb','ToneCurvePV2012'],['r','ToneCurvePV2012Red'],['g','ToneCurvePV2012Green'],['b','ToneCurvePV2012Blue']]){
+    const pts=P.curves[src]; if(pts&&pts.length>=2){ const v=validPts(pts); if(!isIdent(v)){ curve[k]=v; count++; } } }
+  const pr=curve.param; [['shadows','ParametricShadows'],['darks','ParametricDarks'],['lights','ParametricLights'],['highlights','ParametricHighlights']].forEach(([k,src])=>{ const v=f(src); if(nz(v)){ pr[k]=num(v,-100,100); count++; } });
+  pr.s1=num(pick('ParametricShadowSplit'),10,90,25); pr.s2=num(pick('ParametricMidtoneSplit'),10,90,50); pr.s3=num(pick('ParametricHighlightSplit'),10,90,75);
+  const Z=(z,h,s,l)=>{ const hv=f(h), sv=f(s), lv=f(l); if(hv!==undefined) grade[z].h=num(hv,0,360,grade[z].h); if(nz(sv)){ grade[z].s=num(sv,0,100); count++; } if(nz(lv)){ grade[z].l=num(lv,-100,100); count++; } };
+  Z('shadows','SplitToningShadowHue','SplitToningShadowSaturation','ColorGradeShadowLum');
+  Z('mid','ColorGradeMidtoneHue','ColorGradeMidtoneSat','ColorGradeMidtoneLum');
+  Z('high','SplitToningHighlightHue','SplitToningHighlightSaturation','ColorGradeHighlightLum');
+  Z('global','ColorGradeGlobalHue','ColorGradeGlobalSat','ColorGradeGlobalLum');
+  if(f('ColorGradeBlending')!==undefined) grade.blending=num(f('ColorGradeBlending'),0,100,50);
+  if(nz(f('SplitToningBalance'))){ grade.balance=num(f('SplitToningBalance'),-100,100); count++; }
+  if(P.profile&&!/^Adobe (Color|Standard)$/i.test(P.profile)) skipped.push(`Profile “${P.profile}”`);
+  if(P.hasLocal) skipped.push('Masks saved in the preset');
+  if(['RedHue','RedSaturation','GreenHue','GreenSaturation','BlueHue','BlueSaturation','ShadowTint'].some(k=>nz(f(k)))) skipped.push('Calibration');
+  if(['PerspectiveVertical','PerspectiveHorizontal','PerspectiveRotate','PerspectiveScale'].some(k=>nz(f(k)))) skipped.push('Transform');
+  if(nz(f('DefringePurpleAmount'))||nz(f('DefringeGreenAmount'))||f('LensProfileEnable')===1) skipped.push('Lens corrections');
+  const name=(P.name||fname.replace(LR_EXT,'')).trim().slice(0,24)||'Lightroom preset';
+  return {preset:{name,adj,fx,det,hsl,curve,grade,lr:true},report:{name,count,approx:[...new Set(approx)],skipped}};
+}
+async function importLR(files){
+  const reports=[]; let last=null;
+  for(const f of files){
+    try{
+      const t=await readLR(f);
+      if(!t||!/crs:|Exposure2012|ToneCurvePV2012|Contrast2012|SplitToning/.test(t)){ reports.push({name:f.name,error:'No Lightroom settings found in this file. If it was sent through a chat or social media app, the settings were probably stripped, so use the original file.'}); continue; }
+      const {preset,report}=lrMap(/\.lrtemplate$/i.test(f.name)?lrParseLua(t):lrParseXMP(t),f.name);
+      if(!report.count){ reports.push({name:f.name,error:'This preset doesn’t change any settings the editor can read.'}); continue; }
+      const i=S.custom.findIndex(c=>c.name===preset.name); if(i>=0) S.custom[i]=preset; else S.custom.push(preset);
+      last=preset; reports.push(report);
+    }catch(e){ reports.push({name:f.name,error:'Couldn’t read this file.'}); }
+  }
+  persist(); S.lrReport=reports;
+  if(last&&cur()) applyPreset(cur(),last);
+  const ok=reports.filter(r=>!r.error).length;
+  if(S.tab!=='presets') setTab('presets'); else { buildPanel(); requestRender(true); }
+  toast(ok?`Imported ${ok} preset${ok>1?'s':''}${last&&cur()?' and applied “'+last.name+'”':''}`:'Nothing could be imported. See the details in Presets.',3500);
+}
+
 /* ---------- panel ---------- */
 function setTab(t){ S.tab=t; document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.t===t)); buildPanel(); requestRender(true); }
 document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>setTab(b.dataset.t));
@@ -918,7 +1100,7 @@ function markCustom(p){ if(p.look!=='Custom' && !p.look.endsWith(' (edited)')) p
 function buildPanel(){
   const P=$('#panel'); P.innerHTML=''; const p=cur();
   if(!p && S.tab!=='wm' && S.tab!=='export'){ P.appendChild(el(`<p class="hint">Add a photo to start editing.</p>`)); return; }
-  ({crop:panelCrop,ai:panelAI,colour:panelColour,detail:panelDetail,masks:panelMasks,presets:panelPresets,effects:panelEffects,wm:panelWM,export:panelExport})[S.tab](P,p);
+  ({crop:panelCrop,ai:panelAI,light:panelLight,colour:panelColour,detail:panelDetail,masks:panelMasks,presets:panelPresets,effects:panelEffects,wm:panelWM,export:panelExport})[S.tab](P,p);
 }
 function panelAI(P,p){
   const at=group('Auto tone');
@@ -1046,22 +1228,121 @@ function panelCrop(P,p){
   const rs=el(`<button class="btn ghost" type="button">Reset crop</button>`); rs.onclick=()=>{ p.crop={x:0,y:0,w:p.src.width,h:p.src.height}; p.aspect='orig'; buildPanel(); drawPreview(full()); };
   row.append(rot,flp,rs); g2.appendChild(row); P.appendChild(g2);
 }
-function panelColour(P,p){
+/* validators for stored / imported colour tools */
+function validHSL(h){ const o=HSL0(); if(h) for(const k of ['hue','sat','lum']) if(Array.isArray(h[k])) for(let i=0;i<8;i++) o[k][i]=num(h[k][i],-100,100); return o; }
+function validPts(a){ if(!Array.isArray(a)) return [[0,0],[255,255]]; const pts=a.filter(q=>Array.isArray(q)&&Number.isFinite(+q[0])&&Number.isFinite(+q[1])).map(q=>[clamp(Math.round(+q[0]),0,255),clamp(Math.round(+q[1]),0,255)]).sort((x,y)=>x[0]-y[0]).filter((q,i,arr)=>i===0||q[0]>arr[i-1][0]).slice(0,16); return pts.length>=2?pts:[[0,0],[255,255]]; }
+function validCurve(c){ const o=CURVE0(); if(!c) return o; for(const k of ['rgb','r','g','b']) o[k]=validPts(c[k]); const q=c.param||{};
+  o.param={highlights:num(q.highlights,-100,100),lights:num(q.lights,-100,100),darks:num(q.darks,-100,100),shadows:num(q.shadows,-100,100),s1:num(q.s1,10,90,25),s2:num(q.s2,10,90,50),s3:num(q.s3,10,90,75)}; return o; }
+function validGrade(g){ const o=GRADE0(); if(!g) return o; for(const k of ['shadows','mid','high','global']) if(g[k]) o[k]={h:num(g[k].h,0,360,o[k].h),s:num(g[k].s,0,100),l:num(g[k].l,-100,100)};
+  o.blending=num(g.blending,0,100,50); o.balance=num(g.balance,-100,100); return o; }
+
+function panelLight(P,p){
   const au=el(`<div class="row"><button class="btn" type="button">Auto tone</button><span class="hint">Balances light and white balance in one tap.</span></div>`);
   au.querySelector('button').onclick=runAutoTone; P.appendChild(au);
-  const light=group('Light','Reset',()=>{ ['brightness','contrast','highlights','shadows','fade'].forEach(k=>p.adj[k]=0); markCustom(p); buildPanel(); requestRender(true); });
-  [['brightness','Brightness',-100,100],['contrast','Contrast',-100,100],['highlights','Highlights',-100,100],['shadows','Shadows',-100,100],['fade','Fade',0,100]]
-    .forEach(([k,l,a,b])=>light.appendChild(slider('a_'+k,l,a,b,()=>p.adj[k],v=>{p.adj[k]=v;markCustom(p);})));
-  const col=group('Colour','Reset',()=>{ ['saturation','vibrance','warmth','tint'].forEach(k=>p.adj[k]=0); markCustom(p); buildPanel(); requestRender(true); });
-  [['saturation','Saturation'],['vibrance','Vibrance'],['warmth','Warmth (blue ↔ amber)'],['tint','Tint (green ↔ pink)']]
-    .forEach(([k,l])=>col.appendChild(slider('a_'+k,l,-100,100,()=>p.adj[k],v=>{p.adj[k]=v;markCustom(p);})));
-  P.append(light,col);
+  const set=k=>v=>{p.adj[k]=v;markCustom(p);};
+  const light=group('Light','Reset',()=>{ ['brightness','contrast','highlights','shadows','whites','blacks','fade'].forEach(k=>p.adj[k]=0); markCustom(p); buildPanel(); requestRender(true); });
+  [['brightness','Brightness',-100,100],['contrast','Contrast',-100,100],['highlights','Highlights',-100,100],['shadows','Shadows',-100,100],['whites','Whites',-100,100],['blacks','Blacks',-100,100],['fade','Fade',0,100]]
+    .forEach(([k,l,a,b])=>light.appendChild(slider('a_'+k,l,a,b,()=>p.adj[k],set(k))));
+  const pres=group('Presence','Reset',()=>{ ['texture','clarity','dehaze'].forEach(k=>p.adj[k]=0); markCustom(p); buildPanel(); requestRender(true); });
+  [['texture','Texture'],['clarity','Clarity'],['dehaze','Dehaze']].forEach(([k,l])=>pres.appendChild(slider('a_'+k,l,-100,100,()=>p.adj[k],set(k))));
+  P.append(light,pres);
+  P.appendChild(curvePanel(p));
   P.appendChild(el(`<p class="hint">Double-click a slider name to reset it.</p>`));
 }
-function applyPreset(p,pr){ p.adj={...ADJ0,...pr.adj}; p.fx={...FX0,...pr.fx}; if(pr.det) p.det={...DET0,...pr.det}; p.look=pr.name; }
+function panelColour(P,p){
+  const set=k=>v=>{p.adj[k]=v;markCustom(p);};
+  const wb=group('White balance','Reset',()=>{ p.adj.warmth=0; p.adj.tint=0; markCustom(p); buildPanel(); requestRender(true); });
+  wb.appendChild(slider('a_warmth','Warmth (blue ↔ amber)',-100,100,()=>p.adj.warmth,set('warmth')));
+  wb.appendChild(slider('a_tint','Tint (green ↔ pink)',-100,100,()=>p.adj.tint,set('tint')));
+  const col=group('Colour','Reset',()=>{ p.adj.saturation=0; p.adj.vibrance=0; markCustom(p); buildPanel(); requestRender(true); });
+  col.appendChild(slider('a_vibrance','Vibrance',-100,100,()=>p.adj.vibrance,set('vibrance')));
+  col.appendChild(slider('a_saturation','Saturation',-100,100,()=>p.adj.saturation,set('saturation')));
+  P.append(wb,col);
+
+  // Color mixer (HSL)
+  const mx=group('Color mixer','Reset',()=>{ p.hsl=HSL0(); markCustom(p); buildPanel(); requestRender(true); });
+  const mode=S.hslMode||'hue', modes=el('<div class="chips"></div>');
+  [['hue','Hue'],['sat','Saturation'],['lum','Luminance']].forEach(([k,l])=>{ const c=el(`<button class="chip" type="button" aria-pressed="${mode===k}">${l}</button>`); c.onclick=()=>{ S.hslMode=k; buildPanel(); }; modes.appendChild(c); });
+  mx.appendChild(modes);
+  HSL_COLORS.forEach(([k,l,c],i)=>{ const r=slider('hsl_'+mode+'_'+k,`<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${c};margin-right:7px"></span>${l}`,-100,100,()=>p.hsl[mode][i],v=>{p.hsl[mode][i]=v;markCustom(p);},'',null,0); mx.appendChild(r); });
+  mx.appendChild(el(`<p class="hint">Tip for portraits: Orange controls skin. Lower Orange Saturation a little and raise Orange Luminance for bright, soft skin.</p>`));
+  P.appendChild(mx);
+
+  // Color grading
+  const gg=group('Color grading','Reset',()=>{ p.grade=GRADE0(); markCustom(p); buildPanel(); requestRender(true); });
+  const zone=S.gradeZone||'shadows', zc=el('<div class="chips"></div>');
+  [['shadows','Shadows'],['mid','Midtones'],['high','Highlights'],['global','Global']].forEach(([k,l])=>{ const z=p.grade[k];
+    const c=el(`<button class="chip" type="button" aria-pressed="${zone===k}"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;background:hsl(${z.h} ${Math.max(8,z.s)}% 55%)"></span>${l}</button>`);
+    c.onclick=()=>{ S.gradeZone=k; buildPanel(); }; zc.appendChild(c); });
+  gg.appendChild(zc);
+  const Z=p.grade[zone];
+  const sw=el(`<div style="height:10px;border-radius:5px;background:linear-gradient(90deg,hsl(0 80% 55%),hsl(60 80% 55%),hsl(120 80% 55%),hsl(180 80% 55%),hsl(240 80% 55%),hsl(300 80% 55%),hsl(360 80% 55%))"></div>`);
+  gg.appendChild(slider('g_h','Hue',0,360,()=>Z.h,v=>{Z.h=v;markCustom(p);},'°',null,zone==='shadows'?220:zone==='mid'?30:zone==='high'?40:0));
+  gg.appendChild(sw);
+  gg.appendChild(slider('g_s','Saturation',0,100,()=>Z.s,v=>{Z.s=v;markCustom(p);},'',null,0));
+  gg.appendChild(slider('g_l','Luminance',-100,100,()=>Z.l,v=>{Z.l=v;markCustom(p);},'',null,0));
+  gg.appendChild(el('<div class="divider"></div>'));
+  gg.appendChild(slider('g_bl','Blending',0,100,()=>p.grade.blending,v=>{p.grade.blending=v;markCustom(p);},'',null,50));
+  gg.appendChild(slider('g_ba','Balance (shadows ↔ highlights)',-100,100,()=>p.grade.balance,v=>{p.grade.balance=v;markCustom(p);},'',null,0));
+  gg.appendChild(el(`<p class="hint">Raise Saturation first, then pick the Hue. A classic fansite look: lilac shadows (hue ~260) and peach highlights (hue ~30) at low saturation.</p>`));
+  P.appendChild(gg);
+}
+
+/* ---------- tone curve editor ---------- */
+const CH=[['rgb','RGB','#ececf0'],['r','Red','#ff6b6b'],['g','Green','#5fd08a'],['b','Blue','#6ea8ff']];
+function curvePanel(p){
+  const g=group('Tone curve','Reset',()=>{ p.curve=CURVE0(); markCustom(p); buildPanel(); requestRender(true); });
+  const ch=S.curveCh||'rgb', chips=el('<div class="chips"></div>');
+  CH.forEach(([k,l,c])=>{ const b=el(`<button class="chip" type="button" aria-pressed="${ch===k}"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;background:${c}"></span>${l}</button>`); b.onclick=()=>{ S.curveCh=k; S.curveSel=-1; buildPanel(); }; chips.appendChild(b); });
+  g.appendChild(chips);
+  const wrap=el(`<div style="position:relative;width:100%;max-width:340px;aspect-ratio:1;align-self:center"><canvas id="curveCv" style="width:100%;height:100%;display:block;touch-action:none;border-radius:8px;cursor:crosshair" aria-label="Tone curve. Drag points to change the curve."></canvas></div>`);
+  g.appendChild(wrap);
+  const del=el(`<div class="row"><button class="btn ghost" type="button" id="curveDel">Delete point</button><span class="hint">Tap the curve to add a point. Drag to shape it. Double-click a point to delete it.</span></div>`);
+  g.appendChild(del);
+  const cv=wrap.querySelector('canvas'); let hist=null;
+  try{ const c=mk(1,1); renderTo(c,p,p.crop,200,{adj:false,wm:false}); const d=c.getContext('2d').getImageData(0,0,c.width,c.height).data; hist=new Float32Array(64);
+    for(let i=0;i<d.length;i+=4) hist[Math.min(63,((0.299*d[i]+0.587*d[i+1]+0.114*d[i+2])/4)|0)]++; const m=Math.max(...hist); for(let i=0;i<64;i++) hist[i]/=m||1; }catch(e){}
+  const pts=()=>p.curve[S.curveCh||'rgb'];
+  function draw(){
+    const r=cv.getBoundingClientRect(), dpr=window.devicePixelRatio||1, Wd=Math.max(1,Math.round(r.width*dpr)); if(cv.width!==Wd){ cv.width=Wd; cv.height=Wd; }
+    const x=cv.getContext('2d'), S2=cv.width, pad=10*dpr, inner=S2-pad*2, X=v=>pad+v/255*inner, Y=v=>pad+(1-v/255)*inner;
+    x.clearRect(0,0,S2,S2); x.fillStyle='#0d0d0f'; x.fillRect(0,0,S2,S2);
+    if(hist){ x.fillStyle='rgba(255,255,255,.08)'; for(let i=0;i<64;i++){ const h=hist[i]*inner*0.9; x.fillRect(pad+i/64*inner,pad+inner-h,inner/64+0.5,h); } }
+    x.strokeStyle='rgba(255,255,255,.1)'; x.lineWidth=dpr; for(let i=1;i<4;i++){ x.beginPath(); x.moveTo(pad+i*inner/4,pad); x.lineTo(pad+i*inner/4,pad+inner); x.moveTo(pad,pad+i*inner/4); x.lineTo(pad+inner,pad+i*inner/4); x.stroke(); }
+    x.strokeStyle='rgba(255,255,255,.18)'; x.setLineDash([4*dpr,4*dpr]); x.beginPath(); x.moveTo(X(0),Y(0)); x.lineTo(X(255),Y(255)); x.stroke(); x.setLineDash([]);
+    const k=S.curveCh||'rgb', col=CH.find(c=>c[0]===k)[2];
+    const L=k==='rgb'?(curveActive(p.curve)?curveLUTs(p.curve).M||splineLUT(p.curve.rgb):splineLUT(p.curve.rgb)):splineLUT(pts());
+    x.strokeStyle=col; x.lineWidth=2*dpr; x.beginPath(); for(let i=0;i<=1024;i+=4){ const px=X(i/1024*255), py=Y(L[i]*255); i?x.lineTo(px,py):x.moveTo(px,py); } x.stroke();
+    pts().forEach((q,i)=>{ x.beginPath(); x.arc(X(q[0]),Y(q[1]),(i===S.curveSel?7:5.5)*dpr,0,7); x.fillStyle=i===S.curveSel?'#ff8fb3':'#111113'; x.fill(); x.strokeStyle=col; x.lineWidth=2*dpr; x.stroke(); });
+    del.querySelector('button').disabled=!(S.curveSel>0&&S.curveSel<pts().length-1);
+  }
+  const toV=e=>{ const r=cv.getBoundingClientRect(), inner=r.width-20; return [clamp((e.clientX-r.left-10)/inner*255,0,255),clamp((1-(e.clientY-r.top-10)/inner)*255,0,255)]; };
+  let drag=-1;
+  cv.addEventListener('pointerdown',e=>{ e.preventDefault(); const [vx,vy]=toV(e), P2=pts(), r=cv.getBoundingClientRect(), tol=16/(r.width-20)*255;
+    let hit=-1, best=1e9; P2.forEach((q,i)=>{ const dd=Math.hypot(q[0]-vx,q[1]-vy); if(dd<tol&&dd<best){ best=dd; hit=i; } });
+    if(hit<0&&P2.length<16){ const L=splineLUT(P2); const ins=[Math.round(vx),Math.round(L[Math.round(vx/255*1024)]*255)]; let idx=P2.findIndex(q=>q[0]>ins[0]); if(idx<0) idx=P2.length;
+      if(P2.some(q=>q[0]===ins[0])) return; P2.splice(idx,0,ins); hit=idx; }
+    S.curveSel=hit; drag=hit; cv.setPointerCapture(e.pointerId); draw(); requestRender(); });
+  cv.addEventListener('pointermove',e=>{ if(drag<0) return; const P2=pts(), [vx,vy]=toV(e), last=P2.length-1;
+    const lo=drag===0?0:P2[drag-1][0]+1, hi=drag===last?255:P2[drag+1][0]-1;
+    P2[drag]=[drag===0?0:drag===last?255:clamp(Math.round(vx),lo,hi),Math.round(vy)]; if(drag===0) P2[0][0]=Math.min(Math.round(vx),hi); if(drag===last) P2[last][0]=Math.max(Math.round(vx),lo);
+    markCustom(p); draw(); requestRender(); });
+  const up=()=>{ if(drag>=0){ drag=-1; requestRender(true); } }; cv.addEventListener('pointerup',up); cv.addEventListener('pointercancel',up);
+  const delPt=()=>{ const P2=pts(); if(S.curveSel>0&&S.curveSel<P2.length-1){ P2.splice(S.curveSel,1); S.curveSel=-1; markCustom(p); draw(); requestRender(true); } };
+  cv.addEventListener('dblclick',e=>{ e.preventDefault(); delPt(); });
+  del.querySelector('button').onclick=delPt;
+  requestAnimationFrame(draw);
+  // parametric
+  const q=p.curve.param;
+  g.appendChild(el('<div class="divider"></div>'));
+  [['highlights','Highlights region'],['lights','Lights region'],['darks','Darks region'],['shadows','Shadows region']].forEach(([k,l])=>g.appendChild(slider('pc_'+k,l,-100,100,()=>q[k],v=>{q[k]=v;markCustom(p);requestAnimationFrame(draw);},'',null,0)));
+  return g;
+}
+function applyPreset(p,pr){ p.adj={...ADJ0,...pr.adj}; p.fx={...FX0,...pr.fx}; if(pr.det) p.det={...DET0,...pr.det};
+  p.hsl=pr.hsl?clone(pr.hsl):HSL0(); p.curve=pr.curve?clone(pr.curve):CURVE0(); p.grade=pr.grade?clone(pr.grade):GRADE0(); p.look=pr.name; }
 function presetTile(p,pr,custom,idx){
   const b=el(`<button class="pt" type="button" aria-pressed="${p.look===pr.name}"><canvas></canvas><span>${escapeHTML(pr.name)}</span></button>`);
-  const tmp={...p,adj:{...ADJ0,...pr.adj},fx:{...FX0,...pr.fx}};
+  const tmp={...p,adj:{...ADJ0,...pr.adj},fx:{...FX0,...pr.fx},hsl:pr.hsl||HSL0(),curve:pr.curve||CURVE0(),grade:pr.grade||GRADE0()};
   const L=Math.min(p.crop.w,p.crop.h); const sq={x:p.crop.x+(p.crop.w-L)/2,y:p.crop.y+(p.crop.h-L)/2,w:L,h:L};
   renderTo(b.querySelector('canvas'),tmp,sq,180,{adj:true,wm:false,detail:false,masks:false});
   b.onclick=e=>{ if(e.target.closest('.del')) return; applyPreset(p,pr); buildPanel(); requestRender(true); };
@@ -1083,11 +1364,24 @@ function panelPresets(P,p){
   const row=el(`<div class="row"><input class="inp" id="presetName" maxlength="24" placeholder="Name this look, e.g. Concert night" style="flex:1"><button class="btn primary" type="button">Save look</button></div>`);
   const save=()=>{ const inp=row.querySelector('input'); const name=inp.value.trim();
     if(!name){ inp.focus(); toast('Give the preset a name first'); return; }
-    const i=S.custom.findIndex(c=>c.name===name); const pr={name,adj:{...p.adj},fx:{...p.fx},det:{...p.det}};
+    const i=S.custom.findIndex(c=>c.name===name); const pr={name,adj:{...p.adj},fx:{...p.fx},det:{...p.det},hsl:clone(p.hsl),curve:clone(p.curve),grade:clone(p.grade)};
     if(i>=0) S.custom[i]=pr; else S.custom.push(pr);
     p.look=name; persist(); buildPanel(); toast(i>=0?'Preset updated':'Preset saved'); };
   row.querySelector('button').onclick=save; row.querySelector('input').onkeydown=e=>{ if(e.key==='Enter') save(); };
   g2.appendChild(row); P.appendChild(g2);
+
+  const g3=group('Import from Lightroom');
+  const ib=el(`<button class="btn" type="button">Import Lightroom preset</button>`); ib.onclick=()=>$('#lrIn').click(); g3.appendChild(ib);
+  g3.appendChild(el(`<p class="hint">Choose a .dng preset from Lightroom Mobile, or an .xmp or .lrtemplate from Lightroom Classic. You can pick several at once or drop them onto the page. Use the original file: copies sent through chat apps lose their settings.</p>`));
+  if(S.lrReport&&S.lrReport.length){ const box=el('<div class="aibox"></div>');
+    S.lrReport.forEach(r=>{ const it=el('<div></div>');
+      it.innerHTML=r.error?`<b>${escapeHTML(r.name)}</b><br><span class="hint">${escapeHTML(r.error)}</span>`
+        :`<b>${escapeHTML(r.name)}</b> · ${r.count} setting${r.count===1?'':'s'} imported`
+         +(r.approx.length?`<br><span class="hint">Approximated: ${escapeHTML(r.approx.join(', '))}</span>`:'')
+         +(r.skipped.length?`<br><span class="hint">Not included: ${escapeHTML(r.skipped.join(', '))}</span>`:'');
+      box.appendChild(it); });
+    g3.appendChild(box); }
+  P.appendChild(g3);
 }
 function panelEffects(P,p){
   const g=group('Effects','Reset',()=>{ p.fx={...FX0}; markCustom(p); buildPanel(); requestRender(true); });
@@ -1159,10 +1453,22 @@ function panelExport(P,p){
   const two=el('<div class="two"></div>');
   const sz=el(`<label class="field"><span>Long side</span><select class="inp" id="exSize">
     <option value="orig">Full size</option><option value="2048">2048 px</option><option value="1600">1600 px</option><option value="1080">1080 px</option></select></label>`);
-  sz.querySelector('select').value=e.size; sz.querySelector('select').onchange=ev=>{ e.size=ev.target.value; upd(); };
+  sz.querySelector('select').insertAdjacentHTML('beforeend','<option value="custom">Custom…</option>');
+  sz.querySelector('select').value=e.size; sz.querySelector('select').onchange=ev=>{ e.size=ev.target.value; buildPanel(); upd(); };
   const pf=el(`<label class="field"><span>File name</span><input class="inp" id="exPrefix" maxlength="40"></label>`);
   pf.querySelector('input').value=e.prefix; pf.querySelector('input').oninput=ev=>{ e.prefix=ev.target.value.replace(/[\\/:*?"<>|]/g,''); persist(); };
   two.append(sz,pf); g.appendChild(two);
+  if(e.size==='custom'){
+    const cf=el(`<label class="field"><span>Custom long side (px)</span><input class="inp" id="exCustom" type="number" inputmode="numeric" min="100" max="4096" step="1" style="max-width:160px"></label>`);
+    const ci=cf.querySelector('input'); ci.value=e.customSize||1350;
+    const msg=el(`<p class="hint" id="exCustomHint"></p>`);
+    const check=()=>{ const v=Math.round(+ci.value); const ok=Number.isFinite(v)&&v>=100&&v<=4096;
+      msg.textContent=ok?(p&&v>Math.max(p.crop.w,p.crop.h)?`This photo is only ${Math.round(Math.max(p.crop.w,p.crop.h))} px on its long side, so it will save at that size. Photos are never enlarged.`:'Enter any size from 100 to 4096 px.'):'Enter a whole number from 100 to 4096.';
+      return ok?v:null; };
+    ci.oninput=()=>{ const v=check(); if(v){ e.customSize=v; persist(); drawPreview(full()); } };
+    ci.onblur=()=>{ ci.value=e.customSize||1350; check(); };
+    check(); g.append(cf,msg);
+  }
   P.appendChild(g);
 
   const g2=group('Save');
@@ -1172,7 +1478,7 @@ function panelExport(P,p){
 
   const g3=group('Batch · '+S.photos.length+' photo'+(S.photos.length===1?'':'s'));
   const copy=el(`<button class="btn" type="button" ${S.photos.length>1?'':'disabled'}>Copy this look to all photos</button>`);
-  copy.onclick=()=>{ S.photos.forEach(q=>{ if(q!==p){ q.adj={...p.adj}; q.fx={...p.fx}; q.det={...p.det}; q.look=p.look; } }); buildStrip(); toast('Look copied to '+(S.photos.length-1)+' other photo'+(S.photos.length>2?'s':'')); };
+  copy.onclick=()=>{ S.photos.forEach(q=>{ if(q!==p){ q.adj={...p.adj}; q.fx={...p.fx}; q.det={...p.det}; q.hsl=clone(p.hsl); q.curve=clone(p.curve); q.grade=clone(p.grade); q.look=p.look; } }); buildStrip(); toast('Look copied to '+(S.photos.length-1)+' other photo'+(S.photos.length>2?'s':'')); };
   const crop=el(`<button class="btn" type="button" ${S.photos.length>1&&p&&p.aspect!=='free'?'':'disabled'}>Apply ${p&&p.aspect!=='free'&&p.aspect!=='orig'?p.aspect:'this'} crop ratio to all</button>`);
   crop.onclick=()=>{ S.photos.forEach(q=>{ if(q!==p) setAspect(q,p.aspect); }); buildStrip(); toast('Centred '+(p.aspect==='orig'?'original':p.aspect)+' crop applied. Fine-tune each one in Crop.'); };
   const zip=el(`<button class="btn primary" type="button" ${S.photos.length?'':'disabled'}>Save all as ZIP</button>`); zip.onclick=()=>exportAll(zip);
@@ -1249,6 +1555,7 @@ function loadFont(){
 $('#addBtn').onclick=()=>$('#fileIn').click();
 $('#emptyAdd').onclick=()=>$('#fileIn').click();
 $('#fileIn').onchange=e=>{ if(e.target.files.length) loadFiles(e.target.files); e.target.value=''; };
+$('#lrIn').onchange=e=>{ const fs=[...e.target.files]; e.target.value=''; if(fs.length) importLR(fs); };
 $('#logoIn').onchange=e=>{
   const f=e.target.files[0]; e.target.value=''; if(!f) return;
   const r=new FileReader(); r.onload=()=>{ const im=new Image(); im.onload=()=>{
@@ -1307,7 +1614,7 @@ function scheduleSave(){ clearTimeout(saveT); saveT=setTimeout(saveSession,400);
 async function saveSession(){
   if(!idb) return;
   const meta={v:1,cur:S.cur,tab:S.tab,zoom:S.zoom,loupe:S.loupe,order:S.photos.map(p=>p.id),photos:{}};
-  S.photos.forEach(p=>meta.photos[p.id]={name:p.name,w:p.src.width,h:p.src.height,crop:p.crop,aspect:p.aspect,adj:p.adj,fx:p.fx,det:p.det,masks:p.masks,maskSel:p.maskSel,look:p.look});
+  S.photos.forEach(p=>meta.photos[p.id]={name:p.name,w:p.src.width,h:p.src.height,crop:p.crop,aspect:p.aspect,adj:p.adj,fx:p.fx,det:p.det,hsl:p.hsl,curve:p.curve,grade:p.grade,masks:p.masks,maskSel:p.maskSel,look:p.look});
   try{ await idbPut('meta','session',meta); const s=$('#saveState'); s.classList.remove('off');
     s.textContent='Autosaved '+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}); }
   catch(e){ saveFailed(); }
@@ -1332,6 +1639,7 @@ async function restore(){
       const p=addPhoto(im,w,h,s.name||'Photo',{id,store:false}), k=p.src.width/(s.w||p.src.width);
       if(s.crop) p.crop={x:s.crop.x*k,y:s.crop.y*k,w:s.crop.w*k,h:s.crop.h*k};
       p.aspect=s.aspect||'orig'; p.adj={...ADJ0,...s.adj}; p.fx={...FX0,...s.fx}; p.det={...DET0,...s.det}; p.look=s.look||'Original';
+      p.hsl=validHSL(s.hsl); p.curve=validCurve(s.curve); p.grade=validGrade(s.grade);
       if(Array.isArray(s.masks)){ p.masks=s.masks.filter(m=>m&&m.g&&['radial','linear','brush','subject'].includes(m.type)).map(m=>({...m,adj:{...LADJ0,...m.adj},amount:m.amount??100,
           g:m.type==='brush'?{strokes:Array.isArray(m.g.strokes)?m.g.strokes:[]}:m.type==='subject'?{polys:Array.isArray(m.g.polys)?m.g.polys:[],feather:m.g.feather??20,refine:m.g.refine!==false,strokes:Array.isArray(m.g.strokes)?m.g.strokes:[]}:m.g}));
         p.maskSel=p.masks.some(m=>m.id===s.maskSel)?s.maskSel:null; }
@@ -1358,7 +1666,7 @@ async function boot(){
   const b=sample(77,{top:'#071a2e',mid:'#0e3355',bottom:'#08111c',glow:'rgba(120,200,255,.5)',dots:['160,220,255','255,255,255','255,230,170'],stick:'140,210,255'},2000,1500);
   const p1=addPhoto(a,a.width,a.height,'Sample · stage pink'); p1.det.sharpen=40; setAspect(p1,'4:5'); applyPreset(p1,PRESETS[3]);
   const p2=addPhoto(b,b.width,b.height,'Sample · stage blue'); setAspect(p2,'3:2'); applyPreset(p2,PRESETS[8]);
-  setTab('colour'); buildStrip(); loadFont().then(()=>requestRender(true));
+  setTab('light'); buildStrip(); loadFont().then(()=>requestRender(true));
   toast('Two sample photos are loaded. Add your own with + Add photos.',4200);
 }
 boot();
