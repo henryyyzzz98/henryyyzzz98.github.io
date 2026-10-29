@@ -1,0 +1,1412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spotlight: Idol Life Simulator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Bagel+Fat+One&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#150f1d;--panel:#211930;--panel2:#2b2140;--line:#3a2d52;--ink:#f7f0fd;--muted:#b4a6c8;
+  --pink:#ff5fa2;--violet:#9b7bff;--mint:#5fe3c0;--gold:#ffd166;--red:#ff6b6b;--sky:#5fb7e8;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Outfit,system-ui,sans-serif;font-size:15px}
+body{background:radial-gradient(1200px 600px at 80% -10%,#3a1f4d 0,transparent 60%),radial-gradient(900px 500px at -10% 110%,#2a1640 0,transparent 60%),var(--bg);min-height:100vh}
+button{font-family:inherit;color:inherit;cursor:pointer}
+input,select{font-family:inherit}
+.display{font-family:"Bagel Fat One",Outfit,sans-serif;letter-spacing:.5px}
+#app{max-width:1180px;margin:0 auto;padding:12px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px}
+.muted{color:var(--muted)}
+.hidden{display:none!important}
+
+/* title */
+.title-wrap{min-height:92vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:14px}
+.logo{font-size:clamp(42px,9vw,84px);line-height:1;background:linear-gradient(90deg,var(--pink),var(--violet),var(--mint));-webkit-background-clip:text;background-clip:text;color:transparent}
+.tag{font-size:16px;color:var(--muted);max-width:440px}
+.btn{border:0;border-radius:999px;padding:12px 22px;font-weight:700;font-size:15px;background:var(--panel2);border:1px solid var(--line)}
+.btn.primary{background:linear-gradient(90deg,var(--pink),var(--violet));border:0;color:#fff;box-shadow:0 6px 24px #ff5fa255}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+
+/* creation */
+.create{display:grid;grid-template-columns:300px 1fr;gap:14px}
+@media(max-width:780px){.create{grid-template-columns:1fr}.preview{position:relative!important;top:0}.preview svg{max-width:220px}}
+.preview{position:sticky;top:12px;align-self:start;text-align:center}
+.preview svg{width:100%;max-width:260px}
+.field{margin-bottom:16px}
+.field>label{display:block;font-weight:700;margin-bottom:7px;font-size:13px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)}
+.txt{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:10px 12px;font-size:15px}
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{border:1px solid var(--line);background:var(--panel2);border-radius:999px;padding:7px 13px;font-size:14px}
+.chip.on{background:var(--pink);border-color:var(--pink);color:#fff}
+.sw{width:32px;height:32px;border-radius:50%;border:2px solid transparent;padding:0}
+.sw.on{border-color:#fff;box-shadow:0 0 0 2px var(--pink)}
+.cos{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+@media(max-width:600px){.cos{grid-template-columns:1fr}}
+.co{text-align:left;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:11px}
+.co.on{border-color:var(--pink);box-shadow:0 0 0 1px var(--pink)}
+.co b{display:block}.co small{color:var(--gold);font-weight:600}.co p{margin:5px 0 0;font-size:13px;color:var(--muted)}
+
+/* game */
+.hud{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.hud .brand{font-size:22px;background:linear-gradient(90deg,var(--pink),var(--violet));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hud .date{display:flex;flex-direction:column;line-height:1.1}
+.hud .date span{font-size:12px;color:var(--muted)}
+.pill{border-radius:999px;padding:4px 11px;font-size:12px;font-weight:700;background:var(--panel2);border:1px solid var(--line)}
+.pill.ph-trainee{background:#3b2a12;border-color:#7a5a1a;color:var(--gold)}
+.pill.ph-predebut{background:#13324a;border-color:#2a6aa0;color:var(--sky)}
+.pill.ph-idol{background:#4a1430;border-color:#a0306a;color:#ff9cc8}
+.hud .sp{flex:1}
+.icon-btn{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:6px 11px;font-weight:700}
+.layout{display:grid;grid-template-columns:1.05fr 1fr;gap:12px}
+@media(max-width:860px){.layout{grid-template-columns:1fr}}
+.slots{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+@media(max-width:520px){.slots{grid-template-columns:repeat(2,1fr)}}
+.slot{position:relative;text-align:left;background:#1a1326;border:1px dashed var(--line);border-radius:12px;padding:8px 22px 8px 9px;min-height:58px;display:flex;flex-direction:column;gap:3px}
+.slot small{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;font-weight:700}
+.slot b{font-size:13px;font-weight:600;color:var(--muted)}
+.slot.filled{border-style:solid;background:var(--panel2)}.slot.filled b{color:var(--ink)}
+.slot.on{border-color:var(--pink);box-shadow:0 0 0 1px var(--pink)}
+.slot.warn b{color:#ff9a9a}
+.slot .x{position:absolute;top:5px;right:6px;font-size:11px;color:var(--muted);padding:2px 4px;border-radius:6px}
+.slot .x:hover{color:#fff;background:#0004}
+.act.chosen{border-color:var(--mint);box-shadow:0 0 0 1px var(--mint)}
+.linkbtn{background:none;border:0;color:var(--muted);font-size:12px;text-decoration:underline}
+.go-row{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:12px}.go-row .repeat{margin-top:0}
+.tl{margin-top:8px;display:flex;flex-direction:column;gap:6px}
+.tlr{display:flex;gap:8px;font-size:13.5px;line-height:1.35}.tlr.free{opacity:.6}.tle{width:20px;flex:none}
+.tlr .muted{font-size:12.5px}
+.st{font-size:12px;color:var(--muted);margin-top:3px}.st.best{color:var(--gold)}
+.ph-mgr{background:#13324a;border:1px solid #2a6aa0;color:var(--sky)}
+.modes{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:min(640px,100%)}@media(max-width:560px){.modes{grid-template-columns:1fr}}
+.mode{display:flex;flex-direction:column;gap:8px;align-items:stretch;text-align:center}.mode p{margin:0 0 4px;font-size:14px}
+.gcard{padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid var(--line)}.gcard:last-child{border:0;margin:0}
+.prog{display:flex;gap:3px;margin-top:4px}.prog i{width:18px;height:4px;border-radius:3px;background:#0f0b16}.prog i.on{background:var(--pink)}
+.col{display:flex;flex-direction:column;gap:12px;min-width:0}
+.scene{border-radius:16px;overflow:hidden;border:1px solid var(--line);background:#0e0a14;line-height:0}
+.scene svg{width:100%;height:auto;display:block}
+.ticker{display:flex;gap:8px;flex-wrap:wrap}
+.tk{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:7px 10px;font-size:13px}
+.tk b{color:var(--gold)}
+.today h3{margin:0 0 6px;font-size:16px}
+.today ul{margin:6px 0 0;padding-left:18px;color:var(--muted);font-size:14px}
+.today li{margin:3px 0}
+.deltas{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.dl{font-size:12px;font-weight:700;border-radius:8px;padding:3px 8px;background:#1e3a33;color:var(--mint)}
+.dl.neg{background:#45202a;color:#ff9a9a}
+.dl.bad{background:#45202a;color:#ff9a9a}.dl.good{background:#1e3a33;color:var(--mint)}
+.quick{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+@media(max-width:480px){.quick{grid-template-columns:repeat(2,1fr)}}
+.qs{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px 10px}
+.qs small{display:block;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:1px}
+.qs b{font-size:16px}
+.bars{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.bar{font-size:12px}
+.bar .tr{height:8px;border-radius:6px;background:#0f0b16;overflow:hidden;margin-top:3px}
+.bar .fl{height:100%;border-radius:6px}
+.acts h4{margin:10px 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted)}
+.acts h4:first-child{margin-top:0}
+.grid-acts{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:7px}
+.act{display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:2px;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:9px 10px;transition:transform .08s,border-color .15s}
+.act:hover{border-color:var(--pink);transform:translateY(-1px)}
+.act .t{font-weight:700;font-size:14px}
+.act .s{font-size:11.5px;color:var(--muted)}
+.act.hot{border-color:var(--gold);background:linear-gradient(135deg,#3d2a12,#2b2140)}
+.repeat{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);margin-top:10px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tab{background:transparent;border:1px solid var(--line);border-radius:999px;padding:6px 13px;font-weight:600;font-size:13px}
+.tab.on{background:var(--violet);border-color:var(--violet);color:#fff}
+.statgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px}
+@media(max-width:480px){.statgrid{grid-template-columns:1fr}}
+.sec-t{font-size:12px;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);margin:12px 0 8px;font-weight:700}
+.sec-t:first-child{margin-top:2px}
+.mem{display:flex;gap:10px;align-items:center;padding:8px;border-radius:12px;background:var(--panel2);margin-bottom:7px}
+.mem svg{width:52px;height:64px;flex:none;background:#160f20;border-radius:10px}
+.mem .i{flex:1;min-width:0}
+.mem .n{font-weight:700}.mem .p{font-size:12px;color:var(--muted)}
+.hearts{color:var(--pink);font-size:12px;letter-spacing:1px}
+table.t{width:100%;border-collapse:collapse;font-size:13px}
+table.t th,table.t td{text-align:left;padding:6px 4px;border-bottom:1px solid var(--line)}
+table.t th{color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:1px}
+.diary{max-height:360px;overflow:auto;font-size:13.5px}
+.diary div{padding:6px 0;border-bottom:1px dashed var(--line)}
+.diary b{color:var(--violet);font-weight:700;margin-right:6px}
+.grade{display:inline-block;font-weight:800;border-radius:6px;padding:0 6px}
+.g-S{background:var(--gold);color:#2a1a00}.g-A{background:var(--pink);color:#fff}.g-B{background:var(--violet);color:#fff}.g-C{background:#556;color:#fff}.g-D{background:#433;color:#fbb}
+
+/* modal */
+.modal{position:fixed;inset:0;background:#07040bcc;backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:14px;z-index:50}
+.modal-card{width:100%;max-width:520px;max-height:92vh;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:18px;position:relative;animation:pop .25s ease}
+@keyframes pop{from{transform:scale(.94);opacity:0}}
+.modal-card h2{margin:0 0 8px;font-size:22px}
+.modal-card .art{border-radius:14px;overflow:hidden;margin:-4px 0 12px;line-height:0;border:1px solid var(--line)}
+.modal-card .art svg{width:100%;height:auto}
+.modal-card p{line-height:1.5;margin:8px 0}
+.choices{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+.choice{text-align:left;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;font-weight:700}
+.choice:hover:not(:disabled){border-color:var(--pink)}
+.choice small{display:block;font-weight:500;color:var(--muted);margin-top:2px}
+.choice.primary{background:linear-gradient(90deg,var(--pink),var(--violet));border:0;color:#fff;text-align:center}
+.choice:disabled{opacity:.45;cursor:not-allowed}
+.big-num{font-size:40px;font-weight:800;color:var(--gold);line-height:1}
+.result-row{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0}
+.result-row .qs{flex:1;min-width:100px}
+.confetti{position:absolute;inset:0;pointer-events:none;overflow:hidden;border-radius:20px}
+.confetti i{position:absolute;top:-10px;width:8px;height:12px;border-radius:2px;animation:fall 2.4s linear forwards}
+@keyframes fall{to{transform:translateY(560px) rotate(540deg);opacity:.2}}
+
+/* svg anims */
+.bob{animation:bob 2.6s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-2.5px)}}
+.beam{animation:sway 5s ease-in-out infinite;transform-box:view-box}
+@keyframes sway{0%,100%{transform:rotate(-7deg)}50%{transform:rotate(7deg)}}
+.ls{animation:tw 1.1s ease-in-out infinite alternate}
+@keyframes tw{to{opacity:.25}}
+.float{animation:fl 3s ease-in-out infinite}
+@keyframes fl{0%{transform:translateY(0);opacity:0}20%{opacity:1}100%{transform:translateY(-60px);opacity:0}}
+.ending{max-width:640px;margin:20px auto;text-align:center}
+.ending .art{border-radius:18px;overflow:hidden;line-height:0;border:1px solid var(--line);margin-bottom:14px}
+.ending .art svg{width:100%;height:auto}
+.ending h1{font-size:clamp(30px,6vw,46px);margin:6px 0}
+.ending .sumgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:16px 0;text-align:left}
+@media(max-width:480px){.ending .sumgrid{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="modal" class="modal hidden"><div class="modal-card" id="modalCard"></div></div>
+<script>
+"use strict";
+/* ============ utilities ============ */
+const R=(a,b)=>a+Math.random()*(b-a);
+const RI=(a,b)=>Math.floor(R(a,b+1));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const clamp=(v,a=0,b=100)=>Math.max(a,Math.min(b,v));
+const fmt=n=>Math.round(n).toLocaleString('en-US');
+const won=n=>'₩'+fmt(n);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const KEY='spotlight-idol-sim-v1';
+const START=new Date(2027,0,4);
+const dateOf=d=>{const x=new Date(START);x.setDate(x.getDate()+d-1);return x};
+const WD=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const dstr=d=>{const x=dateOf(d);return `${WD[x.getDay()]} ${x.getDate()} ${MON[x.getMonth()]} ${x.getFullYear()}`};
+const shortDate=d=>{const x=dateOf(d);return `${x.getDate()} ${MON[x.getMonth()]} ${x.getFullYear()}`};
+const yearOf=d=>dateOf(d).getFullYear();
+
+/* ============ data ============ */
+const COMPANIES={
+  star:{name:'Starfield Entertainment',tag:'Big agency',desc:'Brutal monthly evaluations, but a huge budget and promotion power once you debut.',base:16,step:3.8,cap:78,minMonths:6,budget:15,fameStart:12,fanStart:9000,debt:120000000},
+  blue:{name:'Bluebell Music',tag:'Mid-size agency',desc:'Balanced training, a decent budget and a steady path.',base:13,step:3.3,cap:72,minMonths:4,budget:9,fameStart:6,fanStart:4000,debt:70000000},
+  pebble:{name:'Pebble Records',tag:'Small agency',desc:'Gentler evaluations and creative freedom (faster producing growth), but you start from nothing.',base:10,step:2.9,cap:66,minMonths:3,budget:3,fameStart:2,fanStart:800,debt:30000000,produceBonus:1.4}
+};
+const SPECIALTIES={vocal:'Vocal',dance:'Dance',rap:'Rap',visual:'Visual',allround:'All-rounder',produce:'Producer'};
+const HAIR_G={long:'Long',bob:'Bob',ponytail:'Ponytail',twin:'Twin tails',short:'Pixie cut'};
+const HAIR_B={short:'Short',curtain:'Curtain bangs',sidepart:'Side part',twoblock:'Two-block',wolf:'Wolf cut'};
+const HAIR_COLORS=['#2b1d1a','#5a3825','#c99a5b','#f4d58d','#e85d9a','#8e7cf0','#5fb7e8','#e9e4f0','#b23a48'];
+const SKIN=['#ffe6d4','#f6cfae','#e8b48f','#c98e6a','#9a6748','#6e4630'];
+const EYES=['#3b2a20','#6a4430','#2f4f7f','#4a7d4e','#7a4fb5'];
+const OUTFITS=['#ff5fa2','#9b7bff','#5fe3c0','#ffd166','#3d8bfd','#f4f1f8','#2a2333','#ff8a5c'];
+const CONCEPTS={fresh:{n:'Fresh & bright',c:'#5fe3c0'},crush:{n:'Dark charisma',c:'#ff4d6d'},dreamy:{n:'Dreamy fantasy',c:'#9b7bff'},retro:{n:'Retro pop',c:'#ffd166'},cute:{n:'Cute & bubbly',c:'#ff8fc7'}};
+const SHOWS={2:'The Show Up',3:'Champ Stage',4:'M Pulse',5:'Music Express',6:'Core Beat',0:'Popular Live'};
+const LABEL={vocal:'Vocal',dance:'Dance',rap:'Rap',visual:'Visual',variety:'Variety',charm:'Charm',produce:'Producing',stamina:'Stamina',stress:'Stress',health:'Health'};
+const SKILLS=['vocal','dance','rap','visual','variety','charm','produce'];
+const POS_OF={vocal:'Main Vocalist',dance:'Main Dancer',rap:'Main Rapper',visual:'Visual & Center',produce:'Producer & Vocalist'};
+const NAMES_G=['Seoa','Lumi','Dahee','Nari','Yeseul','Hana','Riwon','Sena','Jiyu','Bomi','Arin','Soyul','Haneul','Dain','Ara','Gaeun','Somin','Yuha','Rina','Mirae','Seri','Hayeon','Jian','Bora'];
+const NAMES_B=['Taeoh','Junseo','Hajun','Riku','Doyun','Seojin','Kaito','Yechan','Gyuwon','Eden','Sion','Hyunwoo','Minjae','Seungho','Jiwan','Haru','Ian','Woobin','Jiho','Chanyul','Dowon','Eunho','Gunwoo','Yoonho'];
+const ALBUM_A=['Midnight','Neon','Paper','Velvet','Summer','Electric','Crystal','Golden','Silver','Pink','Blue','Lucky','Wild','Secret','Starlit','Cherry'];
+const ALBUM_B=['Heart','Signal','Dream','Rush','Bloom','Diary','Galaxy','Fever','Garden','Wave','Runway','Promise','Echo','Candy','Flame','Orbit'];
+const GROUP_A=['STAR','LUNA','NOVA','AURA','VIVID','ECLIPSE','PRISM','HALO','BLOOM','ZEN','ORBIT','KISMET'];
+const GROUP_B=['','IX','BEAT','LIGHT','X','ON','UP','DAY','RISE','WAVE'];
+const albumName=()=>`${pick(ALBUM_A)} ${pick(ALBUM_B)}`;
+const groupName=()=>{const b=pick(GROUP_B);return b?`${pick(GROUP_A)}${Math.random()<.5?' ':''}${b}`:pick(GROUP_A)};
+
+/* ============ state ============ */
+let S=null,Q=[],D={},NOTES=[];
+let UI={tab:'stats',repeat:false,today:null,scene:null};
+const CO=()=>S.coName?{...COMPANIES[S.company],name:S.coName}:COMPANIES[S.company];
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function loadSave(){try{const t=localStorage.getItem(KEY);return t?JSON.parse(t):null}catch(e){return null}}
+function clearSave(){try{localStorage.removeItem(KEY)}catch(e){}}
+
+function randomLook(g){
+  return {g,hairStyle:pick(g==='girl'?['long','bob','ponytail','twin','long','bob','short']:Object.keys(HAIR_B)),hair:pick(HAIR_COLORS),skin:pick(SKIN),eye:pick(EYES),outfit:pick(OUTFITS)};
+}
+function makeMembers(type,n){
+  let pool=type==='girl'?NAMES_G.map(x=>[x,'girl']):type==='boy'?NAMES_B.map(x=>[x,'boy']):NAMES_G.map(x=>[x,'girl']).concat(NAMES_B.map(x=>[x,'boy']));
+  if(type==='coed'){const g=shuffle(pool.filter(x=>x[1]==='girl')),b=shuffle(pool.filter(x=>x[1]==='boy'));pool=[];for(let i=0;i<24;i++)pool.push(i%2?b[i>>1]:g[i>>1]);pool=pool.slice(0,n).concat(pool.slice(n))}
+  const K=['worrier','rival','joker','perfectionist','dreamer','quiet'];let arcs=[];while(arcs.length<n)arcs=arcs.concat(shuffle(K));return (type==='coed'?shuffle(pool.slice(0,n)):shuffle(pool).slice(0,n)).map(([name,g],i)=>({name,g,look:randomLook(g),skill:R(13,22),bond:RI(25,45),pos:'',arc:arcs[i],ch:0,sp:0,best:false}));
+}
+function newGame(c){
+  const st={vocal:R(8,12),dance:R(8,12),rap:R(6,10),visual:R(10,14),variety:R(6,10),charm:R(10,14),produce:R(3,6)};
+  if(c.spec==='allround'){['vocal','dance','rap','visual'].forEach(k=>st[k]+=6)}
+  else if(c.spec==='produce'){st.produce+=16;st.vocal+=4}
+  else st[c.spec]+=14;
+  const coName=(c.coName||'').trim().slice(0,30);const co={...COMPANIES[c.company],name:coName||COMPANIES[c.company].name};
+  if(c.jump){Object.keys(st).forEach(k=>st[k]+=R(20,26));if(c.spec!=='allround')st[c.spec==='produce'?'produce':c.spec]+=8;Object.keys(st).forEach(k=>st[k]=clamp(st[k]))}
+  const n=c.size?clamp(c.size-1,1,23):{star:RI(4,6),blue:RI(3,5),pebble:RI(2,4)}[c.company];
+  S={v:1,name:c.name||'Kim Hana',stage:c.stage||'HANA',type:c.type,look:{...c.look},company:c.company,coName:coName||null,spec:c.spec,
+    day:1,phase:'trainee',stats:st,cond:{stamina:90,stress:15,health:100},
+    fame:0,fans:0,wallet:300000,debt:co.debt,earned:0,
+    rel:{ceo:45},members:makeMembers(c.type,n),
+    trainee:{start:1,month:0,fails:0,topStreak:0,ranks:[]},
+    group:null,era:null,albums:[],awards:[],wins:0,yearWins:{},daesangs:0,
+    offers:[],scandals:0,burnDays:0,forcedRest:0,monthSales:0,fandom:null,
+    flags:{},log:[],ending:null,plan:{morning:'vocal',afternoon:'dance',night:'hang',midnight:null}};
+  log(`Joined ${co.name} as a trainee. The dream starts today.`);
+  UI={tab:'stats',repeat:false,slot:'morning',today:{title:'Welcome to the practice room',lines:[`You signed a trainee contract with ${co.name}. Monthly evaluations happen every 4 weeks — three fails in a row and you're out.`,`${S.members.map(m=>m.name).join(', ')} are the trainees you'll be closest to. Spend 1:1 time with them to unlock their friendship stories.`,`Plan up to four slots a day — morning, afternoon, night and midnight — then press Start the day.`],d:{}},scene:{name:'practice'}};
+  if(c.jump){
+    S.members.forEach(m=>{m.skill=R(32,42);m.bond=RI(35,50)});S.rel.ceo=58;S.trainee.month=co.minMonths;S.trainee.ranks=[];
+    S.plan={morning:'record',afternoon:'group',night:'hang',midnight:null};
+    S.log=[];log(`Joined ${co.name} and was fast-tracked straight to a debut team.`);
+    UI.today={title:'Fast-tracked to debut',lines:[`You skipped the trainee years at ${co.name} — the CEO has already picked your debut team.`,`Use Recording and Group practice to raise readiness before debut day.`,`Spend 1:1 time with ${S.members.map(m=>m.name).join(', ')} to unlock their friendship stories.`],d:{}};
+    Q.push(debutPick());
+  }
+  save();
+}
+
+/* ============ deltas ============ */
+function rec(k,v){if(Math.abs(v)<0.05)return;D[k]=(D[k]||0)+v}
+function note(t){NOTES.push(t)}
+function log(t){S.log.unshift({d:S.day,t});if(S.log.length>300)S.log.pop()}
+function fatigue(){let m=1;if(S.cond.stamina<15)m*=.5;if(S.cond.stress>80)m*=.75;if(S.cond.health<35)m*=.7;return m}
+function addStat(k,a){const b=S.stats[k];let g=a*MUL;if(a>0)g=a*MUL*Math.pow(Math.max(0,1-b/104),1.4)*1.25*fatigue()*(k==='produce'&&CO().produceBonus?CO().produceBonus:1)*(k==='produce'&&perk('dreamer')?1.15:1)*(['vocal','dance','rap'].includes(k)&&perk('rival')?1.1:1);S.stats[k]=clamp(b+g);rec(LABEL[k],S.stats[k]-b)}
+function addCond(k,a){const b=S.cond[k];S.cond[k]=clamp(b+a*MUL);rec(LABEL[k],S.cond[k]-b)}
+function addFame(x){x*=MUL;const b=S.fame;S.fame=clamp(b+(x>0?x*Math.pow(1-b/105,1.3):x));rec('Fame',S.fame-b)}
+function addFans(n){n=Math.round(n*MUL);const b=S.fans;S.fans=Math.max(0,S.fans+n);rec('Fans',S.fans-b)}
+function addCeo(n){const b=S.rel.ceo;S.rel.ceo=clamp(b+n);rec('CEO trust',S.rel.ceo-b)}
+function bondAll(n){n*=MUL;S.members.forEach(m=>m.bond=clamp(m.bond+n*R(.6,1.3)));rec('Member bond',n)}
+function earn(n){n=Math.round(n*MUL);S.earned+=n;if(S.debt>0){const p=Math.min(S.debt,n);S.debt-=p;rec('Debt paid',p);n-=p;if(S.debt<=0&&!S.flags.debtFree){S.flags.debtFree=true;note('🎉 Your trainee debt is fully paid off! From now on, earnings go to your wallet.');log('Paid off all trainee debt to the company.')}}if(n>0){S.wallet+=n;rec('Wallet',n)}}
+function spend(n){S.wallet-=n;rec('Wallet',-n)}
+function skillScore(){const s=S.stats;const t=[s.vocal,s.dance,s.rap,s.visual].sort((a,b)=>b-a);return (t[0]+t[1]+t[2])/3*.85+s.charm*.15}
+function groupPower(){return (skillScore()+S.members.reduce((a,m)=>a+m.skill,0))/(S.members.length+1)}
+function mood(){if(S.cond.stress>75)return'sad';if(S.cond.stamina<22||S.cond.health<35)return'tired';return'happy'}
+function gColor(){return S.group?CONCEPTS[S.group.concept].c:'#ff5fa2'}
+function isPromo(){return S.era&&S.era.status==='promo'}
+function isPrep(){return S.era&&S.era.status==='prep'}
+const yrs=()=>S.group?(S.day-S.group.debutDay)/365:0;
+
+/* ============ avatar ============ */
+function avatar(lk,x,y,s,o={}){
+  const m=o.mood||'happy',hair=lk.hair,skin=lk.skin,out=lk.outfit,eye=lk.eye,hs=lk.hairStyle,boy=lk.g==='boy';
+  let back='';
+  if(hs==='long')back=`<path d="M19 50 Q17 13 50 11 Q83 13 81 50 L86 112 Q50 122 14 112 Z" fill="${hair}"/>`;
+  if(hs==='bob')back=`<path d="M20 50 Q19 13 50 11 Q81 13 80 50 L83 82 Q50 90 17 82 Z" fill="${hair}"/>`;
+  if(hs==='ponytail')back=`<ellipse cx="85" cy="62" rx="10" ry="27" fill="${hair}" transform="rotate(12 85 62)"/><circle cx="78" cy="36" r="4" fill="${out}"/>`;
+  if(hs==='twin')back=`<ellipse cx="14" cy="70" rx="9" ry="26" fill="${hair}"/><ellipse cx="86" cy="70" rx="9" ry="26" fill="${hair}"/><circle cx="20" cy="42" r="4" fill="${out}"/><circle cx="80" cy="42" r="4" fill="${out}"/>`;
+  let bang=`<path d="M22 52 Q19 18 50 18 Q81 18 78 52 Q71 36 58 33 Q51 42 37 38 Q28 42 22 52 Z" fill="${hair}"/>`;
+  if(hs==='curtain')bang=`<path d="M22 54 Q18 16 50 17 Q82 16 78 54 Q74 34 55 30 L50 40 L45 30 Q26 34 22 54 Z" fill="${hair}"/>`;
+  if(hs==='short')bang=`<path d="M23 50 Q19 15 50 16 Q81 15 77 50 Q72 33 60 31 Q52 37 42 32 Q30 36 23 50 Z" fill="${hair}"/>`;
+  if(hs==='wolf'){back=`<path d="M20 50 Q18 14 50 12 Q82 14 80 50 L81 80 Q74 74 68 80 L32 80 Q26 74 19 80 Z" fill="${hair}"/>`;bang=`<path d="M22 54 Q18 16 50 17 Q82 16 78 54 Q74 34 55 30 L50 40 L45 30 Q26 34 22 54 Z" fill="${hair}"/>`}
+  if(hs==='sidepart')bang=`<path d="M22 54 Q17 15 52 15 Q83 16 78 52 Q76 34 64 29 Q48 24 30 38 Q25 44 22 54 Z" fill="${hair}"/>`;
+  if(hs==='twoblock')bang=`<path d="M22 50 Q20 13 50 13 Q80 13 78 50 Q76 40 72 42 Q60 34 50 41 Q40 34 28 42 Q24 40 22 50 Z" fill="${hair}"/>`;
+  let eyes,mouth;
+  if(m==='tired'){eyes=`<path d="M36 57 Q40 59 44 57 M56 57 Q60 59 64 57" stroke="#3b2a2a" stroke-width="2" fill="none" stroke-linecap="round"/>`;mouth=`<path d="M46 68 L54 68" stroke="#a0525a" stroke-width="1.8" stroke-linecap="round"/>`}
+  else{eyes=`<ellipse cx="40" cy="56" rx="4.2" ry="${boy?4.5:5.2}" fill="${eye}"/><ellipse cx="60" cy="56" rx="4.2" ry="${boy?4.5:5.2}" fill="${eye}"/>${boy?'':'<path d="M36 52.5 L33.6 50.6 M64 52.5 L66.4 50.6" stroke="#2a1d1d" stroke-width="1.4" stroke-linecap="round"/>'}<circle cx="41.6" cy="54" r="1.5" fill="#fff"/><circle cx="61.6" cy="54" r="1.5" fill="#fff"/>`;
+    mouth=m==='sad'?`<path d="M45 69 Q50 65 55 69" stroke="#a0525a" stroke-width="1.8" fill="none" stroke-linecap="round"/>`:o.big?`<path d="M44 65 Q50 73 56 65 Z" fill="#c2566a"/>`:`<path d="M45 66 Q50 70.5 55 66" stroke="#a0525a" stroke-width="1.8" fill="none" stroke-linecap="round"/>`}
+  const mic=o.mic?`<rect x="72" y="100" width="4" height="16" rx="2" fill="#333"/><circle cx="74" cy="98" r="5" fill="#777"/>`:'';
+  return `<g transform="translate(${x-50*s},${y-140*s}) scale(${s})"><g class="bob" style="animation-delay:${(o.delay||0)}s">
+  ${back}
+  ${boy?`<rect x="37" y="116" width="11" height="23" rx="4" fill="#2b2433"/><rect x="52" y="116" width="11" height="23" rx="4" fill="#2b2433"/>
+  <rect x="16" y="93" width="11" height="27" rx="5" fill="${out}"/><rect x="73" y="93" width="11" height="27" rx="5" fill="${out}"/>
+  <circle cx="21.5" cy="121" r="4.8" fill="${skin}"/><circle cx="78.5" cy="121" r="4.8" fill="${skin}"/>
+  <path d="M24 93 Q50 84 76 93 L73 122 L27 122 Z" fill="${out}"/><path d="M42 87 L50 103 L58 87 Z" fill="#fff" opacity=".88"/><path d="M42 87 L50 103 L58 87" stroke="#0003" stroke-width="1.5" fill="none"/><line x1="50" y1="103" x2="50" y2="122" stroke="#0003" stroke-width="1.5"/>`
+  :`<rect x="39" y="118" width="8" height="17" rx="3" fill="${skin}"/><rect x="53" y="118" width="8" height="17" rx="3" fill="${skin}"/><rect x="37" y="133" width="11" height="6" rx="3" fill="#2b2433"/><rect x="52" y="133" width="11" height="6" rx="3" fill="#2b2433"/>
+  <rect x="20" y="93" width="9" height="26" rx="4.5" fill="${out}"/><rect x="71" y="93" width="9" height="26" rx="4.5" fill="${out}"/>
+  <circle cx="24.5" cy="120" r="4.3" fill="${skin}"/><circle cx="75.5" cy="120" r="4.3" fill="${skin}"/>
+  <path d="M30 92 Q50 85 70 92 L68 110 L32 110 Z" fill="${out}"/><path d="M32 108 L68 108 L77 125 L23 125 Z" fill="${out}"/><path d="M32 108 L68 108 L77 125 L23 125 Z" fill="#000" opacity=".14"/>
+  <path d="M43 88 L50 95 L57 88" stroke="#0002" stroke-width="2" fill="none"/>`}
+  <rect x="45" y="76" width="10" height="13" fill="${skin}"/>
+  <ellipse cx="50" cy="52" rx="27" ry="29" fill="${skin}"/>
+  <ellipse cx="23.5" cy="56" rx="3.5" ry="5" fill="${skin}"/><ellipse cx="76.5" cy="56" rx="3.5" ry="5" fill="${skin}"/>
+  ${eyes}
+  ${boy?'<path d="M34 47.5 Q39.5 45 45 46.5 M55 46.5 Q60.5 45 66 47.5" stroke="#3a2a26" stroke-width="2.2" fill="none" stroke-linecap="round" opacity=".8"/>':''}
+  <ellipse cx="34" cy="64" rx="5" ry="2.6" fill="#ff7a9a" opacity="${boy?.18:.38}"/><ellipse cx="66" cy="64" rx="5" ry="2.6" fill="#ff7a9a" opacity="${boy?.18:.38}"/>
+  ${mouth}${bang}${mic}</g></g>`;
+}
+function miniAvatar(lk){return `<svg viewBox="5 8 90 112">${avatar(lk,50,140,1)}</svg>`}
+
+/* ============ scenes ============ */
+function sceneBg(name,col){
+  col=col||'#ff5fa2';
+  switch(name){
+  case 'practice':return `<rect width="360" height="200" fill="#2a2140"/><rect x="14" y="16" width="332" height="116" rx="4" fill="#a8bedc" opacity=".16" stroke="#cdd8ea" stroke-opacity=".35"/>
+    ${[60,140,220,300].map(x=>`<rect x="${x-26}" y="4" width="52" height="5" rx="2" fill="#fff" opacity=".7"/>`).join('')}
+    <rect y="140" width="360" height="60" fill="#8a6440"/>${[0,1,2,3].map(i=>`<line x1="0" x2="360" y1="${148+i*14}" y2="${148+i*14}" stroke="#6e4f32"/>`).join('')}
+    <text x="330" y="34" font-size="10" fill="#fff" opacity=".35" text-anchor="end" font-family="Outfit">PRACTICE ROOM B2</text>`;
+  case 'studio':return `<rect width="360" height="200" fill="#1c1a24"/>${Array.from({length:36},(_,i)=>`<rect x="${(i%12)*30+2}" y="${Math.floor(i/12)*30+6}" width="26" height="26" rx="3" fill="${(i+Math.floor(i/12))%2?'#2a2735':'#24212e'}"/>`).join('')}
+    <rect x="236" y="22" width="110" height="64" rx="6" fill="#0f2233" stroke="#3a5a7a"/><rect x="246" y="60" width="90" height="16" fill="#18334a"/>${[0,1,2,3,4,5].map(i=>`<rect x="${252+i*14}" y="${44-i%3*6}" width="5" height="${14+i%3*6}" fill="#5fe3c0" opacity=".7"/>`).join('')}
+    <rect y="150" width="360" height="50" fill="#2b2233"/><line x1="90" y1="70" x2="90" y2="175" stroke="#555" stroke-width="3"/><rect x="80" y="58" width="20" height="26" rx="10" fill="#888"/><circle cx="90" cy="66" r="15" fill="none" stroke="#666" stroke-width="2"/>`;
+  case 'dorm':return `<rect width="360" height="200" fill="#f3d9e6"/><rect y="150" width="360" height="50" fill="#c8a3b6"/>
+    <rect x="22" y="22" width="80" height="62" rx="4" fill="#1f2a55"/><circle cx="80" cy="40" r="10" fill="#ffe9a8"/>${[30,48,66].map((x,i)=>`<circle cx="${x}" cy="${36+i*12}" r="1.4" fill="#fff"/>`).join('')}<line x1="62" y1="22" x2="62" y2="84" stroke="#f3d9e6" stroke-width="3"/>
+    <rect x="250" y="112" width="104" height="42" rx="6" fill="#fff"/><rect x="250" y="104" width="34" height="18" rx="6" fill="#ffd1e3"/><rect x="250" y="122" width="104" height="32" rx="4" fill="${col}" opacity=".55"/>
+    <rect x="130" y="24" width="38" height="52" fill="${col}" opacity=".5"/><text x="149" y="54" font-size="9" text-anchor="middle" fill="#fff" font-family="Outfit" font-weight="700">DEBUT</text>`;
+  case 'salon':return `<rect width="360" height="200" fill="#ffeef3"/><rect x="104" y="14" width="152" height="122" rx="10" fill="#cfe3ef" stroke="#e8c27a" stroke-width="5"/>
+    ${Array.from({length:8},(_,i)=>`<circle cx="${110+i*20}" cy="14" r="5" fill="#fff6c8" stroke="#e8c27a"/>`).join('')}<rect y="150" width="360" height="50" fill="#e4c9d3"/><rect x="20" y="120" width="60" height="40" rx="6" fill="#f7d0dd"/>${[30,44,58].map(x=>`<rect x="${x}" y="108" width="8" height="14" rx="2" fill="${pick(['#ff8fc7','#9b7bff','#5fe3c0'])}"/>`).join('')}`;
+  case 'stage':return `<defs><radialGradient id="sg" cx=".5" cy="1" r=".8"><stop offset="0" stop-color="${col}" stop-opacity=".55"/><stop offset="1" stop-color="#0b0712" stop-opacity="0"/></radialGradient></defs>
+    <rect width="360" height="200" fill="#0b0712"/><rect width="360" height="200" fill="url(#sg)"/>
+    ${[50,140,220,310].map((x,i)=>`<polygon class="beam" style="transform-origin:${x}px 0px;animation-delay:${-i*1.3}s" points="${x-6},0 ${x+6},0 ${x+50},170 ${x-50},170" fill="#fff" opacity=".07"/>`).join('')}
+    <ellipse cx="180" cy="160" rx="170" ry="16" fill="#fff" opacity=".07"/><rect y="160" width="360" height="40" fill="#08050d"/>
+    ${Array.from({length:44},(_,i)=>`<circle class="ls" style="animation-delay:${(i*.17)%1.1}s" cx="${8+(i%22)*16.2+(i>21?8:0)}" cy="${i>21?192:178}" r="3.3" fill="${col}"/>`).join('')}`;
+  case 'fansign':return `<rect width="360" height="200" fill="#ffe3ef"/><rect x="40" y="12" width="280" height="34" rx="8" fill="${col}"/><text x="180" y="35" font-size="16" fill="#fff" text-anchor="middle" font-family="Bagel Fat One">FANSIGN EVENT</text>
+    ${[0,1,2,3,4].map(i=>`<text class="float" style="animation-delay:${i*.6}s" x="${40+i*70}" y="140" font-size="14">💗</text>`).join('')}<rect y="150" width="360" height="50" fill="#d9b6c6"/>`;
+  case 'tv':return `<rect width="360" height="200" fill="#25153a"/>${['#ff5fa2','#5fe3c0','#ffd166','#9b7bff','#5fb7e8'].map((c,i)=>`<rect x="${i*72}" y="0" width="72" height="150" fill="${c}" opacity=".22"/>`).join('')}
+    <text x="180" y="34" font-size="20" text-anchor="middle" fill="#fff" font-family="Bagel Fat One">IDOL ROOM ★</text><rect y="150" width="360" height="50" fill="#3a2556"/>
+    <rect x="300" y="96" width="44" height="28" rx="4" fill="#222"/><circle cx="296" cy="110" r="10" fill="#444"/><line x1="322" y1="124" x2="322" y2="170" stroke="#222" stroke-width="3"/>`;
+  case 'live':return `<rect width="360" height="200" fill="#3b2456"/><rect x="104" y="6" width="152" height="190" rx="18" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="3"/>
+    <rect x="114" y="16" width="38" height="14" rx="4" fill="#ff4d6d"/><text x="133" y="26" font-size="9" text-anchor="middle" fill="#fff" font-family="Outfit" font-weight="800">LIVE</text>
+    ${[0,1,2,3].map(i=>`<text class="float" style="animation-delay:${i*.7}s" x="${230+(i%2)*10}" y="170" font-size="13">${pick(['💜','💖','⭐','🫶'])}</text>`).join('')}<rect y="160" width="360" height="40" fill="#2b1a40"/>`;
+  case 'city':return `<rect width="360" height="200" fill="#ffb7a1"/><circle cx="290" cy="56" r="26" fill="#ffe08a"/>${[[0,60,80],[60,40,100],[110,70,70],[180,50,110],[240,64,80],[300,60,96]].map(([x,w,h])=>`<rect x="${x}" y="${150-h}" width="${w}" height="${h}" fill="#7a4f7a" opacity=".75"/>`).join('')}<rect y="150" width="360" height="50" fill="#5b4466"/>`;
+  case 'office':return `<rect width="360" height="200" fill="#2a2a38"/><rect x="200" y="20" width="140" height="90" fill="#7aa6d6" opacity=".35"/><rect y="150" width="360" height="50" fill="#3a3346"/><rect x="40" y="128" width="160" height="12" fill="#5a4636"/>`;
+  case 'hospital':return `<rect width="360" height="200" fill="#e6f2f2"/><rect y="150" width="360" height="50" fill="#c6dcdc"/><rect x="250" y="110" width="100" height="44" rx="6" fill="#fff" stroke="#bcd"/><text x="40" y="50" font-size="26">🌷</text>`;
+  default:return `<rect width="360" height="200" fill="#1b1326"/>`;
+  }
+}
+function scene(name,opt={}){
+  const col=gColor(),mo=mood();let ppl='';
+  const showMembers=opt.members&&S.members.length;
+  if(showMembers&&S.members.length>6){
+    const front=S.members.slice(0,6),rest=S.members.slice(6),rows=[];for(let i=0;i<rest.length;i+=9)rows.push(rest.slice(i,i+9));
+    const RS=[[.5,150],[.42,128]];
+    rows.slice().reverse().forEach((row,ri)=>{const r=rows.length-1-ri,[sc,y]=RS[r];row.forEach((m,i)=>{const x=row.length===1?180:24+i*(312/(row.length-1));ppl+=avatar(m.look,x,y,sc,{mood:'happy',delay:(i+r)*.25,big:opt.big})})});
+    const offs=[-1,1,-2,2,-3,3];const fr=front.map((m,i)=>[m,offs[i]]).sort((a,b)=>Math.abs(b[1])-Math.abs(a[1]));
+    ppl+=fr.map(([m,o],i)=>avatar(m.look,180+o*52,182-Math.abs(o)*3,.62,{mood:'happy',delay:i*.3,big:opt.big})).join('');
+  }else if(showMembers){
+    const n=S.members.length,offs=[];for(let i=1;i<=n;i++)offs.push((i%2?-1:1)*Math.ceil(i/2));
+    const step=Math.min(56,170/Math.ceil(n/2));
+    const sorted=S.members.map((m,i)=>[m,offs[i]]).sort((a,b)=>Math.abs(b[1])-Math.abs(a[1]));
+    ppl+=sorted.map(([m,o],i)=>avatar(m.look,180+o*step,180-Math.abs(o)*4,.66,{mood:'happy',delay:i*.3,big:opt.big})).join('');
+  }
+  if(opt.duo!=null&&S.members[opt.duo]&&!showMembers){ppl+=avatar(S.members[opt.duo].look,240,188,.9,{mood:'happy',delay:.4,big:opt.big});ppl+=avatar(S.look,122,188,.9,{mood:opt.mood||mo,big:opt.big})}
+  else ppl+=avatar(S.look,180,showMembers?192:186,showMembers?.86:.95,{mood:opt.mood||mo,big:opt.big,mic:opt.mic});
+  const night=name==='stage'?'':opt.time==='night'?'<rect width="360" height="200" fill="#1a0b3a" opacity=".28"/>':opt.time==='midnight'?'<rect width="360" height="200" fill="#07031a" opacity=".5"/><circle cx="330" cy="26" r="9" fill="#ffe9a8" opacity=".9"/><circle cx="334" cy="23" r="8" fill="#07031a" opacity=".55"/>':opt.time==='morning'?'<rect width="360" height="200" fill="#ffd9a0" opacity=".08"/>':'';
+  ppl+=night;
+  return `<svg viewBox="0 0 360 200" xmlns="http://www.w3.org/2000/svg">${sceneBg(name,col)}${ppl}${opt.caption?`<rect x="0" y="0" width="360" height="22" fill="#000" opacity=".45"/><text x="10" y="15" font-size="11" fill="#fff" font-family="Outfit" font-weight="700">${esc(opt.caption)}</text>`:''}</svg>`;
+}
+
+/* ============ actions ============ */
+const SLOTS=[['morning','Morning','☀️'],['afternoon','Afternoon','🌤️'],['night','Night','🌆'],['midnight','Midnight','🌙']];
+const M='morning',AF='afternoon',N='night',X='midnight';
+let MUL=1;
+const A={};
+function act_(id,o){A[id]=o}
+const T=(f)=>typeof f==='function'?f():f;
+const perk=id=>S.members.some(m=>m.best&&m.arc===id);
+act_('vocal',{e:'🎤',label:'Vocal lesson',cat:'Train',scene:'studio',slots:[M,AF,N],sub:'Vocal ↑ · tiring',avail:()=>true,run(){addStat('vocal',R(2,3.6));addCond('stamina',-14);addCond('stress',4);note(pick(['Your coach drilled breath support until your ribs ached.','You finally hit that high note cleanly — once.','Scales, scales, and more scales.']))}});
+act_('dance',{e:'💃',label:'Dance practice',cat:'Train',scene:'practice',slots:[M,AF,N],sub:'Dance ↑ · very tiring',avail:()=>true,run(){addStat('dance',R(2,3.6));addCond('stamina',-18);addCond('stress',4);note(pick(['You ran the choreography until the mirror fogged up.','Footwork drills. Your calves are filing a complaint.','The instructor said your lines look sharper today.']))}});
+act_('rap',{e:'🎧',label:'Rap & lyrics class',cat:'Train',scene:'studio',slots:[M,AF,N],sub:'Rap ↑',avail:()=>true,run(){addStat('rap',R(2,3.6));addCond('stamina',-12);addCond('stress',3);note(pick(['You wrote sixteen bars about the dorm ramyeon shortage.','Flow practice over a fast beat.','Your teacher made you rap with a pen in your mouth for diction.']))}});
+act_('style',{e:'✨',label:'Styling & self-care',cat:'Train',scene:'salon',slots:[M,AF],sub:'Visual ↑ · Charm ↑ · stress ↓',avail:()=>true,run(){addStat('visual',R(1.4,2.6));addStat('charm',R(.5,1.2));addCond('stamina',-5);addCond('stress',-6);note(pick(['Skincare, a fresh trim and a session with the stylist.','The stylist tried three looks on you. The second one is a keeper.','You practised camera angles in the mirror.']))}});
+act_('acting',{e:'🎬',label:'Acting & variety class',cat:'Train',scene:'tv',slots:[M,AF,N],sub:'Variety ↑ · Charm ↑',avail:()=>true,run(){addStat('variety',R(1.8,3.2));addStat('charm',R(.8,1.6));addCond('stamina',-10);addCond('stress',2);note(pick(['Improv games. You made the coach laugh.','You practised reacting to fake variety-show missions.','Acting class: you cried on cue. Mostly.']))}});
+act_('produce',{e:'🎹',label:'Songwriting session',cat:'Train',scene:'studio',slots:[M,AF,N,X],sub:'Producing ↑',avail:()=>true,run(){addStat('produce',R(1.8,3.2));addCond('stamina',-9);addCond('stress',3);note(pick(['You built a beat from a melody you hummed in the shower.','A producer looked over your demo and gave notes.','You filled half a notebook with lyrics.']))}});
+act_('overnight',{e:'🌙',label:'Midnight practice',cat:'Train',scene:'practice',slots:[X],sub:'Big gains · costs sleep',avail:()=>true,run(){const ks=shuffle(['vocal','dance','rap']).slice(0,2);ks.forEach(k=>addStat(k,R(3,4.8)));addCond('stamina',-20);addCond('stress',10);addCond('health',-4);note('You practised until the building lights went off at 4am.')}});
+act_('group',{e:'👯',label:'Group practice',cat:'Prep',scene:'practice',members:true,slots:[M,AF,N,X],sub:'Readiness ↑ · bond ↑',hot:()=>isPrep(),avail:()=>(!!S.era&&S.era.status!=='break')||S.phase==='idol',run(){if(S.era&&S.era.status!=='break'){const b=S.era.readiness;S.era.readiness=clamp(b+R(8,13)*fatigue()*MUL*(perk('perfectionist')?1.2:1));rec('Readiness',S.era.readiness-b)}addStat('dance',R(1,2));addStat('vocal',R(.5,1.2));bondAll(2);addCond('stamina',-18);addCond('stress',3);note(isPrep()?'You drilled the new title track formation as a group.':'The group kept its stage stamina up with a full run-through.')}});
+act_('record',{e:'🎙️',label:'Recording session',cat:'Prep',scene:'studio',slots:[M,AF,N],sub:'Readiness ↑ · Vocal/Rap ↑',hot:()=>isPrep(),avail:()=>isPrep(),run(){const b=S.era.readiness;S.era.readiness=clamp(b+R(10,15)*fatigue()*MUL*(perk('perfectionist')?1.2:1));rec('Readiness',S.era.readiness-b);addStat('vocal',R(.8,1.6));addStat('rap',R(.5,1));addCond('stamina',-13);addCond('stress',4);note(pick(['The producer made you redo the bridge twenty times. It sounds great now.','You recorded your part of the title track.','Harmony session with the members.']))}});
+act_('show',{e:'🌟',label:()=>`Perform on ${SHOWS[dateOf(S.day).getDay()]}`,cat:'Career',scene:'stage',members:true,mic:true,slots:[AF],w:1,once:true,sub:'Fame ↑ · chance at 1st place',hot:()=>true,avail:()=>isPromo()&&SHOWS[dateOf(S.day).getDay()]!==undefined,run:musicShow});
+act_('fansign',{e:'✍️',label:'Fansign event',cat:'Career',scene:'fansign',slots:[AF,N],w:1,once:true,sub:'Fans ↑ · Charm ↑ · pays',avail:()=>S.phase==='idol'&&!isPrep(),run(){const f=(250+S.fame*90)*R(.7,1.3);addFans(f);addStat('charm',R(.8,1.5));addCond('stamina',-14);addCond('stress',-4);earn(400000*(1+S.fame/25));note(pick([`A fan cried telling you your song got them through exams.`,`Someone brought you a hand-knitted doll of yourself.`,`You signed 100 albums and remembered most names.`]))}});
+act_('variety',{e:'📺',label:'Variety show guest',cat:'Career',scene:'tv',slots:[AF,N],w:1,once:true,sub:'Fame ↑ · depends on Variety',avail:()=>S.phase==='idol'&&!isPrep(),run(){const sc=S.stats.variety*.6+S.stats.charm*.4+R(-15,22)+(perk('joker')?12:0);addCond('stamina',-16);addCond('stress',5);earn(800000*(1+S.fame/20));if(sc>70){addFame(1.8);addFans((2000+S.fame*300)*R(.8,1.4));addStat('variety',1.5);note('🔥 Your reaction clip went viral. "Who IS that?" is trending.');log('A variety show clip went viral.')}else if(sc>40){addFame(.5);addFans(600+S.fame*80);addStat('variety',1);note('Solid appearance — the MCs want you back.')}else{addFame(.3);addCond('stress',6);addStat('variety',1.5);note('Awkward silence during a game. You learned a lot, at least.')}}});
+act_('live',{e:'📱',label:'Fan livestream',cat:'Career',scene:'live',slots:[N,X],once:true,sub:'Fans ↑ · Charm ↑ · stress ↓',avail:()=>S.phase!=='trainee',run(){addFans((80+S.fame*25)*R(.7,1.3));addStat('charm',R(.6,1.2));addCond('stamina',-5);addCond('stress',-3);note(pick(['You ate snacks and read comments for an hour.','Someone asked for aegyo. You complied, reluctantly.','You sang a cover request acapella.']))}});
+act_('treat',{e:'🛍️',label:'Treat yourself',cat:'Life',scene:'city',slots:[AF,N],once:true,sub:'−₩150,000 · stress ↓↓',avail:()=>S.wallet>=150000,run(){spend(150000);addCond('stress',-22);addCond('stamina',4);note(pick(['Café hopping in disguise. Nobody noticed. Probably.','You bought the jacket you\'d been eyeing for months.','A quiet afternoon at a bookshop.']))}});
+act_('hang',{e:'🍜',label:()=>S.phase==='trainee'?'Hang out with all trainees':'Hang out with the group',cat:'Friends',scene:'dorm',members:true,slots:[AF,N,X],sub:'Everyone\'s bond ↑ · stress ↓',avail:()=>true,run(){bondAll(R(3,6));addCond('stress',-12);addCond('stamina',-4);addStat('charm',R(.3,.7));const m=pick(S.members);note(pick([`${m.name} taught everyone a card game and won every round.`,`Convenience-store run with everyone.`,`You all watched old stages and cringed together.`]));if(Math.random()<.3){const r=S.members.filter(storyReady);if(r.length&&!Q.some(q=>q.story)){const x=pick(r);Q.push(storyModal(x))}}}});
+act_('rest',{e:'😴',label:'Rest / nap',cat:'Life',scene:'dorm',slots:[M,AF,N],sub:'Stamina ↑ · stress ↓ · health ↑',avail:()=>true,run(){addCond('stamina',30);addCond('stress',-13);addCond('health',6);note(pick(['A long, glorious nap.','A lazy stretch of dramas and delivery food.','You called home and dozed off.']))}});
+act_('recover',{e:'🩹',label:'Recover (doctor\'s orders)',cat:'Life',scene:'hospital',slots:[],avail:()=>S.forcedRest>0,run(){addCond('stamina',30);addCond('health',10);addCond('stress',-8);note(`Recovering. ${S.forcedRest} more day(s) of rest ordered.`)}});
+
+const OFFER_RUN={
+  cf(o){earn(o.pay);addFame(.8);addStat('visual',1);addCond('stamina',-15);note('The CF shoot wrapped. Your face is now on bus stops.')},
+  drama(o){earn(o.pay);addFame(1.5);addStat('charm',2);addStat('variety',1.5);addCond('stamina',-25);addCond('stress',6);note('You filmed your web drama scenes. Episode 1 drops next month.');log('Acted in a web drama.')},
+  ost(o){earn(o.pay);addFame(1);addStat('vocal',1.5);addCond('stamina',-10);note('You recorded a drama OST. It\'s climbing the chart.');log('Sang a drama OST.')}
+};
+function offerActs(){return S.offers.filter(o=>OFFER_RUN[o.type]).map(o=>({id:'o'+o.id,e:o.e,label:o.name,cat:'Career',scene:'city',slots:[M,AF,N],w:1,once:true,sub:`${won(o.pay)} · ${o.desc}`,hot:true,avail:()=>S.offers.includes(o),run(){S.offers=S.offers.filter(x=>x!==o);OFFER_RUN[o.type](o)}}))}
+function memberActs(){return S.members.map((m,i)=>({id:'m'+i,e:storyReady(m)?'📖':'💬',label:`1:1 time with ${m.name}`,cat:'Friends',scene:'dorm',duo:i,slots:[AF,N,X],once:true,sub:storyReady(m)?'New story chapter ready!':m.ch>=5?(m.best?'Best friends ✨':'Close friends'):`Bond ${Math.round(m.bond)} · ${ARCS[m.arc].n}`,hot:()=>storyReady(m),avail:()=>true,run(){oneOnOne(i)}}))}
+function allActs(){return Object.entries(A).filter(([id])=>id!=='recover').map(([id,a])=>({id,...a})).concat(offerActs(),memberActs()).filter(a=>a.avail())}
+
+/* ============ friendship stories ============ */
+const TH=[15,35,55,75,92];
+const stg=()=>S.phase==='trainee'?'the monthly evaluation':S.phase==='predebut'?'the debut showcase':'a big music show stage';
+const F=(s,m)=>s.replace(/\{n\}/g,esc(m.name)).replace(/\{stage\}/g,stg());
+const ARCS={
+ worrier:{n:'The Worrier',perk:'Calm together: −1 stress every day',ch:[
+  {t:'Stairwell tears',txt:'You find {n} crying quietly in the emergency stairwell, phone in hand. "I miss home. Everyone here seems so sure of themselves."',c:[['Sit down beside them and just listen',2,6,'{n} talks for an hour. By the end, they\'re laughing about their dog.'],['Bring a hot chocolate and leave them be',1,3,'Later you find the empty cup washed and left on your bed with a sticky note: "thanks".'],['"Everyone feels that way. Toughen up."',0,-3,'{n} nods, but doesn\'t meet your eyes for the rest of the day.']]},
+  {t:'The breathing trick',sc:'practice',txt:'Before {stage}, {n}\'s hands are shaking so badly they can\'t tie their shoes.',c:[['Teach them your 4-7-8 breathing trick',2,6,'They breathe with you. The shaking stops.'],['Do a terrible impression of the manager',1,5,'{n} snorts so loudly the whole room turns around.'],['"Focus. Don\'t drag the team down."',-1,-6,'{n} goes very quiet.']]},
+  {t:'A letter from home',txt:'{n} shows you a letter from their grandmother. "She says she watches every video twice. What if I disappoint her?"',c:[['Help them film a video message back to her',2,7,'You film it on the dorm roof at sunset. {n} calls her afterwards and cries happy tears.'],['"We\'ll make her proud. Together."',1,5,'{n} tucks the letter back into their wallet like a lucky charm.']]},
+  {t:'Frozen',sc:'stage',txt:'Mid-rehearsal for {stage}, {n} freezes completely, eyes wide, music still playing.',c:[['Stop everything and hold their hand until they can breathe',2,8,'Nobody complains. When the music restarts, {n} nails it.'],['Slide into their spot and cover, then check on them after',2,6,'Afterwards {n} says you saved them. You say they\'d have done the same.'],['Keep going — the show must go on',0,-4,'{n} recovers alone, and apologises to everyone. You wish you\'d stopped.']]},
+  {t:'The thank-you',txt:'{n} hands you a folded note: "You were the first person here who made me feel like I belonged."',c:[['Keep it in your phone case forever',0,4,''],['Write one back',0,6,'']]}]},
+ rival:{n:'The Rival',perk:'Push each other: +10% vocal, dance and rap training',ch:[
+  {t:'Same spot',sc:'practice',txt:'{n} is going for the same part as you — and makes sure you know it. "May the best one win."',c:[['"Then let\'s both be great."',2,5,'{n} blinks. That wasn\'t the answer they expected.'],['"Oh, I will."',1,2,'{n} grins. A rivalry is born.'],['Ignore them',0,0,'{n} looks almost disappointed.']]},
+  {t:'Late-night duel',sc:'practice',txt:'You both stayed late for the last free practice room. {n} challenges you to a dance-off for it.',c:[['Accept and give it everything',2,6,'You both collapse on the floor, laughing. Nobody won. Nobody cares.',()=>addStat('dance',1)],['Suggest sharing the room',1,4,'You split the mirror down the middle and end up giving each other notes.'],['Let them have it and leave',-1,-3,'{n} practises alone. It\'s less fun than they expected.']]},
+  {t:'The ankle',txt:'{n} rolled an ankle the week before {stage}. "Don\'t look at me like that. I\'m fine."',c:[['Quietly help them adjust the choreography',2,8,'You rework their part together so it\'s easier on the ankle. Nobody else even notices.'],['Tell the manager so they get it treated',1,3,'{n} is furious for a day — then admits it needed ice.'],['Let them handle it',0,-3,'{n} limps through practice alone.']]},
+  {t:'Credit where due',sc:'tv',txt:'A host praises your part on camera — but it was {n} who helped you fix it.',c:[['Give {n} the credit on air',2,8,'{n} pretends to be annoyed. They\'re absolutely not.',()=>addStat('charm',1)],['Say "teamwork!" and move on',1,2,'{n} shrugs. Fair enough.'],['Just take the compliment',-1,-6,'{n} doesn\'t speak to you in the van home.']]},
+  {t:'Equal footing',txt:'"Honestly? I only got this good because I was chasing you." {n} holds out a fist.',c:[['Fist bump',0,5,''],['Pull them into a hug instead',0,6,'']]}]},
+ joker:{n:'The Mood Maker',perk:'Comedy duo: big boost to variety shows',ch:[
+  {t:'Mood maker',txt:'{n} spends every break doing impressions and the whole room laughs. But when everyone leaves, you see them sitting alone, staring at the floor.',c:[['Sit down and ask if they\'re okay',2,6,'"…No one\'s asked me that in a while," they say.'],['Do an impression back to cheer them up',1,4,'It\'s terrible. They laugh anyway.'],['"Maybe take practice more seriously?"',-1,-5,'{n} laughs it off. It doesn\'t sound real.']]},
+  {t:'The comment thread',sc:'live',txt:'{n} laughs off a nasty comment thread about them. A little too loudly.',c:[['Mute it together and go get tteokbokki',2,6,'Spicy food and bad jokes. The thread is forgotten by dessert.'],['"They\'re just jealous."',1,3,'{n} smiles. It helps a little.']]},
+  {t:'The skit',sc:'tv',txt:'{n} wants you as their partner for a comedy skit at the company year-end party.',c:[['Go all in — wig included',2,6,'The CEO laughs so hard they cry. The video leaks. It\'s iconic.',()=>addStat('variety',1.5)],['Agree, but play it safe',1,3,'It goes fine. {n} carries it.'],['Decline — too embarrassing',-1,-4,'{n} does it with someone else. You watch from the back.']]},
+  {t:'Not funny today',txt:'{n} snaps at everyone over nothing and storms out.',c:[['Find them on the roof and just sit there',2,8,'Twenty minutes of silence. Then: "Thanks for not asking." Then they tell you everything.'],['Give them space, text later',1,4,'They reply with a single "sorry" and a cat sticker.'],['Tell them they owe everyone an apology',0,-3,'They apologise. To everyone except you.']]},
+  {t:'The real {n}',txt:'"Everyone thinks I\'m the funny one. You\'re the only one who asks how I actually am."',c:[['"That\'s what friends are for."',0,5,''],['Make them laugh one more time',0,6,'']]}]},
+ perfectionist:{n:'The Perfectionist',perk:'Practice partners: +20% comeback readiness',ch:[
+  {t:'4am mirror',sc:'practice',txt:'You find {n} alone in the practice room at 4am, running the same eight counts over and over.',c:[['Stay and spot them',2,6,'By 5am the eight counts are perfect. {n} actually smiles.'],['Gently tell them to get some sleep',1,3,'They grumble — but turn the lights off.'],['Leave quietly',0,0,'']]},
+  {t:'Ninety-nine percent',txt:'{n} is upset over a tiny mistake nobody else noticed.',c:[['Show them all the comments praising their part',2,6,'They read every one. Twice.'],['Point out your own bigger mistake and laugh about it',2,5,'"Okay, yours WAS worse," they admit.'],['"Yeah, it was noticeable."',-1,-5,'{n} watches the clip forty more times.']]},
+  {t:'Teach me',sc:'practice',txt:'{n} offers to fix your weakest section. They\'re a tough teacher.',c:[['Accept and take every criticism',2,6,'It\'s brutal. It\'s also the best you\'ve ever looked.',()=>addStat('dance',1.5)],['Accept, but ask them to be gentler',1,4,'They try. Mostly.'],['Politely decline',-1,-3,'{n} looks a little hurt.']]},
+  {t:'Running on fumes',txt:'{n} has dark circles and is practising through a fever.',c:[['Hide their practice room key and make them rest',2,7,'They\'re furious for an hour, then sleep for fourteen.'],['Tell the manager',1,4,'{n} gets sent home. They forgive you by morning.'],['Practise with them so they\'re not alone',0,-2,'You both end up exhausted.',()=>addCond('stamina',-10)]]},
+  {t:'Good enough',txt:'"You taught me that \'good enough\' sometimes really is. Thank you."',c:[['"You\'re more than good enough."',0,5,''],['Challenge them to a lazy day',0,6,'']]}]},
+ dreamer:{n:'The Dreamer',perk:'Songwriting duo: +4 song quality, faster producing',ch:[
+  {t:'The notebook',txt:'A notebook falls out of {n}\'s bag — full of lyrics. They snatch it back, red-faced.',c:[['Tell them the line you saw was beautiful',2,6,'"…You really think so?" They let you read one more page.'],['Pretend you saw nothing',1,2,'They relax. Your secret.'],['Tease them about it',-1,-4,'{n} doesn\'t bring the notebook to practice again.']]},
+  {t:'A melody',sc:'studio',txt:'{n} hums a melody and nervously asks if it\'s any good.',c:[['Help them build a chorus around it',2,6,'Two hours later you have a real demo.',()=>addStat('produce',1)],['"It\'s great!"',1,3,'They hum it all day.']]},
+  {t:'Rejected',sc:'studio',txt:'The company rejected {n}\'s demo. They\'re trying very hard to look fine.',c:[['Rework it together, late into the night',2,7,'By 3am the bridge finally works.',()=>addStat('produce',1)],['"There\'ll be other chances."',1,3,'{n} nods slowly.'],['"Maybe songwriting isn\'t your thing."',-2,-8,'The notebook disappears for a month.']]},
+  {t:'Our song',sc:'office',txt:'{n} wants to pitch a song you wrote together for the next release.',c:[['Pitch it together to the CEO',2,6,'The CEO listens twice and says "Let\'s talk."',()=>addCeo(2)],['Let {n} pitch it alone — it\'s their moment',1,4,'They come back glowing.']]},
+  {t:'Stadium dreams',txt:'"One day, a whole stadium is going to sing our song." {n} says it like a fact.',c:[['"I\'ll be right next to you."',0,5,''],['Start writing the next one',0,6,'']]}]},
+ quiet:{n:'The Quiet One',perk:'Steady presence: +3 stamina recovery every day',ch:[
+  {t:'Sketchbook',txt:'{n} barely talks, but during a break you see them sketching the other trainees.',c:[['Ask to see it',2,5,'It\'s a drawing of you, mid-yawn. It\'s weirdly flattering.'],['Sit nearby without saying anything',1,4,'After a while, they tilt the sketchbook so you can see.'],['Leave them to it',0,0,'']]},
+  {t:'One earbud',sc:'city',txt:'On a long van ride, {n} silently offers you one earbud.',c:[['Listen, then ask about the song',2,6,'It\'s an old ballad their mum used to sing. They talk the whole way.'],['Fall asleep on their shoulder',1,5,'They don\'t move for two hours.']]},
+  {t:'On the spot',sc:'tv',txt:'During a Q&A, the host keeps putting {n} on the spot. They freeze.',c:[['Jump in and redirect with a joke',2,7,'The audience laughs, the host moves on, and {n} squeezes your hand under the table.'],['Answer the question for both of you',1,4,'{n} nods along, grateful.']]},
+  {t:'Secret birthday',txt:'You find out it\'s {n}\'s birthday. They told no one.',c:[['Throw a tiny surprise party with everyone',2,8,'Cake, candles and one very red face. They keep the paper crown.'],['Give them a quiet gift, just from you',2,6,'A new sketchbook. They hold it like treasure.']]},
+  {t:'Glad you\'re here',txt:'"I don\'t talk much," {n} says. "But I\'m really glad you\'re here."',c:[['"Me too."',0,5,''],['Sit with them in comfortable silence',0,6,'']]}]}
+};
+function storyReady(m){return m.ch<5&&m.bond>=TH[m.ch]&&S.day-(m.lastCh||-99)>=3}
+function oneOnOne(i){
+  const m=S.members[i],b=m.bond;m.bond=clamp(b+R(7,11)*MUL);rec(`Bond · ${m.name}`,m.bond-b);addCond('stress',-6);addCond('stamina',-3);
+  note(pick([`You and ${m.name} got late-night snacks and talked about everything.`,`${m.name} showed you their favourite hidden café.`,`You helped ${m.name} practise their part and swapped stories.`,`You and ${m.name} walked along the Han River.`]));
+  if(storyReady(m)&&!Q.some(q=>q.story===m.name))Q.push(storyModal(m));
+}
+function storyModal(m){
+  const arc=ARCS[m.arc],c=arc.ch[m.ch],idx=S.members.indexOf(m);
+  return {story:m.name,title:`${esc(m.name)} · Chapter ${m.ch+1}: ${F(c.t,m)}`,art:scene(c.sc||'dorm',{duo:idx}),
+    body:`<p class="muted" style="margin-top:-2px">${arc.n} · Friendship story ${m.ch+1}/5</p><p>${F(c.txt,m)}</p>`,
+    choices:c.c.map(([l,sp,bd,r,fx])=>({label:F(l,m).replace(/&#39;/g,"'").replace(/&amp;/g,'&'),fn(){
+      m.sp+=sp;const b=m.bond;m.bond=clamp(b+bd);rec(`Bond · ${m.name}`,m.bond-b);if(fx)fx();
+      if(r)note(F(r,m).replace(/&#39;/g,"'").replace(/&amp;/g,'&'));
+      m.ch++;m.lastCh=S.day;if(m.ch>=5)finishArc(m);else log(`Friendship with ${m.name}: chapter ${m.ch} complete.`);
+    }}))};
+}
+function finishArc(m){
+  const arc=ARCS[m.arc];
+  if(m.sp>=6){m.best=true;log(`${m.name} became your best friend. (${arc.perk})`);
+    Q.push({title:`Best friends with ${esc(m.name)} ✨`,art:scene('dorm',{duo:S.members.indexOf(m),big:true}),confetti:true,body:`<p>Through every chapter, you showed up for ${esc(m.name)}. Now they'd do anything for you too.</p><p><b>Friendship perk unlocked:</b> ${arc.perk}.</p>`});
+  }else{log(`Became close friends with ${m.name}.`);
+    Q.push({title:`Close friends with ${esc(m.name)}`,art:scene('dorm',{duo:S.members.indexOf(m)}),body:`<p>You and ${esc(m.name)} have been through a lot. You're close — even if you weren't always there when it mattered most.</p><p class="muted">Best-friend perks need the kindest choices in most chapters. Maybe with the next member…</p>`});}
+}
+
+/* ============ music show ============ */
+function musicShow(){
+  const e=S.era,show=SHOWS[dateOf(S.day).getDay()];
+  const perf=skillScore()*.5+e.readiness*.2+S.cond.stamina*.15+R(0,15)-(S.cond.stress>75?8:0);
+  addCond('stamina',-22);addCond('stress',5);addFame(.04+perf/420);addFans((150+S.fame*60)*R(.7,1.3));earn(300000*(1+S.fame/30));
+  const my=e.quality*.45+S.fame*.4+Math.min(10,S.fans/60000)+R(0,15)+(perf>70?4:0)+(e.rank<=10?4:0);
+  const rival=62+R(0,45)+Math.min(8,yrs()*2);
+  if(my>rival){
+    S.wins++;e.wins++;const y=yearOf(S.day);S.yearWins[y]=(S.yearWins[y]||0)+1;addFame(.6);addFans(2000+S.fame*200);addCeo(3);
+    note(`🏆 1st place on ${show}! Win #${S.wins}.`);log(`Won 1st place on ${show} with "${e.title}" (win #${S.wins}).`);
+    Q.push({title:`🏆 1st place on ${show}!`,art:scene('stage',{members:true,big:true,mic:true,caption:`${show} · ${S.group.name} wins`}),confetti:true,
+      body:`<p>The MC calls <b>${esc(S.group.name)}</b>. ${e.wins===1?`It's the first win for "${esc(e.title)}"!`:`That's win #${e.wins} for "${esc(e.title)}".`} ${S.wins===1?'Your first music show win ever — the members are sobbing through the encore.':'You sing the encore while confetti rains down.'}</p>`});
+  }else note(`You performed on ${show}. ${perf>70?'Fans are calling it a legendary stage.':'A clean performance.'} No win this time.`);
+}
+
+/* ============ day loop ============ */
+function emptyPlan(){return {morning:null,afternoon:null,night:null,midnight:null}}
+function runDay(){
+  const acts=allActs(),tl=[],used=new Set();let last=null;
+  for(const [k,lab,em] of SLOTS){
+    const id=S.plan[k];NOTES=[];
+    const a=id&&acts.find(x=>x.id===id);
+    if(a&&a.avail()&&a.slots.includes(k)&&!(a.once&&used.has(id))){
+      used.add(id);MUL=a.w||.42;a.run();MUL=1;
+      last={name:a.scene,members:a.members,mic:a.mic,duo:a.duo,time:k};
+      tl.push({em,lab,t:T(a.label),notes:NOTES.slice()});
+    }else{
+      if(k!=='midnight'){S.cond.stamina=clamp(S.cond.stamina+4);S.cond.stress=clamp(S.cond.stress-2)}
+      tl.push({em,lab,t:k==='midnight'?'Sleep':'Free time',notes:id?['(Your planned activity wasn\'t available.)']:[],free:true});
+    }
+  }
+  NOTES=[];endDay(!tl[3].free);
+  return {tl,last,extra:NOTES.slice()};
+}
+function restDay(){NOTES=[];MUL=1;A.recover.run();const tl=[{em:'🩹',lab:'All day',t:'Recovering',notes:NOTES.slice()}];NOTES=[];endDay(false);return {tl,last:{name:'hospital'},extra:NOTES.slice()}}
+function doDay(){
+  if(Q.length||S.ending)return;
+  D={};let days=0,res=null,extra=[];
+  const n=UI.repeat?7:1;
+  for(let i=0;i<n;i++){
+    if(i>0&&S.forcedRest>0)break;
+    res=S.forcedRest>0?restDay():runDay();days++;extra=extra.concat(res.extra);
+    if(res.last)UI.scene=res.last;
+    if(Q.length||S.ending)break;
+  }
+  UI.today={title:days>1?`${days} days · last: ${dstr(S.day-1)}`:dstr(S.day-1),tl:res.tl,lines:extra.slice(-8),d:D};
+  save();render();showModal();
+}
+function endDay(midUsed){
+  S.cond.stamina=clamp(S.cond.stamina+(midUsed?6:20)+(perk('quiet')?3:0));S.cond.stress=clamp(S.cond.stress-2-(perk('worrier')?1:0)+(midUsed?2:0));
+  if(S.cond.stamina<=0)addCond('health',-6);
+  S.members.forEach(m=>m.skill=clamp(m.skill+R(.05,.2)*(1-m.skill/110)));
+  if(S.forcedRest>0)S.forcedRest--;
+  S.offers=S.offers.filter(o=>o.exp>S.day);
+  if(S.phase==='idol')idolDaily();
+  if(S.phase!=='trainee'&&S.fame>2&&Math.random()<.5)S.fans+=Math.round(S.fame*S.fame*.15);
+  if(S.cond.stress>=95)S.burnDays++;else S.burnDays=0;
+  if(S.burnDays>=4){S.burnDays=0;burnout()}
+  else if(S.cond.health<=0){S.cond.health=30;S.forcedRest=6;if(S.phase==='idol')addFame(-2);note('🚑 You collapsed from exhaustion. Doctors ordered a week of rest.');log('Collapsed from exhaustion and was ordered to rest.');Q.push({title:'Ordered to rest',art:scene('hospital',{mood:'tired'}),body:'<p>You pushed your body too far and collapsed after a schedule. The doctor ordered a full week off — no practice, no schedules.</p><p class="muted">Keep an eye on stamina and health. Training at low stamina gives smaller gains and wears down your health.</p>'})}
+  else if(S.cond.stamina<12&&Math.random()<.25){addCond('health',-18);S.forcedRest=2;note('You twisted your ankle from fatigue. Two days of rest.');log('Minor injury from fatigue.')}
+  if(!Q.length&&S.forcedRest<=0&&Math.random()<(S.phase==='trainee'?.12:.13))randomEvent();
+  S.day++;
+  morning();
+  checkEndings();
+}
+function morning(){
+  const dt=dateOf(S.day);
+  if(dt.getDate()===1)monthly();
+  if(S.phase==='trainee'&&(S.day-S.trainee.start)%28===0&&S.day>1)evaluation();
+  if(S.phase==='predebut'&&S.day>=S.era.release)debut();
+  else if(S.phase==='idol'){
+    const e=S.era;
+    if(e.status==='promo'&&S.day>e.end)wrapEra();
+    else if(e.status==='break'&&S.day>=e.next)startPrep();
+    else if(e.status==='prep'&&S.day>=e.release)release();
+    if(dt.getMonth()===11&&dt.getDate()===31)awards();
+    if(!S.flags.contract&&S.day-S.group.debutDay>=2555)contractTalk();
+  }
+}
+function monthly(){
+  if(S.phase==='idol'){const inc=S.monthSales*220+S.fame*S.fame*900;if(inc>0){const before=S.debt;earn(inc);note(`💰 Monthly settlement: ${won(inc)}${before>0?' (goes toward your trainee debt first)':''}.`)}S.monthSales=0}
+  else{S.wallet+=200000;note('Your family sent ₩200,000 pocket money.')}
+}
+function idolDaily(){
+  const e=S.era;
+  if(e.status==='promo'){
+    const days=S.day-e.start;
+    const score=e.quality*.5+S.fame*.6+R(-5,5)-days*.9;
+    e.rank=clamp(Math.round(150-score*1.6),1,200);e.peak=Math.min(e.peak,e.rank);
+    const sales=Math.max(0,(210-e.rank))*R(15,35)*(1+S.fame/25)*(days<7?1.6:1);
+    e.sales+=Math.round(sales);S.monthSales+=sales;
+    S.fame=clamp(S.fame+(e.rank<=10?.07:e.rank<=50?.03:.005)*(1-S.fame/105));
+    S.fans+=Math.round((S.fame*S.fame*.5)*(e.rank<=20?1.5:1));
+  }else if(e.status==='break'){S.fame=clamp(S.fame-.05)}
+}
+
+/* ============ trainee evaluation ============ */
+function evaluation(){
+  const t=S.trainee,co=CO();t.month++;
+  const thr=Math.min(co.cap,co.base+co.step*t.month);
+  const s=S.stats;
+  let score=skillScore()+(S.rel.ceo-50)*.06+R(-7,7)-(S.cond.stress>75?6:0)-(S.cond.health<40?5:0);
+  const margin=score-thr,rank=clamp(Math.round(15-margin*.7),1,30),pass=rank<=15;
+  t.ranks.push(rank);
+  const sk=['vocal','dance','rap','visual','variety','charm'];
+  const best=sk.reduce((a,b)=>s[a]>s[b]?a:b),worst=['vocal','dance','rap'].reduce((a,b)=>s[a]<s[b]?a:b);
+  if(pass){t.fails=0;addCeo(rank<=3?5:2)}else{t.fails++;addCeo(-3)}
+  t.topStreak=rank<=3?t.topStreak+1:0;
+  const chosen=t.month>=co.minMonths&&(t.topStreak>=2||(t.month>=18&&rank<=6));
+  log(`Monthly evaluation #${t.month}: ranked ${rank}/30 — ${pass?'passed':'failed'}.`);
+  const verdict=pass?(rank<=3?'Outstanding. Keep this up and the CEO will notice.':'You pass. Keep pushing.'):(t.fails>=3?'That is three failed evaluations in a row.':`You fail this month. ${3-t.fails} more fail${3-t.fails===1?'':'s'} in a row and your contract ends.`);
+  Q.push({title:`Monthly Evaluation #${t.month}`,art:scene('practice',{caption:`Evaluation · ${shortDate(S.day)}`,mood:pass?'happy':'sad'}),
+    body:`<div class="result-row"><div class="qs"><small>Rank</small><b class="big-num">${rank}</b><span class="muted"> / 30</span></div><div class="qs"><small>Your score</small><b>${score.toFixed(1)}</b></div><div class="qs"><small>Pass line</small><b>${thr.toFixed(1)}</b></div></div>
+    <p><b>Judges:</b> "Your ${LABEL[best].toLowerCase()} stands out. ${s[worst]<thr?`Your ${LABEL[worst].toLowerCase()} is holding you back.`:'Nice balance overall.'}"</p><p>${verdict}</p>${!pass||t.month<co.minMonths?'':`<p class="muted">Debut teams are picked from trainees who rank top 3 two months in a row${t.month<co.minMonths?` (after ${co.minMonths} months)`:''}.</p>`}`});
+  if(chosen&&t.fails<3)Q.push(debutPick());
+}
+function debutPick(){
+  const def=groupName();
+  return {title:'You\'re debuting! 🎉',art:scene('office',{members:true,big:true,caption:'The CEO\'s office'}),confetti:true,
+    body:`<p>The CEO calls you and ${S.members.map(m=>esc(m.name)).join(', ')} into the office. "You'll debut together in three weeks."</p>
+    <div class="field"><label>Group name</label><input class="txt" id="gname" maxlength="18" value="${esc(def)}"></div>
+    <div class="field"><label>Debut concept</label><select class="txt" id="gconcept">${Object.entries(CONCEPTS).map(([k,v])=>`<option value="${k}">${v.n}</option>`).join('')}</select></div>
+    <div class="field"><label>Debut single title</label><input class="txt" id="gsong" maxlength="24" value="${esc(albumName())}"></div>`,
+    choices:[{label:'Let\'s debut!',primary:true,fn(){
+      const name=(document.getElementById('gname').value.trim()||def).slice(0,18),concept=document.getElementById('gconcept').value,song=(document.getElementById('gsong').value.trim()||albumName()).slice(0,24);
+      setupGroup(name,concept,song);
+    }}]};
+}
+function setupGroup(name,concept,song){
+  const s=S.stats;const best=['vocal','dance','rap','visual','produce'].reduce((a,b)=>s[a]>s[b]?a:b);
+  const leader=S.rel.ceo>=60||s.charm>=Math.max(...S.members.map(m=>m.skill))*0.9;
+  S.position=(leader?'Leader & ':'')+POS_OF[best];
+  const left=shuffle(['Lead Vocalist','Lead Dancer','Sub Vocalist','Lead Rapper','Visual','Sub Vocalist','Performer'].filter(p=>!POS_OF[best].includes(p.split(' ')[1]||'')));
+  S.members.forEach((m,i)=>m.pos=(i===S.members.length-1?'Maknae · ':'')+(!leader&&i===0?'Leader · ':'')+left[i%left.length]);
+  S.group={name,concept,debutDay:S.day+21};
+  S.phase='predebut';
+  S.era={status:'prep',n:0,title:song,readiness:0,release:S.day+21,start:0,end:0,quality:0,rank:200,peak:200,sales:0,wins:0};
+  log(`Selected to debut in ${name} as ${S.position}. Debut single: "${song}".`);
+  note(`You'll debut in ${name} on ${shortDate(S.day+21)}. Use Group practice and Recording to raise readiness.`);
+}
+
+/* ============ eras ============ */
+function computeQuality(){const e=S.era,co=CO();return clamp(28+groupPower()*.38+e.readiness*.16+co.budget+(S.stats.produce>50?(S.stats.produce-50)*.25:0)+(perk('dreamer')?4:0)+R(-6,8),20,100)}
+const grade=q=>q>=88?'S':q>=75?'A':q>=60?'B':q>=45?'C':'D';
+function debut(){
+  const co=CO(),e=S.era;S.phase='idol';
+  e.quality=computeQuality();e.status='promo';e.start=S.day;e.end=S.day+28;e.n=1;
+  addFame(co.fameStart+e.readiness/12);addFans(co.fanStart+e.readiness*60);
+  const first=Math.round(S.fans*R(.2,.35)+co.budget*600);e.sales=first;S.monthSales+=first;e.rank=clamp(Math.round(150-(e.quality*.5+S.fame*.6)*1.6),1,200);e.peak=e.rank;
+  log(`DEBUT DAY! ${S.group.name} released "${e.title}".`);
+  Q.push({title:`${S.group.name} debuts!`,art:scene('stage',{members:true,big:true,mic:true,caption:`Debut showcase · ${shortDate(S.day)}`}),confetti:true,
+    body:`<p>The lights come up on your debut showcase. "${esc(e.title)}" is out now.</p><div class="result-row"><div class="qs"><small>Song quality</small><b><span class="grade g-${grade(e.quality)}">${grade(e.quality)}</span> ${e.quality.toFixed(0)}</b></div><div class="qs"><small>First-week sales</small><b>${fmt(first)}</b></div><div class="qs"><small>Melodi chart</small><b>#${e.rank}</b></div></div>
+    <p>You're the <b>${esc(S.position)}</b>. Promotions run for 4 weeks — perform on music shows (Tue–Sun) for a shot at 1st place.</p>`});
+}
+function wrapEra(){
+  const e=S.era;
+  S.albums.push({n:e.n,title:e.title,q:e.quality,peak:e.peak,sales:e.sales,wins:e.wins,y:yearOf(e.start)});
+  log(`Wrapped promotions for "${e.title}" — peak #${e.peak}, ${fmt(e.sales)} sold, ${e.wins} win(s).`);
+  const gap=RI(35,60);e.status='break';e.next=S.day+gap;
+  Q.push({title:`"${e.title}" promotions wrap`,art:scene('dorm',{members:true}),body:`<div class="result-row"><div class="qs"><small>Peak chart</small><b>#${e.peak}</b></div><div class="qs"><small>Sales</small><b>${fmt(e.sales)}</b></div><div class="qs"><small>Wins</small><b>${e.wins}</b></div></div><p>The company plans your next comeback in about ${Math.round(gap/7)} weeks. Use the break for fansigns, variety shows, solo schedules and training.</p>`});
+  if(yrs()>=2&&S.fame<20&&Math.random()<.6)S.flags.disband=true;
+}
+function startPrep(){
+  const e=S.era,def=albumName();
+  e.status='prep';e.readiness=0;e.release=S.day+14;
+  Q.push({title:'Comeback confirmed!',art:scene('office',{members:true,caption:'Comeback meeting'}),
+    body:`<p>The company green-lights ${S.group.name}'s next comeback. Release is in 2 weeks — spend it on Group practice and Recording to raise readiness.</p><div class="field"><label>Album title</label><input class="txt" id="aname" maxlength="24" value="${esc(def)}"></div>`,
+    choices:[{label:'Start comeback prep',primary:true,fn(){e.title=(document.getElementById('aname').value.trim()||def).slice(0,24);log(`Comeback announced: "${e.title}".`)}}]});
+}
+function release(){
+  const e=S.era;e.n=S.albums.length+1;e.quality=computeQuality();e.status='promo';e.start=S.day;e.end=S.day+28;e.wins=0;e.sales=0;
+  const first=Math.round(S.fans*R(.18,.32)+CO().budget*700+e.quality*40);e.sales=first;S.monthSales+=first;
+  e.rank=clamp(Math.round(150-(e.quality*.5+S.fame*.6)*1.6),1,200);e.peak=e.rank;addFame(e.quality/40);
+  log(`Released "${e.title}" — debuted at #${e.rank}, ${fmt(first)} first-week sales.`);
+  Q.push({title:`"${e.title}" is out!`,art:scene('stage',{members:true,mic:true,caption:`Comeback stage · ${shortDate(S.day)}`}),
+    body:`<div class="result-row"><div class="qs"><small>Quality</small><b><span class="grade g-${grade(e.quality)}">${grade(e.quality)}</span> ${e.quality.toFixed(0)}</b></div><div class="qs"><small>First week</small><b>${fmt(first)}</b></div><div class="qs"><small>Melodi chart</small><b>#${e.rank}</b></div></div><p>Readiness was ${e.readiness.toFixed(0)}%. Four weeks of promotions start now.</p>`});
+}
+
+/* ============ awards ============ */
+function awards(){
+  const y=yearOf(S.day),wins=S.yearWins[y]||0,rel=S.albums.some(a=>a.y===y)||(S.era&&S.era.status==='promo');
+  const res=[];
+  if(yearOf(S.group.debutDay)===y&&S.fame>=22)res.push('Rookie of the Year');
+  if(rel&&S.fame>=42)res.push('Bonsang (Main Award)');
+  if(S.fame>=60&&wins>=3&&Math.random()<.5)res.push('Best Performance');
+  if(S.fame>=82&&wins>=15||(S.fame>=76&&wins>=10&&Math.random()<.35)){res.push('DAESANG — Artist of the Year');S.daesangs++}
+  res.forEach(n=>S.awards.push({y,n}));
+  if(res.length){addFame(res.length*1.5);addCeo(4);log(`${y} year-end awards: ${res.join(', ')}.`)}
+  const big=res.some(r=>r.startsWith('DAESANG'));
+  Q.push({title:`${y} Year-End Awards`,art:scene('stage',{members:true,big:res.length>0,caption:`Golden Stage Awards ${y}`}),confetti:res.length>0,
+    body:res.length?`<p>${big?'The final envelope opens… and it\'s <b>'+esc(S.group.name)+'</b>. The daesang. Nobody on stage can speak.':'You walk away with:'}</p><ul>${res.map(r=>`<li><b>${r}</b></li>`).join('')}</ul>`:`<p>You performed at the ceremony, but went home empty-handed this year. ${wins} music show win(s) in ${y}.</p>`});
+}
+
+/* ============ contract & endings ============ */
+function contractTalk(){
+  S.flags.contract=true;const s=S.stats;
+  Q.push({title:'Your 7-year contract is ending',art:scene('office',{members:true,caption:'Renewal meeting'}),
+    body:`<p>Seven years since debut. The company wants to talk about the future of ${esc(S.group.name)} — and yours.</p>`,
+    choices:[
+      {label:'Renew with the group',sub:'Keep going together (game continues)',fn(){addCeo(10);bondAll(10);log('Renewed the contract with the group.');note('You all signed again. The fans trend #ForeverTogether.')}},
+      {label:'Go solo',sub:'Needs Fame 50+',disabled:S.fame<50,fn(){endGame('solo')}},
+      {label:'Become an actor',sub:'Needs Charm + Variety 120+',disabled:s.charm+s.variety<120,fn(){endGame('actor')}},
+      {label:'Become a producer',sub:'Needs Producing 60+',disabled:s.produce<60,fn(){endGame('producer')}},
+      {label:'Retire from idol life',sub:'A quiet, happy ending',fn(){endGame('retire')}}]});
+}
+function burnout(){
+  if(!S.flags.burnout1){
+    S.flags.burnout1=true;log('Hit burnout.');
+    Q.push({title:'You\'re running on empty',art:scene('dorm',{mood:'sad'}),body:'<p>For days you\'ve felt heavy. Practice feels pointless and you can\'t sleep. Your manager notices.</p>',
+      choices:[{label:'Take a 2-week hiatus',sub:'Stress resets, some fame lost',fn(){S.forcedRest=14;S.cond.stress=25;if(S.phase==='idol')addFame(-4);log('Took a hiatus to recover.');note('You stepped back for two weeks. Fans flooded the hashtag with support.')}},
+        {label:'Push through',sub:'Risky — health suffers',fn(){addCond('health',-25);addCond('stress',-15);S.flags.pushed=true}}]});
+  }else endGame('burnout');
+}
+const ENDINGS={
+  cut:{t:'Not This Time',scene:'city',txt:()=>`After three failed evaluations in a row, ${CO().name} ended your trainee contract. You pack your bag, take one last look at practice room B2, and step outside. It hurts — but you're young, you can sing, and the world is bigger than one company.`},
+  longtrainee:{t:'A Different Stage',scene:'city',txt:()=>`Five years as a trainee and still no debut. You decide it's time to choose yourself. You enrol in university, start a small cover channel, and discover you love making music for its own sake.`},
+  burnout:{t:'Stepping Away',scene:'hospital',txt:()=>`The exhaustion came back, and this time you listened. You stepped away from the spotlight to rest and take care of yourself. ${S.group?`${S.group.name}'s fans`:'Your friends'} send letters for months — and you finally have time to read every one.`},
+  disband:{t:'Disbanded',scene:'dorm',txt:()=>`The company announces that ${S.group.name} will disband. Your last fan meeting is small but loud, full of people who never stopped believing. You promise each other this isn't goodbye.`},
+  terminated:{t:'Contract Terminated',scene:'office',txt:()=>`One scandal too many. With the CEO's trust gone, ${CO().name} ends your contract. You spend the next year rebuilding your life — slower, quieter, and on your own terms.`},
+  solo:{t:'Solo Star',scene:'stage',txt:()=>`You step out from ${S.group.name} as a soloist. Your first solo single tops the chart in a day, and every member is in the front row of your showcase.`},
+  actor:{t:'Leading Role',scene:'tv',txt:()=>`You trade the stage for the screen. Your first lead drama becomes the weekend's most-watched show, and critics call you "an idol who was always an actor."`},
+  producer:{t:'Behind the Board',scene:'studio',txt:()=>`You open your own studio. Within a year, the songs you write are being sung by the next generation of idols — and you still send demos to ${S.group.name} first.`},
+  retire:{t:'Curtain Call',scene:'city',txt:()=>`You hand back the in-ear monitors for the last time. Seven years, ${S.albums.length} albums, ${S.wins} wins. You leave with your friendships intact and a fandom that will always call you theirs.`},
+  legend:{t:'Living Legend',scene:'stage',txt:()=>`With ${S.daesangs} daesangs, ${S.group.name} is written into K-pop history. You choose to end it at the very top, with a farewell concert that sells out in eleven seconds.`}
+};
+function endGame(id){S.ending={id,day:S.day};Q=[];log(`ENDING: ${ENDINGS[id].t}`);save();render();}
+function checkEndings(){
+  if(S.ending)return;
+  if(S.phase==='trainee'&&S.trainee.fails>=3){Q=[];return endGame('cut')}
+  if(S.phase==='trainee'&&S.day-S.trainee.start>5*365){Q=[];return endGame('longtrainee')}
+  if(S.scandals>=3&&S.rel.ceo<20){Q=[];return endGame('terminated')}
+  if(S.flags.disband&&!Q.length)return endGame('disband');
+  if(S.daesangs>=3&&!S.flags.legend){S.flags.legend=true;Q.push({title:'Three daesangs.',art:scene('stage',{members:true,big:true}),confetti:true,body:`<p>${esc(S.group.name)} has now won ${S.daesangs} daesangs. There's nothing left to prove.</p>`,choices:[{label:'Retire as a legend',sub:'Take the Legend ending',fn(){endGame('legend')}},{label:'Keep going',sub:'The story continues',fn(){note('Why stop now?')}}]})}
+}
+
+/* ============ random events ============ */
+const EV=[
+ {w:3,when:()=>S.phase==='trainee',run(){addStat('vocal',1.5);addCeo(3);note('🎤 Your vocal coach stopped the lesson to make everyone listen to your high note.')}},
+ {w:3,when:()=>true,run(){Q.push({title:'Midnight ramyeon?',art:scene('dorm',{members:true}),body:`<p>${esc(pick(S.members).name)} knocks on your door at 1am holding two cups of ramyeon.</p>`,choices:[{label:'Join them',sub:'Bond ↑ stress ↓',fn(){bondAll(4);addCond('stress',-10);addCond('stamina',-6)}},{label:'Go back to sleep',sub:'Stamina ↑',fn(){addCond('stamina',10)}}]})}},
+ {w:2,when:()=>S.phase==='trainee',run(){addCond('stress',8);note('📵 Surprise dorm inspection — phones confiscated for a week.')}},
+ {w:2,when:()=>S.phase==='trainee'&&S.trainee.month>=2,run(){addFame(1.5);addFans(RI(300,1500));note('🎥 The company posted a "Who\'s next?" teaser featuring you. 400K views.')}},
+ {w:1,when:()=>S.phase==='trainee'&&skillScore()>30&&!S.flags.scout,run(){S.flags.scout=1;Q.push({title:'A rival company calls',art:scene('city'),body:'<p>A casting director from a rival agency slips you a business card after a showcase. "We\'d debut you faster."</p>',choices:[{label:'Stay loyal',sub:'CEO trust ↑',fn(){addCeo(8);log('Turned down a rival agency.')}},{label:'Take the meeting anyway',sub:'CEO might hear about it…',fn(){addCeo(-10);addCond('stress',-4);note('Nothing came of it — but the CEO heard.')}}]})}},
+ {w:2,when:()=>S.phase==='trainee',run(){addCond('stress',10);note('😢 A trainee you started with packed up and left the company today.')}},
+ {w:3,when:()=>true,run(){addCond('stress',-10);note('📞 Your family called to check you\'re eating properly.')}},
+ {w:2,when:()=>true,run(){addCond('stress',-8);addStat('charm',1);note('A senior from your company shared their survival tips over coffee.')}},
+ {w:4,when:()=>S.phase==='idol',run(){const big=isPromo()?2:1;addFame(.9*big);addFans((3000+S.fame*500)*big);log('A fancam went viral.');note(`🔥 Your ${pick(['fancam','ending fairy','dance break'])} went viral — ${fmt(RI(2,9)*1e6*big)} views overnight.`)}},
+ {w:2,when:()=>S.phase==='idol'&&S.fame>12,run(){Q.push({title:'Dating rumour!',art:scene('city',{mood:'sad'}),body:'<p>A gossip site posts blurry photos of you leaving a café with "a mystery person". It\'s actually your cousin.</p>',choices:[{label:'Let the company deny it',sub:'Safe',fn(){addFame(-1);addCeo(2)}},{label:'Post a playful reply yourself',sub:'Charm check',fn(){if(S.stats.charm>55){addFame(1.5);addFans(2000);note('Your reply was so funny the rumour turned into a meme.')}else{addFame(-3);addCond('stress',8);S.scandals++;addCeo(-5);note('It backfired. The comments got worse.')}}}]})}},
+ {w:3,when:()=>S.phase!=='trainee'&&S.fame>5,run(){Q.push({title:'Malicious comments',art:scene('live',{mood:'sad'}),body:'<p>A thread picking apart your performance is going around.</p>',choices:[{label:'Read them all',sub:'Stress ↑↑',fn(){addCond('stress',16)}},{label:'Log off and call a friend',sub:'Stress ↑ a little',fn(){addCond('stress',3);bondAll(1)}}]})}},
+ {w:2,when:()=>S.phase!=='trainee',run(){const a=pick(S.members),b=pick(S.members.filter(m=>m!==a))||a;Q.push({title:'Tension in the dorm',art:scene('dorm',{members:true,mood:'sad'}),body:`<p>${esc(a.name)} and ${esc(b.name)} are arguing about the choreography again.</p>`,choices:[{label:'Step in and mediate',sub:'Bond ↑ · Charm ↑ · stress ↑',fn(){bondAll(5);addStat('charm',1);addCond('stress',5)}},{label:'Stay out of it',sub:'Bond ↓',fn(){bondAll(-4)}}]})}},
+ {w:2,when:()=>S.phase==='idol',run(){addStat('visual',1);addFame(.7);note('✈️ Your airport fashion is trending.')}},
+ {w:3,when:()=>S.phase==='idol'&&(S.fame>=15||S.stats.visual>55)&&S.offers.length<3,run(){const pay=5e6+S.fame*S.fame*6000;S.offers.push({id:S.day*10+RI(0,9),type:'cf',e:'💄',name:`${pick(['Cosmetics','Soda','Phone','Sneaker','Snack'])} CF shoot`,desc:'Fame & Visual ↑',pay,exp:S.day+14});note('💼 You received a CF offer — plan it in a daytime slot (expires in 2 weeks).')}},
+ {w:2,when:()=>S.phase==='idol'&&S.fame>=20&&S.stats.charm+S.stats.variety>70&&S.offers.length<3,run(){const pay=15e6+S.fame*400000;S.offers.push({id:S.day*10+RI(0,9),type:'drama',e:'🎭',name:'Web drama role',desc:'Charm & Variety ↑',pay,exp:S.day+14});note('🎭 A web drama role offer arrived — plan it in a daytime slot.')}},
+ {w:2,when:()=>S.phase==='idol'&&S.stats.vocal>=45&&S.offers.length<3,run(){const pay=8e6+S.fame*200000;S.offers.push({id:S.day*10+RI(0,9),type:'ost',e:'🎶',name:'Drama OST',desc:'Vocal ↑ · Fame ↑',pay,exp:S.day+14});note('🎶 You\'ve been asked to sing an OST — plan it in a daytime slot.')}},
+ {w:2,when:()=>S.phase==='idol'&&S.fans>3000,run(){addCond('stress',-12);note('🎂 Fans opened a birthday café with your photos everywhere.')}},
+ {w:1,when:()=>S.phase==='idol'&&S.fame>30,run(){addCond('stress',14);note('😰 A sasaeng followed your van home. The company increased security.')}},
+ {w:2,when:()=>S.phase==='idol',run(){addStat('variety',1.5);addFame(.9);note('😂 A blooper from your livestream became a reaction meme.')}},
+ {w:1,when:()=>S.phase==='idol'&&S.albums.length>=1&&S.stats.produce>30,run(){Q.push({title:'Plagiarism accusation',art:scene('studio',{mood:'sad'}),body:'<p>Netizens claim the B-side you co-wrote sounds like an old indie track.</p>',choices:[{label:'Apologise and clarify',sub:'Fame ↓ a little',fn(){addFame(-2);addCeo(-2)}},{label:'Release your demo history to prove it\'s original',sub:'Producing check',fn(){if(S.stats.produce>55){addFame(2);addStat('produce',1);note('Your demo timeline cleared your name — and impressed people.')}else{addFame(-6);S.scandals++;addCeo(-6);note('The timeline didn\'t convince anyone.')}}}]})}},
+ {w:1,when:()=>S.phase==='idol'&&S.fans>50000&&!S.flags.lightstick,run(){S.flags.lightstick=1;addFans(8000);addFame(1);log('Official lightstick released.');note('💡 Your official lightstick was revealed. Sold out in an hour.')}},
+ {w:3,when:()=>S.phase==='idol'&&S.fans>10000&&!S.flags.fandom,run(){S.flags.fandom=1;Q.push({title:'Name your fandom!',art:scene('live',{big:true}),body:'<p>Fans have been asking for months. What will you call them?</p><div class="field"><input class="txt" id="fname" maxlength="16" value="'+esc(pick(['Starlights','Moonies','Petals','Orbiters','Sparks','Blooms']))+'"></div>',choices:[{label:'Announce it',primary:true,fn(){S.fandom=(document.getElementById('fname').value.trim()||'Starlights').slice(0,16);addFans(3000);log(`Named the fandom "${S.fandom}".`)}}]})}},
+ {w:1,when:()=>S.phase==='idol'&&S.fame>=55&&!S.flags['tour'+yearOf(S.day)],run(){S.flags['tour'+yearOf(S.day)]=1;earn(40e6+S.fame*1e6);addFame(2.5);addFans(20000+S.fame*800);addCond('stamina',-35);addCond('stress',12);log(`${yearOf(S.day)} world tour.`);note(`🌏 ${S.group.name} wrapped a ${RI(8,20)}-city world tour this month!`)}},
+ {w:2,when:()=>S.phase==='idol'&&S.fame>=28,run(){earn(5e6);addFame(1.4);addStat(S.stats.rap>S.stats.vocal?'rap':'vocal',1);note('🤝 A popular soloist featured you on their new single.')}},
+];
+function randomEvent(){const pool=EV.filter(e=>e.when());if(!pool.length)return;let tot=pool.reduce((a,e)=>a+e.w,0),r=Math.random()*tot;for(const e of pool){r-=e.w;if(r<=0){e.run();return}}}
+
+/* ============ modal ============ */
+function showModal(){
+  const m=document.getElementById('modal'),c=document.getElementById('modalCard');
+  const cur=MODE==='manager'?G:S;if(!Q.length||!cur||cur.ending){m.classList.add('hidden');return}
+  const q=Q[0];const ch=q.choices||[{label:'Continue',primary:true,fn(){}}];
+  c.innerHTML=`${q.confetti?`<div class="confetti">${Array.from({length:40},(_,i)=>`<i style="left:${Math.random()*100}%;background:${pick(['#ff5fa2','#9b7bff','#5fe3c0','#ffd166','#fff'])};animation-delay:${Math.random()*1.2}s"></i>`).join('')}</div>`:''}
+  ${q.art?`<div class="art">${q.art}</div>`:''}<h2 class="display">${q.title}</h2>${q.body||''}
+  <div class="choices">${ch.map((x,i)=>`<button class="choice ${x.primary?'primary':''}" data-ch="${i}" ${x.disabled?'disabled':''}>${esc(x.label)}${x.sub?`<small>${esc(x.sub)}</small>`:''}</button>`).join('')}</div>`;
+  m.classList.remove('hidden');
+}
+document.getElementById('modalCard').addEventListener('click',ev=>{
+  const b=ev.target.closest('[data-ch]');if(!b||b.disabled)return;
+  if(!Q.length){showModal();return}
+  const q=Q[0];const ch=q.choices||[{fn(){}}];
+  NOTES=[];ch[+b.dataset.ch].fn();MUL=1;
+  Q.shift();
+  if(MODE==='manager'){if(NOTES.length&&UI.today)UI.today.lines=UI.today.lines.concat(NOTES).slice(-12);if(G&&!G.ending)mCheckEndings();if(G)msave();render();showModal();return}
+  if(NOTES.length&&UI.today)UI.today.lines=UI.today.lines.concat(NOTES).slice(-10);
+  if(S&&!S.ending)checkEndings();
+  if(S)save();render();showModal();
+});
+
+/* ============ rendering ============ */
+const app=document.getElementById('app');
+let C=null; // creation state
+let render=function(){if(!S)return C?renderCreate():renderTitle();if(S.ending)return renderEnding();renderGame()}
+
+let renderTitle=function(){
+  const sv=loadSave();
+  const demo={hairStyle:'long',hair:'#e85d9a',skin:'#f6cfae',eye:'#3b2a20',outfit:'#9b7bff'};
+  app.innerHTML=`<div class="title-wrap">
+   <svg viewBox="0 0 360 200" style="width:min(520px,100%);border-radius:18px;border:1px solid var(--line)">${sceneBg('stage','#ff5fa2')}${avatar(demo,180,190,.95,{big:true,mic:true})}</svg>
+   <div class="logo display">Spotlight</div>
+   <div class="tag">Idol life simulator. Train, debut, chase 1st place — day by day, until your story finds its ending.</div>
+   <div class="btn-row">${sv&&!sv.ending?`<button class="btn primary" data-go="continue">Continue — ${esc(sv.stage)}, day ${sv.day}</button>`:''}<button class="btn ${sv&&!sv.ending?'':'primary'}" data-go="new">Start a new life</button></div>
+   ${sv&&!sv.ending?'<div class="muted" style="font-size:13px">Starting a new life replaces your current save.</div>':''}
+  </div>`;
+};
+function renderCreate(){
+  const sw=(arr,key)=>arr.map(c=>`<button class="sw ${C.look[key]===c?'on':''}" style="background:${c}" data-look="${key}" data-v="${c}" aria-label="${c}"></button>`).join('');
+  const styles=Object.entries(C.look.g==='boy'?HAIR_B:HAIR_G).map(([k,v])=>`<button class="chip ${C.look.hairStyle===k?'on':''}" data-look="hairStyle" data-v="${k}">${v}</button>`).join('');
+  app.innerHTML=`<div class="hud"><div class="brand display">Spotlight</div><div class="sp"></div><button class="icon-btn" data-go="title">← Back</button></div>
+  <div class="create">
+   <div class="card preview"><div id="pv">${pvSvg()}</div><div class="display" style="font-size:22px;margin-top:6px" id="pvName">${esc(C.stage||'Your stage name')}</div><div class="muted" style="font-size:13px">${SPECIALTIES[C.spec]} · ${esc((C.coName||'').trim()||COMPANIES[C.company].name)} · ${C.size?C.size+' members':'random group size'}</div></div>
+   <div class="card">
+    <div class="field"><label>Real name</label><input class="txt" id="cName" maxlength="20" value="${esc(C.name)}"></div>
+    <div class="field"><label>Stage name</label><input class="txt" id="cStage" maxlength="14" value="${esc(C.stage)}"></div>
+    <div class="field"><label>Debut as part of a</label><div class="chips">${[['girl','Girl group'],['boy','Boy group'],['coed','Co-ed group']].map(([k,v])=>`<button class="chip ${C.type===k?'on':''}" data-type="${k}">${v}</button>`).join('')}</div></div>
+    ${C.type==='coed'?`<div class="field"><label>You are a</label><div class="chips">${[['girl','Girl'],['boy','Boy']].map(([k,v])=>`<button class="chip ${C.look.g===k?'on':''}" data-gender="${k}">${v}</button>`).join('')}</div></div>`:''}
+    <div class="field"><label>Hair style</label><div class="chips">${styles}</div></div>
+    <div class="field"><label>Hair colour</label><div class="chips">${sw(HAIR_COLORS,'hair')}</div></div>
+    <div class="field"><label>Skin tone</label><div class="chips">${sw(SKIN,'skin')}</div></div>
+    <div class="field"><label>Eye colour</label><div class="chips">${sw(EYES,'eye')}</div></div>
+    <div class="field"><label>Outfit colour</label><div class="chips">${sw(OUTFITS,'outfit')}</div></div>
+    <div class="field"><label>Group size</label><select class="txt" id="cSize"><option value="0" ${!C.size?'selected':''}>Agency default (random)</option>${Array.from({length:23},(_,i)=>i+2).map(v=>`<option value="${v}" ${C.size===v?'selected':''}>${v} members (you + ${v-1})</option>`).join('')}</select><div class="muted" style="font-size:12px;margin-top:5px">Default: Starfield 5–7, Bluebell 4–6, Pebble 3–5. Every other member gets their own friendship story.</div></div>
+    <div class="field"><label>Specialty</label><div class="chips">${Object.entries(SPECIALTIES).map(([k,v])=>`<button class="chip ${C.spec===k?'on':''}" data-spec="${k}">${v}</button>`).join('')}</div></div>
+    <div class="field"><label>Agency type</label><div class="cos">${Object.entries(COMPANIES).map(([k,c])=>`<button class="co ${C.company===k?'on':''}" data-co="${k}"><b>${c.name}</b><small>${c.tag}</small><p>${c.desc}</p></button>`).join('')}</div></div>
+    <div class="field"><label>Agency name (optional)</label><input class="txt" id="cCo" maxlength="30" placeholder="${esc(COMPANIES[C.company].name)}" value="${esc(C.coName||'')}"><div class="muted" style="font-size:12px;margin-top:5px">Leave blank to use the default name. The agency type above still sets difficulty and budget.</div></div>
+    <div class="field"><label>Start from</label><div class="chips">${[[false,'Trainee days (full story)'],[true,'Quick start: jump to debut']].map(([k,v])=>`<button class="chip ${!!C.jump===k?'on':''}" data-jump="${k?1:0}">${v}</button>`).join('')}</div><div class="muted" style="font-size:12px;margin-top:5px">${C.jump?'Skip trainee evaluations. You start with debut-ready skills and go straight to picking your group name and concept.':'Train, pass monthly evaluations and earn your debut spot.'}</div></div>
+    <button class="btn primary" style="width:100%" data-go="start">${C.jump?'Jump to debut →':'Begin trainee life →'}</button>
+   </div></div>`;
+}
+function pvSvg(){return `<svg viewBox="0 0 360 200" style="border-radius:12px">${sceneBg('practice')}${avatar(C.look,180,190,1,{big:true})}</svg>`}
+
+function bar(label,v,col,max=100){return `<div class="bar"><div style="display:flex;justify-content:space-between"><span>${label}</span><b>${Math.round(v)}</b></div><div class="tr"><div class="fl" style="width:${clamp(v/max*100)}%;background:${col}"></div></div></div>`}
+function chips(d){return Object.entries(d||{}).filter(([k,v])=>Math.abs(v)>=.05).map(([k,v])=>{const bad=(k==='Stress')?v>0:v<0;const big=/Fans|fans|Wallet|Debt paid|funds/.test(k);const val=big?(k==='Fans'?fmt(Math.abs(v)):won(Math.abs(v))):Math.abs(v).toFixed(1);return `<span class="dl ${bad?'bad':'good'}">${k} ${v>0?'+':'−'}${val}</span>`}).join('')}
+function tickers(){
+  const t=[];const d=S.day;
+  if(S.phase==='trainee'){const left=28-((d-S.trainee.start)%28);t.push(`Next evaluation in <b>${left===28?0:left} day${left===1?'':'s'}</b>`);t.push(`Training month <b>${S.trainee.month+1}</b>`);if(S.trainee.fails)t.push(`Fails in a row: <b>${S.trainee.fails}/3</b>`)}
+  if(S.phase==='predebut')t.push(`Debut in <b>${S.era.release-d} days</b>`,`Readiness <b>${S.era.readiness.toFixed(0)}%</b>`);
+  if(S.phase==='idol'){const e=S.era;
+    if(e.status==='promo'){t.push(`Promoting "${esc(e.title)}" · <b>${e.end-d+1}</b> days left`,`Melodi chart <b>#${e.rank}</b>`);const sh=SHOWS[dateOf(d).getDay()];t.push(sh?`Today: <b>${sh}</b> (afternoon)`:'No music show today')}
+    if(e.status==='prep')t.push(`Comeback in <b>${e.release-d} days</b>`,`Readiness <b>${e.readiness.toFixed(0)}%</b>`);
+    if(e.status==='break')t.push(`Break · next comeback prep in <b>${Math.max(0,e.next-d)} days</b>`);
+  }
+  if(S.forcedRest>0)t.push(`Resting: <b>${S.forcedRest}</b> day(s)`);
+  return t.map(x=>`<div class="tk">${x}</div>`).join('');
+}
+function planner(){
+  if(S.forcedRest>0)return `<div class="card acts"><b>🩹 Doctor's orders</b><p class="muted">No schedules for ${S.forcedRest} more day(s). Rest up.</p><button class="btn primary" style="width:100%" data-go="day">Rest today</button></div>`;
+  const acts=allActs(),sel=UI.slot||'morning',selLab=SLOTS.find(s=>s[0]===sel);
+  const usedElsewhere=Object.entries(S.plan).filter(([k,v])=>v&&k!==sel).map(([k,v])=>v);
+  const slots=SLOTS.map(([k,l,e])=>{const id=S.plan[k],a=id&&acts.find(x=>x.id===id);const bad=id&&(!a||!a.slots.includes(k));
+    return `<button class="slot ${sel===k?'on':''} ${bad?'warn':''} ${id?'filled':''}" data-slot="${k}"><small>${e} ${l}</small><b>${a&&!bad?a.e+' '+esc(T(a.label)):id?'⚠️ Not available today':(k==='midnight'?'😴 Sleep':'Free time')}</b>${id?`<span class="x" data-clear="${k}" title="Clear">✕</span>`:''}</button>`}).join('');
+  const list=acts.filter(a=>a.slots.includes(sel)&&!(a.once&&usedElsewhere.includes(a.id)));
+  const cats={};list.forEach(a=>(cats[a.cat]=cats[a.cat]||[]).push(a));
+  const order=['Career','Prep','Train','Friends','Life'];
+  return `<div class="card acts"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><b>Plan your day</b><button class="linkbtn" data-go="clearplan">Clear all</button></div>
+   <div class="slots">${slots}</div>
+   <h4 style="margin-top:12px">${selLab[2]} ${selLab[1]} activities${S.plan[sel]?' · tap the chosen one again to clear':''}</h4>
+   ${order.filter(k=>cats[k]).map(k=>`<h4>${k}</h4><div class="grid-acts">${cats[k].map(a=>`<button class="act ${a.hot&&T(a.hot)?'hot':''} ${S.plan[sel]===a.id?'chosen':''}" data-pick="${a.id}"><span class="t">${a.e} ${esc(T(a.label))}</span><span class="s">${esc(a.sub)}</span></button>`).join('')}</div>`).join('')||'<p class="muted">Nothing available in this slot.</p>'}
+   <div class="go-row"><button class="btn primary" data-go="day">▶ Start the day</button><label class="repeat"><input type="checkbox" id="rep" ${UI.repeat?'checked':''}> Repeat this plan for up to 7 days</label></div>
+   <p class="muted" style="font-size:12px;margin:8px 0 0">Empty slots become free time (a little rest). Leaving midnight empty means a full night's sleep; filling it costs sleep.</p></div>`;
+}
+function renderGame(){
+  const phase={trainee:'Trainee',predebut:'Pre-debut',idol:S.group?S.group.name:'Idol'}[S.phase];
+  const sc=UI.scene||{name:'practice'};const c=S.cond;
+  app.innerHTML=`<div class="hud"><div class="brand display">Spotlight</div><div class="date"><b>${dstr(S.day)}</b><span>Day ${S.day} · ${esc(S.stage)}${S.position?' · '+esc(S.position):''}</span></div><span class="pill ph-${S.phase}">${esc(phase)}</span><div class="sp"></div><button class="icon-btn" data-go="menu">Menu</button></div>
+  <div class="layout">
+   <div class="col">
+    <div class="scene">${scene(sc.name,{members:sc.members,mic:sc.mic,duo:sc.duo,time:sc.time})}</div>
+    <div class="ticker">${tickers()}</div>
+    ${UI.today?`<div class="card today"><h3>${esc(UI.today.title)}</h3><div class="deltas">${chips(UI.today.d)}</div>${UI.today.tl?`<div class="tl">${UI.today.tl.map(x=>`<div class="tlr ${x.free?'free':''}"><span class="tle">${x.em}</span><div><b>${x.lab}</b> · ${esc(x.t)}${x.notes.length?`<div class="muted">${x.notes.map(esc).join(' ')}</div>`:''}</div></div>`).join('')}</div>`:''}${UI.today.lines.length?`<ul>${UI.today.lines.map(l=>`<li>${esc(l)}</li>`).join('')}</ul>`:''}</div>`:''}
+    <div class="card"><div class="bars">${bar('Stamina',c.stamina,'var(--mint)')}${bar('Stress',c.stress,c.stress>75?'var(--red)':'var(--gold)')}${bar('Health',c.health,'var(--sky)')}</div></div>
+   </div>
+   <div class="col">
+    <div class="quick"><div class="qs"><small>Fame</small><b>${S.fame.toFixed(1)}</b></div><div class="qs"><small>Fans</small><b>${fmt(S.fans)}</b></div><div class="qs"><small>Wallet</small><b>${won(S.wallet)}</b></div><div class="qs"><small>${S.debt>0?'Company debt':'Debt'}</small><b>${S.debt>0?won(S.debt):'Paid ✓'}</b></div></div>
+    ${planner()}
+    <div class="tabs">${[['stats','Stats'],['group',S.group?'Group & friends':'Trainees & friends'],['career','Career'],['diary','Diary']].map(([k,v])=>`<button class="tab ${UI.tab===k?'on':''}" data-tab="${k}">${v}</button>`).join('')}</div>
+    <div class="card">${tabBody()}</div>
+   </div></div>`;
+}
+function tabBody(){
+  const s=S.stats;
+  if(UI.tab==='stats')return `<div class="sec-t">Skills</div><div class="statgrid">${bar('Vocal',s.vocal,'var(--pink)')}${bar('Dance',s.dance,'var(--violet)')}${bar('Rap',s.rap,'#ff8a5c')}${bar('Visual',s.visual,'var(--gold)')}${bar('Variety',s.variety,'var(--mint)')}${bar('Charm',s.charm,'#ff8fc7')}${bar('Producing',s.produce,'var(--sky)')}${bar('Overall',skillScore(),'#fff')}</div>
+   <div class="sec-t">Relationships</div><div class="statgrid">${bar('CEO trust',S.rel.ceo,'var(--gold)')}${bar('Avg. member bond',S.members.reduce((a,m)=>a+m.bond,0)/S.members.length,'var(--pink)')}</div>
+   ${S.trainee.ranks.length?`<div class="sec-t">Evaluation ranks</div><div class="muted" style="font-size:13px">${S.trainee.ranks.map((r,i)=>`#${i+1}: <b style="color:var(--ink)">${r}</b>`).join(' · ')}</div>`:''}`;
+  if(UI.tab==='group'){
+    const me=`<div class="mem" style="border:1px solid var(--pink)">${miniAvatar(S.look)}<div class="i"><div class="n">${esc(S.stage)} (you)</div><div class="p">${esc(S.position||'Trainee · '+SPECIALTIES[S.spec])}</div></div></div>`;
+    const story=m=>m.ch>=5?(m.best?`<div class="st best">✨ Best friends — ${ARCS[m.arc].perk}</div>`:`<div class="st">Close friends · story complete</div>`):`<div class="st">${ARCS[m.arc].n} · Story ${m.ch}/5 ${storyReady(m)?'· <b style="color:var(--gold)">📖 next chapter ready — spend 1:1 time</b>':(m.bond>=TH[m.ch]?'· next chapter in a few days':`· next chapter at bond ${TH[m.ch]}`)}</div><div class="prog">${[0,1,2,3,4].map(i=>`<i class="${i<m.ch?'on':''}"></i>`).join('')}</div>`;
+    return `${S.group?`<div class="sec-t">${esc(S.group.name)} · ${CONCEPTS[S.group.concept].n}${S.fandom?` · fandom: ${esc(S.fandom)}`:''}</div>`:'<div class="sec-t">Your closest trainees</div>'}${me}${S.members.map(m=>`<div class="mem">${miniAvatar(m.look)}<div class="i"><div class="n">${esc(m.name)}</div><div class="p">${esc(m.pos||'Trainee')} · skill ${m.skill.toFixed(0)} · bond ${Math.round(m.bond)}</div><div class="hearts">${'♥'.repeat(Math.round(m.bond/20))}${'♡'.repeat(5-Math.round(m.bond/20))}</div>${story(m)}</div></div>`).join('')}`;
+  }
+  if(UI.tab==='career'){
+    const al=S.albums.slice();if(S.era&&S.era.status==='promo')al.push({n:S.era.n,title:S.era.title+' (now)',q:S.era.quality,peak:S.era.peak,sales:S.era.sales,wins:S.era.wins});
+    return `<div class="result-row"><div class="qs"><small>Music show wins</small><b>${S.wins}</b></div><div class="qs"><small>Daesangs</small><b>${S.daesangs}</b></div><div class="qs"><small>Total earned</small><b>${won(S.earned)}</b></div></div>
+    <div class="sec-t">Discography</div>${al.length?`<table class="t"><tr><th>#</th><th>Title</th><th>Grade</th><th>Peak</th><th>Sales</th><th>Wins</th></tr>${al.map(a=>`<tr><td>${a.n}</td><td>${esc(a.title)}</td><td><span class="grade g-${grade(a.q)}">${grade(a.q)}</span></td><td>#${a.peak}</td><td>${fmt(a.sales)}</td><td>${a.wins}</td></tr>`).join('')}</table>`:'<div class="muted">No releases yet.</div>'}
+    <div class="sec-t">Awards</div>${S.awards.length?S.awards.map(a=>`<div>🏆 ${a.y} · ${esc(a.n)}</div>`).join(''):'<div class="muted">None yet.</div>'}
+    ${S.offers.length?`<div class="sec-t">Open offers</div>${S.offers.map(o=>`<div>${o.e} ${esc(o.name)} — ${won(o.pay)} (expires ${shortDate(o.exp)})</div>`).join('')}`:''}`;
+  }
+  return `<div class="diary">${S.log.map(l=>`<div><b>${shortDate(l.d)}</b>${esc(l.t)}</div>`).join('')}</div>`;
+}
+function renderEnding(){
+  const E=ENDINGS[S.ending.id];
+  app.innerHTML=`<div class="ending"><div class="art">${scene(E.scene,{members:!!S.group&&E.scene!=='hospital',big:true})}</div>
+   <div class="muted">ENDING · ${shortDate(S.ending.day)}</div><h1 class="display">${E.t}</h1><p style="line-height:1.6">${esc(E.txt())}</p>
+   <div class="sumgrid"><div class="qs"><small>Days lived</small><b>${S.day}</b></div><div class="qs"><small>Group</small><b>${S.group?esc(S.group.name):'—'}</b></div><div class="qs"><small>Albums</small><b>${S.albums.length}</b></div><div class="qs"><small>Wins</small><b>${S.wins}</b></div><div class="qs"><small>Awards</small><b>${S.awards.length}</b></div><div class="qs"><small>Peak fans</small><b>${fmt(S.fans)}</b></div><div class="qs"><small>Best friends</small><b>${S.members.filter(m=>m.best).map(m=>esc(m.name)).join(', ')||'—'}</b></div></div>
+   <div class="btn-row"><button class="btn primary" data-go="new">Live a new idol life</button><button class="btn" data-go="diaryEnd">Read your diary</button></div>
+   <div id="endDiary"></div></div>`;
+}
+
+/* ============ events ============ */
+app.addEventListener('click',ev=>{
+  const t=ev.target.closest('button,[data-go]');if(!t)return;
+  const go=t.dataset.go;
+  if(t.dataset.mgo||(MODE==='manager'&&!go))return;
+  if(go==='continue'||go==='new')MODE='idol';
+  if(go==='continue'){S=migrate(loadSave());Q=[];UI={tab:'stats',repeat:false,slot:'morning',today:{title:'Welcome back',lines:[`It's ${dstr(S.day)}.`],d:{}},scene:null};render();return}
+  if(go==='new'){S=null;Q=[];C={name:'',stage:'',type:'girl',spec:'vocal',company:'blue',look:{g:'girl',hairStyle:'long',hair:'#2b1d1a',skin:'#f6cfae',eye:'#3b2a20',outfit:'#ff5fa2'}};render();window.scrollTo(0,0);return}
+  if(go==='title'){C=null;S=null;render();return}
+  if(go==='start'){C.name=document.getElementById('cName').value.trim();C.stage=document.getElementById('cStage').value.trim();C.coName=document.getElementById('cCo').value;newGame(C);C=null;render();showModal();window.scrollTo(0,0);return}
+  if(go==='menu'){Q.unshift({title:'Menu',body:'<p class="muted">Your game saves automatically after every day in this browser.</p>',choices:[{label:'Back to the game',primary:true,fn(){}},{label:'Back to title screen',fn(){S=null;Q=[]}},{label:'Start a new life',sub:'Your current save will be replaced once you begin',fn(){S=null;Q=[];C={name:'',stage:'',type:'girl',spec:'vocal',company:'blue',look:{g:'girl',hairStyle:'long',hair:'#2b1d1a',skin:'#f6cfae',eye:'#3b2a20',outfit:'#ff5fa2'}}}}]});showModal();return}
+  if(go==='diaryEnd'){document.getElementById('endDiary').innerHTML=`<div class="card diary" style="text-align:left;margin-top:14px">${S.log.map(l=>`<div><b>${shortDate(l.d)}</b>${esc(l.t)}</div>`).join('')}</div>`;return}
+  if(go==='day'){doDay();return}
+  if(go==='clearplan'){S.plan=emptyPlan();UI.slot='morning';save();render();return}
+  if(t.dataset.slot){const cl=ev.target.closest('[data-clear]');if(cl){S.plan[cl.dataset.clear]=null;UI.slot=cl.dataset.clear}else UI.slot=t.dataset.slot;save();render();return}
+  if(t.dataset.pick){const sl=UI.slot||'morning';if(S.plan[sl]===t.dataset.pick)S.plan[sl]=null;else{S.plan[sl]=t.dataset.pick;const i=SLOTS.findIndex(x=>x[0]===sl);if(i<3)UI.slot=SLOTS[i+1][0]}save();render();return}
+  if(t.dataset.tab){UI.tab=t.dataset.tab;render();return}
+  if(C){
+    if(t.dataset.look){C.look[t.dataset.look]=t.dataset.v}
+    if(t.dataset.type){C.type=t.dataset.type;if(C.type!=='coed')C.look.g=C.type}
+    if(t.dataset.gender)C.look.g=t.dataset.gender;
+    if(t.dataset.jump)C.jump=t.dataset.jump==='1';
+    {const ok=C.look.g==='boy'?HAIR_B:HAIR_G;if(!ok[C.look.hairStyle])C.look.hairStyle=Object.keys(ok)[C.look.g==='boy'?1:0]}
+    if(t.dataset.spec)C.spec=t.dataset.spec;
+    if(t.dataset.co)C.company=t.dataset.co;
+    C.name=document.getElementById('cName').value;C.stage=document.getElementById('cStage').value;C.coName=document.getElementById('cCo').value;
+    const y=window.scrollY;renderCreate();window.scrollTo(0,y);
+  }
+});
+app.addEventListener('input',ev=>{
+  if(C&&ev.target.id==='cCo'){C.coName=ev.target.value}
+  if(C&&ev.target.id==='cStage'){C.stage=ev.target.value;document.getElementById('pvName').textContent=C.stage||'Your stage name'}
+});
+app.addEventListener('change',ev=>{if(ev.target.id==='rep')UI.repeat=ev.target.checked;if(C&&ev.target.id==='cSize'){C.size=+ev.target.value||0;C.name=document.getElementById('cName').value;C.stage=document.getElementById('cStage').value;C.coName=document.getElementById('cCo').value;const y=window.scrollY;renderCreate();window.scrollTo(0,y)}});
+
+// test hook
+window.__sim=function(n){for(let i=0;i<n&&S&&!S.ending;i++){while(Q.length&&!S.ending){showModal();const q=Q[0];const ch=(q.choices||[{fn(){}}]).filter(c=>!c.disabled);pick(ch).fn();Q.shift()}if(S.ending)break;D={};
+  if(S.forcedRest>0){restDay();continue}
+  const acts=allActs();S.plan=emptyPlan();
+  for(const [k] of SLOTS){const opts=acts.filter(a=>a.slots.includes(k)&&!Object.values(S.plan).includes(a.id)&&a.id!=='overnight');let a=opts.find(a=>a.id==='show')||(k!=='midnight'?opts.find(a=>a.id==='record'):null);
+    if(!a){if(k==='midnight'||(S.cond.stamina<35&&Math.random()<.6))a=null;else if(S.cond.stamina<30||S.cond.stress>70)a=opts.find(a=>a.id==='rest')||null;else a=pick(opts)}S.plan[k]=a?a.id:null}
+  runDay()}return S&&{day:S.day,phase:S.phase,fame:S.fame,ending:S.ending}};
+function migrate(s){if(!s.look.g)s.look.g=s.type==='boy'?'boy':s.type==='girl'?'girl':(['short','curtain'].includes(s.look.hairStyle)?'boy':'girl');s.members.forEach(m=>{if(!m.look.g)m.look.g=m.g});if(!s.plan)s.plan=emptyPlan();const arcs=shuffle(Object.keys(ARCS));s.members.forEach((m,i)=>{if(!m.arc){m.arc=arcs[i%arcs.length];m.ch=0;m.sp=0;m.best=false}});s.offers=(s.offers||[]).filter(o=>o.type);return s}
+</script>
+<script>
+"use strict";
+/* ================= MANAGER MODE ================= */
+const MKEY='spotlight-manager-v1';
+let G=null,MC=null,MODE=null;
+const ROLES=[
+ {n:'Road Manager',cap:1,sal:2400000,desc:'Drive the van, run the schedule, keep your group safe and happy.'},
+ {n:'Chief Manager',cap:2,sal:3600000,desc:'Oversee two groups and win bigger bookings.'},
+ {n:'Head of Artist Management',cap:4,sal:5800000,desc:'Scout trainees and form brand-new groups.'},
+ {n:'CEO',cap:6,sal:10000000,desc:'Run the whole agency: budgets, funds and every group.'}];
+const MLABEL={plan:'Planning',nego:'Negotiation',net:'Network',care:'Care'};
+const MCOND={energy:'Energy',stress:'Stress',health:'Health'};
+const MTH=[30,55,80];
+const BOOK={radio:{n:'a radio show',e:'📻',fame:.6,fans:400,pay:3e6},fansign:{n:'a fansign',e:'✍️',fame:.3,fans:1500,pay:5e6},variety:{n:'a variety show',e:'📺',fame:1.4,fans:3000,pay:8e6},cf:{n:'a CF shoot',e:'💄',fame:1,fans:1000,pay:40e6}};
+function msave(){try{localStorage.setItem(MKEY,JSON.stringify(G))}catch(e){}}
+function mload(){try{const t=localStorage.getItem(MKEY);return t?JSON.parse(t):null}catch(e){return null}}
+const MCO=()=>({...COMPANIES[G.company],name:G.coName||COMPANIES[G.company].name});
+function mlog(t){G.log.unshift({d:G.day,t});if(G.log.length>400)G.log.pop()}
+function mStat(k,a){const b=G.stats[k];G.stats[k]=clamp(b+(a>0?a*MUL*Math.pow(Math.max(0,1-b/104),1.3)*1.2:a*MUL));rec(MLABEL[k],G.stats[k]-b)}
+function mCond(k,a){const b=G.cond[k];G.cond[k]=clamp(b+a*MUL);rec(MCOND[k],G.cond[k]-b)}
+function mRep(a){a*=MUL;const b=G.rep;G.rep=clamp(b+(a>0?a*Math.pow(1-b/105,1.1):a));rec('Reputation',G.rep-b)}
+function mTrust(a){a*=MUL;const b=G.trust;G.trust=clamp(b+a);rec('Boss trust',G.trust-b)}
+function gFame(g,x){x*=MUL;const b=g.fame;g.fame=clamp(b+(x>0?x*Math.pow(1-b/105,1.3):x));rec(`${g.name} fame`,g.fame-b)}
+function gFans(g,n){n=Math.round(n*MUL);g.fans=Math.max(0,g.fans+n);rec(`${g.name} fans`,n)}
+function funds(n){n=Math.round(n);G.funds+=n;if(G.role>=3)rec('Company funds',n)}
+function mMood(m,a,silent){const b=m.mood;m.mood=clamp(b+a*MUL,m.best?40:0,100);if(!silent)rec('Member mood',m.mood-b)}
+function mBond(m,a){const b=m.bond;m.bond=clamp(b+a*MUL);rec(`Bond · ${m.name}`,m.bond-b)}
+const gAvg=(g,k)=>g.members.reduce((a,m)=>a+m[k],0)/g.members.length;
+const mMoodFace=()=>G.cond.stress>75?'sad':(G.cond.energy<22||G.cond.health<35)?'tired':'happy';
+const gById=id=>G.groups.find(g=>g.id===id);
+const isShowDay=g=>g.era.status==='promo'&&SHOWS[dateOf(G.day).getDay()]!==undefined;
+const bookingToday=g=>g.bookings.find(b=>b.day===G.day);
+const bestCount=g=>g.members.filter(m=>m.best).length;
+
+function newGroup(name,type,size,concept){
+  const mem=makeMembers(type,size).map(m=>({...m,look:{...m.look,g:m.g},mood:RI(55,72),stamina:90,skill:R(28,40),bond:RI(15,30)}));
+  return {id:Date.now()%1e6+RI(0,99999),name,type,concept,members:mem,fame:0,fans:0,
+    era:{status:'prep',n:0,title:albumName(),readiness:R(10,25),release:G.day+21,start:0,end:0,quality:0,rank:200,peak:200,sales:0,wins:0,budget:0},
+    albums:[],wins:0,yearWins:{},daesangs:0,bookings:[],debutDay:G.day+21,debuted:false,escort:0,monthSales:0};
+}
+function seniorGroup(){
+  const type=pick(['girl','boy','coed']),g=newGroup(groupName(),type,RI(4,6),pick(Object.keys(CONCEPTS)));
+  g.debuted=true;g.debutDay=G.day-RI(500,900);g.fame=R(18,30);g.fans=Math.round(g.fame*g.fame*120);g.members.forEach(m=>{m.skill=R(48,60)});
+  g.albums=[{n:1,title:albumName(),q:R(55,70),peak:RI(30,90),sales:RI(20000,80000),wins:RI(0,2),y:yearOf(G.day)-1},{n:2,title:albumName(),q:R(55,72),peak:RI(20,80),sales:RI(30000,90000),wins:RI(0,3),y:yearOf(G.day)-1}];
+  g.era={status:'break',n:2,title:'',readiness:0,next:G.day+RI(15,30),release:0,start:0,end:0,quality:0,rank:200,peak:200,sales:0,wins:0,budget:0};
+  return g;
+}
+function mNewGame(c){
+  const co={...COMPANIES[c.company],name:(c.coName||'').trim().slice(0,30)||COMPANIES[c.company].name};
+  G={mode:'manager',v:1,name:(c.name||'').trim()||'Manager Park',look:{...c.look},company:c.company,coName:(c.coName||'').trim().slice(0,30)||null,
+    day:1,role:0,rep:20,trust:45,stats:{plan:R(15,22),nego:R(12,20),net:R(8,14),care:R(18,26)},cond:{energy:90,stress:15,health:100},
+    wallet:500000,funds:{star:800e6,blue:400e6,pebble:120e6}[c.company],groups:[],trainees:[],plan:{morning:null,afternoon:null,night:null,midnight:null},
+    focus:null,log:[],flags:{},forcedRest:0,burnDays:0,ending:null,awards:[]};
+  const g=newGroup((c.gname||'').trim().slice(0,18)||groupName(),c.gtype,clamp(c.gsize||5,2,24),c.concept);
+  g.era.title=albumName();G.groups.push(g);G.focus=g.id;
+  G.plan={morning:'sup:'+g.id,afternoon:'esc:'+g.id,night:'chk:'+g.id+':0',midnight:null};
+  mlog(`Hired by ${co.name} as road manager for the pre-debut group ${g.name}.`);
+  UI={mtab:'groups',repeat:false,slot:'morning',scene:{name:'office'},today:{title:'First day on the job',lines:[`${co.name} hired you as road manager for ${g.name}, who debut in 3 weeks.`,`Plan up to four slots a day. Supervise practice to raise readiness, drive the group to schedules, and check in with members to unlock their stories.`,`Performance reviews every 6 months decide promotions: Chief Manager → Head of Artist Management → CEO.`],d:{}}};
+  msave();
+}
+
+/* ---------- manager friendship stories ---------- */
+const MARCS={
+ worrier:{n:'The Worrier',ch:[
+  {t:'Can\'t sleep',txt:'{n} calls you at 2am. "Sorry… I can\'t sleep. What if I mess up tomorrow?"',c:[['Stay on the phone until they fall asleep',2,8,'You hear soft snoring after forty minutes.'],['Set up a video call with their family tomorrow',2,6,'Their mum cries, {n} cries, you pretend you aren\'t crying.'],['"Just sleep. Big day tomorrow."',0,-3,'{n} apologises for bothering you.']]},
+  {t:'In the wings',sc:'stage',txt:'Right before going on, {n} grabs your sleeve, pale and shaking.',c:[['Promise to stand in the wings where they can see you',2,8,'Every time they glance over, you give a thumbs up. They nail it.'],['Give a quick, confident pep talk',1,5,'"You\'ve done this a hundred times." It helps.'],['"Pull it together, we\'re live."',-1,-6,'They perform, but don\'t look at you afterwards.']]},
+  {t:'Family',txt:'{n} hands you a lanyard they braided themselves. "Managers are supposed to be strict. You\'re more like family."',c:[['Wear it to every schedule',0,6,''],['Give them a hug',0,6,'']]}]},
+ rival:{n:'The Ambitious One',ch:[
+  {t:'More lines',sc:'office',txt:'{n} corners you after recording. "I had two lines. Two. Can you talk to the producers?"',c:[['Raise it fairly at the next meeting',2,7,'The producer agrees to give {n} the bridge next time.'],['"Wait your turn — everyone wants more lines."',0,-3,'{n} goes quiet and practises twice as hard.'],['Promise them a solo part',-1,2,'You can\'t actually deliver that. {n} will remember.']]},
+  {t:'The solo offer',sc:'office',txt:'An OST offer comes in for {n} — but it clashes with a group schedule.',c:[['Negotiate a new date so they can do both',2,8,'Three phone calls later, it works. {n} hugs you in the hallway.'],['Turn it down — the group comes first',1,-2,'{n} understands. Mostly.'],['Let them skip the group schedule',0,3,'The other members are not thrilled.']]},
+  {t:'Believed in me',txt:'"Everyone said I was too much. You were the first person who said I was enough." {n} grins.',c:[['"You still are."',0,6,''],['"Now go prove it."',0,6,'']]}]},
+ joker:{n:'The Mood Maker',ch:[
+  {t:'Van comedian',sc:'city',txt:'{n} keeps the whole van laughing — but in the mirror you catch them rubbing their eyes, exhausted.',c:[['Pull over and buy them a coffee',2,7,'"How did you know?" they ask. You just shrug.'],['Turn the music down so they can nap',1,5,'Asleep in thirty seconds.'],['Laugh along and keep driving',0,0,'']]},
+  {t:'The prank',txt:'You open the van door and 300 balloons fall out. {n} is filming.',c:[['Laugh and chase them round the car park',2,7,'It becomes the group\'s most-watched behind-the-scenes clip.'],['Pretend to be mad, then crack up',1,5,'Classic.'],['Lecture them about professionalism',-1,-5,'The fun drains out of the room.']]},
+  {t:'Off duty',txt:'"You know I\'m only this funny because I feel safe around you, right?" {n} says on the drive home.',c:[['"I know."',0,6,''],['Tell your worst joke back',0,6,'']]}]},
+ perfectionist:{n:'The Perfectionist',ch:[
+  {t:'3am practice',sc:'practice',txt:'At 3am the practice room light is still on. {n} is alone, running the same section.',c:[['Turn the music off and drive them home',2,7,'They protest — then fall asleep before the dorm.'],['Watch, then give honest notes',1,5,'They fix it in two runs and finally leave.'],['Leave them to it',0,-2,'']]},
+  {t:'The ankle',txt:'{n} is limping and insists on performing tomorrow.',c:[['Insist on a doctor and pull them from the schedule',2,8,'A sprain. Two days of rest saved two months.'],['Adjust their choreography with the team',2,6,'They perform carefully and recover.'],['Let them perform',-1,-6,'It gets worse. They miss a week.']]},
+  {t:'Rest is part of it',txt:'"I used to think rest was for people who weren\'t serious. You changed that." {n} actually took a day off.',c:[['"Proud of you."',0,6,''],['Book them a spa day',0,6,'']]}]},
+ dreamer:{n:'The Dreamer',ch:[
+  {t:'The demo',sc:'studio',txt:'{n} nervously plays you a song they wrote on their phone.',c:[['Offer to send it to the in-house producers',2,7,'They\'re grinning for days.'],['Encourage them to keep writing',1,4,'They write three more that week.'],['"Focus on the choreo for now."',-1,-5,'The phone goes back in their pocket.']]},
+  {t:'The pitch',sc:'office',txt:'The producers are lukewarm on {n}\'s song. You have one meeting to change their minds.',c:[['Bring {n} to play it live in the meeting',2,8,'The room goes quiet. Then the head producer asks for the stems.'],['Pitch it yourself with a polished demo',1,5,'"Maybe next album."']]},
+  {t:'Our track',txt:'{n}\'s song makes the album. The liner notes say "thank you, manager".',c:[['Frame the liner notes',0,6,''],['Ask what the next song is about',0,6,'']]}]},
+ quiet:{n:'The Quiet One',ch:[
+  {t:'Worn shoes',txt:'{n} never asks for anything. Then you notice their practice shoes are falling apart.',c:[['Quietly buy them a new pair',2,8,'They wear them every single day.'],['Ask if they need anything',1,4,'"I\'m fine." You buy the shoes anyway, later.']]},
+  {t:'Frozen on camera',sc:'tv',txt:'During a variety recording, the PD keeps putting {n} on the spot. They freeze.',c:[['Ask the PD for a break and talk them through it',2,8,'After the break {n} lands a joke. It makes the edit.'],['Let the other members cover',1,3,'They get through it.']]},
+  {t:'Thank you',txt:'A note on your dashboard in tiny handwriting: "Thank you for noticing."',c:[['Keep it in the glovebox',0,6,''],['Leave a note back',0,6,'']]}]}
+};
+const MF=(s,m)=>s.replace(/\{n\}/g,m.name);
+function mReady(m){return m.ch<3&&m.bond>=MTH[m.ch]&&G.day-(m.lastCh||-99)>=3}
+function mStoryModal(g,mi){
+  const m=g.members[mi],arc=MARCS[m.arc],c=arc.ch[m.ch];
+  return {story:m.name,title:`${esc(m.name)} · ${esc(c.t)}`,art:mscene(c.sc||'dorm',{duo:[g.id,mi]}),
+    body:`<p class="muted" style="margin-top:-2px">${esc(g.name)} · ${arc.n} · Manager story ${m.ch+1}/3</p><p>${esc(MF(c.txt,m))}</p>`,
+    choices:c.c.map(([l,sp,bd,r])=>({label:MF(l,m),fn(){MUL=1;m.sp+=sp;mBond(m,bd);mMood(m,sp*3);if(sp>0)mStat('care',sp*.6);if(r)note(MF(r,m));m.ch++;m.lastCh=G.day;
+      if(m.ch>=3){if(m.sp>=4){m.best=true;mlog(`${m.name} (${g.name}) now trusts you completely.`);mRep(1.5);Q.push({title:`${esc(m.name)} trusts you completely ✨`,art:mscene('dorm',{duo:[g.id,mi],big:true}),confetti:true,body:`<p>You showed up for ${esc(m.name)} when it mattered. Their mood never drops below 40 now, and ${esc(g.name)} performs better with them at ease.</p>`})}
+        else{mlog(`Finished ${m.name}'s story — on good terms.`);note(`You and ${m.name} are on good terms, though not as close as you could have been.`)}}
+      else mlog(`${m.name}'s story: chapter ${m.ch} done.`)}}))};
+}
+
+/* ---------- actions ---------- */
+function mActs(){
+  const L=[],r=G.role;
+  L.push({id:'plan',e:'🗂️',label:'Plan schedules',cat:'Office',scene:'office',slots:[M,AF,N],sub:'Planning ↑ · fewer mishaps',run(){mStat('plan',R(2,3.5));mCond('energy',-8);mCond('stress',3);note(pick(['You colour-coded the next month of schedules.','You built a backup plan for every schedule this week.','Spreadsheets. So many spreadsheets.']))}});
+  L.push({id:'study',e:'📚',label:'Study the industry',cat:'Office',scene:'office',slots:[M,AF,N,X],sub:'Negotiation / Network ↑',run(){const k=pick(['nego','net','nego']);mStat(k,R(1.6,2.8));mCond('energy',-6);note(pick(['You studied old contracts to see how the big agencies negotiate.','You read every industry newsletter.','You analysed which variety shows boost rookie groups.']))}});
+  L.push({id:'pitch',e:'📞',label:'Pitch bookings',cat:'Career',scene:'office',slots:[M,AF],once:true,sub:'Negotiation check → book a schedule',run:pitchBooking});
+  L.push({id:'pd',e:'🥂',label:'Dinner with TV PDs',cat:'Career',scene:'city',slots:[N],once:true,sub:'Network ↑ · −₩120,000',avail:()=>G.wallet>=120000,run(){G.wallet-=120000;rec('Wallet',-120000);mStat('net',R(2.5,4));mCond('energy',-8);mCond('stress',2);mRep(.5);note(pick(['A PD from a music show remembered your group\'s name. Progress.','You traded business cards with three producers.','The dinner ran until midnight. Worth it.']))}});
+  if(r>=2)L.push({id:'scout',e:'🔍',label:'Scout trainees',cat:'Agency',scene:'city',slots:[AF,N],once:true,sub:`Find new talent (${G.trainees.length} scouted)`,avail:()=>G.trainees.length<24,run(){mCond('energy',-10);const sc=G.stats.net*.5+R(0,60);if(sc>35){const g=pick(['girl','boy']),nm=pick((g==='girl'?NAMES_G:NAMES_B).filter(n=>!G.trainees.some(t=>t.name===n)))||pick(g==='girl'?NAMES_G:NAMES_B);G.trainees.push({name:nm,g,look:randomLook(g),skill:R(22,42)});mRep(.3);note(`🔍 You scouted ${nm} at a dance academy showcase.`)}else note('You watched three showcases. Nobody quite right yet.')}});
+  if(r>=2)L.push({id:'form',e:'🌱',label:'Form a new group',cat:'Agency',scene:'office',slots:[M,AF],once:true,w:1,hot:()=>true,sub:`Debut your ${G.trainees.length} scouted trainees`,avail:()=>G.trainees.length>=2&&G.groups.length<ROLES[r].cap,run(){Q.push(formGroupModal())}});
+  if(r>=3)L.push({id:'invest',e:'💼',label:'Investor meeting',cat:'Agency',scene:'office',slots:[M,AF],once:true,w:1,sub:'Raise company funds',run(){const top=Math.max(0,...G.groups.map(g=>g.fame));const amt=(20+top*1.5+G.stats.nego*.6)*1e6*R(.6,1.3);mCond('energy',-14);mCond('stress',5);if(Math.random()<.65){funds(amt);note(`💼 Investors put in ${won(amt)}.`)}else note('The investors want to "circle back next quarter".')}});
+  L.push({id:'rest',e:'😴',label:'Rest / nap',cat:'Life',scene:'dorm',slots:[M,AF,N],sub:'Energy ↑ · stress ↓',run(){mCond('energy',30);mCond('stress',-12);mCond('health',5);note(pick(['You napped in the van between schedules.','A rare quiet afternoon.','You turned your phone off for three whole hours.']))}});
+  L.push({id:'treat',e:'🛍️',label:'Treat yourself',cat:'Life',scene:'city',slots:[AF,N],once:true,sub:'−₩150,000 · stress ↓↓',avail:()=>G.wallet>=150000,run(){G.wallet-=150000;rec('Wallet',-150000);mCond('stress',-22);note(pick(['Hot pot with old friends who don\'t care about K-pop.','You bought a very good office chair.','A movie, alone, phone off.']))}});
+  G.groups.forEach(g=>{
+    const show=isShowDay(g),bk=bookingToday(g);
+    L.push({id:'esc:'+g.id,gid:g.id,e:'🚐',label:`Drive & accompany ${g.name}`,cat:'Group',scene:show?'stage':'city',grp:true,slots:[M,AF,N],once:true,hot:()=>show||!!bk,
+      sub:show?'Music show today — your presence helps':bk?`${BOOK[bk.type].n} today — go with them`:'Members\' mood & bond ↑',
+      run(){g.escort=G.day;g.members.forEach(m=>{mMood(m,4,true);m.bond=clamp(m.bond+1.5*MUL)});rec('Member mood',4*MUL);mCond('energy',-12);mCond('stress',2);mTrust(.5);note(show?`You drove ${g.name} to the music show and stood in the wings.`:bk?`You took ${g.name} to ${BOOK[bk.type].n}.`:`You drove ${g.name} between schedules and kept everyone on time.`)}});
+    L.push({id:'sup:'+g.id,gid:g.id,e:'👀',label:`Supervise ${g.name} practice`,cat:'Group',scene:'practice',grp:true,slots:[M,AF,N,X],hot:()=>g.era.status==='prep',sub:g.era.status==='prep'?'Readiness ↑ — comeback coming':'Members\' skill ↑ · tiring for them',
+      run(){if(g.era.status==='prep'){const b=g.era.readiness;g.era.readiness=clamp(b+R(9,14)*MUL*(1+G.stats.plan/300));rec(`${g.name} readiness`,g.era.readiness-b)}g.members.forEach(m=>{m.skill=clamp(m.skill+R(.3,.7)*MUL*(1-m.skill/110));m.stamina=clamp(m.stamina-8*MUL);mMood(m,-1.5,true)});mCond('energy',-7);note(`You ran ${g.name}'s practice and kept everyone hydrated and on time.`)}});
+    L.push({id:'din:'+g.id,gid:g.id,e:'🍗',label:`Team dinner with ${g.name}`,cat:'Group',scene:'dorm',grp:true,slots:[N],once:true,sub:'Everyone\'s mood & bond ↑',run(){g.members.forEach(m=>{mMood(m,9,true);m.bond=clamp(m.bond+3*MUL)});rec('Member mood',9*MUL);mCond('energy',-5);mCond('stress',-5);note(pick([`Korean BBQ with ${g.name}. Someone burned the meat. Everyone laughed.`,`Chicken and a bad movie at the dorm with ${g.name}.`]));
+        const rd=g.members.map((m,i)=>[m,i]).filter(([m])=>mReady(m));if(rd.length&&Math.random()<.3&&!Q.some(q=>q.story)){const [,i]=pick(rd);Q.push(mStoryModal(g,i))}}});
+    g.members.forEach((m,i)=>L.push({id:`chk:${g.id}:${i}`,gid:g.id,e:mReady(m)?'📖':'💬',label:`Check in with ${m.name}`,cat:'Members',scene:'dorm',duo:[g.id,i],slots:[AF,N,X],once:true,hot:()=>mReady(m),
+      sub:mReady(m)?'New story chapter ready!':m.ch>=3?(m.best?'Trusts you completely ✨':'Story complete'):`Mood ${Math.round(m.mood)} · bond ${Math.round(m.bond)}`,
+      run(){mBond(m,R(7,11));mMood(m,R(6,10));mStat('care',R(.8,1.5));mCond('energy',-4);note(pick([`You and ${m.name} talked over convenience-store ramyeon.`,`${m.name} told you about their week.`,`You checked ${m.name}'s schedule and asked how they're really doing.`]));if(mReady(m)&&!Q.some(q=>q.story===m.name))Q.push(mStoryModal(g,i))}}));
+  });
+  return L.map(a=>({w:.42,avail:()=>true,...a})).filter(a=>a.avail());
+}
+function pitchBooking(){
+  const gs=G.groups.filter(g=>g.debuted);mCond('energy',-8);
+  if(!gs.length){mStat('nego',1.2);note('No debuted group to book yet — you polish their press kit instead.');return}
+  const g=pick(gs),sc=G.stats.nego*.5+G.stats.net*.4+g.fame*.3+G.role*5+R(-10,25);mStat('nego',R(.8,1.5));
+  if(sc>35){const type=sc>78&&g.fame>30?'cf':sc>55?'variety':pick(['radio','fansign']);const day=G.day+RI(2,6);g.bookings.push({type,day});mTrust(.6);note(`📅 Booked ${g.name} on ${BOOK[type].n} for ${shortDate(day)}.`)}
+  else note('Nobody bit today. "We\'ll call you."');
+}
+function formGroupModal(){
+  const def=groupName();
+  return {title:'Form a new group',art:mscene('office',{}),body:`<p>Debut your ${G.trainees.length} scouted trainees (${G.trainees.map(t=>esc(t.name)).join(', ')}) as a new group in 3 weeks.</p>
+   <div class="field"><label>Group name</label><input class="txt" id="ngname" maxlength="18" value="${esc(def)}"></div>
+   <div class="field"><label>Concept</label><select class="txt" id="ngconcept">${Object.entries(CONCEPTS).map(([k,v])=>`<option value="${k}">${v.n}</option>`).join('')}</select></div>`,
+   choices:[{label:'Announce the new group',primary:true,fn(){
+     const name=(document.getElementById('ngname').value.trim()||def).slice(0,18),concept=document.getElementById('ngconcept').value;
+     const types=new Set(G.trainees.map(t=>t.g));const g=newGroup(name,types.size>1?'coed':[...types][0],1,concept);
+     const K=['worrier','rival','joker','perfectionist','dreamer','quiet'];let arcs=[];while(arcs.length<G.trainees.length)arcs=arcs.concat(shuffle(K));
+     g.members=G.trainees.map((t,i)=>({name:t.name,g:t.g,look:{...t.look,g:t.g},skill:t.skill,bond:RI(25,40),pos:'',arc:arcs[i],ch:0,sp:0,best:false,mood:RI(60,75),stamina:90}));
+     G.trainees=[];G.groups.push(g);G.focus=g.id;mRep(2);mlog(`Formed a new group: ${name}. Debut on ${shortDate(g.debutDay)}.`);note(`🌱 ${name} will debut on ${shortDate(g.debutDay)}.`)}},{label:'Not yet',fn(){}}]};
+}
+
+/* ---------- day loop ---------- */
+function mRunDay(){
+  const acts=mActs(),tl=[],used=new Set();let last=null;
+  for(const [k,lab,em] of SLOTS){
+    const id=G.plan[k];NOTES=[];const a=id&&acts.find(x=>x.id===id);
+    if(a&&a.slots.includes(k)&&!(a.once&&used.has(id))){used.add(id);MUL=a.w;a.run();MUL=1;last={name:a.scene,gid:a.grp?a.gid:null,duo:a.duo,time:k};tl.push({em,lab,t:T(a.label),notes:NOTES.slice()})}
+    else{if(k!=='midnight'){G.cond.energy=clamp(G.cond.energy+4);G.cond.stress=clamp(G.cond.stress-2)}tl.push({em,lab,t:k==='midnight'?'Sleep':'Free time',notes:id?['(Your planned activity wasn\'t available.)']:[],free:true})}
+  }
+  NOTES=[];mEndDay(!tl[3].free);return {tl,last,extra:NOTES.slice()};
+}
+function mRestDay(){NOTES=[];MUL=1;mCond('energy',30);mCond('health',10);mCond('stress',-10);note(`Resting. ${G.forcedRest} more day(s) off — your groups carry on without you.`);const tl=[{em:'🩹',lab:'All day',t:'Recovering',notes:NOTES.slice()}];NOTES=[];mEndDay(false);return {tl,last:{name:'hospital'},extra:NOTES.slice()}}
+function mDoDay(){
+  if(Q.length||G.ending)return;D={};let days=0,res=null,extra=[];
+  for(let i=0;i<(UI.repeat?7:1);i++){if(i>0&&G.forcedRest>0)break;res=G.forcedRest>0?mRestDay():mRunDay();days++;extra=extra.concat(res.extra);if(res.last)UI.scene=res.last;if(Q.length||G.ending)break}
+  UI.today={title:days>1?`${days} days · last: ${dstr(G.day-1)}`:dstr(G.day-1),tl:res.tl,lines:extra.slice(-10),d:D};
+  msave();render();showModal();
+}
+function mEndDay(mid){
+  G.cond.energy=clamp(G.cond.energy+(mid?6:20));G.cond.stress=clamp(G.cond.stress-2+(mid?2:0));
+  if(G.cond.energy<=0){G.cond.health=clamp(G.cond.health-6)}
+  if(G.forcedRest>0)G.forcedRest--;
+  MUL=1;G.groups.forEach(gDaily);G.rep=clamp(G.rep-.025);G.trust=clamp(G.trust-.04);
+  if(G.cond.stress>=95)G.burnDays++;else G.burnDays=0;
+  if(G.burnDays>=4){G.burnDays=0;if(!G.flags.burn){G.flags.burn=1;G.forcedRest=7;G.cond.stress=30;mTrust(-5);mlog('Burned out and took a week off.');Q.push({title:'You hit a wall',art:mscene('hospital',{}),body:'<p>Weeks of 20-hour days caught up with you. Your doctor signs you off for a week. Your groups carry on with a stand-in manager.</p><p class="muted">If it happens again, you may leave the industry.</p>'})}else return mEnd('burnout')}
+  else if(G.cond.health<=0){G.cond.health=30;G.forcedRest=5;note('🚑 You collapsed from exhaustion. Five days of rest ordered.');mlog('Collapsed from exhaustion.')}
+  if(!Q.length&&G.forcedRest<=0&&Math.random()<.14)mEvent();
+  G.day++;mMorning();mCheckEndings();
+}
+function gDaily(g){
+  g.members.forEach(m=>{m.stamina=clamp(m.stamina+14);m.mood=clamp(m.mood+(55-m.mood)*.03-(g.era.status==='promo'?.5:0)-(m.stamina<25?1:0),m.best?40:0,100);m.skill=clamp(m.skill+R(.04,.12)*(1-m.skill/110))});
+  if(!g.debuted)return;
+  const e=g.era,esc=g.escort===G.day;
+  if(e.status==='promo'){
+    const days=G.day-e.start,score=e.quality*.5+g.fame*.6+R(-5,5)-days*.9;
+    e.rank=clamp(Math.round(150-score*1.6),1,200);e.peak=Math.min(e.peak,e.rank);
+    const sales=Math.max(0,(210-e.rank))*R(15,35)*(1+g.fame/25)*(days<7?1.6:1);e.sales+=Math.round(sales);g.monthSales+=sales;
+    g.fame=clamp(g.fame+(e.rank<=10?.07:e.rank<=50?.03:.005)*(1-g.fame/105));g.fans+=Math.round(g.fame*g.fame*.5*(e.rank<=20?1.5:1));
+    if(isShowDay(g))gShow(g,esc);
+    if(!esc&&G.stats.plan<35&&Math.random()<.04){gFame(g,-.3);mTrust(-2);note(`⚠️ ${g.name} arrived late to a schedule without you. The boss noticed.`)}
+  }else if(e.status==='break')g.fame=clamp(g.fame-.05);
+  if(g.fame>2&&Math.random()<.5)g.fans+=Math.round(g.fame*g.fame*.15);
+  g.bookings.filter(b=>b.day===G.day).forEach(b=>{const B=BOOK[b.type],mult=(esc?1.3:1)*(1+g.fame/60);gFame(g,B.fame*mult);gFans(g,B.fans*mult);funds(B.pay*(1+g.fame/40));g.members.forEach(m=>m.stamina=clamp(m.stamina-10));mRep(.2);
+    if(!esc&&Math.random()<.15){mTrust(-1.5);note(`${g.name} did ${B.n} without you — a little chaotic.`)}else note(`${B.e} ${g.name} did ${B.n}${esc?' (you were there)':''}.`)});
+  g.bookings=g.bookings.filter(b=>b.day>G.day);
+}
+function gShow(g,esc){
+  const e=g.era,sh=SHOWS[dateOf(G.day).getDay()];
+  const perf=gAvg(g,'skill')*.5+e.readiness*.15+gAvg(g,'mood')*.2+gAvg(g,'stamina')*.1+R(0,12)+(esc?6:0)+G.stats.plan*.05+bestCount(g)*2;
+  g.members.forEach(m=>m.stamina=clamp(m.stamina-14));
+  gFame(g,.04+perf/420);gFans(g,(150+g.fame*60)*R(.7,1.3));funds(300000*(1+g.fame/30));
+  const my=e.quality*.45+g.fame*.4+Math.min(10,g.fans/60000)+R(0,15)+(perf>65?4:0)+(e.rank<=10?4:0);
+  const rival=62+R(0,45)+Math.min(8,(G.day-g.debutDay)/365*2);
+  if(my>rival){g.wins++;e.wins++;const y=yearOf(G.day);g.yearWins[y]=(g.yearWins[y]||0)+1;gFame(g,.6);gFans(g,2000+g.fame*200);mRep(.6);mTrust(.6);
+    note(`🏆 ${g.name} won 1st place on ${sh}!`);mlog(`${g.name} won 1st place on ${sh} with "${e.title}" (win #${g.wins}).`);
+    if(esc||g.wins===1)Q.push({title:`🏆 ${esc_(g.name)} wins on ${sh}!`,art:mscene('stage',{gid:g.id,big:true}),confetti:true,body:`<p>${g.wins===1?`${esc_(g.name)}'s first ever music show win.`:`Win #${e.wins} for "${esc_(e.title)}".`} ${esc?'From the wings you watch them cry through the encore — and they all point at you.':''}</p>`});
+  }else note(`${g.name} performed on ${sh}${esc?' with you in the wings':''}. No win today.`);
+}
+const esc_=s=>esc(s);
+function mMonthly(){
+  G.wallet+=ROLES[G.role].sal;rec('Wallet',ROLES[G.role].sal);
+  let rev=0,cost=40e6;G.groups.forEach(g=>{if(g.debuted)rev+=g.monthSales*120+g.fame*g.fame*700;cost+=g.members.length*3e6+15e6;g.monthSales=0});
+  G.funds+=rev-cost;
+  if(G.role>=3){note(`📊 Monthly books: ${won(rev)} revenue, ${won(cost)} costs. Funds: ${won(G.funds)}.`);if(G.funds<0){G.flags.neg=(G.flags.neg||0)+1;if(G.flags.neg<3)Q.push({title:'The agency is in the red',art:mscene('office',{}),body:`<p>Company funds are at ${won(G.funds)}. Three months in a row in the red and the agency goes under.</p><p class="muted">Pitch bookings, push comebacks, or meet investors.</p>`})}else G.flags.neg=0}
+}
+function mMorning(){
+  const dt=dateOf(G.day);
+  if(dt.getDate()===1)mMonthly();
+  G.groups.forEach(g=>{
+    const e=g.era;
+    if(!g.debuted){if(G.day>=g.debutDay)gDebut(g);return}
+    if(e.status==='promo'&&G.day>e.end)gWrap(g);
+    else if(e.status==='break'&&G.day>=e.next)gPrep(g);
+    else if(e.status==='prep'&&G.day>=e.release)gRelease(g);
+  });
+  if(dt.getMonth()===11&&dt.getDate()===31)mAwards();
+  if(G.role<3&&G.day%182===0)mReview();
+  if(G.day>=3650&&!G.flags.retireAsk){G.flags.retireAsk=1;Q.push({title:'Ten years in the industry',art:mscene('office',{}),body:'<p>A decade of early call times, van rides and encore stages. Is it time to hand over the keys?</p>',choices:[{label:'Retire',sub:'Take the retirement ending',fn(){mEnd('retire')}},{label:'Keep going',fn(){}}]})}
+}
+function gQuality(g){const co=MCO();return clamp(28+gAvg(g,'skill')*.38+g.era.readiness*.16+co.budget+(g.era.budget||0)+(g.members.some(m=>m.best&&m.arc==='dreamer')?4:0)+R(-6,8),20,100)}
+function gDebut(g){
+  const co=MCO(),e=g.era;g.debuted=true;e.n=1;e.quality=gQuality(g);e.status='promo';e.start=G.day;e.end=G.day+28;
+  MUL=1;g.fame=clamp(co.fameStart*.8+e.readiness/12);g.fans=co.fanStart+Math.round(e.readiness*60);
+  const first=Math.round(g.fans*R(.2,.35)+co.budget*600);e.sales=first;g.monthSales+=first;e.rank=clamp(Math.round(150-(e.quality*.5+g.fame*.6)*1.6),1,200);e.peak=e.rank;mRep(2);
+  mlog(`${g.name} debuted with "${e.title}".`);
+  Q.push({title:`${esc(g.name)} debuts!`,art:mscene('stage',{gid:g.id,big:true}),confetti:true,body:`<p>You watch from the side of the stage as ${esc(g.name)} perform "${esc(e.title)}" for the first time.</p><div class="result-row"><div class="qs"><small>Quality</small><b><span class="grade g-${grade(e.quality)}">${grade(e.quality)}</span> ${e.quality.toFixed(0)}</b></div><div class="qs"><small>First week</small><b>${fmt(first)}</b></div><div class="qs"><small>Chart</small><b>#${e.rank}</b></div></div><p class="muted">Music shows run automatically Tue–Sun in the afternoon. Drive & accompany them on show days to boost their stage.</p>`});
+}
+function gWrap(g){
+  const e=g.era;g.albums.push({n:e.n,title:e.title,q:e.quality,peak:e.peak,sales:e.sales,wins:e.wins,y:yearOf(e.start)});
+  mlog(`${g.name} wrapped "${e.title}" — peak #${e.peak}, ${e.wins} win(s).`);
+  e.status='break';e.next=G.day+RI(35,60);note(`${g.name} wrapped promotions for "${e.title}" (peak #${e.peak}, ${e.wins} wins).`);
+  if((G.day-g.debutDay)/365>=2&&g.fame<18&&Math.random()<.5){
+    if(G.groups.length>1){G.groups=G.groups.filter(x=>x!==g);if(G.focus===g.id)G.focus=G.groups[0].id;mRep(-4);mTrust(-6);mlog(`${g.name} disbanded.`);Q.push({title:`${esc(g.name)} disbands`,art:mscene('dorm',{}),body:`<p>After two quiet years, the company disbands ${esc(g.name)}. You drive them to their last fan meeting.</p>`})}
+    else G.flags.disband=1;
+  }
+}
+function gPrep(g){
+  const e=g.era,def=albumName();e.status='prep';e.readiness=R(5,15);e.release=G.day+14;e.budget=0;
+  const ch=[{label:'Confirm',primary:true,fn(){e.title=(document.getElementById('aname').value.trim()||def).slice(0,24);mlog(`${g.name} comeback announced: "${e.title}".`)}}];
+  if(G.role>=3)ch.splice(0,1,...[['Low budget',0,20e6],['Standard budget',4,80e6],['Lavish budget',9,250e6]].map(([l,b,c])=>({label:`${l} — ${won(c)}`,sub:b?`+${b} song quality`:'Cheapest option',disabled:G.funds<c&&c>20e6,fn(){e.title=(document.getElementById('aname').value.trim()||def).slice(0,24);e.budget=b;MUL=1;funds(-c);mlog(`${g.name} comeback "${e.title}" (${l.toLowerCase()}).`)}})));
+  Q.push({title:`${esc(g.name)} comeback confirmed`,art:mscene('office',{gid:g.id}),body:`<p>Release in 2 weeks. Supervise practice to raise readiness.</p><div class="field"><label>Album title</label><input class="txt" id="aname" maxlength="24" value="${esc(def)}"></div>`,choices:ch});
+}
+function gRelease(g){
+  const e=g.era;e.n=g.albums.length+1;e.quality=gQuality(g);e.status='promo';e.start=G.day;e.end=G.day+28;e.wins=0;
+  const first=Math.round(g.fans*R(.18,.32)+MCO().budget*700+e.quality*40);e.sales=first;g.monthSales+=first;
+  e.rank=clamp(Math.round(150-(e.quality*.5+g.fame*.6)*1.6),1,200);e.peak=e.rank;MUL=1;gFame(g,e.quality/40);
+  mlog(`${g.name} released "${e.title}" — #${e.rank}, ${fmt(first)} first week.`);
+  note(`💿 ${g.name} released "${e.title}": grade ${grade(e.quality)}, chart #${e.rank}, ${fmt(first)} first-week sales.`);
+}
+function mAwards(){
+  const y=yearOf(G.day),lines=[];MUL=1;
+  G.groups.filter(g=>g.debuted).forEach(g=>{const w=g.yearWins[y]||0,res=[];
+    if(yearOf(g.debutDay)===y&&g.fame>=22)res.push('Rookie of the Year');
+    if((g.albums.some(a=>a.y===y)||g.era.status==='promo')&&g.fame>=42)res.push('Bonsang');
+    if(g.fame>=82&&w>=15||(g.fame>=76&&w>=10&&Math.random()<.35)){res.push('DAESANG');g.daesangs++}
+    res.forEach(n=>G.awards.push({y,g:g.name,n}));if(res.length){mRep(res.length*1.2);mTrust(2);lines.push(`<li><b>${esc(g.name)}</b>: ${res.join(', ')}</li>`)}});
+  if(lines.length)mlog(`${y} awards won.`);
+  Q.push({title:`${y} Year-End Awards`,art:mscene('stage',{gid:(G.groups.find(g=>g.debuted)||{}).id,big:lines.length>0}),confetti:lines.length>0,body:lines.length?`<p>Your groups took home:</p><ul>${lines.join('')}</ul>`:'<p>No trophies for your groups this year. Next year.</p>'});
+}
+function mReview(){
+  const top=Math.max(0,...G.groups.map(g=>g.fame)),score=G.rep*.55+G.trust*.35+top*.25,need=[42,58,72][G.role];
+  const canCEO=G.day>=[182,730,1460][G.role];
+  if(score>=need&&canCEO){
+    G.role++;const R_=ROLES[G.role];mlog(`Promoted to ${R_.n}.`);G.flags.warned=0;
+    let extra='';
+    if(G.role===1){const g=seniorGroup();G.groups.push(g);extra=`<p>You're also taking over <b>${esc(g.name)}</b>, a senior group with ${g.albums.length} albums.</p>`}
+    if(G.role===2)extra='<p>You can now <b>scout trainees</b> and <b>form new groups</b> (up to 4).</p>';
+    if(G.role===3){G.funds=Math.max(G.funds,150e6);extra=`<p>The founder is retiring and hands you the agency. You now control company funds (${won(G.funds)}), comeback budgets and investor meetings. Keep the books out of the red.</p>`}
+    Q.push({title:`Promoted: ${R_.n}!`,art:mscene('office',{big:true}),confetti:true,body:`<p>Your review score: <b>${score.toFixed(0)}</b> (needed ${need}).</p><p>${R_.desc}</p>${extra}`});
+  }else if(score<22){
+    if(G.flags.warned)return mEnd('fired');
+    G.flags.warned=1;Q.push({title:'Performance review: warning',art:mscene('office',{mood:'sad'}),body:`<p>Score <b>${score.toFixed(0)}</b>. "Your groups are struggling and so is our trust in you. Turn it around by the next review."</p>`});
+  }else Q.push({title:'Performance review',art:mscene('office',{}),body:`<p>Score <b>${score.toFixed(0)}</b> — you needed ${need}${!canCEO?' and a few more years of experience':''} for a promotion. Solid work; keep building reputation and boss trust.</p>`});
+}
+
+/* ---------- events ---------- */
+function mEvent(){
+  const live=G.groups.filter(g=>g.debuted);const g=pick(live.length?live:G.groups);if(!g)return;const m=pick(g.members),mi=g.members.indexOf(m);
+  const EVS=[
+   {w:3,ok:live.length>0,run(){Q.push({title:'The van breaks down',art:mscene('city',{gid:g.id}),body:`<p>Halfway to a schedule, the van coughs and dies. ${esc(g.name)} are due on set in 40 minutes.</p>`,choices:[{label:'Call taxis (−₩100,000)',fn(){G.wallet-=100000;rec('Wallet',-100000);note('Everyone made it, slightly squashed.')}},{label:'Fix it yourself',sub:'Planning check',fn(){if(G.stats.plan>45||Math.random()<.4){mRep(1);note('You had a spare part in the boot. Of course you did.')}else{mTrust(-4);gFame(g,-.5);note('Forty minutes late. The PD was not impressed.')}}},{label:'Call the PD and reschedule',fn(){mTrust(-2);note('Rescheduled. The PD sighs.')}}]})}},
+   {w:2,ok:live.length>0&&g.fame>10,run(){Q.push({title:'Dating rumour',art:mscene('city',{duo:[g.id,mi]}),body:`<p>A gossip site claims ${esc(m.name)} is dating someone. ${esc(m.name)} is panicking in the van.</p>`,choices:[{label:'Issue a firm denial today',sub:'Boss happy, member less so',fn(){mTrust(3);mMood(m,-10);note('The story dies in a day.')}},{label:'"No comment — it\'s their private life"',sub:'Member trusts you more',fn(){mBond(m,8);mMood(m,6);gFame(g,-1);mStat('care',1)}},{label:'Ask what they want to do',sub:'Care check',fn(){if(G.stats.care>40){mBond(m,10);mMood(m,10);mRep(1);note(`${m.name} asked for a gentle statement. It went perfectly.`)}else{mMood(m,-4);mTrust(-2);note('You hesitated too long; the story spread.')}}}]})}},
+   {w:2,ok:live.length>0&&g.fame>20,run(){Q.push({title:'Chaos at the airport',art:mscene('city',{gid:g.id}),body:`<p>A crowd of sasaeng fans swarms ${esc(g.name)} at departures.</p>`,choices:[{label:'Shield the members yourself',fn(){mCond('health',-8);g.members.forEach(x=>{x.bond=clamp(x.bond+3)});mRep(1);note('You took an elbow to the ribs. The members won\'t forget it.')}},{label:'Call airport security',fn(){mStat('plan',1);note('Security cleared a path. Slow but safe.')}}]})}},
+   {w:2,ok:true,run(){Q.push({title:'Injury in practice',art:mscene('practice',{duo:[g.id,mi],mood:'sad'}),body:`<p>${esc(m.name)} lands badly and grabs their ankle.</p>`,choices:[{label:'Rest them for a week',fn(){m.stamina=clamp(m.stamina+30);mMood(m,5);mBond(m,4);if(g.debuted)gFame(g,-.5)}},{label:'Ice it and keep them on the schedule',fn(){if(Math.random()<.5){mMood(m,-12);mBond(m,-6);mRep(-2);note(`It got worse. ${m.name} is out for a month and fans are angry at the agency.`)}else note('They got through it. Lucky.')}}]})}},
+   {w:2,ok:live.length>0,run(){Q.push({title:'Malicious comments',art:mscene('office',{}),body:`<p>Hate posts about ${esc(g.name)} are spreading. The members have seen them.</p>`,choices:[{label:'Take legal action',sub:G.role>=3?'−₩10,000,000 from funds':'Company pays',fn(){if(G.role>=3)funds(-10e6);g.members.forEach(x=>mMood(x,6,true));mTrust(1);note('Fans cheer the announcement.')}},{label:'Tell the members to log off',fn(){g.members.forEach(x=>mMood(x,2,true))}}]})}},
+   {w:2,ok:live.length>0,run(){Q.push({title:'Last-minute variety slot',art:mscene('tv',{gid:g.id}),body:`<p>A PD calls: a guest cancelled. Can ${esc(g.name)} come tomorrow?</p>`,choices:[{label:'Say yes',fn(){g.bookings.push({type:'variety',day:G.day+1});mStat('net',1);note(`Booked ${g.name} on a variety show tomorrow.`)}},{label:'Decline — they need rest',fn(){g.members.forEach(x=>mMood(x,3,true))}}]})}},
+   {w:2,ok:g.members.length>2,run(){const o=pick(g.members.filter(x=>x!==m));Q.push({title:'Fight in the dorm',art:mscene('dorm',{gid:g.id,mood:'sad'}),body:`<p>${esc(m.name)} and ${esc(o.name)} aren't speaking after an argument about the choreography.</p>`,choices:[{label:'Sit them down and mediate',sub:'Care check',fn(){if(G.stats.care>35||Math.random()<.4){mBond(m,5);mBond(o,5);mStat('care',1);note('By midnight they\'re laughing about it.')}else{mMood(m,-6);mMood(o,-6);note('It didn\'t land. Give it time.')}}},{label:'Give them separate rooms for a while',fn(){mMood(m,-2);mMood(o,-2)}}]})}},
+   {w:3,ok:g.members.some(x=>x.mood<30)&&g.members.length>2,run(){const q=g.members.find(x=>x.mood<30),qi=g.members.indexOf(q);Q.push({title:`${esc(q.name)} wants to quit`,art:mscene('dorm',{duo:[g.id,qi],mood:'sad'}),body:`<p>${esc(q.name)} hands you a letter. "I can't do this anymore."</p>`,choices:[{label:'Have a real heart-to-heart',sub:'Care check',fn(){if(G.stats.care+q.bond*.5>55||Math.random()<.3){q.mood=60;mBond(q,10);note(`${q.name} stays. "Thanks for actually listening."`)}else{g.members=g.members.filter(x=>x!==q);mRep(-3);mTrust(-4);mlog(`${q.name} left ${g.name}.`);note(`${q.name} left the group.`)}}},{label:'Offer a month off',fn(){q.mood=50;q.stamina=100;if(g.debuted)gFame(g,-1);note(`${q.name} takes a break and comes back lighter.`)}},{label:'Accept their decision',fn(){g.members=g.members.filter(x=>x!==q);mlog(`${q.name} left ${g.name}.`);mRep(-1);note(`${q.name} left the group. You wish them well.`)}}]})}},
+   {w:2,ok:live.length>0&&g.fame>25,run(){const base=20e6+g.fame*1e6;Q.push({title:'CF offer!',art:mscene('office',{gid:g.id}),body:`<p>A brand wants ${esc(g.name)} for a campaign: ${won(base)}.</p>`,choices:[{label:'Accept as is',fn(){funds(base);gFame(g,1);mTrust(2)}},{label:'Negotiate for more',sub:'Negotiation check',fn(){if(G.stats.nego>45||Math.random()<.35){funds(base*1.6);gFame(g,1);mTrust(4);mStat('nego',1);note('You got 60% more. The boss is impressed.')}else{mTrust(-3);note('The brand walked. Ouch.')}}}]})}},
+   {w:3,ok:live.length>0,run(){gFame(g,1);gFans(g,3000+g.fame*400);note(`🔥 A ${pick(['fancam','behind-the-scenes clip','dance challenge'])} of ${g.name} went viral.`);mlog(`${g.name} went viral.`)}},
+   {w:2,ok:true,run(){mCond('stress',-10);note(`🎁 ${g.name}'s fans sent a coffee truck addressed to "our hardworking manager".`)}},
+   {w:1,ok:G.stats.plan<30,run(){mTrust(-4);mCond('stress',6);note('📉 You double-booked a schedule. The boss called you in.')}},
+  ].filter(x=>x.ok);
+  if(!EVS.length)return;let t=EVS.reduce((a,x)=>a+x.w,0),r=Math.random()*t;for(const x of EVS){r-=x.w;if(r<=0){MUL=1;x.run();return}}
+}
+
+/* ---------- endings ---------- */
+const MEND={
+ fired:{t:'Let Go',sc:'city',txt:()=>`After two poor reviews, ${MCO().name} lets you go. You clear your desk, but ${G.groups[0]?G.groups[0].name+'\'s members':'the members'} send you a group selfie that night: "Best manager ever." You'll be back.`},
+ burnout:{t:'Off the Road',sc:'hospital',txt:()=>`The exhaustion came back, and this time you listened. You hand over the van keys and step away to look after yourself. Your groups send you a video every birthday.`},
+ bankrupt:{t:'Lights Out',sc:'office',txt:()=>`Three months in the red, and ${MCO().name} closes its doors. You make sure every artist finds a new home before you turn off the lights.`},
+ disband:{t:'Last Fan Meeting',sc:'dorm',txt:()=>`With ${G.groups[0]?G.groups[0].name:'your group'} disbanded and no other acts, your time at ${MCO().name} ends. The final fan meeting is small, loud and full of love.`},
+ legend:{t:'Hitmaker',sc:'stage',txt:()=>`${G.groups.reduce((a,g)=>a+g.daesangs,0)} daesangs across your groups. Industry magazines call you the most successful manager-turned-CEO of your generation, and you retire on top.`},
+ retire:{t:'Handing Over the Keys',sc:'city',txt:()=>`After a decade, you retire as ${ROLES[G.role].n}. Every group you managed shows up to your farewell dinner — and they make you sit in the back of the van for once.`}
+};
+function mEnd(id){G.ending={id,day:G.day};Q=[];mlog(`ENDING: ${MEND[id].t}`);msave();render()}
+function mCheckEndings(){
+  if(G.ending)return;
+  if(G.role>=3&&(G.flags.neg||0)>=3){Q=[];return mEnd('bankrupt')}
+  if(G.flags.disband&&!Q.length)return mEnd('disband');
+  const ds=G.groups.reduce((a,g)=>a+g.daesangs,0);
+  if(ds>=5&&G.role>=3&&!G.flags.legend){G.flags.legend=1;Q.push({title:'Five daesangs',art:mscene('stage',{gid:G.groups[0].id,big:true}),confetti:true,body:'<p>Your agency\'s groups have won five daesangs between them.</p>',choices:[{label:'Retire as a hitmaker',fn(){mEnd('legend')}},{label:'Keep going',fn(){}}]})}
+}
+
+/* ---------- rendering ---------- */
+function crowd(list,cx,big){
+  let s='';const n=list.length;
+  if(n>6){const front=list.slice(0,6),rest=list.slice(6),rows=[];for(let i=0;i<rest.length;i+=9)rows.push(rest.slice(i,i+9));const RS=[[.5,150],[.42,128]];
+    rows.slice().reverse().forEach((row,ri)=>{const r=rows.length-1-ri,[sc,y]=RS[Math.min(r,1)];row.forEach((m,i)=>{const x=row.length===1?cx:70+i*(280/(row.length-1));s+=avatar(m.look,x,y,sc,{delay:(i+r)*.25,big})})});
+    list=front}
+  const offs=[];for(let i=1;i<=list.length;i++)offs.push((i%2?-1:1)*Math.ceil(i/2));const step=Math.min(54,140/Math.ceil(list.length/2));
+  list.map((m,i)=>[m,offs[i]]).sort((a,b)=>Math.abs(b[1])-Math.abs(a[1])).forEach(([m,o],i)=>{s+=avatar(m.look,cx+o*step,184-Math.abs(o)*3,.64,{delay:i*.3,big})});
+  return s;
+}
+function mscene(name,o={}){
+  const g=o.gid!=null?gById(o.gid):null,col=g?CONCEPTS[g.concept].c:'#9b7bff',mm=o.mood||mMoodFace();let p='';
+  if(o.duo){const gg=gById(o.duo[0]),m=gg&&gg.members[o.duo[1]];if(m){p+=avatar(m.look,240,188,.9,{delay:.4,big:o.big});p+=avatar(G.look,122,188,.9,{mood:mm,big:o.big})}else p+=avatar(G.look,180,186,.95,{mood:mm})}
+  else if(g){p+=crowd(g.members,205,o.big);p+=avatar(G.look,42,198,.78,{mood:mm})}
+  else p+=avatar(G.look,180,186,.95,{mood:mm,big:o.big});
+  const t=o.time,ov=name==='stage'?'':t==='night'?'<rect width="360" height="200" fill="#1a0b3a" opacity=".28"/>':t==='midnight'?'<rect width="360" height="200" fill="#07031a" opacity=".5"/><circle cx="330" cy="26" r="9" fill="#ffe9a8" opacity=".9"/><circle cx="334" cy="23" r="8" fill="#07031a" opacity=".55"/>':'';
+  return `<svg viewBox="0 0 360 200" xmlns="http://www.w3.org/2000/svg">${sceneBg(name,col)}${p}${ov}</svg>`;
+}
+function todayCard(){const t=UI.today;if(!t)return '';return `<div class="card today"><h3>${esc(t.title)}</h3><div class="deltas">${chips(t.d)}</div>${t.tl?`<div class="tl">${t.tl.map(x=>`<div class="tlr ${x.free?'free':''}"><span class="tle">${x.em}</span><div><b>${x.lab}</b> · ${esc(x.t)}${x.notes.length?`<div class="muted">${x.notes.map(esc).join(' ')}</div>`:''}</div></div>`).join('')}</div>`:''}${t.lines.length?`<ul>${t.lines.map(l=>`<li>${esc(l)}</li>`).join('')}</ul>`:''}</div>`}
+function gStatus(g){const e=g.era;if(!g.debuted)return `debut in ${Math.max(0,g.debutDay-G.day)} days · readiness ${e.readiness.toFixed(0)}%`;if(e.status==='promo')return `promoting "${esc(e.title)}" · #${e.rank}${isShowDay(g)?' · show today':''}`;if(e.status==='prep')return `comeback in ${e.release-G.day} days · readiness ${e.readiness.toFixed(0)}%`;return `on break · prep in ${Math.max(0,e.next-G.day)} days`}
+function mTickers(){const t=[];if(G.role<3)t.push(`Next review in <b>${182-(G.day%182)} days</b>`);G.groups.slice(0,3).forEach(g=>t.push(`<b>${esc(g.name)}</b>: ${gStatus(g)}`));if(G.groups.length>3)t.push(`+${G.groups.length-3} more groups`);if(G.forcedRest>0)t.push(`Resting: <b>${G.forcedRest}</b> day(s)`);return t.map(x=>`<div class="tk">${x}</div>`).join('')}
+function mPlanner(){
+  if(G.forcedRest>0)return `<div class="card acts"><b>🩹 Signed off</b><p class="muted">${G.forcedRest} more day(s) of rest. Your groups carry on without you.</p><button class="btn primary" style="width:100%" data-mgo="day">Rest today</button></div>`;
+  if(!gById(G.focus))G.focus=G.groups[0]&&G.groups[0].id;
+  const acts=mActs(),sel=UI.slot||'morning',selLab=SLOTS.find(s=>s[0]===sel);
+  const elsewhere=Object.entries(G.plan).filter(([k,v])=>v&&k!==sel).map(([,v])=>v);
+  const slots=SLOTS.map(([k,l,e])=>{const id=G.plan[k],a=id&&acts.find(x=>x.id===id),bad=id&&(!a||!a.slots.includes(k));return `<button class="slot ${sel===k?'on':''} ${bad?'warn':''} ${id?'filled':''}" data-mslot="${k}"><small>${e} ${l}</small><b>${a&&!bad?a.e+' '+esc(T(a.label)):id?'⚠️ Not available today':(k==='midnight'?'😴 Sleep':'Free time')}</b>${id?`<span class="x" data-mclear="${k}">✕</span>`:''}</button>`}).join('');
+  const list=acts.filter(a=>a.slots.includes(sel)&&!(a.once&&elsewhere.includes(a.id))&&(!a.gid||a.gid===G.focus));
+  const cats={};list.forEach(a=>(cats[a.cat]=cats[a.cat]||[]).push(a));
+  const fg=G.groups.length>1?`<div class="chips" style="margin:10px 0 2px">${G.groups.map(g=>`<button class="chip ${G.focus===g.id?'on':''}" data-focus="${g.id}">${esc(g.name)}</button>`).join('')}</div>`:'';
+  return `<div class="card acts"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><b>Plan your day</b><button class="linkbtn" data-mgo="clearplan">Clear all</button></div>
+   <div class="slots">${slots}</div>${fg}
+   <h4 style="margin-top:12px">${selLab[2]} ${selLab[1]} activities${G.groups.length>1?' · group: '+esc(gById(G.focus).name):''}</h4>
+   ${['Group','Members','Career','Agency','Office','Life'].filter(k=>cats[k]).map(k=>`<h4>${k}</h4><div class="grid-acts">${cats[k].map(a=>`<button class="act ${a.hot&&T(a.hot)?'hot':''} ${G.plan[sel]===a.id?'chosen':''}" data-mpick="${a.id}"><span class="t">${a.e} ${esc(T(a.label))}</span><span class="s">${esc(a.sub)}</span></button>`).join('')}</div>`).join('')||'<p class="muted">Nothing available in this slot.</p>'}
+   <div class="go-row"><button class="btn primary" data-mgo="day">▶ Start the day</button><label class="repeat"><input type="checkbox" id="mrep" ${UI.repeat?'checked':''}> Repeat this plan for up to 7 days</label></div>
+   <p class="muted" style="font-size:12px;margin:8px 0 0">Your groups live their own schedules every day — music shows happen in the afternoon whether or not you're there.</p></div>`;
+}
+function mTab(){
+  const tab=UI.mtab||'groups';
+  if(tab==='groups')return G.groups.map(g=>`<div class="gcard"><div class="gh"><b>${esc(g.name)}</b><span class="muted"> · ${CONCEPTS[g.concept].n} · ${g.members.length} members</span></div>
+    <div class="muted" style="font-size:12.5px;margin:3px 0 8px">${gStatus(g)}</div>
+    <div class="result-row" style="margin:6px 0"><div class="qs"><small>Fame</small><b>${g.fame.toFixed(1)}</b></div><div class="qs"><small>Fans</small><b>${fmt(g.fans)}</b></div><div class="qs"><small>Wins</small><b>${g.wins}</b></div></div>
+    ${g.members.map(m=>`<div class="mem">${miniAvatar(m.look)}<div class="i"><div class="n">${esc(m.name)}</div><div class="p">skill ${m.skill.toFixed(0)} · stamina ${Math.round(m.stamina)}</div>${bar('Mood',m.mood,m.mood<30?'var(--red)':'var(--mint)')}<div class="st">${MARCS[m.arc].n} · ${m.ch>=3?(m.best?'<span style="color:var(--gold)">✨ trusts you completely</span>':'story complete'):mReady(m)?'<b style="color:var(--gold)">📖 story ready — check in</b>':`story ${m.ch}/3 · next at bond ${MTH[m.ch]} (now ${Math.round(m.bond)})`}</div></div></div>`).join('')}</div>`).join('');
+  if(tab==='career'){const al=G.groups.flatMap(g=>g.albums.map(a=>({...a,g:g.name})));
+    return `<div class="sec-t">Career ladder</div>${ROLES.map((r,i)=>`<div style="padding:5px 0;${i===G.role?'color:var(--gold);font-weight:700':i<G.role?'color:var(--muted)':''}">${i<G.role?'✓':i===G.role?'▶':'○'} ${r.n}<span class="muted" style="font-weight:400;font-size:12px"> — ${r.desc}</span></div>`).join('')}
+    <div class="sec-t">Your skills</div><div class="statgrid">${bar('Planning',G.stats.plan,'var(--sky)')}${bar('Negotiation',G.stats.nego,'var(--gold)')}${bar('Network',G.stats.net,'var(--violet)')}${bar('Care',G.stats.care,'var(--pink)')}${bar('Reputation',G.rep,'#fff')}${bar('Boss trust',G.trust,'var(--mint)')}</div>
+    <div class="sec-t">Awards</div>${G.awards.length?G.awards.map(a=>`<div>🏆 ${a.y} · ${esc(a.g)} · ${esc(a.n)}</div>`).join(''):'<div class="muted">None yet.</div>'}
+    <div class="sec-t">Releases</div>${al.length?`<table class="t"><tr><th>Group</th><th>Title</th><th>Grade</th><th>Peak</th><th>Wins</th></tr>${al.map(a=>`<tr><td>${esc(a.g)}</td><td>${esc(a.title)}</td><td><span class="grade g-${grade(a.q)}">${grade(a.q)}</span></td><td>#${a.peak}</td><td>${a.wins}</td></tr>`).join('')}</table>`:'<div class="muted">No releases yet.</div>'}`}
+  if(tab==='trainees')return `<div class="sec-t">Scouted trainees (${G.trainees.length})</div>${G.trainees.length?G.trainees.map(t=>`<div class="mem">${miniAvatar(t.look)}<div class="i"><div class="n">${esc(t.name)}</div><div class="p">skill ${t.skill.toFixed(0)}</div></div></div>`).join(''):'<div class="muted">Use "Scout trainees" in the afternoon or night. Form a group once you have 2 or more.</div>'}`;
+  return `<div class="diary">${G.log.map(l=>`<div><b>${shortDate(l.d)}</b>${esc(l.t)}</div>`).join('')}</div>`;
+}
+function mRenderGame(){
+  const c=G.cond,sc=UI.scene||{name:'office'};
+  const tabs=[['groups','Groups'],['career','Career'],...(G.role>=2?[['trainees','Trainees']]:[]),['diary','Diary']];
+  app.innerHTML=`<div class="hud"><div class="brand display">Spotlight</div><div class="date"><b>${dstr(G.day)}</b><span>Day ${G.day} · ${esc(G.name)} · ${esc(MCO().name)}</span></div><span class="pill ph-mgr">${ROLES[G.role].n}</span><div class="sp"></div><button class="icon-btn" data-mgo="menu">Menu</button></div>
+  <div class="layout"><div class="col">
+    <div class="scene">${mscene(sc.name,{gid:sc.gid,duo:sc.duo,time:sc.time})}</div>
+    <div class="ticker">${mTickers()}</div>${todayCard()}
+    <div class="card"><div class="bars">${bar('Energy',c.energy,'var(--mint)')}${bar('Stress',c.stress,c.stress>75?'var(--red)':'var(--gold)')}${bar('Health',c.health,'var(--sky)')}</div></div>
+   </div><div class="col">
+    <div class="quick"><div class="qs"><small>Reputation</small><b>${G.rep.toFixed(1)}</b></div><div class="qs"><small>${G.role>=3?'Company funds':'Boss trust'}</small><b>${G.role>=3?won(G.funds):G.trust.toFixed(0)}</b></div><div class="qs"><small>Wallet</small><b>${won(G.wallet)}</b></div><div class="qs"><small>Groups</small><b>${G.groups.length} / ${ROLES[G.role].cap}</b></div></div>
+    ${mPlanner()}
+    <div class="tabs">${tabs.map(([k,v])=>`<button class="tab ${(UI.mtab||'groups')===k?'on':''}" data-mtab="${k}">${v}</button>`).join('')}</div>
+    <div class="card">${mTab()}</div>
+  </div></div>`;
+}
+function mRenderEnding(){
+  const E=MEND[G.ending.id];
+  app.innerHTML=`<div class="ending"><div class="art">${mscene(E.sc,{gid:G.groups[0]&&E.sc!=='hospital'?G.groups[0].id:null,big:true})}</div>
+   <div class="muted">MANAGER ENDING · ${shortDate(G.ending.day)}</div><h1 class="display">${E.t}</h1><p style="line-height:1.6">${esc(E.txt())}</p>
+   <div class="sumgrid"><div class="qs"><small>Days</small><b>${G.day}</b></div><div class="qs"><small>Final role</small><b>${ROLES[G.role].n}</b></div><div class="qs"><small>Groups</small><b>${G.groups.length}</b></div><div class="qs"><small>Wins</small><b>${G.groups.reduce((a,g)=>a+g.wins,0)}</b></div><div class="qs"><small>Awards</small><b>${G.awards.length}</b></div><div class="qs"><small>Trusted by</small><b>${G.groups.reduce((a,g)=>a+bestCount(g),0)} members</b></div></div>
+   <div class="btn-row"><button class="btn primary" data-mgo="new">New manager life</button><button class="btn" data-mgo="title">Title screen</button></div></div>`;
+}
+function mDefaultMC(){return {name:'',look:{g:'girl',hairStyle:'bob',hair:'#2b1d1a',skin:'#f6cfae',eye:'#3b2a20',outfit:'#2a2333'},company:'blue',coName:'',gname:groupName(),gtype:'girl',gsize:5,concept:'fresh'}}
+function mRenderCreate(){
+  const L=MC.look,sw=(arr,key)=>arr.map(c=>`<button class="sw ${L[key]===c?'on':''}" style="background:${c}" data-ml="${key}" data-v="${c}"></button>`).join('');
+  app.innerHTML=`<div class="hud"><div class="brand display">Spotlight</div><span class="pill ph-mgr">Manager life</span><div class="sp"></div><button class="icon-btn" data-mgo="title">← Back</button></div>
+  <div class="create"><div class="card preview"><svg viewBox="0 0 360 200" style="border-radius:12px;width:100%;max-width:260px">${sceneBg('office')}${avatar(L,180,190,1,{big:true})}</svg><div class="display" style="font-size:22px;margin-top:6px">${esc(MC.name||'Your name')}</div><div class="muted" style="font-size:13px">Road manager · ${esc(MC.coName||COMPANIES[MC.company].name)}</div></div>
+  <div class="card">
+   <div class="field"><label>Your name</label><input class="txt" id="mName" maxlength="20" value="${esc(MC.name)}"></div>
+   <div class="field"><label>You are a</label><div class="chips">${[['girl','Woman'],['boy','Man']].map(([k,v])=>`<button class="chip ${L.g===k?'on':''}" data-mgender="${k}">${v}</button>`).join('')}</div></div>
+   <div class="field"><label>Hair style</label><div class="chips">${Object.entries(L.g==='boy'?HAIR_B:HAIR_G).map(([k,v])=>`<button class="chip ${L.hairStyle===k?'on':''}" data-ml="hairStyle" data-v="${k}">${v}</button>`).join('')}</div></div>
+   <div class="field"><label>Hair colour</label><div class="chips">${sw(HAIR_COLORS,'hair')}</div></div>
+   <div class="field"><label>Skin tone</label><div class="chips">${sw(SKIN,'skin')}</div></div>
+   <div class="field"><label>Eye colour</label><div class="chips">${sw(EYES,'eye')}</div></div>
+   <div class="field"><label>Suit colour</label><div class="chips">${sw(OUTFITS,'outfit')}</div></div>
+   <div class="field"><label>Agency type</label><div class="cos">${Object.entries(COMPANIES).map(([k,c])=>`<button class="co ${MC.company===k?'on':''}" data-mco="${k}"><b>${c.name}</b><small>${c.tag}</small><p>${k==='star'?'Big budgets and big expectations.':k==='blue'?'A steady mid-size agency.':'Tiny budget, lots of freedom.'}</p></button>`).join('')}</div></div>
+   <div class="field"><label>Agency name (optional)</label><input class="txt" id="mCo" maxlength="30" placeholder="${esc(COMPANIES[MC.company].name)}" value="${esc(MC.coName)}"></div>
+   <div class="sec-t" style="margin-top:18px">Your first group</div>
+   <div class="field"><label>Group name</label><input class="txt" id="mGname" maxlength="18" value="${esc(MC.gname)}"></div>
+   <div class="field"><label>Group type</label><div class="chips">${[['girl','Girl group'],['boy','Boy group'],['coed','Co-ed group']].map(([k,v])=>`<button class="chip ${MC.gtype===k?'on':''}" data-mtype="${k}">${v}</button>`).join('')}</div></div>
+   <div class="field"><label>Members</label><select class="txt" id="mGsize">${Array.from({length:23},(_,i)=>i+2).map(v=>`<option value="${v}" ${MC.gsize===v?'selected':''}>${v} members</option>`).join('')}</select></div>
+   <div class="field"><label>Concept</label><select class="txt" id="mConcept">${Object.entries(CONCEPTS).map(([k,v])=>`<option value="${k}" ${MC.concept===k?'selected':''}>${v.n}</option>`).join('')}</select></div>
+   <button class="btn primary" style="width:100%" data-mgo="start">Start as road manager →</button>
+  </div></div>`;
+}
+function mReadForm(){const v=id=>{const el=document.getElementById(id);return el?el.value:null};if(!MC)return;const n=v('mName');if(n!==null){MC.name=n;MC.coName=v('mCo');MC.gname=v('mGname');MC.gsize=+v('mGsize');MC.concept=v('mConcept')}}
+
+/* ---------- title + routing ---------- */
+renderTitle=function(){
+  const sv=loadSave(),mv=mload();
+  const demo={g:'girl',hairStyle:'long',hair:'#e85d9a',skin:'#f6cfae',eye:'#3b2a20',outfit:'#9b7bff'},mdemo={g:'boy',hairStyle:'sidepart',hair:'#2b1d1a',skin:'#e8b48f',eye:'#3b2a20',outfit:'#2a2333'};
+  const idolOn=sv&&!sv.ending,mgrOn=mv&&!mv.ending;
+  app.innerHTML=`<div class="title-wrap">
+   <svg viewBox="0 0 360 200" style="width:min(520px,100%);border-radius:18px;border:1px solid var(--line)">${sceneBg('stage','#ff5fa2')}${avatar(demo,200,190,.95,{big:true,mic:true})}${avatar(mdemo,58,196,.8,{})}</svg>
+   <div class="logo display">Spotlight</div>
+   <div class="tag">Live the K-pop life day by day — on stage as an idol, or behind the scenes as a manager.</div>
+   <div class="modes">
+    <div class="card mode"><div class="display" style="font-size:22px">🎤 Idol life</div><p class="muted">Train, debut, chase 1st place and find your ending.</p>${idolOn?`<button class="btn primary" data-go="continue">Continue — ${esc(sv.stage)}, day ${sv.day}</button>`:''}<button class="btn ${idolOn?'':'primary'}" data-go="new">New idol life</button></div>
+    <div class="card mode"><div class="display" style="font-size:22px">📋 Manager life</div><p class="muted">Run schedules, protect your members, rise from road manager to CEO.</p>${mgrOn?`<button class="btn primary" data-mgo="continue">Continue — ${esc(mv.name)}, day ${mv.day}</button>`:''}<button class="btn ${mgrOn?'':'primary'}" data-mgo="new">New manager life</button></div>
+   </div>
+   <div class="muted" style="font-size:12px">Each mode has its own save. Starting a new life replaces that mode's save.</div>
+  </div>`;
+};
+const _render=render;
+render=function(){if(MODE==='manager'){if(G)return G.ending?mRenderEnding():mRenderGame();if(MC)return mRenderCreate()}return _render()};
+
+app.addEventListener('click',ev=>{
+  const t=ev.target.closest('button');if(!t)return;
+  const go=t.dataset.mgo;
+  if(go==='new'){MODE='manager';G=null;Q=[];MC=mDefaultMC();S=null;C=null;render();window.scrollTo(0,0);return}
+  if(go==='continue'){MODE='manager';S=null;C=null;MC=null;G=mload();Q=[];UI={mtab:'groups',repeat:false,slot:'morning',scene:null,today:{title:'Welcome back',lines:[`It's ${dstr(G.day)}.`],d:{}}};render();return}
+  if(go==='title'){MODE=null;G=null;MC=null;Q=[];showModal();render();return}
+  if(MODE!=='manager')return;
+  if(go==='start'){mReadForm();mNewGame(MC);MC=null;render();window.scrollTo(0,0);return}
+  if(go==='menu'){Q.unshift({title:'Menu',body:'<p class="muted">Your manager game saves automatically after every day in this browser.</p>',choices:[{label:'Back to the game',primary:true,fn(){}},{label:'Back to title screen',fn(){MODE=null;G=null;Q=[]}},{label:'Start a new manager life',fn(){G=null;Q=[];MC=mDefaultMC()}}]});showModal();return}
+  if(!G&&MC){mReadForm();
+    if(t.dataset.ml)MC.look[t.dataset.ml]=t.dataset.v;
+    if(t.dataset.mgender){MC.look.g=t.dataset.mgender;const ok=MC.look.g==='boy'?HAIR_B:HAIR_G;if(!ok[MC.look.hairStyle])MC.look.hairStyle=Object.keys(ok)[MC.look.g==='boy'?2:1]}
+    if(t.dataset.mco)MC.company=t.dataset.mco;if(t.dataset.mtype)MC.gtype=t.dataset.mtype;
+    const y=window.scrollY;render();window.scrollTo(0,y);return}
+  if(!G)return;
+  if(go==='day'){mDoDay();return}
+  if(go==='clearplan'){G.plan={morning:null,afternoon:null,night:null,midnight:null};UI.slot='morning';msave();render();return}
+  if(t.dataset.mslot){const cl=ev.target.closest('[data-mclear]');if(cl){G.plan[cl.dataset.mclear]=null;UI.slot=cl.dataset.mclear}else UI.slot=t.dataset.mslot;msave();render();return}
+  if(t.dataset.mpick){const sl=UI.slot||'morning';if(G.plan[sl]===t.dataset.mpick)G.plan[sl]=null;else{G.plan[sl]=t.dataset.mpick;const i=SLOTS.findIndex(x=>x[0]===sl);if(i<3)UI.slot=SLOTS[i+1][0]}msave();render();return}
+  if(t.dataset.focus){G.focus=+t.dataset.focus;msave();render();return}
+  if(t.dataset.mtab){UI.mtab=t.dataset.mtab;render();return}
+});
+app.addEventListener('change',ev=>{if(MODE==='manager'&&ev.target.id==='mrep')UI.repeat=ev.target.checked});
+app.addEventListener('input',ev=>{if(MODE==='manager'&&MC&&ev.target.id==='mName'){MC.name=ev.target.value}});
+
+window.__msim=function(n){for(let i=0;i<n&&G&&!G.ending;i++){while(Q.length&&!G.ending){showModal();const ch=(Q[0].choices||[{fn(){}}]).filter(c=>!c.disabled);pick(ch).fn();Q.shift()}if(G.ending)break;D={};
+  if(G.forcedRest>0){mRestDay();continue}
+  const acts=mActs();G.plan={morning:null,afternoon:null,night:null,midnight:null};const used=[];
+  for(const [k] of SLOTS){const o=acts.filter(a=>a.slots.includes(k)&&!used.includes(a.id));let a=o.find(a=>a.id==='form')||o.find(a=>a.id.startsWith('esc:')&&T(a.hot))||o.find(a=>a.id.startsWith('sup:')&&T(a.hot))||o.find(a=>a.id.startsWith('chk:')&&T(a.hot));
+    if(!a){if(k==='midnight'||(G.cond.energy<30))a=k!=='midnight'?o.find(a=>a.id==='rest'):null;else a=pick(o)}if(a){used.push(a.id);G.plan[k]=a.id}}
+  mRunDay()}return G&&{day:G.day,role:G.role,ending:G.ending}};
+render();
+</script>
+
+
+</body>
+</html>
