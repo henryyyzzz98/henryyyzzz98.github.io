@@ -1,3 +1,5 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Megaspin</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="description" content="A four-round game show built around a giant money wheel with real peg-and-flapper physics.">
@@ -23,7 +25,11 @@
   --f-body:"Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 [hidden]{display:none!important}
+:root{padding-top:env(safe-area-inset-top, 0px);padding-bottom:env(safe-area-inset-bottom, 0px)}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 html,body{min-height:100%}
+body{margin:0}
+*,*::before,*::after{box-sizing:border-box}
 body{
   background:
     radial-gradient(120% 70% at 30% 20%, var(--stage-2) 0%, transparent 60%),
@@ -115,6 +121,15 @@ canvas#wheel.dragging{cursor:grabbing}
 .card textarea{width:100%;min-height:240px;box-sizing:border-box;background:#0b0a26;color:var(--ink);border:1.5px solid var(--line);border-radius:10px;padding:10px;font:13px/1.45 ui-monospace,Menlo,Consolas,monospace}
 .resume{border:1.5px solid var(--led);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px;background:#0e1a3f}
 .resume p{color:var(--muted)!important;font-size:14px}
+@media (max-width:520px){
+  .app{padding-block:8px 20px;gap:8px}
+  .logo{font-size:26px}.logo small{font-size:10px;letter-spacing:.2em}
+  .bank .val{font-size:30px}
+  .desk{padding:14px;gap:12px}
+  .msg{min-height:0}
+  .result{font-size:34px}
+  .offer .amt{font-size:38px}
+}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 
