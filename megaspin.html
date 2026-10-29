@@ -1,0 +1,964 @@
+<title>Megaspin</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="A four-round game show built around a giant money wheel with real peg-and-flapper physics.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap">
+<style>
+/* Layout: one stage. Wheel is the hero on the left (top on phones); a narrow control desk beside it. Single deliberate dark look: a TV studio at night. */
+:root{
+  color-scheme: dark;
+  --stage:#07061f;      /* studio black-violet */
+  --stage-2:#120f45;    /* backdrop glow */
+  --desk:#14123a;       /* control desk surface */
+  --line:#2c2a6b;       /* hairlines on the desk */
+  --ink:#eef0ff;        /* main text */
+  --muted:#a3a6d6;      /* secondary text */
+  --gold:#f6c64a;       /* money, the accent */
+  --led:#7fd3ff;        /* LED ice blue */
+  --danger:#ff4d5e;     /* back to zero, penalties */
+  --good:#46e08a;       /* gains */
+  --f-display:"Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
+  --f-label:"Barlow Condensed", "Arial Narrow", sans-serif;
+  --f-body:"Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+[hidden]{display:none!important}
+html,body{min-height:100%}
+body{
+  background:
+    radial-gradient(120% 70% at 30% 20%, var(--stage-2) 0%, transparent 60%),
+    linear-gradient(180deg, var(--stage) 0%, #030212 100%);
+  background-color:var(--stage);
+  color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45;
+}
+.app{max-width:1120px;margin:0 auto;padding-block:12px 28px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));
+  display:flex;flex-direction:column;gap:12px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.logo{font-family:var(--f-display);font-weight:900;font-size:clamp(28px,6vw,40px);letter-spacing:.02em;line-height:1;
+  background:linear-gradient(180deg,#fff6d6 0%,var(--gold) 55%,#b97a12 100%);-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 0 14px rgba(246,198,74,.25))}
+.logo small{display:block;font-family:var(--f-label);font-weight:600;font-size:12px;letter-spacing:.28em;color:var(--muted);-webkit-text-fill-color:var(--muted);margin-top:4px;filter:none}
+.bank{display:flex;flex-direction:column;align-items:flex-end}
+.bank .lbl{font-family:var(--f-label);font-size:12px;letter-spacing:.22em;color:var(--muted);text-transform:uppercase}
+.bank .val{font-family:var(--f-display);font-weight:700;font-size:clamp(28px,7vw,44px);line-height:1;color:var(--gold);font-variant-numeric:tabular-nums;transition:color .3s}
+.bank .val.hit{color:var(--danger)}
+.main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start}
+@media (max-width:880px){.main{grid-template-columns:minmax(0,1fr)}}
+.stage{position:relative;min-width:0}
+canvas#wheel{display:block;width:100%;max-width:600px;margin:0 auto;touch-action:none;cursor:grab}
+canvas#wheel.dragging{cursor:grabbing}
+.desk{background:linear-gradient(180deg,var(--desk),#0d0b2b);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.roundline{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.roundname{font-family:var(--f-label);font-weight:700;font-size:20px;letter-spacing:.06em;text-transform:uppercase}
+.roundname span{color:var(--gold)}
+.pips{display:flex;gap:6px}
+.pip{width:12px;height:12px;border-radius:50%;border:1.5px solid var(--muted);opacity:.7}
+.pip.done{background:var(--muted);opacity:.9}
+.pip.now{border-color:var(--gold);box-shadow:0 0 8px var(--gold);opacity:1}
+.msg{min-height:52px;font-size:15px;color:var(--ink)}
+.msg b{color:var(--gold)}
+.result{font-family:var(--f-display);font-weight:900;font-size:40px;line-height:1;letter-spacing:.01em;font-variant-numeric:tabular-nums}
+.result.plus{color:var(--good)}.result.minus{color:var(--danger)}.result.zero{color:var(--danger);text-shadow:0 0 18px rgba(255,77,94,.5)}
+.chips{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.chip{font-family:var(--f-label);font-weight:700;font-size:17px;padding:10px 8px;border-radius:10px;border:1.5px solid var(--line);background:#1b1950;color:var(--ink);cursor:pointer;font-variant-numeric:tabular-nums}
+.chip[aria-pressed="true"]{border-color:var(--gold);background:#3a2f12;color:var(--gold);box-shadow:0 0 0 2px rgba(246,198,74,.25)}
+.chip:disabled{opacity:.35;text-decoration:line-through;cursor:not-allowed}
+.btn{font-family:var(--f-display);font-weight:900;font-size:24px;letter-spacing:.08em;text-transform:uppercase;border:0;border-radius:12px;padding:14px 18px;cursor:pointer;color:#241600;
+  background:linear-gradient(180deg,#ffe28a,var(--gold) 50%,#d99a1c);box-shadow:0 4px 0 #8a5a07,0 8px 24px rgba(246,198,74,.25);user-select:none;-webkit-user-select:none;touch-action:none}
+.btn:active{transform:translateY(2px);box-shadow:0 2px 0 #8a5a07}
+.btn:disabled{filter:grayscale(.8) brightness(.6);cursor:not-allowed;box-shadow:none}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line);box-shadow:none;font-size:18px}
+.btn:focus-visible,.chip:focus-visible,input:focus-visible,.iconbtn:focus-visible{outline:2px solid var(--led);outline-offset:2px}
+.power{height:10px;border-radius:6px;background:#0a0926;border:1px solid var(--line);overflow:hidden}
+.power i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--led),var(--gold),var(--danger))}
+.hint{font-size:13px;color:var(--muted)}
+.counts{display:flex;flex-wrap:wrap;gap:6px}
+.tag{font-family:var(--f-label);font-weight:600;font-size:13px;letter-spacing:.04em;padding:3px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+.tag.z{color:#ffb3ba;border-color:#6b1f2a}.tag.p{color:#ff9aa5;border-color:#4a1a26}.tag.b{color:#a9dcff;border-color:#1d4a70}.tag.g{color:var(--gold);border-color:#5a4513}
+.log{display:flex;flex-direction:column;gap:2px;max-height:190px;overflow:auto;font-size:13px;font-variant-numeric:tabular-nums;border-top:1px solid var(--line);padding-top:10px}
+.log div{display:flex;justify-content:space-between;gap:8px;color:var(--muted)}
+.log div b{color:var(--ink);font-weight:600}
+.log .neg{color:var(--danger)}.log .pos{color:var(--good)}
+.overlay{position:fixed;inset:0;background:rgba(3,2,18,.72);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;z-index:20;
+  padding:max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px))}
+.card{background:linear-gradient(180deg,#1a1752,#0e0c30);border:1px solid #3b3891;border-radius:18px;max-width:520px;width:100%;max-height:100%;overflow:auto;padding:22px;display:flex;flex-direction:column;gap:14px;box-shadow:0 20px 80px rgba(0,0,0,.6)}
+.card h2{margin:0;font-family:var(--f-display);font-weight:900;font-size:clamp(32px,8vw,48px);line-height:.95;text-wrap:balance}
+.card h2 em{font-style:normal;color:var(--gold)}
+.eyebrow{font-family:var(--f-label);font-weight:600;font-size:13px;letter-spacing:.24em;text-transform:uppercase;color:var(--led)}
+.card p{margin:0;color:var(--ink)}
+.rules{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;font-size:14px}
+.rules dt{font-family:var(--f-label);font-weight:700;color:var(--gold);letter-spacing:.04em;white-space:nowrap}
+.rules dd{margin:0;color:var(--muted)}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-family:var(--f-label);font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+.field input{font:inherit;font-size:17px;padding:10px 12px;border-radius:10px;border:1.5px solid var(--line);background:#0b0a26;color:var(--ink)}
+.board{display:flex;flex-direction:column;gap:4px;font-size:14px;font-variant-numeric:tabular-nums}
+.board div{display:flex;justify-content:space-between;gap:10px;color:var(--muted)}
+.board div b{color:var(--ink);font-weight:600}
+.big{font-family:var(--f-display);font-weight:900;font-size:clamp(44px,12vw,72px);line-height:1;color:var(--gold);font-variant-numeric:tabular-nums}
+.big.zero{color:var(--danger)}
+.iconbtn{background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:8px;padding:4px 10px;font-family:var(--f-label);font-size:13px;letter-spacing:.1em;cursor:pointer}
+.toprow{display:flex;align-items:center;gap:12px}
+.offer{border:1.5px solid #5a4513;border-radius:12px;padding:14px;background:radial-gradient(120% 120% at 0% 0%,#3a2f12 0%,#17143f 60%);display:flex;flex-direction:column;gap:10px}
+.offer .eyebrow{color:var(--gold)}
+.offer .amt{font-family:var(--f-display);font-weight:900;font-size:44px;line-height:1;color:var(--gold);font-variant-numeric:tabular-nums}
+.offer .risk{display:grid;grid-template-columns:1fr auto;gap:2px 10px;font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums}
+.offer .risk b{color:var(--ink);font-weight:600;text-align:right}
+.meter{height:8px;border-radius:5px;background:#0a0926;overflow:hidden;border:1px solid var(--line)}
+.meter i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--danger))}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pair .btn{font-size:18px;padding:12px 8px}
+.tools{display:flex;flex-wrap:wrap;gap:8px}
+.iconbtn.warn{color:#ffb3ba;border-color:#6b1f2a}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom, 0px));background:#1d1a55;border:1px solid #3b3891;color:var(--ink);padding:10px 16px;border-radius:10px;z-index:30;font-size:14px;box-shadow:0 8px 30px rgba(0,0,0,.5);max-width:calc(100% - 32px)}
+.card textarea{width:100%;min-height:240px;box-sizing:border-box;background:#0b0a26;color:var(--ink);border:1.5px solid var(--line);border-radius:10px;padding:10px;font:13px/1.45 ui-monospace,Menlo,Consolas,monospace}
+.resume{border:1.5px solid var(--led);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px;background:#0e1a3f}
+.resume p{color:var(--muted)!important;font-size:14px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="app">
+  <header>
+    <div class="logo">MEGASPIN<small>THE $23,000,000 WHEEL</small></div>
+    <div class="toprow">
+      <button class="iconbtn" id="mute" type="button" aria-pressed="false">SOUND ON</button>
+      <div class="bank"><span class="lbl" id="who">Bank</span><span class="val" id="bank">$0</span></div>
+    </div>
+  </header>
+  <div class="main">
+    <div class="stage"><canvas id="wheel" aria-label="The money wheel. Swipe it to spin."></canvas></div>
+    <aside class="desk" aria-live="polite">
+      <div class="roundline"><div class="roundname" id="rname">Round 1 · <span>Quickspin</span></div><div class="pips" id="pips"></div></div>
+      <div class="msg" id="msg"></div>
+      <div class="chips" id="chips" hidden></div>
+      <div id="spinbox" style="display:flex;flex-direction:column;gap:8px">
+        <button class="btn" id="spin" type="button">Hold to spin</button>
+        <div class="power" aria-hidden="true"><i id="powerbar"></i></div>
+        <div class="hint">Hold the button and let go to spin. Or grab the wheel and swipe it. A spin must go all the way round to count.</div>
+      </div>
+      <div class="offer" id="offer" hidden>
+        <div class="eyebrow">The offer</div>
+        <div class="amt" id="offerAmt">$0</div>
+        <p style="margin:0">Take it and walk away now, or keep spinning.</p>
+        <div class="risk">
+          <span>Bank at risk</span><b id="offerBank">$0</b>
+          <span>Spaces that end your game this spin</span><b id="offerRisk">0 of 48</b>
+        </div>
+        <div class="meter" aria-hidden="true"><i id="offerMeter" style="width:0"></i></div>
+        <div class="pair">
+          <button class="btn" id="take" type="button">Take it</button>
+          <button class="btn ghost" id="refuse" type="button">Keep spinning</button>
+        </div>
+      </div>
+      <button class="btn" id="next" type="button" hidden>Continue</button>
+      <div class="counts" id="counts"></div>
+      <div class="log" id="log"></div>
+      <div class="tools"><button class="iconbtn" id="dlLog" type="button">DOWNLOAD GAME LOG</button></div>
+    </aside>
+  </div>
+</div>
+
+<div class="overlay" id="ov"><div class="card" id="card"></div></div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+(() => {
+"use strict";
+const TAU = Math.PI * 2, N = 48, SEG = TAU / N;
+const mod = (a, m) => ((a % m) + m) % m;
+const rnd = (a, b) => a + Math.random() * (b - a);
+const ri = (a, b) => Math.floor(rnd(a, b + 1));
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = ri(0, i); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const money = v => (v < 0 ? "−$" : "$") + Math.abs(v).toLocaleString("en-US");
+const $ = id => document.getElementById(id);
+
+/* ---------- Physics: wheel inertia, friction, and a sprung flapper riding over pegs ---------- */
+const P = { K: 0.07, w: SEG * 0.38, rel: 0.25, mu: 0.30, b: 0.05, ms: 0.6 };
+const ph = { th: 0, om: 0, contact: false, entry: 0, running: false, still: 0, travel: 0, lastD: 0 };
+const flap = { a: 0, v: 0 };
+
+function pegOffset(th) { const x = mod(-Math.PI / 2 - th, TAU); return x - Math.round(x / SEG) * SEG; }
+function segUnderPointer(th) { return Math.floor(mod(-Math.PI / 2 - th, TAU) / SEG) % N; }
+
+function stepPhysics(dt) {
+  const d = pegOffset(ph.th);
+  let a = 0, loading = false;
+  if (Math.abs(d) < P.w) {
+    if (!ph.contact) { ph.contact = true; ph.entry = Math.sign(d) || 1; }
+    const f = (2 * P.K / P.w) * (1 - Math.abs(d) / P.w);
+    if (Math.sign(d) === ph.entry || d === 0) { a = -ph.entry * f; loading = true; }
+    else {
+      if (ph.lastD && Math.sign(ph.lastD) === ph.entry) snap(Math.abs(ph.om));
+      a = -Math.sign(d) * f * P.rel;
+    }
+  } else ph.contact = false;
+  ph.lastD = Math.abs(d) < P.w ? d : 0;
+  // flapper visuals: rigid while a peg is pushing it, free spring otherwise
+  if (loading) { flap.a = -ph.entry * (1 - Math.abs(d) / P.w) * 0.5; flap.v = 0; }
+  else { flap.v += (-260 * flap.a - 9 * flap.v) * dt; flap.a += flap.v * dt; }
+
+  if (Math.abs(ph.om) < 1e-3 && Math.abs(a) <= P.ms) { ph.om = 0; ph.still += dt; return; }
+  ph.still = 0;
+  const fr = -Math.sign(ph.om) * (P.mu + P.b * Math.abs(ph.om));
+  const nom = ph.om + (a + fr) * dt;
+  if (ph.om !== 0 && Math.sign(nom) !== Math.sign(ph.om) && Math.abs(a) <= P.mu) ph.om = 0; else ph.om = nom;
+  ph.th += ph.om * dt; ph.travel += ph.om * dt;
+}
+
+/* ---------- Audio ---------- */
+let ac = null, noise = null, muted = false;
+function audioOn() {
+  try {
+    if (!ac) {
+      ac = new (window.AudioContext || window.webkitAudioContext)();
+      noise = ac.createBuffer(1, ac.sampleRate * 0.05, ac.sampleRate);
+      const ch = noise.getChannelData(0); for (let i = 0; i < ch.length; i++) ch[i] = (Math.random() * 2 - 1) * (1 - i / ch.length);
+    }
+    if (ac.state === "suspended") ac.resume();
+  } catch (e) { ac = null; }
+}
+let lastSnap = 0;
+function snap(speed) {
+  if (!ac || muted) return;
+  const t = ac.currentTime; if (t - lastSnap < 0.012) return; lastSnap = t;
+  const s = ac.createBufferSource(); s.buffer = noise;
+  const bp = ac.createBiquadFilter(); bp.type = "bandpass"; bp.frequency.value = 1800 + Math.random() * 600; bp.Q.value = 4;
+  const g = ac.createGain(); const v = Math.min(0.5, 0.18 + 0.4 / (1 + speed));
+  g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.035);
+  s.connect(bp).connect(g).connect(ac.destination); s.start(t); s.stop(t + 0.05);
+}
+function tones(freqs, dur = 0.5, type = "triangle", gap = 0.09, vol = 0.14) {
+  if (!ac || muted) return;
+  freqs.forEach((f, i) => {
+    const t = ac.currentTime + i * gap, o = ac.createOscillator(), g = ac.createGain();
+    o.type = type; o.frequency.value = f; g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g).connect(ac.destination); o.start(t); o.stop(t + dur + 0.05);
+  });
+}
+const sfx = {
+  win: () => tones([523, 659, 784, 1047], 0.6),
+  big: () => tones([523, 659, 784, 1047, 1319, 1568], 0.9, "triangle", 0.08, 0.16),
+  small: () => tones([440, 554], 0.4),
+  lose: () => tones([300, 240, 180], 0.7, "sawtooth", 0.16, 0.08),
+  zero: () => tones([110, 104, 98], 1.2, "sawtooth", 0.02, 0.12),
+  change: () => tones([880, 1175], 0.3, "sine", 0.06, 0.1),
+};
+$("mute").addEventListener("click", () => { muted = !muted; $("mute").textContent = muted ? "SOUND OFF" : "SOUND ON"; $("mute").setAttribute("aria-pressed", String(muted)); });
+
+/* ---------- Wheel content ---------- */
+// segment: {k:'cash'|'blue'|'up'|'pen'|'btz'|'big', v, set}
+const R1_VALUES = [[500000,2],[250000,3],[200000,2],[100000,4],[75000,3],[50000,5],[40000,3],[25000,5],[20000,4],[10000,5],[5000,4],[2500,3],[1000,3],[500,2]];
+function baseWheel() {
+  const vals = []; R1_VALUES.forEach(([v, n]) => { for (let i = 0; i < n; i++) vals.push(v); });
+  for (let tries = 0; tries < 400; tries++) {
+    shuffle(vals);
+    let ok = true; for (let i = 0; i < N; i++) if (vals[i] >= 200000 && vals[(i + 1) % N] >= 200000) { ok = false; break; }
+    if (ok) break;
+  }
+  return vals.map(v => ({ k: "cash", v }));
+}
+const SETS = ["A", "B", "C", "D"];
+function label(s) {
+  if (s.k === "btz") return "BACK TO ZERO";
+  if (s.v >= 1000000) return (s.v / 1000000) + " MILLION";
+  if (s.k === "pen") return "−" + Math.abs(s.v).toLocaleString("en-US");
+  return s.v.toLocaleString("en-US");
+}
+function colors(s) {
+  if (s.k === "btz") return ["#0a0a0d", "#ff4d5e", "#1a1a20"];
+  if (s.k === "pen") return ["#5a0f1f", "#ffc0c8", "#7a1a2c"];
+  if (s.k === "blue") return ["#7cc8ff", "#06223f", "#a9dcff"];
+  const v = s.v;
+  if (v >= 3000000) return ["#e9edf5", "#2a1a00", "#ffffff"];
+  if (v >= 2000000) return ["#ffb23a", "#2a1500", "#ffd27a"];
+  if (v >= 1000000) return ["#f6c64a", "#2a1a00", "#fff0b0"];
+  if (v >= 250000) return ["#c8283a", "#ffffff", "#e5475a"];
+  if (v >= 100000) return ["#2456c8", "#ffffff", "#3a72e8"];
+  if (v >= 20000) return ["#169a52", "#ffffff", "#2cbf6d"];
+  if (v >= 2500) return ["#1a6f8f", "#ffffff", "#2a8fb3"];
+  return ["#3d4570", "#e6e9ff", "#525b8f"];
+}
+
+/* ---------- Rendering ---------- */
+const cv = $("wheel"), ctx = cv.getContext("2d");
+const tex = document.createElement("canvas");
+let W = 0, H = 0, R = 0, cx = 0, cy = 0, dpr = 1;
+const flashes = new Map(); // seg index -> start time
+let winIdx = -1, winAt = 0;
+
+function resize() {
+  dpr = Math.min(2.5, window.devicePixelRatio || 1);
+  const w = Math.min(cv.parentElement.clientWidth, 600, Math.max(300, window.innerHeight * 0.72));
+  W = w; H = w * 1.04; cv.style.width = w + "px"; cv.style.height = H + "px";
+  cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+  R = W * 0.445; cx = W / 2; cy = W * 0.545;
+  buildTexture();
+}
+const rO = 0.925, rI = 0.5;
+function buildTexture() {
+  const s = Math.ceil(R * 2.04 * dpr); tex.width = tex.height = s;
+  const c = tex.getContext("2d"); c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, s, s);
+  c.translate(s / 2, s / 2); c.scale(dpr, dpr);
+  // chrome rim
+  let g = c.createRadialGradient(0, 0, R * 0.9, 0, 0, R * 1.0);
+  g.addColorStop(0, "#1b1d3a"); g.addColorStop(0.55, "#c9cfe6"); g.addColorStop(0.75, "#5d6386"); g.addColorStop(1, "#1a1c36");
+  c.fillStyle = g; c.beginPath(); c.arc(0, 0, R * 1.0, 0, TAU); c.fill();
+  // segments
+  for (let i = 0; i < N; i++) {
+    const s0 = G.wheel[i], [bg, fg, hi] = colors(s0), a0 = i * SEG, a1 = a0 + SEG;
+    const gr = c.createRadialGradient(0, 0, R * rI, 0, 0, R * rO); gr.addColorStop(0, bg); gr.addColorStop(0.82, bg); gr.addColorStop(1, hi);
+    c.fillStyle = gr; c.beginPath(); c.arc(0, 0, R * rO, a0, a1); c.arc(0, 0, R * rI, a1, a0, true); c.closePath(); c.fill();
+    if (s0.k === "btz") { // hazard stripes
+      c.save(); c.clip(); c.strokeStyle = "rgba(255,77,94,.16)"; c.lineWidth = R * 0.012;
+      for (let r = rI; r < rO; r += 0.035) { c.beginPath(); c.arc(0, 0, R * r, a0, a1); c.stroke(); }
+      c.restore();
+    }
+    c.strokeStyle = "rgba(255,255,255,.55)"; c.lineWidth = Math.max(0.6, R * 0.004);
+    c.beginPath(); c.moveTo(Math.cos(a0) * R * rI, Math.sin(a0) * R * rI); c.lineTo(Math.cos(a0) * R * rO, Math.sin(a0) * R * rO); c.stroke();
+    // label, radial
+    c.save(); c.rotate(a0 + SEG / 2); c.fillStyle = fg; c.textAlign = "right"; c.textBaseline = "middle";
+    const hasSet = s0.k === "blue" || s0.k === "up";
+    const maxL = R * (hasSet ? 0.33 : 0.39); let fs = R * 0.058;
+    const txt = label(s0);
+    c.font = `700 ${fs}px "Barlow Condensed", "Arial Narrow", sans-serif`;
+    const m = c.measureText(txt).width; if (m > maxL) { fs *= maxL / m; c.font = `700 ${fs}px "Barlow Condensed", "Arial Narrow", sans-serif`; }
+    c.fillText(txt, R * (rO - 0.025), 0);
+    if (hasSet) {
+      const x = R * (rI + 0.045); c.beginPath(); c.arc(x, 0, R * 0.026, 0, TAU);
+      c.fillStyle = s0.k === "blue" ? "#06223f" : "rgba(0,0,0,.55)"; c.fill();
+      c.fillStyle = s0.k === "blue" ? "#a9dcff" : "#fff"; c.textAlign = "center"; c.font = `700 ${R * 0.034}px "Barlow Condensed", sans-serif`;
+      c.fillText(SETS[s0.set], x, R * 0.002);
+    }
+    c.restore();
+  }
+  // band edges
+  c.strokeStyle = "rgba(255,255,255,.7)"; c.lineWidth = R * 0.006;
+  c.beginPath(); c.arc(0, 0, R * rO, 0, TAU); c.stroke(); c.beginPath(); c.arc(0, 0, R * rI, 0, TAU); c.stroke();
+  // pegs at every boundary
+  for (let i = 0; i < N; i++) {
+    const a = i * SEG, x = Math.cos(a) * R * 0.955, y = Math.sin(a) * R * 0.955;
+    const pg = c.createRadialGradient(x - R * 0.004, y - R * 0.004, 0, x, y, R * 0.014);
+    pg.addColorStop(0, "#ffffff"); pg.addColorStop(0.6, "#b8bdd6"); pg.addColorStop(1, "#4a4f70");
+    c.fillStyle = pg; c.beginPath(); c.arc(x, y, R * 0.013, 0, TAU); c.fill();
+  }
+  // inner disc, spokes, hub
+  g = c.createRadialGradient(0, 0, 0, 0, 0, R * rI);
+  g.addColorStop(0, "#1a2a8a"); g.addColorStop(0.5, "#0c0e44"); g.addColorStop(1, "#06061f");
+  c.fillStyle = g; c.beginPath(); c.arc(0, 0, R * rI, 0, TAU); c.fill();
+  c.strokeStyle = "rgba(200,210,255,.45)"; c.lineWidth = Math.max(0.6, R * 0.0035);
+  for (let i = 0; i < 36; i++) {
+    const a = i * TAU / 36, b = a + TAU / 9;
+    c.beginPath(); c.moveTo(Math.cos(a) * R * 0.08, Math.sin(a) * R * 0.08); c.lineTo(Math.cos(b) * R * (rI - 0.01), Math.sin(b) * R * (rI - 0.01)); c.stroke();
+  }
+  g = c.createRadialGradient(-R * 0.02, -R * 0.02, 0, 0, 0, R * 0.09);
+  g.addColorStop(0, "#e8f4ff"); g.addColorStop(0.35, "#7fd3ff"); g.addColorStop(1, "#1a3a9a");
+  c.fillStyle = g; c.beginPath(); c.arc(0, 0, R * 0.085, 0, TAU); c.fill();
+}
+
+function segPath(c, i) { const a0 = i * SEG, a1 = a0 + SEG; c.beginPath(); c.arc(0, 0, R * rO, a0, a1); c.arc(0, 0, R * rI, a1, a0, true); c.closePath(); }
+
+function draw(now) {
+  const c = ctx; c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, W, H);
+  // back glow
+  let g = c.createRadialGradient(cx, cy, R * 0.6, cx, cy, R * 1.25);
+  g.addColorStop(0, "rgba(90,110,255,.18)"); g.addColorStop(1, "rgba(90,110,255,0)");
+  c.fillStyle = g; c.fillRect(0, 0, W, H);
+  // stand
+  c.fillStyle = "#0b0a2a"; c.beginPath(); c.moveTo(cx - R * 0.12, cy + R * 0.95); c.lineTo(cx + R * 0.12, cy + R * 0.95); c.lineTo(cx + R * 0.2, H); c.lineTo(cx - R * 0.2, H); c.fill();
+
+  c.save(); c.translate(cx, cy); c.rotate(ph.th);
+  c.drawImage(tex, -tex.width / dpr / 2, -tex.height / dpr / 2, tex.width / dpr, tex.height / dpr);
+  // flashes for changed spaces
+  for (const [i, t0] of flashes) {
+    const e = (now - t0) / 1000; if (e > 2.6) { flashes.delete(i); continue; }
+    c.fillStyle = `rgba(255,255,255,${0.55 * Math.abs(Math.sin(e * 6)) * (1 - e / 2.6)})`; segPath(c, i); c.fill();
+  }
+  if (winIdx >= 0) {
+    const e = (now - winAt) / 1000;
+    c.fillStyle = `rgba(255,255,255,${0.18 + 0.22 * Math.abs(Math.sin(e * 4))})`; segPath(c, winIdx); c.fill();
+    c.strokeStyle = "#fff"; c.lineWidth = R * 0.012; segPath(c, winIdx); c.stroke();
+  }
+  // LED bulbs on the rim
+  const spinning = ph.running || Math.abs(ph.om) > 0.05;
+  for (let i = 0; i < 96; i++) {
+    const a = i * TAU / 96 + SEG / 4, x = Math.cos(a) * R * 0.985, y = Math.sin(a) * R * 0.985;
+    let on;
+    if (winIdx >= 0) on = (Math.floor(now / 140) + i) % 2 === 0 ? 1 : 0.25;
+    else if (spinning) on = (i + Math.floor(now / 60)) % 6 < 2 ? 1 : 0.2;
+    else on = 0.55 + 0.45 * Math.sin(now / 700 + i * 1.7);
+    c.fillStyle = `rgba(190,232,255,${on})`; c.beginPath(); c.arc(x, y, R * 0.009, 0, TAU); c.fill();
+  }
+  c.restore();
+
+  // flapper
+  const hx = cx, hy = cy - R * 1.085, L = R * 0.16;
+  c.save(); c.translate(hx, hy); c.rotate(flap.a);
+  g = c.createLinearGradient(-R * 0.04, 0, R * 0.04, 0);
+  g.addColorStop(0, "#9a6a0a"); g.addColorStop(0.5, "#ffe28a"); g.addColorStop(1, "#9a6a0a");
+  c.fillStyle = g; c.strokeStyle = "rgba(0,0,0,.5)"; c.lineWidth = 1;
+  c.beginPath(); c.moveTo(-R * 0.04, 0); c.lineTo(R * 0.04, 0); c.lineTo(R * 0.008, L); c.lineTo(-R * 0.008, L); c.closePath(); c.fill(); c.stroke();
+  c.fillStyle = "#ff4d5e"; c.beginPath(); c.moveTo(-R * 0.022, L * 0.25); c.lineTo(R * 0.022, L * 0.25); c.lineTo(0, L * 0.8); c.closePath(); c.fill();
+  c.restore();
+  g = c.createRadialGradient(hx - 2, hy - 2, 0, hx, hy, R * 0.04);
+  g.addColorStop(0, "#ffffff"); g.addColorStop(1, "#6a6f90");
+  c.fillStyle = g; c.beginPath(); c.arc(hx, hy, R * 0.035, 0, TAU); c.fill();
+}
+
+/* ---------- Main loop ---------- */
+let last = performance.now(), acc = 0;
+function frame(now) {
+  let dt = Math.min(0.05, (now - last) / 1000); last = now;
+  if (ph.running) {
+    acc += dt; const h = 1 / 600;
+    while (acc >= h) { stepPhysics(h); acc -= h; }
+    if (ph.still > 0.35) { ph.running = false; onStop(); }
+  } else if (!drag) {
+    flap.v += (-260 * flap.a - 9 * flap.v) * dt; flap.a += flap.v * dt;
+    if (G.phase === "title") ph.th += dt * 0.12;
+  }
+  draw(now);
+  requestAnimationFrame(frame);
+}
+
+/* ---------- Game state ---------- */
+const ROUNDS = [
+  null,
+  { name: "Quickspin", max: 2000000, intro: "Four spins. The top space is $500,000, so you can bank up to $2,000,000." },
+  { name: "Quickspin+", max: 4000000, intro: "Every value on the wheel doubles. Four more spins, up to $4,000,000." },
+  { name: "Build Your Wheel", max: 8000000, intro: "Two $1 MILLION and two BACK TO ZERO spaces join the wheel, with penalties up to −$200,000. Sixteen blue spaces ($1 to $1,000) sit in four sets, A to D. Before each spin, pick an amount. If the wheel stops on a blue space, its whole set becomes that amount. After every spin, 1 to 4 more BACK TO ZERO spaces are added. Up to $8,000,000." },
+  { name: "Final Spins", max: 9000000, intro: "Penalties grow to as much as −$500,000. Spin 2 adds $1 MILLION and one BACK TO ZERO, spin 3 adds $2 MILLION and two, spin 4 adds $3 MILLION and three. Hit BACK TO ZERO, or a penalty as big as your bank, and the game ends with nothing. Up to $9,000,000." },
+];
+const UPGRADES = [250000, 500000, 1000000, 2000000];
+const fresh = () => ({ bank: 0, round: 1, spin: 1, wheel: baseWheel(), used: [], chosen: null, roundNet: [0, 0, 0, 0, 0], over: false, events: [], offer: null, took: false, msg: "", nextLabel: "", started: Date.now() });
+const G = Object.assign({ phase: "title", name: "" }, fresh());
+
+function setMsg(html) { G.msg = html; $("msg").innerHTML = html; }
+const plain = html => String(html).replace(/<br\s*\/?>/g, " ").replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+function ev(e) { G.events.push(Object.assign({ t: Date.now(), round: G.round, spin: G.spin }, e)); }
+let toastT = 0;
+function toast(text) { const t = $("toast"); t.textContent = text; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 2600); }
+
+/* ---------- Saved progress ---------- */
+const SAVE_KEY = "megaspin.save";
+function saveGame() {
+  if (G.phase === "title" || G.phase === "over") return;
+  const snap = Object.assign({}, G, { phase: G.phase === "spinning" ? "ready" : G.phase, th: ph.th });
+  if (G.phase === "spinning") snap.msg = "Your last spin was interrupted, so it doesn’t count. Spin again.";
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(snap)); } catch (e) {}
+}
+function readSave() { try { const s = JSON.parse(localStorage.getItem(SAVE_KEY) || "null"); return s && s.wheel && s.wheel.length === N && !s.over ? s : null; } catch (e) { return null; } }
+function clearSave() { try { localStorage.removeItem(SAVE_KEY); } catch (e) {} }
+window.addEventListener("pagehide", saveGame);
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") saveGame(); });
+function setBank(v, hit) {
+  G.bank = v; const el = $("bank"); el.textContent = money(v);
+  el.classList.toggle("hit", !!hit); if (hit) setTimeout(() => el.classList.remove("hit"), 1400);
+}
+function renderPips() {
+  $("pips").innerHTML = [1, 2, 3, 4].map(i => `<span class="pip ${i < G.spin ? "done" : i === G.spin ? "now" : ""}" title="Spin ${i}"></span>`).join("");
+  $("rname").innerHTML = `Round ${G.round} · <span>${ROUNDS[G.round].name}</span>`;
+}
+function renderCounts() {
+  if (G.round < 3) { $("counts").innerHTML = `<span class="tag g">Top space ${money(Math.max(...G.wheel.map(s => s.v || 0)))}</span>`; return; }
+  const n = k => G.wheel.filter(s => s.k === k).length;
+  const setsLeft = new Set(G.wheel.filter(s => s.k === "blue").map(s => s.set)).size;
+  const pens = G.wheel.filter(s => s.k === "pen").map(s => s.v);
+  $("counts").innerHTML =
+    `<span class="tag z">Back to Zero ×${n("btz")}</span>` +
+    `<span class="tag p">Penalties ×${pens.length}${pens.length ? " (to " + money(Math.min(...pens)) + ")" : ""}</span>` +
+    `<span class="tag b">Blue sets left ${setsLeft}</span>` +
+    `<span class="tag g">Million+ spaces ×${G.wheel.filter(s => s.v >= 1000000).length}</span>`;
+}
+function renderLog() {
+  $("log").innerHTML = G.events.filter(e => e.type === "spin" || e.type === "offer").reverse().map(e => {
+    if (e.type === "offer") return `<div><span>R4 · Offer before spin ${e.spin}</span><b class="${e.decision === "took" ? "pos" : ""}">${money(e.offer)} ${e.decision === "took" ? "taken" : e.decision === "refused" ? "refused" : ""}</b></div>`;
+    const d = e.after - e.before, txt = e.kind === "btz" ? "Back to Zero" : e.kind === "pen" ? money(e.value) : "+" + money(e.gain);
+    return `<div><span>R${e.round} · Spin ${e.spin}</span><b class="${d >= 0 && e.kind !== "pen" && e.kind !== "btz" ? "pos" : "neg"}">${txt}</b></div>`;
+  }).join("");
+}
+function renderChips() {
+  const box = $("chips");
+  if (G.round !== 3 || G.phase !== "ready") { box.hidden = true; return; }
+  box.hidden = false;
+  box.innerHTML = UPGRADES.map(v => `<button class="chip" type="button" data-v="${v}" ${G.used.includes(v) ? "disabled" : ""} aria-pressed="${G.chosen === v}">${money(v)}</button>`).join("");
+}
+$("chips").addEventListener("click", e => {
+  const b = e.target.closest(".chip"); if (!b || b.disabled) return;
+  G.chosen = +b.dataset.v; renderChips(); updateControls();
+  setMsg(`Going for <b>${money(G.chosen)}</b>. Land on a blue space and its whole set becomes ${money(G.chosen)}.`);
+});
+function updateControls() {
+  const ready = G.phase === "ready";
+  $("spinbox").hidden = !(ready || G.phase === "spinning");
+  const needChip = G.round === 3 && G.chosen == null;
+  $("spin").disabled = !ready || needChip;
+  $("spin").textContent = G.phase === "spinning" ? "Spinning…" : needChip ? "Pick an amount" : "Hold to spin";
+  $("next").hidden = G.phase !== "result";
+  if (G.phase === "result" && G.nextLabel) $("next").textContent = G.nextLabel;
+  $("offer").hidden = G.phase !== "offer";
+}
+
+/* ---------- Wheel changes ---------- */
+function flash(idxs) { const t = performance.now(); idxs.forEach(i => flashes.set(i, t)); }
+function replaceable(s, allowPen = true) { return s.k === "cash" || s.k === "blue" || (allowPen && s.k === "pen"); }
+function pickPool(n) { // cash first, then unconverted blue, then penalties
+  const out = [];
+  for (const k of ["cash", "blue", "pen"]) {
+    const pool = shuffle(G.wheel.map((s, i) => s.k === k ? i : -1).filter(i => i >= 0));
+    while (out.length < n && pool.length) out.push(pool.pop());
+  }
+  return out;
+}
+function nearestReplaceable(i, avoid) {
+  for (let d = 0; d < N; d++) for (const s of [1, -1]) {
+    const j = mod(i + s * d, N); if (!avoid.includes(j) && replaceable(G.wheel[j])) return j;
+  }
+  return -1;
+}
+function applyRound2() {
+  const ch = []; G.wheel.forEach((s, i) => { if (s.k === "cash") { s.v *= 2; ch.push(i); } });
+  buildTexture(); flash(ch); sfx.change();
+  ev({ type: "wheel", text: "Every value on the wheel doubled. Top space is now $1,000,000." });
+}
+function applyRound3() {
+  const o = ri(0, 2), ch = [];
+  for (let j = 0; j < 4; j++) {
+    const vals = shuffle([1, 10, 100, 1000]);
+    for (let k = 0; k < 4; k++) { const i = mod(o + 3 * j + 12 * k, N); G.wheel[i] = { k: "blue", v: vals[k], set: j }; ch.push(i); }
+  }
+  const others = []; for (let i = 0; i < N; i++) if (mod(i - o, 3) !== 0) others.push(i);
+  const s1 = others[ri(0, others.length - 1)];
+  const put = (i, seg) => { G.wheel[mod(i, N)] = seg; ch.push(mod(i, N)); };
+  put(s1, { k: "big", v: 1000000 }); put(s1 + 24, { k: "big", v: 1000000 });
+  put(s1 + 12, { k: "btz", v: 0 }); put(s1 + 36, { k: "btz", v: 0 });
+  const pens = shuffle([-10000, -25000, -50000, -100000, -150000, -200000]);
+  const free = shuffle(G.wheel.map((s, i) => s.k === "cash" ? i : -1).filter(i => i >= 0));
+  pens.forEach(v => put(free.pop(), { k: "pen", v }));
+  buildTexture(); flash(ch); sfx.change();
+  ev({ type: "wheel", text: "Added 2 × 1 MILLION, 2 × BACK TO ZERO, 6 penalties (−$10,000 to −$200,000) and 16 blue spaces in sets A–D." });
+}
+function addBtz(n) {
+  const idx = pickPool(n); idx.forEach(i => G.wheel[i] = { k: "btz", v: 0 });
+  buildTexture(); flash(idx);
+  ev({ type: "wheel", text: `${idx.length} more BACK TO ZERO ${idx.length > 1 ? "spaces" : "space"} added (now ${G.wheel.filter(s => s.k === "btz").length} on the wheel).` });
+  return idx.length;
+}
+const R4PEN = { "-10000": -25000, "-25000": -50000, "-50000": -100000, "-100000": -200000, "-150000": -300000, "-200000": -500000 };
+function applyRound4() {
+  const ch = []; G.wheel.forEach((s, i) => { if (s.k === "pen") { s.v = R4PEN[s.v] ?? Math.max(-500000, Math.round(s.v * 2.5)); ch.push(i); } });
+  buildTexture(); flash(ch); sfx.change();
+  ev({ type: "wheel", text: "Penalties increased, up to −$500,000." });
+}
+function applyR4Additions(spin) {
+  if (spin < 2) return "";
+  const big = { 2: 1000000, 3: 2000000, 4: 3000000 }[spin], nZ = spin - 1;
+  const placed = [];
+  let p = nearestReplaceable(ri(0, N - 1), placed); if (p < 0) return "";
+  G.wheel[p] = { k: "big", v: big }; placed.push(p);
+  for (let z = 1; z <= nZ; z++) {
+    const target = p + Math.round(z * N / (nZ + 1));
+    const j = nearestReplaceable(mod(target, N), placed); if (j < 0) break;
+    G.wheel[j] = { k: "btz", v: 0 }; placed.push(j);
+  }
+  buildTexture(); flash(placed); sfx.change();
+  ev({ type: "wheel", text: `Added ${big / 1000000} MILLION and ${nZ} BACK TO ZERO ${nZ > 1 ? "spaces" : "space"} opposite it.` });
+  return r4AddMsg(spin);
+}
+function r4AddMsg(spin) {
+  const big = { 2: 1000000, 3: 2000000, 4: 3000000 }[spin], nZ = spin - 1;
+  return `New on the wheel: <b>${big / 1000000} MILLION</b> and ${nZ} more BACK TO ZERO ${nZ > 1 ? "spaces" : "space"} opposite it.`;
+}
+
+/* ---------- Spinning ---------- */
+function startSpin(om) {
+  audioOn(); winIdx = -1;
+  ph.om = Math.max(-11, Math.min(11, om)); ph.contact = false; ph.lastD = 0; ph.running = true; ph.still = 0; ph.travel = 0; acc = 0;
+  G.phase = "spinning"; updateControls(); renderChips();
+  setMsg("Round and round it goes…");
+}
+function onStop() {
+  if (Math.abs(ph.travel) < TAU) {
+    G.phase = "ready"; updateControls(); renderChips();
+    ev({ type: "void" });
+    setMsg("That didn’t make a full turn, so it doesn’t count. <b>Spin again</b>, harder.");
+    saveGame();
+    return;
+  }
+  resolve(segUnderPointer(ph.th));
+}
+
+function resolve(i) {
+  const s = G.wheel[i]; winIdx = i; winAt = performance.now();
+  const before = G.bank;
+  let after = before, head = "", cls = "plus", note = "", ended = false;
+
+  if (G.round === 3 && s.k === "blue") {
+    const v = G.chosen, set = s.set, ch = [];
+    G.wheel.forEach((x, j) => { if (x.k === "blue" && x.set === set) { G.wheel[j] = { k: "up", v, set }; ch.push(j); } });
+    buildTexture(); flash(ch);
+    after = before + v; head = "+" + money(v);
+    note = `Blue set <b>${SETS[set]}</b> is now four ${money(v)} spaces for the rest of the game.`;
+    v >= 1000000 ? sfx.big() : sfx.win();
+  } else if (s.k === "btz") {
+    after = 0; head = "BACK TO ZERO"; cls = "zero"; sfx.zero();
+    if (G.round === 4) { ended = true; note = "The bank is wiped out. That’s the end of the game."; }
+    else note = before > 0 ? `${money(before)} gone. The bank is back to $0.` : "Nothing in the bank to lose.";
+  } else if (s.k === "pen") {
+    const loss = -s.v; cls = "minus"; head = money(s.v);
+    if (G.round === 4 && loss >= before) { after = 0; ended = true; head = money(s.v); note = "That penalty is as big as your bank. The game ends with nothing."; sfx.zero(); }
+    else { after = Math.max(0, before - loss); note = `Penalty: ${money(loss)} off the bank.`; sfx.lose(); }
+  } else {
+    after = before + s.v; head = "+" + money(s.v);
+    s.v >= 1000000 ? sfx.big() : s.v >= 100000 ? sfx.win() : sfx.small();
+  }
+
+  const attempt = G.round === 3 ? G.chosen : null;
+  if (G.round === 3 && G.chosen != null) { G.used.push(G.chosen); if (s.k !== "blue") note += (note ? " " : "") + `Your ${money(G.chosen)} attempt is used up.`; G.chosen = null; }
+  G.roundNet[G.round] += after - before;
+  setBank(after, after < before);
+  ev({ type: "spin", space: s.k === "blue" && G.round === 3 ? `blue ${label(s)} (set ${SETS[s.set]})` : (s.set != null ? `${label(s)} (set ${SETS[s.set]})` : label(s)),
+       kind: s.k, value: s.v, gain: after - before, before, after, attempt, note: plain(note), ended });
+
+  if (G.round === 3) {
+    const n = addBtz(ri(1, 4));
+    note += ` <br>${n} more BACK TO ZERO ${n > 1 ? "spaces" : "space"} added to the wheel.`;
+  }
+  renderLog();
+  if (G.round === 4 && G.spin === 4) ended = true;
+  G.over = ended;
+  G.phase = "result"; G.nextLabel = ended ? "See final bank" : G.spin === 4 ? "End of round" : "Next spin";
+  renderCounts(); renderChips(); updateControls();
+  setMsg(`<div class="result ${cls}">${head}</div><div style="margin-top:6px">${note || "Bank: <b>" + money(after) + "</b>"}</div>`);
+  if (ended) ev({ type: "end", bank: after, how: after === 0 && G.spin < 4 ? "wiped out" : "finished all spins" });
+  saveGame();
+}
+
+/* ---------- Round 4 offers ---------- */
+function outcome(seg, bank) { // returns new bank, or -1 when the game ends with nothing
+  if (seg.k === "btz") return -1;
+  if (seg.k === "pen") return -seg.v >= bank ? -1 : bank + seg.v;
+  return bank + seg.v;
+}
+function expectedValue(runs = 4000) {
+  let sum = 0;
+  for (let r = 0; r < runs; r++) {
+    const w = G.wheel.map(s => ({ k: s.k, v: s.v }));
+    let bank = G.bank;
+    for (let sp = G.spin; sp <= 4; sp++) {
+      if (sp > G.spin) { // future additions: one big space plus (sp-1) Back to Zero
+        const pool = []; w.forEach((s, i) => { if (s.k === "cash" || s.k === "blue" || s.k === "pen") pool.push(i); });
+        shuffle(pool);
+        if (pool.length) w[pool.pop()] = { k: "big", v: { 2: 1e6, 3: 2e6, 4: 3e6 }[sp] };
+        for (let z = 0; z < sp - 1 && pool.length; z++) w[pool.pop()] = { k: "btz", v: 0 };
+      }
+      const b = outcome(w[ri(0, N - 1)], bank);
+      if (b < 0) { bank = 0; break; }
+      bank = b;
+    }
+    sum += bank;
+  }
+  return sum / runs;
+}
+function makeOffer() {
+  const danger = G.wheel.filter(s => outcome(s, G.bank) < 0).length;
+  const risk = danger / N;
+  const ev4 = expectedValue();
+  // The host is cautious: pays well under the expected value, a little less the safer the spin looks.
+  let offer = ev4 * (0.72 + 0.12 * risk);
+  offer = Math.min(offer, G.bank * 1.6 + 250000);
+  const step = offer >= 1e6 ? 10000 : offer >= 1e5 ? 5000 : 1000;
+  offer = Math.max(step, Math.round(offer / step) * step);
+  return { offer, danger, risk, bank: G.bank };
+}
+function showOffer() {
+  const o = G.offer;
+  $("offerAmt").textContent = money(o.offer);
+  $("offerBank").textContent = money(o.bank);
+  $("offerRisk").textContent = `${o.danger} of ${N} (${Math.round(o.risk * 100)}%)`;
+  $("offerMeter").style.width = Math.round(o.risk * 100) + "%";
+  $("take").textContent = "Take " + money(o.offer);
+  G.phase = "offer"; updateControls();
+}
+function startR4Spin(msg) {
+  if (G.bank > 0) {
+    G.offer = makeOffer();
+    ev({ type: "offer", offer: G.offer.offer, bank: G.bank, danger: G.offer.danger, decision: "pending" });
+    renderLog(); showOffer();
+    setMsg((msg ? msg + "<br>" : "") + `Before spin ${G.spin}, an offer to walk away.`);
+  } else {
+    G.phase = "ready"; updateControls();
+    setMsg((msg ? msg + "<br>" : "") + `Your bank is empty, so there’s no offer. Spin ${G.spin} of 4.`);
+  }
+  saveGame();
+}
+$("take").addEventListener("click", () => {
+  audioOn(); const o = G.offer, before = G.bank;
+  const e = [...G.events].reverse().find(x => x.type === "offer"); if (e) e.decision = "took";
+  G.roundNet[4] += o.offer - before; setBank(o.offer); G.took = true; G.over = true; sfx.big();
+  ev({ type: "end", bank: o.offer, how: `took the offer before spin ${G.spin}` });
+  renderLog(); gameOver();
+});
+$("refuse").addEventListener("click", () => {
+  audioOn();
+  const e = [...G.events].reverse().find(x => x.type === "offer"); if (e) e.decision = "refused";
+  G.offer = null; G.phase = "ready"; renderLog(); updateControls();
+  setMsg(`Offer refused. Spin ${G.spin} of 4, with <b>${money(G.bank)}</b> on the line.`);
+  saveGame();
+});
+
+$("next").addEventListener("click", () => {
+  audioOn(); winIdx = -1;
+  if (G.over) return gameOver();
+  if (G.spin >= 4) { G.round++; G.spin = 1; renderPips(); return roundIntro(); }
+  G.spin++; renderPips();
+  if (G.round === 4) { const m = applyR4Additions(G.spin); renderCounts(); return startR4Spin(m); }
+  G.phase = "ready"; renderCounts(); renderChips(); updateControls();
+  setMsg(G.round === 3 ? "Pick an amount for this spin." : `Spin ${G.spin} of 4. Bank: <b>${money(G.bank)}</b>`);
+  saveGame();
+});
+
+/* Hold-to-spin button with a ping-pong power meter */
+let charging = false, chargeStart = 0, power = 0, chargeRAF = 0;
+function chargeTick(now) {
+  if (!charging) return;
+  const t = ((now - chargeStart) / 1400) % 2; power = t < 1 ? t : 2 - t;
+  $("powerbar").style.width = (power * 100).toFixed(1) + "%";
+  chargeRAF = requestAnimationFrame(chargeTick);
+}
+function beginCharge() { if ($("spin").disabled || charging) return; audioOn(); charging = true; chargeStart = performance.now(); chargeRAF = requestAnimationFrame(chargeTick); }
+function endCharge() {
+  if (!charging) return; charging = false; cancelAnimationFrame(chargeRAF);
+  const om = (4 + power * 5.2) * rnd(0.97, 1.03);
+  $("powerbar").style.width = "0%"; startSpin(om);
+}
+$("spin").addEventListener("pointerdown", e => { e.preventDefault(); beginCharge(); });
+$("spin").addEventListener("pointerup", endCharge);
+$("spin").addEventListener("pointerleave", endCharge);
+$("spin").addEventListener("pointercancel", endCharge);
+$("spin").addEventListener("keydown", e => { if ((e.key === " " || e.key === "Enter") && !e.repeat) { e.preventDefault(); beginCharge(); } });
+$("spin").addEventListener("keyup", e => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); endCharge(); } });
+
+/* Grab-and-swipe the wheel itself */
+let drag = null;
+function ptrAngle(e) { const r = cv.getBoundingClientRect(); return Math.atan2(e.clientY - r.top - cy, e.clientX - r.left - cx); }
+cv.addEventListener("pointerdown", e => {
+  if (G.phase !== "ready" || (G.round === 3 && G.chosen == null)) return;
+  const r = cv.getBoundingClientRect(), dx = e.clientX - r.left - cx, dy = e.clientY - r.top - cy;
+  if (Math.hypot(dx, dy) > R * 1.02 || Math.hypot(dx, dy) < R * 0.15) return;
+  audioOn(); cv.setPointerCapture(e.pointerId); cv.classList.add("dragging");
+  drag = { a: ptrAngle(e), samples: [{ t: performance.now(), th: ph.th }], seg: Math.floor(mod(-Math.PI / 2 - ph.th, TAU) / SEG) };
+  winIdx = -1;
+});
+cv.addEventListener("pointermove", e => {
+  if (!drag) return;
+  const a = ptrAngle(e); let da = a - drag.a; da = mod(da + Math.PI, TAU) - Math.PI; drag.a = a;
+  ph.th += da;
+  const sg = Math.floor(mod(-Math.PI / 2 - ph.th, TAU) / SEG); if (sg !== drag.seg) { drag.seg = sg; snap(2); flap.v += (da > 0 ? 1 : -1) * 6; }
+  const t = performance.now(); drag.samples.push({ t, th: ph.th }); while (drag.samples.length > 2 && t - drag.samples[0].t > 90) drag.samples.shift();
+});
+function endDrag(e) {
+  if (!drag) return; cv.classList.remove("dragging");
+  const s = drag.samples, t = performance.now(); drag = null;
+  const first = s[0], lastS = s[s.length - 1], dt = (lastS.t - first.t) / 1000;
+  const om = dt > 0.008 && t - lastS.t < 80 ? (lastS.th - first.th) / dt : 0;
+  if (Math.abs(om) < 0.6) return; // just a nudge
+  startSpin(om);
+}
+cv.addEventListener("pointerup", endDrag); cv.addEventListener("pointercancel", endDrag);
+
+/* ---------- Screens ---------- */
+const ov = $("ov"), card = $("card");
+function readBoard() { try { return JSON.parse(localStorage.getItem("megaspin.best") || "[]"); } catch (e) { return []; } }
+function writeBoard(b) { try { localStorage.setItem("megaspin.best", JSON.stringify(b)); } catch (e) {} }
+function boardHTML() {
+  const b = readBoard();
+  if (!b.length) return `<p class="hint">No banks recorded on this device yet.</p>`;
+  return `<div class="board">${b.map((r, i) => `<div><span>${i + 1}. ${escapeHTML(r.name)}${r.took ? " · took offer" : ""}</span><b>${money(r.bank)}</b></div>`).join("")}</div>`;
+}
+function boardBlock() {
+  return `<div class="eyebrow">Biggest banks</div><div id="boardBox">${boardHTML()}</div>
+    <div class="tools"><button class="iconbtn warn" id="wipe" type="button">CLEAR LEADERBOARD</button></div>`;
+}
+let wipeArmed = 0;
+function wireWipe() {
+  const b = $("wipe"); if (!b) return;
+  b.hidden = !readBoard().length;
+  b.addEventListener("click", () => {
+    if (!wipeArmed) {
+      b.textContent = "TAP AGAIN TO ERASE ALL SCORES";
+      wipeArmed = setTimeout(() => { wipeArmed = 0; b.textContent = "CLEAR LEADERBOARD"; }, 4000);
+      return;
+    }
+    clearTimeout(wipeArmed); wipeArmed = 0;
+    try { localStorage.removeItem("megaspin.best"); } catch (e) {}
+    $("boardBox").innerHTML = boardHTML(); b.hidden = true; toast("Leaderboard cleared");
+  });
+}
+function escapeHTML(s) { return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+
+/* ---------- Game log ---------- */
+function buildLog() {
+  const d = t => new Date(t).toLocaleString("en-AU", { dateStyle: "medium", timeStyle: "short" });
+  const L = [];
+  L.push("MEGASPIN — GAME LOG", "=".repeat(40), `Contestant: ${G.name}`, `Started:    ${d(G.started)}`);
+  const end = G.events.find(e => e.type === "end");
+  L.push(end ? `Result:     ${money(end.bank)} (${end.how})` : `Status:     in progress — Round ${G.round}, spin ${G.spin}, bank ${money(G.bank)}`);
+  let round = 0;
+  for (const e of G.events) {
+    if (e.type === "round") {
+      round = e.round; L.push("", `ROUND ${e.round} · ${ROUNDS[e.round].name.toUpperCase()}`, "-".repeat(40), `  Bank at start: ${money(e.bank)}`);
+      continue;
+    }
+    if (e.type === "wheel") L.push(`  [wheel] ${e.text}`);
+    if (e.type === "void") L.push(`  Spin ${e.spin}: didn’t make a full turn — respun`);
+    if (e.type === "offer") L.push(`  Offer before spin ${e.spin}: ${money(e.offer)} (bank ${money(e.bank)}, ${e.danger}/${N} spaces end the game) — ${e.decision === "took" ? "TAKEN" : e.decision === "refused" ? "refused" : "undecided"}`);
+    if (e.type === "spin") {
+      const res = e.kind === "btz" ? "BACK TO ZERO" : e.kind === "pen" ? `${money(e.value)} penalty` : `+${money(e.gain)}`;
+      L.push(`  Spin ${e.spin}: landed on ${e.space}${e.attempt ? ` (playing for ${money(e.attempt)})` : ""}`,
+             `          ${res.padEnd(22)} bank ${money(e.before)} → ${money(e.after)}`);
+      if (e.note) L.push(`          ${e.note}`);
+    }
+    if (e.type === "end") L.push("", `GAME OVER: ${money(e.bank)} — ${e.how}`);
+  }
+  if (G.events.some(e => e.type === "round")) {
+    L.push("", "ROUND TOTALS", "-".repeat(40));
+    for (let r = 1; r <= 4; r++) if (G.events.some(e => e.type === "round" && e.round === r)) L.push(`  Round ${r} · ${ROUNDS[r].name}: ${G.roundNet[r] >= 0 ? "+" : ""}${money(G.roundNet[r])}`);
+  }
+  return L.join("\n") + "\n";
+}
+async function downloadLog() {
+  if (!G.events.length) { toast("Start a game first. The log fills in as you play."); return; }
+  const text = buildLog();
+  const filename = `megaspin-log-${(G.name || "contestant").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "contestant"}-${new Date(G.started).toISOString().slice(0, 10)}.txt`;
+  if (!window.claude) { // your own website: a normal browser download
+    const url = URL.createObjectURL(new Blob([text], { type: "text/plain" }));
+    const a = document.createElement("a"); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000); return;
+  }
+  let dl = null; try { dl = await window.claude.use("downloads"); } catch (e) {}
+  if (dl) {
+    try { await dl.save({ filename, data: text }); toast("Game log saved"); }
+    catch (e) { if (e && e.code === "declined") return; if (e && e.code === "rate_limited") { toast("A save is already waiting for you to confirm."); return; } showLogText(text); }
+    return;
+  }
+  showLogText(text);
+}
+function showLogText(text) {
+  const back = { html: card.innerHTML, wasHidden: ov.hidden };
+  ov.hidden = false;
+  card.innerHTML = `<div class="eyebrow">Game log</div><p>Downloads aren’t available here, so copy the log instead.</p>
+    <textarea id="logText" readonly></textarea>
+    <div class="pair"><button class="btn" id="copyLog" type="button">Copy</button><button class="btn ghost" id="closeLog" type="button">Close</button></div>`;
+  $("logText").value = text;
+  $("copyLog").addEventListener("click", () => {
+    const ta = $("logText");
+    const fallback = () => { ta.focus(); ta.select(); toast("Selected. Press copy on your keyboard or menu."); };
+    try { navigator.clipboard.writeText(text).then(() => toast("Log copied"), fallback); } catch (e) { fallback(); }
+  });
+  $("closeLog").addEventListener("click", () => {
+    if (back.wasHidden) { ov.hidden = true; return; }
+    // reopen whichever screen was showing
+    if (G.phase === "title") titleScreen(); else if (G.phase === "over") gameOver(true); else if (G.phase === "intro") roundIntro(); else ov.hidden = true;
+  });
+}
+$("dlLog").addEventListener("click", downloadLog);
+
+/* ---------- Title, rounds, end ---------- */
+function renderAll() {
+  $("who").textContent = (G.name || "Contestant") + "’s bank"; setBank(G.bank);
+  buildTexture(); renderPips(); renderCounts(); renderChips(); renderLog(); updateControls();
+  $("msg").innerHTML = G.msg || "";
+}
+function titleScreen() {
+  G.phase = "title"; ov.hidden = false; updateControls();
+  const sv = readSave();
+  card.innerHTML = `
+    <div class="eyebrow">Tonight’s contestant</div>
+    <h2>Spin for up to <em>$23,000,000</em></h2>
+    ${sv ? `<div class="resume"><div class="eyebrow">Saved game</div>
+      <p>${escapeHTML(sv.name)} · Round ${sv.round} (${ROUNDS[sv.round].name}), spin ${sv.spin} · bank ${money(sv.bank)}</p>
+      <button class="btn" id="resume" type="button">Continue</button></div>` : ""}
+    <dl class="rules">
+      <dt>Round 1</dt><dd>Quickspin: four spins, top space $500,000.</dd>
+      <dt>Round 2</dt><dd>Quickspin+: values double. Four more spins.</dd>
+      <dt>Round 3</dt><dd>Build Your Wheel: turn blue sets into big money, dodge Back to Zero.</dd>
+      <dt>Round 4</dt><dd>Final Spins: bigger prizes, more ways to lose it all, and a cash offer to walk away before every spin.</dd>
+    </dl>
+    <div class="field"><label for="name">Your name</label><input id="name" maxlength="20" autocomplete="off" placeholder="Contestant" value="${escapeHTML(G.name)}"></div>
+    <button class="btn ${sv ? "ghost" : ""}" id="go" type="button">${sv ? "Start a new game" : "Start the show"}</button>
+    ${sv ? `<p class="hint">Starting a new game replaces the saved one.</p>` : ""}
+    ${boardBlock()}`;
+  wireWipe();
+  if (sv) $("resume").addEventListener("click", () => {
+    audioOn();
+    const { th, ...rest } = sv; Object.assign(G, rest); ph.th = th || 0; ph.om = 0; flap.a = 0; winIdx = -1;
+    renderAll();
+    if (G.phase === "intro") return roundIntro();
+    if (G.phase === "offer" && G.offer) return showOffer();
+    ov.hidden = true; toast("Welcome back");
+  });
+  $("go").addEventListener("click", () => {
+    audioOn();
+    G.name = ($("name").value || "").trim() || "Contestant";
+    Object.assign(G, fresh());
+    ev({ type: "start" });
+    ph.th = rnd(0, TAU); flap.a = 0; winIdx = -1; setMsg("");
+    renderAll(); roundIntro();
+  });
+}
+function roundIntro() {
+  G.phase = "intro"; ov.hidden = false; updateControls(); saveGame();
+  const r = ROUNDS[G.round];
+  card.innerHTML = `
+    <div class="eyebrow">Round ${G.round} of 4</div>
+    <h2>${r.name}</h2>
+    <p>${r.intro}</p>
+    ${G.round === 4 ? `<p>Before each spin you’ll get a cash offer to quit. It’s based on your bank and how likely the next spins are to wipe you out.</p>` : ""}
+    ${G.round > 1 ? `<p class="hint">Bank so far: <b style="color:var(--gold)">${money(G.bank)}</b></p>` : ""}
+    <button class="btn" id="go" type="button">${G.round === 1 ? "Let’s spin" : "Change the wheel"}</button>`;
+  $("go").addEventListener("click", () => {
+    ov.hidden = true;
+    ev({ type: "round", bank: G.bank });
+    if (G.round === 2) applyRound2();
+    if (G.round === 3) applyRound3();
+    if (G.round === 4) applyRound4();
+    renderPips(); renderCounts(); renderChips();
+    if (G.round === 4) return startR4Spin("Penalties now reach −$500,000. No new spaces before spin 1.");
+    G.phase = "ready"; renderChips(); updateControls();
+    setMsg(G.round === 1 ? "Spin 1 of 4. Hold the button or swipe the wheel." :
+      G.round === 2 ? "Every value has doubled. Spin 1 of 4." :
+      "The wheel has changed. <b>Pick an amount</b> for this spin.");
+    saveGame();
+  });
+}
+function gameOver(reopen) {
+  G.phase = "over"; ov.hidden = false; updateControls();
+  if (!reopen) {
+    clearSave();
+    const b = readBoard(); b.push({ name: G.name, bank: G.bank, took: G.took, d: Date.now() }); b.sort((x, y) => y.bank - x.bank); writeBoard(b.slice(0, 8));
+  }
+  const rows = [1, 2, 3, 4].map(r => `<div><span>Round ${r} · ${ROUNDS[r].name}</span><b>${G.roundNet[r] >= 0 ? "+" : ""}${money(G.roundNet[r])}</b></div>`).join("");
+  card.innerHTML = `
+    <div class="eyebrow">${escapeHTML(G.name)} leaves with</div>
+    <div class="big ${G.bank === 0 ? "zero" : ""}">${money(G.bank)}</div>
+    <p>${G.took ? `Took the offer before spin ${G.spin} of the final round.` : G.bank === 0 ? "The wheel took it all." : G.bank >= 10000000 ? "An enormous night on the wheel." : "That’s a real payday."}</p>
+    <div class="board">${rows}</div>
+    <div class="pair"><button class="btn" id="again" type="button">Play again</button><button class="btn ghost" id="dl2" type="button">Game log</button></div>
+    ${boardBlock()}`;
+  $("again").addEventListener("click", titleScreen);
+  $("dl2").addEventListener("click", downloadLog);
+  wireWipe();
+}
+
+/* ---------- Boot ---------- */
+window.addEventListener("resize", resize);
+renderPips(); renderCounts(); updateControls();
+resize();
+if (document.fonts && document.fonts.load) Promise.all([
+  document.fonts.load('700 20px "Barlow Condensed"'), document.fonts.load('900 20px "Big Shoulders Display"')
+]).then(buildTexture).catch(() => {});
+titleScreen();
+requestAnimationFrame(t => { last = t; requestAnimationFrame(frame); });
+})();
+</script>
