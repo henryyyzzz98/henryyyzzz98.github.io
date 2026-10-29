@@ -445,7 +445,7 @@ const ROUNDS = [
   { name: "Final Spins", max: 9000000, intro: "Penalties grow to as much as −$500,000. Spin 2 adds $1 MILLION and one BACK TO ZERO, spin 3 adds $2 MILLION and two, spin 4 adds $3 MILLION and three. Hit BACK TO ZERO, or a penalty as big as your bank, and the game ends with nothing. Up to $9,000,000." },
 ];
 const UPGRADES = [250000, 500000, 1000000, 2000000];
-const fresh = () => ({ bank: 0, round: 1, spin: 1, wheel: baseWheel(), used: [], chosen: null, roundNet: [0, 0, 0, 0, 0], over: false, events: [], offer: null, took: false, msg: "", nextLabel: "", started: Date.now() });
+const fresh = () => ({ bank: 0, round: 1, spin: 1, wheel: baseWheel(), used: [], chosen: null, roundNet: [0, 0, 0, 0, 0], over: false, events: [], offer: null, took: false, msg: "", nextLabel: "", whatif: null, started: Date.now() });
 const G = Object.assign({ phase: "title", name: "" }, fresh());
 
 function setMsg(html) { G.msg = html; $("msg").innerHTML = html; }
@@ -486,7 +486,8 @@ function renderCounts() {
     `<span class="tag g">Million+ spaces ×${G.wheel.filter(s => s.v >= 1000000).length}</span>`;
 }
 function renderLog() {
-  $("log").innerHTML = G.events.filter(e => e.type === "spin" || e.type === "offer").reverse().map(e => {
+  $("log").innerHTML = G.events.filter(e => e.type === "spin" || e.type === "offer" || e.type === "whatif").reverse().map(e => {
+    if (e.type === "whatif") return `<div><span>R4 · Fun spin</span><b class="${e.ended || e.would > e.offer ? "neg" : "pos"}">${e.ended ? "would lose it all" : "would have " + money(e.would)}</b></div>`;
     if (e.type === "offer") return `<div><span>R4 · Offer before spin ${e.spin}</span><b class="${e.decision === "took" ? "pos" : ""}">${money(e.offer)} ${e.decision === "took" ? "taken" : e.decision === "refused" ? "refused" : ""}</b></div>`;
     const d = e.after - e.before, txt = e.kind === "btz" ? "Back to Zero" : e.kind === "pen" ? money(e.value) : "+" + money(e.gain);
     return `<div><span>R${e.round} · Spin ${e.spin}</span><b class="${d >= 0 && e.kind !== "pen" && e.kind !== "btz" ? "pos" : "neg"}">${txt}</b></div>`;
@@ -621,6 +622,7 @@ function onStop() {
 
 function resolve(i) {
   const s = G.wheel[i]; winIdx = i; winAt = performance.now();
+  if (G.whatif) return resolveWhatIf(i);
   const before = G.bank;
   let after = before, head = "", cls = "plus", note = "", ended = false;
 
@@ -729,10 +731,28 @@ function startR4Spin(msg) {
 $("take").addEventListener("click", () => {
   audioOn(); const o = G.offer, before = G.bank;
   const e = [...G.events].reverse().find(x => x.type === "offer"); if (e) e.decision = "took";
-  G.roundNet[4] += o.offer - before; setBank(o.offer); G.took = true; G.over = true; sfx.big();
-  ev({ type: "end", bank: o.offer, how: `took the offer before spin ${G.spin}` });
-  renderLog(); gameOver();
+  G.roundNet[4] += o.offer - before; setBank(o.offer); G.took = true; sfx.big();
+  G.whatif = { bank: before, offer: o.offer };
+  G.offer = null; G.phase = "ready"; renderLog(); updateControls();
+  setMsg(`Deal! You’re leaving with <b>${money(o.offer)}</b>. Now spin once <b>just for fun</b> to see what would have happened.`);
+  saveGame();
 });
+function resolveWhatIf(i) {
+  const s = G.wheel[i], w = G.whatif, r = outcome(s, w.bank), would = r < 0 ? 0 : r;
+  const cls = s.k === "btz" ? "zero" : s.k === "pen" ? "minus" : "plus";
+  const head = s.k === "btz" ? "BACK TO ZERO" : s.k === "pen" ? money(s.v) : "+" + money(s.v);
+  let verdict;
+  if (r < 0) verdict = "That would have ended the game with nothing. Good call taking the offer!";
+  else if (would > w.offer) verdict = `You would have had ${money(would)} after that spin, more than the offer.`;
+  else verdict = `You would have had ${money(would)} after that spin. The offer was the better deal!`;
+  w.text = `The fun spin landed on ${label(s)}. ${verdict}`;
+  r < 0 ? sfx.zero() : would > w.offer ? sfx.lose() : sfx.win();
+  ev({ type: "whatif", space: label(s), kind: s.k, would, offer: w.offer, ended: r < 0 });
+  ev({ type: "end", bank: w.offer, how: `took the offer before spin ${G.spin}` });
+  G.over = true; G.phase = "result"; G.nextLabel = "See final bank";
+  renderLog(); updateControls();
+  setMsg(`<div class="eyebrow">Just for fun</div><div class="result ${cls}">${head}</div><div style="margin-top:6px">${verdict}</div>`);
+}
 $("refuse").addEventListener("click", () => {
   audioOn();
   const e = [...G.events].reverse().find(x => x.type === "offer"); if (e) e.decision = "refused";
@@ -853,6 +873,7 @@ function buildLog() {
              `          ${res.padEnd(22)} bank ${money(e.before)} → ${money(e.after)}`);
       if (e.note) L.push(`          ${e.note}`);
     }
+    if (e.type === "whatif") L.push(`  Fun spin after taking the offer: landed on ${e.space} — ${e.ended ? "would have ended with nothing" : `bank would have been ${money(e.would)}`} (offer taken: ${money(e.offer)})`);
     if (e.type === "end") L.push("", `GAME OVER: ${money(e.bank)} — ${e.how}`);
   }
   if (G.events.some(e => e.type === "round")) {
@@ -976,7 +997,7 @@ function gameOver(reopen) {
   card.innerHTML = `
     <div class="eyebrow">${escapeHTML(G.name)} leaves with</div>
     <div class="big ${G.bank === 0 ? "zero" : ""}">${money(G.bank)}</div>
-    <p>${G.took ? `Took the offer before spin ${G.spin} of the final round.` : G.bank === 0 ? "The wheel took it all." : G.bank >= 10000000 ? "An enormous night on the wheel." : "That’s a real payday."}</p>
+    <p>${G.took ? `Took the offer before spin ${G.spin} of the final round. ${G.whatif && G.whatif.text ? G.whatif.text : ""}` : G.bank === 0 ? "The wheel took it all." : G.bank >= 10000000 ? "An enormous night on the wheel." : "That’s a real payday."}</p>
     <div class="board">${rows}</div>
     <div class="pair"><button class="btn" id="again" type="button">Play again</button><button class="btn ghost" id="dl2" type="button">Game log</button></div>
     ${boardBlock()}`;
