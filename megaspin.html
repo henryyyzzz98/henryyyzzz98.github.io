@@ -276,12 +276,14 @@ function baseWheel() {
 const SETS = ["A", "B", "C", "D"];
 function label(s) {
   if (s.k === "btz") return "BACK TO ZERO";
+  if (s.k === "zero") return "$0";
   if (s.v >= 1000000) return (s.v / 1000000) + " MILLION";
   if (s.k === "pen") return "−" + Math.abs(s.v).toLocaleString("en-US");
   return s.v.toLocaleString("en-US");
 }
 function colors(s) {
   if (s.k === "btz") return ["#0a0a0d", "#ff4d5e", "#1a1a20"];
+  if (s.k === "zero") return ["#23243a", "#c9cbe8", "#33354f"];
   if (s.k === "pen") return ["#5a0f1f", "#ffc0c8", "#7a1a2c"];
   if (s.k === "blue") return ["#7cc8ff", "#06223f", "#a9dcff"];
   const v = s.v;
@@ -441,7 +443,7 @@ const ROUNDS = [
   null,
   { name: "Quickspin", max: 2000000, intro: "Four spins. The top space is $500,000, so you can bank up to $2,000,000." },
   { name: "Quickspin+", max: 4000000, intro: "Every value on the wheel doubles. Four more spins, up to $4,000,000." },
-  { name: "Build Your Wheel", max: 8000000, intro: "Two $1 MILLION and two BACK TO ZERO spaces join the wheel, with penalties up to −$200,000. Sixteen blue spaces ($1 to $1,000) sit in four sets, A to D. Before each spin, pick an amount. If the wheel stops on a blue space, its whole set becomes that amount. Miss the blue and BACK TO ZERO goes into the set tied to your amount: $250,000 puts 1 in set A, $500,000 puts 2 in set B, $1,000,000 puts 3 in set C, and $2,000,000 fills all 4 of set D. Up to $8,000,000." },
+  { name: "Build Your Wheel", max: 8000000, intro: "Two $1 MILLION and two BACK TO ZERO spaces join the wheel, with penalties up to −$200,000. Sixteen blue spaces ($1 to $1,000) sit in four sets, A to D. Before each spin, pick an amount. If the wheel stops on a blue space, its whole set becomes that amount. Miss the blue and worthless $0 spaces go into the set tied to your amount: $250,000 puts 1 in set A, $500,000 puts 2 in set B, $1,000,000 puts 3 in set C, and $2,000,000 fills all 4 of set D. Up to $8,000,000." },
   { name: "Final Spins", max: 9000000, intro: "Penalties grow to as much as −$500,000. Spin 2 adds $1 MILLION and one BACK TO ZERO, spin 3 adds $2 MILLION and two, spin 4 adds $3 MILLION and three. Hit BACK TO ZERO, or a penalty as big as your bank, and the game ends with nothing. Up to $9,000,000." },
 ];
 const UPGRADES = [250000, 500000, 1000000, 2000000];
@@ -481,6 +483,7 @@ function renderCounts() {
   const pens = G.wheel.filter(s => s.k === "pen").map(s => s.v);
   $("counts").innerHTML =
     `<span class="tag z">Back to Zero ×${n("btz")}</span>` +
+    (n("zero") ? `<span class="tag">$0 ×${n("zero")}</span>` : "") +
     `<span class="tag p">Penalties ×${pens.length}${pens.length ? " (to " + money(Math.min(...pens)) + ")" : ""}</span>` +
     `<span class="tag b">Blue sets left ${setsLeft}</span>` +
     `<span class="tag g">Million+ spaces ×${G.wheel.filter(s => s.v >= 1000000).length}</span>`;
@@ -497,13 +500,13 @@ function renderChips() {
   const box = $("chips");
   if (G.round !== 3 || G.phase !== "ready") { box.hidden = true; return; }
   box.hidden = false;
-  box.innerHTML = UPGRADES.map(v => `<button class="chip" type="button" data-v="${v}" ${G.used.includes(v) ? "disabled" : ""} aria-pressed="${G.chosen === v}">${money(v)}<small style="display:block;font-weight:500;font-size:12px;opacity:.75;text-decoration:none">miss: ${UPGRADES.indexOf(v) + 1} × Back to Zero in set ${SETS[UPGRADES.indexOf(v)]}</small></button>`).join("");
+  box.innerHTML = UPGRADES.map(v => `<button class="chip" type="button" data-v="${v}" ${G.used.includes(v) ? "disabled" : ""} aria-pressed="${G.chosen === v}">${money(v)}<small style="display:block;font-weight:500;font-size:12px;opacity:.75;text-decoration:none">miss: ${UPGRADES.indexOf(v) + 1} × $0 in set ${SETS[UPGRADES.indexOf(v)]}</small></button>`).join("");
 }
 $("chips").addEventListener("click", e => {
   const b = e.target.closest(".chip"); if (!b || b.disabled) return;
   G.chosen = +b.dataset.v; renderChips(); updateControls();
   { const si = UPGRADES.indexOf(G.chosen), n = si + 1;
-    setMsg(`Going for <b>${money(G.chosen)}</b>. Land on a blue space and its whole set becomes ${money(G.chosen)}. Miss, and ${n === 4 ? "all 4" : n} of set ${SETS[si]} ${n > 1 ? "turn" : "turns"} to BACK TO ZERO.`); }
+    setMsg(`Going for <b>${money(G.chosen)}</b>. Land on a blue space and its whole set becomes ${money(G.chosen)}. Miss, and ${n === 4 ? "all 4" : n} of set ${SETS[si]} ${n > 1 ? "turn" : "turns"} to $0.`); }
 });
 function updateControls() {
   const ready = G.phase === "ready";
@@ -564,10 +567,10 @@ function addBtzToSet(si, n) {
     G.btzSet = si = open[ri(0, open.length - 1)];
   } else G.btzSet = si;
   const idx = shuffle(blueIn(si)).slice(0, n);
-  idx.forEach(i => G.wheel[i] = { k: "btz", v: 0 });
+  idx.forEach(i => G.wheel[i] = { k: "zero", v: 0 });
   if (!idx.length) return 0;
   buildTexture(); flash(idx);
-  ev({ type: "wheel", text: `${idx.length} BACK TO ZERO ${idx.length > 1 ? "spaces" : "space"} added in set ${SETS[si]} (now ${G.wheel.filter(s => s.k === "btz").length} on the wheel).` });
+  ev({ type: "wheel", text: `${idx.length} × $0 ${idx.length > 1 ? "spaces" : "space"} added in set ${SETS[si]}.` });
   return idx.length;
 }
 function addBtz(n) {
@@ -641,6 +644,8 @@ function resolve(i) {
     const loss = -s.v; cls = "minus"; head = money(s.v);
     if (G.round === 4 && loss >= before) { after = 0; ended = true; head = money(s.v); note = "That penalty is as big as your bank. The game ends with nothing."; sfx.zero(); }
     else { after = Math.max(0, before - loss); note = `Penalty: ${money(loss)} off the bank.`; sfx.lose(); }
+  } else if (s.k === "zero") {
+    head = "$0"; cls = "minus"; note = "Nothing added to the bank."; sfx.lose();
   } else {
     after = before + s.v; head = "+" + money(s.v);
     s.v >= 1000000 ? sfx.big() : s.v >= 100000 ? sfx.win() : sfx.small();
@@ -656,8 +661,8 @@ function resolve(i) {
   if (G.round === 3) {
     if (attempt != null && s.k !== "blue") {
       const si = UPGRADES.indexOf(attempt), n = addBtzToSet(si, si + 1), used = G.btzSet;
-      if (n) note += ` <br>Missed the blue: ${n} BACK TO ZERO ${n > 1 ? "spaces" : "space"} added in set ${SETS[used]}${used !== si ? ` (set ${SETS[si]} is already money, so it stays safe)` : ""}.`;
-      else note += ` <br>No blue sets left, so no BACK TO ZERO was added.`;
+      if (n) note += ` <br>Missed the blue: ${n} × $0 ${n > 1 ? "spaces" : "space"} added in set ${SETS[used]}${used !== si ? ` (set ${SETS[si]} is already money, so it stays safe)` : ""}.`;
+      else note += ` <br>No blue sets left, so no $0 spaces were added.`;
     }
   }
   renderLog();
