@@ -14,7 +14,7 @@ img{max-width:100%}
 /* Layout: ops-console split — live route map on the left, airline control panel on the right; stacks on phones. */
 :root{
  --bg:#0A111E; --panel:#101A2B; --raised:#16233A; --line:#22324D; --fg:#E7EDF6; --mute:#8B9BB7;
- --accent:#FFB547; --accent-ink:#1A1200; --good:#54D98C; --bad:#FF7A7A; --ocean:#0C1627; --sg-bg:#0D1626; --bd-bg:#07090D; --bd-edge:#1B2230; --bd-cell:#11151D; --bd-fg:#F2F4F7; --bd-amber:#FFC24D; --bd-split:#05070A; --bd-hover:#1A2130; --c-f:#E9C46A; --c-j:#F28F6B; --c-w:#8FB8F0; --c-y:#6C7FA3; --land:#18263D; --land-edge:#24385A;
+ --accent:#FFB547; --accent-ink:#1A1200; --good:#54D98C; --bad:#FF7A7A; --ocean:#0C1627; --sg-bg:#0D1626; --bd-bg:#07090D; --bd-edge:#1B2230; --bd-cell:#11151D; --bd-fg:#F2F4F7; --bd-amber:#FFC24D; --bd-split:#05070A; --wx:#6FC3FF; --zone:#FF6B6B; --bd-hover:#1A2130; --c-f:#E9C46A; --c-j:#F28F6B; --c-w:#8FB8F0; --c-y:#6C7FA3; --land:#18263D; --land-edge:#24385A;
  --f-display:"Chakra Petch","Arial Narrow",system-ui,sans-serif;
  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
  --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
@@ -244,7 +244,19 @@ input[type=time]{background:var(--raised);border:1px solid var(--line);border-ra
 .fp-bar b{position:absolute;top:50%;transform:translate(-50%,-55%) rotate(0deg);color:var(--accent);font-size:16px;line-height:1}
 .fp-kv{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
 .fp-kv em{font-style:normal;font-size:11.5px;color:var(--mute);font-family:var(--f-mono)}
+.fp-cond{background:var(--bg);border-radius:6px;padding:8px 10px;font-size:12.5px}
+.fp-cond ul{margin:4px 0 0;padding-left:18px;color:var(--mute)}
 .tt-h.fp-tt,.tt-r.fp-tt{grid-template-columns:1fr 1fr 1.2fr;min-width:0}
+
+.cond-tt{grid-template-columns:minmax(90px,1fr) 80px 110px 90px 90px !important}
+.tt-r.cond-why{display:block;font-size:11.5px;color:var(--mute);border-bottom:1px solid var(--line);padding-top:0}
+.clist{display:flex;flex-direction:column;gap:6px}
+.citem{display:grid;grid-template-columns:28px minmax(0,1fr) auto auto;gap:10px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px}
+.citem .mute{font-size:12px}
+.cic{font-family:var(--f-mono);font-weight:600;font-size:11px;text-align:center;color:var(--wx);border:1px solid currentColor;border-radius:4px;padding:3px 0}
+.cic.z{color:var(--zone)}
+.sev{font-size:10px;letter-spacing:2px;color:var(--wx)}
+.sev.s3{color:var(--bad)}
 .mapclock{position:absolute;left:10px;top:8px;font-family:var(--f-mono);font-size:11px;color:var(--mute);pointer-events:none;z-index:2;background:color-mix(in srgb,var(--ocean) 80%,transparent);padding:2px 6px;border-radius:4px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
@@ -286,6 +298,7 @@ input[type=time]{background:var(--raised);border:1px solid var(--line);border-ra
    <button class="tab" role="tab" data-tab="fleet" type="button">Fleet</button>
    <button class="tab" role="tab" data-tab="market" type="button">Buy aircraft</button>
    <button class="tab" role="tab" data-tab="board" type="button">Departures</button>
+   <button class="tab" role="tab" data-tab="cond" type="button">Conditions</button>
    <button class="tab" role="tab" data-tab="finance" type="button">Finance</button>
    <button class="tab" role="tab" data-tab="rivals" type="button">Rivals</button>
    <button class="tab" role="tab" data-tab="saves" type="button">Save</button>
@@ -367,7 +380,9 @@ const AIRCRAFT = [
  {id:'B744',maker:'Boeing',name:'747-400',cls:'Jumbo',seats:416,range:13450,spd:913,burn:11.0,price:35e6,crew:8000,used:24,mm:2},
  {id:'B748',maker:'Boeing',name:'747-8',cls:'Jumbo',seats:467,range:14300,spd:917,burn:10.2,price:400e6,crew:8400},
  {id:'A388',maker:'Airbus',name:'A380-800',cls:'Jumbo',seats:516,range:15000,spd:900,burn:11.5,price:330e6,crew:9000},
- {id:'CONC',maker:'Aérospatiale/BAC',name:'Concorde',cls:'Supersonic',seats:100,range:7200,spd:2150,burn:11.5,price:150e6,crew:4500,used:25,mm:2.5,prem:1.5,maxRt:7},
+ {id:'CONC',maker:'Aérospatiale/BAC',name:'Concorde',cls:'Supersonic',seats:100,range:7200,spd:2150,burn:11.5,price:150e6,crew:4500,used:25,mm:2.5,prem:1.5,maxRt:7,fixed:{j:100}},
+ {id:'COMT',maker:'de Havilland',name:'DH.106 Comet 4',cls:'Narrowbody',seats:81,range:5190,spd:809,burn:5.6,price:3e6,crew:2600,used:62,mm:4},
+ {id:'SU95',maker:'Sukhoi',name:'Superjet 100',cls:'Regional jet',seats:98,range:3000,spd:830,burn:2.2,price:35e6,crew:1900},
 ];
 const ACT = Object.fromEntries(AIRCRAFT.map(a=>[a.id,a]));
 const REG_PREFIX={AT:'OE-',BE:'OO-',DK:'OY-',SE:'SE-',NO:'LN-',FI:'OH-',IE:'EI-',PT:'CS-',GR:'SX-',PL:'SP-',CZ:'OK-',HU:'HA-',RO:'YR-',RU:'RA-',UA:'UR-',IS:'TF-',SA:'HZ-',IL:'4X-',JO:'JY-',KW:'9K-',OM:'A4O-',BH:'A9C-',IR:'EP-',PK:'AP-',BD:'S2-',LK:'4R-',NP:'9N-',MM:'XY-',KH:'XU-',LA:'RDPL-',MN:'JU-',KZ:'UP-',UZ:'UK',FJ:'DQ-',PG:'P2-',PF:'F-O',NC:'F-O',MA:'CN-',DZ:'7T-',TN:'TS-',ET:'ET-',TZ:'5H-',UG:'5X-',GH:'9G-',SN:'6V-',CI:'TU-',AO:'D2-',MU:'3B-',ZW:'Z-',ZM:'9J-',NA:'V5-',CU:'CU-',PA:'HP-',CR:'TI-',DO:'HI',JM:'6Y-',BS:'C6-',EC:'HC-',VE:'YV',BO:'CP-',UY:'CX-',PY:'ZP-',AU:'VH-',NZ:'ZK-',US:'N',SG:'9V-',HK:'B-H',JP:'JA',KR:'HL',CN:'B-',TW:'B-',TH:'HS-',MY:'9M-',ID:'PK-',PH:'RP-C',VN:'VN-',IN:'VT-',AE:'A6-',QA:'A7-',TR:'TC-',GB:'G-',FR:'F-',DE:'D-',NL:'PH-',ES:'EC-',IT:'I-',CH:'HB-',EG:'SU-',ZA:'ZS-',KE:'5Y-',NG:'5N-',CA:'C-',MX:'XA-',BR:'PR-',AR:'LV-',CO:'HK-',CL:'CC-',PE:'OB-'};
@@ -419,19 +434,19 @@ const CLASS_NAME={f:'First',j:'Business',w:'Premium economy',y:'Economy'};
 const CLASS_FARE={f:6,j:3.5,w:1.6,y:1};
 const CLASS_UNITS={f:4.5,j:3,w:1.35,y:1};
 function classShare(d){const f=d>=4000?0.012:d>=2000?0.004:0;const j=0.035+0.06*Math.min(1,d/9000);const w=d>=2500?0.06:0.025;return {f,j,w,y:1-f-j-w};}
-function allowedClasses(t){return t.cls==='Supersonic'?['j']:(t.cls==='Turboprop'||t.cls==='Regional jet')?['j','y']:t.cls==='Narrowbody'?['j','w','y']:CLASSES;}
-function maxUnits(t){return t.cls==='Supersonic'?t.seats:Math.round(t.seats*1.12);}
-function unitsOf(t,L){return t.cls==='Supersonic'?(L.j||0):CLASSES.reduce((s,c)=>s+(L[c]||0)*CLASS_UNITS[c],0);}
+function allowedClasses(t){return t.fixed?CLASSES.filter(c=>t.fixed[c]):(t.cls==='Turboprop'||t.cls==='Regional jet')?['j','y']:t.cls==='Narrowbody'?['j','w','y']:CLASSES;}
+function maxUnits(t){return t.fixed?t.seats:Math.round(t.seats*1.12);}
+function unitsOf(t,L){return t.fixed?seatsOf(L):CLASSES.reduce((s,c)=>s+(L[c]||0)*CLASS_UNITS[c],0);}
 function seatsOf(L){return CLASSES.reduce((s,c)=>s+(L[c]||0),0);}
 function layoutFromFractions(t,fr){const M=maxUnits(t),L={f:0,j:0,w:0,y:0};let used=0;const ok=allowedClasses(t);
  for(const c of ['f','j','w']){if(!ok.includes(c)||!fr[c])continue;L[c]=Math.floor(M*fr[c]/CLASS_UNITS[c]);used+=L[c]*CLASS_UNITS[c];}
  L.y=ok.includes('y')?Math.floor(M-used):0;return L;}
-function defaultLayout(t){if(t.cls==='Supersonic')return {f:0,j:t.seats,w:0,y:0};
+function defaultLayout(t){if(t.fixed)return {f:0,j:0,w:0,y:0,...t.fixed};
  if(t.cls==='Widebody'||t.cls==='Jumbo'){const L={f:t.seats>=380?Math.round(t.seats*0.02):0,j:Math.round(t.seats*0.11),w:Math.round(t.seats*0.08),y:0};L.y=Math.max(0,Math.floor(t.seats-L.f*4.5-L.j*3-L.w*1.35));return L;}
  return {f:0,j:0,w:0,y:t.seats};}
 function ensureLayouts(S){for(const p of S.fleet){if(!p.layout)p.layout=defaultLayout(ACT[p.type]);if(p.flown==null)p.flown=1;}}
 function refit(S,id,L){const p=S.fleet.find(x=>x.id===id);if(!p)return 'Aircraft not found.';const t=ACT[p.type];
- if(t.cls==='Supersonic')return 'Concorde flies a single fixed cabin of 100 seats.';
+ if(t.fixed)return `The ${t.name} has a fixed cabin of ${t.seats} seats.`;
  const ok=allowedClasses(t);const N={f:0,j:0,w:0,y:0};for(const c of ok)N[c]=Math.max(0,Math.floor(+L[c]||0));
  if(seatsOf(N)<1)return 'Add at least one seat.';
  if(unitsOf(t,N)>maxUnits(t)+1e-9)return "That layout doesn't fit the cabin. Remove some seats.";
@@ -536,7 +551,7 @@ function ensureSchedules(S){ensureLayouts(S);for(const p of S.fleet)for(const e 
  for(const p of S.fleet){if(!p.sched)p.sched=[];if(p.route!=null){const r=routeById(S,p.route);delete p.route;if(r)autoFill(S,p.id,r.id);}}}
 function flightLabel(S,fn){return `${S.code} ${fn}`;}
 
-function newGame(name,hub,diff,nRivals,code,unlimited){nRivals=Math.max(0,Math.min(MAX_RIVALS,nRivals==null?3:nRivals));if(nRivals==null)nRivals=3;
+function newGame(name,hub,diff,nRivals,code,unlimited,cond){nRivals=Math.max(0,Math.min(MAX_RIVALS,nRivals==null?3:nRivals));if(nRivals==null)nRivals=3;
  const D=DIFF[diff];
  // distinct rival hubs: biggest far-away airports first, then smaller ones if there are many rivals
  const pool=[];for(const [minS,minD] of [[8,2500],[7,1500],[6,800],[4,300]]){const c=AIRPORTS.filter(a=>a.size>=minS&&a.code!==hub&&dist(a.code,hub)>minD&&!pool.includes(a.code)).map(a=>a.code);
@@ -544,10 +559,11 @@ function newGame(name,hub,diff,nRivals,code,unlimited){nRivals=Math.max(0,Math.m
  const rivals=RIVAL_DEFS.slice(0,nRivals).map((r,i)=>{const h=pool[i];return {...r,hubs:[h],routes:[],value:RIVAL_BASE+D.start*(0.85+rng()*0.3),profit:0,lastProfit:0};});
  // ensure distinct rival hubs
  const S={v:1,name,diff,week:1,cash:START_CASH,loan:0,rep:50,fuel:FUEL_BASE,hubs:[hub],fleet:[],routes:[],rivals,fx:[],
-   hist:[],log:[],nextId:1,over:null,last:null,cumProfit:0,debtWeeks:0,peak:START_CASH,unlimited:!!unlimited,code:(code||'').toUpperCase()||codeFrom(name,new Set())};
+   hist:[],log:[],nextId:1,over:null,last:null,cumProfit:0,debtWeeks:0,peak:START_CASH,unlimited:!!unlimited,opts:{weather:!!(cond&&cond.weather),airspace:!!(cond&&cond.airspace)},optsNext:{weather:!!(cond&&cond.weather),airspace:!!(cond&&cond.airspace)},wx:[],zones:[],code:(code||'').toUpperCase()||codeFrom(name,new Set())};
  {const taken=new Set([S.code]);rivals.forEach(R=>{R.code=codeFrom(R.name,taken);taken.add(R.code);});}
  // rivals start with a few routes
  rivals.forEach((r,i)=>{for(let k=0;k<4+(diff==='hard'?3:diff==='normal'?1:0);k++)rivalOpen(S,i,false);});
+ _S=S;genConditions(S);
  addLog(S,`${name} is cleared for takeoff from ${AP[hub].city}.`,'info');
  return S;
 }
@@ -569,7 +585,7 @@ function acquire(S,type,mode,layout){const t=ACT[type];
  const cost=mode==='buy'?t.price:leaseWeekly(t)*4;
  if(!afford(S,cost))return mode==='buy'?'Not enough cash to buy this aircraft.':'Not enough cash for the 4-week lease deposit.';
  S.cash-=cost;const used=new Set(S.fleet.map(p=>p.tail));
- const a0=(t.used||0)*52;const p={id:S.nextId++,type,mode,age:a0,age0:a0,sched:[],grounded:0,flown:0,layout:(layout&&t.cls!=='Supersonic'&&seatsOf(layout)>0&&unitsOf(t,layout)<=maxUnits(t)+1e-9)?{f:0,j:0,w:0,y:0,...layout}:defaultLayout(t),tail:makeTail(AP[S.hubs[0]].cc,used)};
+ const a0=(t.used||0)*52;const p={id:S.nextId++,type,mode,age:a0,age0:a0,sched:[],grounded:0,flown:0,layout:(layout&&!t.fixed&&seatsOf(layout)>0&&unitsOf(t,layout)<=maxUnits(t)+1e-9)?{f:0,j:0,w:0,y:0,...layout}:defaultLayout(t),tail:makeTail(AP[S.hubs[0]].cc,used)};
  S.fleet.push(p);addLog(S,`${mode==='buy'?'Bought':'Leased'} ${t.used?'a '+t.used+'-year-old ':''}${t.maker} ${t.name} ${p.tail}.`,'good');return p;}
 function dispose(S,id){const p=S.fleet.find(x=>x.id===id);if(!p)return;const t=ACT[p.type];
  if(p.mode==='buy'){const v=planeValue(p);S.cash+=v;addLog(S,`Sold ${t.name} ${p.tail} for ${money(v)}.`,'info');}
@@ -609,8 +625,106 @@ function rivalOpen(S,i,announce=true){const R=S.rivals[i],D=DIFF[S.diff];if(R.ro
   else if(rng()<0.35)addLog(S,`${R.name} launched ${a}–${b}.`,'info');}
 }
 
+/* ===================== WEATHER & AIRSPACE ===================== */
+function hashN(str){let h=2166136261;for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
+function flightDelay(fn,depU){const h=hashN(fn+'|'+S_cur().week+'|'+Math.floor(wmod(depU)/1440));return h%17===0?15+(h>>>8)%5*15:0;}
+let _S=null;const S_cur=()=>(typeof S!=='undefined'&&S)||_S;
+const RE=6371,toDeg=r=>r*180/Math.PI;
+function hav(la1,lo1,la2,lo2){const dl=toRad(la2-la1),dn=toRad(lo2-lo1);const h=Math.sin(dl/2)**2+Math.cos(toRad(la1))*Math.cos(toRad(la2))*Math.sin(dn/2)**2;return 2*RE*Math.asin(Math.min(1,Math.sqrt(h)));}
+function brg(la1,lo1,la2,lo2){const f1=toRad(la1),f2=toRad(la2),dl=toRad(lo2-lo1);return Math.atan2(Math.sin(dl)*Math.cos(f2),Math.cos(f1)*Math.sin(f2)-Math.sin(f1)*Math.cos(f2)*Math.cos(dl));}
+function destPt(la,lo,b,dkm){const d=dkm/RE,f1=toRad(la),l1=toRad(lo);const f2=Math.asin(Math.sin(f1)*Math.cos(d)+Math.cos(f1)*Math.sin(d)*Math.cos(b));
+ const l2=l1+Math.atan2(Math.sin(b)*Math.sin(d)*Math.cos(f1),Math.cos(d)-Math.sin(f1)*Math.sin(f2));return {lat:toDeg(f2),lon:((toDeg(l2)+540)%360)-180};}
+function interp(A,B,f){const f1=toRad(A.lat),l1=toRad(A.lon),f2=toRad(B.lat),l2=toRad(B.lon);const dd=hav(A.lat,A.lon,B.lat,B.lon)/RE;if(dd<1e-9)return {lat:A.lat,lon:A.lon};
+ const a=Math.sin((1-f)*dd)/Math.sin(dd),b=Math.sin(f*dd)/Math.sin(dd);const x=a*Math.cos(f1)*Math.cos(l1)+b*Math.cos(f2)*Math.cos(l2),y=a*Math.cos(f1)*Math.sin(l1)+b*Math.cos(f2)*Math.sin(l2),z=a*Math.sin(f1)+b*Math.sin(f2);
+ return {lat:toDeg(Math.atan2(z,Math.hypot(x,y))),lon:toDeg(Math.atan2(y,x))};}
+// how a great-circle leg A->B meets a circle: min distance, along-track distance of closest point, which side
+function crossInfo(A,B,C){const d12=hav(A.lat,A.lon,B.lat,B.lon),d13=hav(A.lat,A.lon,C.lat,C.lon);
+ const t12=brg(A.lat,A.lon,B.lat,B.lon),t13=brg(A.lat,A.lon,C.lat,C.lon);const xt=Math.asin(Math.max(-1,Math.min(1,Math.sin(d13/RE)*Math.sin(t13-t12))))*RE;
+ let at=Math.acos(Math.max(-1,Math.min(1,Math.cos(d13/RE)/Math.cos(xt/RE))))*RE;if(Math.cos(t13-t12)<0)at=-at;
+ if(at<0)return {min:d13,at:0,xt};if(at>d12)return {min:hav(B.lat,B.lon,C.lat,C.lon),at:d12,xt};return {min:Math.abs(xt),at,xt};}
+function gcPts(A,B,n){const out=[];let prev=null;for(let i=0;i<=n;i++){const p=interp(A,B,i/n);let lon=p.lon;if(prev!==null){while(lon-prev>180)lon-=360;while(lon-prev<-180)lon+=360;}prev=lon;out.push([lon,p.lat]);}return out;}
+
+const WX_T=[
+ {k:'typhoon',label:'Typhoon',box:[10,30,118,150],wk:[26,44],p:.55,n:[1,2],r:[300,600],s:[2,3],route:1},
+ {k:'cyclone',label:'Tropical cyclone',box:[8,21,82,95],wk:[[18,22],[40,48]],p:.45,n:[1,1],r:[250,500],s:[2,3],route:1},
+ {k:'cyclone',label:'Tropical cyclone',box:[-24,-11,110,158],wk:[[1,14],[48,52]],p:.5,n:[1,2],r:[250,500],s:[2,3],route:1},
+ {k:'hurricane',label:'Hurricane',box:[14,32,-95,-60],wk:[31,44],p:.5,n:[1,2],r:[300,600],s:[2,3],route:1},
+ {k:'monsoon',label:'Monsoon rain bands',box:[8,26,70,92],wk:[23,38],p:.8,n:[1,2],r:[400,750],s:[1,2],route:1},
+ {k:'monsoon',label:'Monsoon rain bands',box:[-2,18,96,122],wk:[[44,52],[1,8]],p:.7,n:[1,2],r:[350,650],s:[1,2],route:1},
+ {k:'winter',label:'Winter storm',box:[35,50,-100,-70],wk:[[48,52],[1,10]],p:.7,n:[1,2],r:[300,650],s:[1,3],route:1},
+ {k:'winter',label:'Snow and ice',box:[45,60,-8,25],wk:[[48,52],[1,10]],p:.65,n:[1,2],r:[250,550],s:[1,3],route:1},
+ {k:'winter',label:'Winter storm',box:[33,45,112,142],wk:[[50,52],[1,7]],p:.45,n:[1,1],r:[250,500],s:[1,2],route:1},
+ {k:'storms',label:'Thunderstorms',box:[-12,12,-80,150],wk:[1,52],p:.9,n:[2,4],r:[150,320],s:[1,2],route:1},
+ {k:'storms',label:'Severe thunderstorms',box:[29,45,-100,-80],wk:[21,36],p:.75,n:[1,2],r:[200,400],s:[2,3],route:1},
+ {k:'fog',label:'Dense fog',box:[48,56,-6,12],wk:[[40,52],[1,8]],p:.6,n:[1,2],r:[120,220],s:[1,2],route:0},
+ {k:'fog',label:'Dense fog',box:[28,42,100,122],wk:[[44,52],[1,10]],p:.45,n:[1,1],r:[150,250],s:[1,2],route:0},
+ {k:'dust',label:'Sandstorm',box:[18,32,30,58],wk:[10,26],p:.55,n:[1,1],r:[250,500],s:[1,2],route:1},
+ {k:'ash',label:'Volcanic ash cloud',spots:[[63.6,-19.6],[-7.5,110.4],[-8.3,115.5],[35.4,138.7],[-0.7,-78.4],[55.9,160.6],[61.3,-152.3],[14.4,120.9]],wk:[1,52],p:.05,n:[1,1],r:[400,900],s:[3,3],route:1},
+];
+const AS_T=[
+ {k:'political',label:['Overflight permits suspended','Regulatory restriction: foreign carriers barred','Airspace closed to civil traffic'],p:.1,r:[500,1100],w:[4,12],max:3},
+ {k:'temporary',label:['Temporary closure: state visit','Temporary closure: space launch window','Temporary closure: air show','Temporary closure: VIP movement'],p:.6,n:[1,3],r:[100,250],w:[1,1]},
+ {k:'military',label:['Military exercise','Live-fire exercise area','Missile test danger area'],p:.4,n:[1,2],r:[200,480],w:[1,3]},
+ {k:'airport',label:['ATC staff shortage','Runway works','Night curfew enforced','Fuel supply limits','Industrial action'],p:.7,n:[1,3],w:[1,4]},
+];
+const ZONE_NAME={political:'Political / regulatory',temporary:'Temporary airspace closure',military:'Military activity',airport:'Airport restriction'};
+const inWk=(w,rng2)=>{const rs=Array.isArray(rng2[0])?rng2:[rng2];return rs.some(([a,b])=>w>=a&&w<=b);};
+const rr=(a,b)=>a+rng()*(b-a),ri=(a,b)=>Math.floor(rr(a,b+1));
+function nearestCity(lat,lon){let best=null,bd=1e9;for(const a of BIG3){if(a.size<4)continue;const d=hav(lat,lon,a.lat,a.lon);if(d<bd){bd=d;best=a;}}return best?{a:best,d:bd}:null;}
+function opts(S){return S.opts||{weather:false,airspace:false};}
+function genConditions(S){S.wx=[];const wk=((S.week-1)%52)+1;let id=1;
+ if(opts(S).weather){for(const T of WX_T){if(!inWk(wk,T.wk)||rng()>T.p)continue;const n=ri(T.n[0],T.n[1]);for(let i=0;i<n;i++){let lat,lon;
+   if(T.spots){const sp=T.spots[ri(0,T.spots.length-1)];lat=sp[0];lon=sp[1];}else{lat=rr(T.box[0],T.box[1]);lon=rr(T.box[2],T.box[3]);}
+   S.wx.push({id:id++,k:T.k,label:T.label,lat:+lat.toFixed(2),lon:+lon.toFixed(2),r:Math.round(rr(T.r[0],T.r[1])),s:ri(T.s[0],T.s[1]),route:T.route});}}}
+ // airspace: political zones persist, the rest are refreshed
+ const keep=(S.zones||[]).filter(z=>z.k==='political'&&--z.left>0);S.zones=opts(S).airspace?keep:[];
+ if(opts(S).airspace){const hubs=S.hubs.map(h=>AP[h]);
+  const myAps=[...new Set(S.routes.flatMap(r=>[r.a,r.b]))].filter(c=>!S.hubs.includes(c));
+  for(const T of AS_T){if(rng()>T.p)continue;if(T.max&&S.zones.filter(z=>z.k===T.k).length>=T.max)continue;const n=T.n?ri(T.n[0],T.n[1]):1;
+   for(let i=0;i<n;i++){const label=T.label[ri(0,T.label.length-1)];const left=ri(T.w[0],T.w[1]);
+    if(T.k==='airport'){const pool=rng()<0.5&&myAps.length?myAps:BIG3.filter(a=>a.size>=4).map(a=>a.code);const c=pool[ri(0,pool.length-1)];if(!c)continue;
+     S.zones.push({id:'z'+S.week+'-'+(id++),k:'airport',label,ap:c,lat:AP[c].lat,lon:AP[c].lon,r:0,left,cancel:+rr(.04,.18).toFixed(2),delay:Math.round(rr(20,60)/5)*5});continue;}
+    // centre over land near a sizeable airport, never swallowing a player hub
+    let z=null;for(let tries=0;tries<20&&!z;tries++){const a=BIG3[ri(0,BIG3.length-1)];const r=Math.round(rr(T.r[0],T.r[1]));const c=destPt(a.lat,a.lon,rr(0,Math.PI*2),rr(0,r*0.6));
+     if(hubs.some(h=>hav(h.lat,h.lon,c.lat,c.lon)<r+150))continue;z={id:'z'+S.week+'-'+(id++),k:T.k,label,lat:+c.lat.toFixed(2),lon:+c.lon.toFixed(2),r,left};}
+    if(z)S.zones.push(z);}}}
+ IMPACT.clear();}
+function obstacles(S){const o=[];if(opts(S).weather)for(const c of (S.wx||[]))if(c.route&&c.s>=2)o.push({lat:c.lat,lon:c.lon,r:c.r,why:`${c.label}`,kind:'wx'});
+ if(opts(S).airspace)for(const z of (S.zones||[]))if(z.k!=='airport')o.push({lat:z.lat,lon:z.lon,r:z.r,why:z.label,kind:'as',zk:z.k});return o;}
+// jet stream: strongest in each hemisphere's winter, helps eastbound flights in the mid-latitudes
+function jetMult(S,A,B){if(!opts(S).weather)return 1;const wk=((S.week-1)%52)+1;const mid=(A.lat+B.lat)/2;const north=mid>=0;const wint=north?Math.cos(2*Math.PI*(wk-3)/52):Math.cos(2*Math.PI*(wk-29)/52);
+ const band=Math.max(0,1-Math.abs(Math.abs(mid)-42)/28);const east=Math.sin(brg(A.lat,A.lon,B.lat,B.lon));const k=(0.055+0.035*wint)*band;return 1-k*east;}
+const IMPACT=new Map();
+function legImpact(S,o,d,t){const key=S.week+'|'+o+'|'+d+'|'+(t?t.id:'');if(IMPACT.has(key))return IMPACT.get(key);
+ const A=AP[o],B=AP[d],D=hav(A.lat,A.lon,B.lat,B.lon);const res={extra:0,mult:1,delay:0,cancel:0,why:[],wps:null,pts:null,airborneExtra:0};
+ const on=opts(S);if(!on.weather&&!on.airspace){IMPACT.set(key,res);return res;}
+ res.mult=jetMult(S,A,B);if(Math.abs(res.mult-1)>0.025)res.why.push(res.mult<1?`Tailwind from the jet stream (−${Math.round((1-res.mult)*100)}% flight time)`:`Headwind from the jet stream (+${Math.round((res.mult-1)*100)}% flight time)`);
+ // airports caught inside weather or closures
+ for(const code of [o,d]){const P=AP[code];
+  if(on.weather)for(const c of (S.wx||[])){if(hav(P.lat,P.lon,c.lat,c.lon)<=c.r){res.delay+=c.s*15+(c.k==='fog'?10:0);res.cancel+=c.s===3?0.25:c.s===2?0.05:0.01;res.why.push(`${c.label} at ${code}`);}}
+  if(on.airspace)for(const z of (S.zones||[])){if(z.k==='airport'){if(z.ap===code){res.delay+=z.delay;res.cancel+=z.cancel;res.why.push(`${z.label} at ${code}`);}continue;}
+   if(hav(P.lat,P.lon,z.lat,z.lon)<=z.r){const c=z.k==='political'?1:z.k==='military'?0.3:0.15;res.cancel+=c;res.delay+=z.k==='temporary'?30:20;res.why.push(`${code} is inside: ${z.label}`);}}}
+ // obstacles on the way: fly around them
+ const wps=[];for(const ob of obstacles(S)){const inA=hav(A.lat,A.lon,ob.lat,ob.lon)<=ob.r,inB=hav(B.lat,B.lon,ob.lat,ob.lon)<=ob.r;if(inA||inB)continue;
+  const ci=crossInfo(A,B,ob);if(ci.min>=ob.r)continue;const f=Math.max(0.02,Math.min(0.98,ci.at/D));const P=interp(A,B,f);const pb=brg(P.lat,P.lon,B.lat,B.lon);
+  // go round on the side the route already leans towards, pushing the waypoint out until both new legs clear the circle
+  const side=ci.xt>=0?-1:1;let Wp=destPt(P.lat,P.lon,pb+side*Math.PI/2,ob.r+60);for(let k=0;k<6;k++){const c1=crossInfo(A,Wp,ob),c2=crossInfo(Wp,B,ob);if(c1.min>=ob.r*0.98&&c2.min>=ob.r*0.98)break;Wp=destPt(P.lat,P.lon,pb+side*Math.PI/2,(ob.r+60)*(1+0.18*(k+1)));}
+  wps.push({at:ci.at,W:Wp,why:ob.why,kind:ob.kind});}
+ wps.sort((a,b)=>a.at-b.at);const used=wps.slice(0,3);
+ if(used.length){const chain=[A,...used.map(w=>w.W),B];let L=0,pts=[];for(let i=0;i<chain.length-1;i++){L+=hav(chain[i].lat,chain[i].lon,chain[i+1].lat,chain[i+1].lon);const seg=gcPts(chain[i],chain[i+1],24);
+   if(pts.length){const lastLon=pts[pts.length-1][0];let sh=0;while(seg[0][0]+sh-lastLon>180)sh-=360;while(seg[0][0]+sh-lastLon<-180)sh+=360;seg.forEach(q=>q[0]+=sh);seg.shift();}pts=pts.concat(seg);}
+  res.extra=Math.max(0,Math.round(L-D));res.pts=pts;res.wps=used;const names=[...new Set(used.map(w=>w.why.charAt(0).toLowerCase()+w.why.slice(1)))];res.why.push(`Detour around ${names.join(' and ')} (+${res.extra} km)`);}
+ res.cancel=Math.min(1,res.cancel);res.delay=Math.round(res.delay);
+ if(t){const A0=Math.max(10,legMin(t,D)-18);res.airborneExtra=Math.round(A0*(res.mult-1)+res.extra/t.spd*60);}
+ IMPACT.set(key,res);return res;}
+// one outcome per flight, shared by economics, boards, popup and map
+function disrupt(S,fn,depU,o,d,t){const imp=legImpact(S,o,d,t);const h=hashN(fn+'#'+S.week+'#'+Math.floor(wmod(depU)/1440));
+ const cancel=imp.cancel>0&&(h%1000)/1000<imp.cancel;const base=flightDelay(fn,depU);const wd=imp.delay?Math.round(imp.delay*(0.4+((h>>>10)%121)/100)/5)*5:0;
+ const reason=cancel?(imp.why.find(w=>/inside|at /.test(w))||imp.why[0]||'Operational'):wd>base?(imp.why.find(w=>/ at /.test(w))||imp.why[0]):null;
+ return {cancel,delay:cancel?0:Math.max(base,wd),imp,reason};}
+
 function advance(S){
- if(S.over)return null;ensureSchedules(S);
+ if(S.over)return null;ensureSchedules(S);_S=S;if(!S.opts){S.opts={weather:false,airspace:false};S.optsNext={...S.opts};}
  const D=DIFF[S.diff];const report={week:S.week,rev:0,fuel:0,crew:0,fees:0,lease:0,maint:0,overhead:0,interest:0,repairs:0,events:[]};
  // --- market conditions
  S.fuel=clamp(S.fuel*(1+(rng()-0.5)*0.06)+(FUEL_BASE-S.fuel)*0.05,0.45,1.7);
@@ -624,11 +738,15 @@ function advance(S){
  const todQ=m=>{const h=((m%1440)+1440)%1440/60;return h>=6&&h<22?1:(h>=5||h>=22)?0.85:0.65;};
  for(const r of S.routes){const list=ops[r.id]||[];
   const capC={f:0,j:0,w:0,y:0};let flights=0,conc=0,qs=0,qw=0;
-  for(const {p,e} of list){const t=ACT[p.type];const L=p.layout||defaultLayout(t);const n=nDays(e);const R=rot(S,p,e);if(!R)continue;
-   for(const c of CLASSES)capC[c]+=n*(L[c]||0);if(t.prem)conc+=n*L.j;flights+=2*n;const q=(todQ(R.depOut)+todQ(R.depBack))/2;qs+=q*n*seatsOf(L);qw+=n*seatsOf(L);}
-  const cap=seatsOf(capC);r._ops=list;r._flights=flights;r._conc=capC.j?conc/capC.j:0;r._q=qw?qs/qw:1;
+  let cx=0,dsum=0,dn=0;
+  for(const o of list){const {p,e}=o;const t=ACT[p.type];const L=p.layout||defaultLayout(t);const R=rot(S,p,e);if(!R)continue;let legs=0;o.legs=[];
+   e.days.forEach((on,k)=>{if(!on)return;const u0=k*1440+e.t-tzOff(R.from);
+    for(const [fn,a,b,u] of [[`${S.code} ${e.fn}`,R.from,R.to,u0],[`${S.code} ${e.fn+1}`,R.to,R.from,u0+R.leg+R.turn]]){const x=disrupt(S,fn,u,a,b,t);if(x.cancel){cx++;continue;}legs++;dsum+=x.delay;dn++;o.legs.push(x);}});
+   const n=legs/2;for(const c of CLASSES)capC[c]+=n*(L[c]||0);if(t.prem)conc+=n*L.j;flights+=legs;const q=(todQ(R.depOut)+todQ(R.depBack))/2;qs+=q*n*seatsOf(L);qw+=n*seatsOf(L);}
+  r._cx=cx;r._delay=dn?dsum/dn:0;
+  const cap=seatsOf(capC);r._ops=list;r._flights=flights;r._conc=capC.j?conc/capC.j:0;r._q=(qw?qs/qw:1)*(1-Math.min(0.35,r._delay/200));
   if(cap>0)add(r.a,r.b,{who:'P',r,cap,capC,mult:r.mult,a:repA*r._q});else r.last={pax:0,seats:0,lf:0,rev:0,cost:0,profit:0,flights:0,comp:0,idle:true};}
- S.rivals.forEach((R,i)=>R.routes.forEach(rr=>add(rr.a,rr.b,{who:i,rr,cap:rr.cap,mult:rr.mult,a:D.q})));
+ S.rivals.forEach((R,i)=>R.routes.forEach(rr=>{const im=legImpact(S,rr.a,rr.b,null);const cap=rr.cap*(1-im.cancel);if(cap>0)add(rr.a,rr.b,{who:i,rr,cap,mult:rr.mult,a:D.q*(1-Math.min(0.35,im.delay/200))});else{rr.lf=0;rr._p=-40000;}}));
  for(const k in markets){const m=markets[k];const d=dist(m.a,m.b);const cs=m.carriers;const sh=classShare(d);
   const totCap=cs.reduce((s,c)=>s+c.cap,0);const mAvg=cs.reduce((s,c)=>s+c.cap*c.mult,0)/totCap;
   const Dm=baseDemand(m.a,m.b)*season*fxMult(S,m.a)*fxMult(S,m.b)*Math.pow(mAvg,-1.3);
@@ -645,18 +763,18 @@ function advance(S){
   for(const c of cs){const pax=Math.round(seatsOf(c.paxC)*2);
    const rev=CLASSES.reduce((s,cl)=>s+c.paxC[cl]*2*fare*c.mult*CLASS_FARE[cl]*(cl==='j'&&c.who==='P'?1+0.5*c.r._conc:1),0);
    if(c.who==='P'){const r=c.r;let cost=0;
-    for(const {p,e} of r._ops){const t=ACT[p.type];const fl=nDays(e)*2;const L=p.layout||defaultLayout(t);
-     const fu=fl*d*t.burn*S.fuel,cr=fl*blockHours(t,d)*t.crew,fe=fl*(600+seatsOf(L)*6);
-     report.fuel+=fu;report.crew+=cr;report.fees+=fe;cost+=fu+cr+fe;}
+    for(const o of r._ops){const {p}=o;const t=ACT[p.type];const L=p.layout||defaultLayout(t);
+     for(const x of (o.legs||[])){const im=x.imp;const fu=(d+im.extra)*t.burn*S.fuel*im.mult,cr=(blockHours(t,d)+im.airborneExtra/60)*t.crew,fe=600+seatsOf(L)*6,dl=x.delay*seatsOf(L)*0.4;
+      report.fuel+=fu;report.crew+=cr;report.fees+=fe;report.disrupt=(report.disrupt||0)+dl;cost+=fu+cr+fe+dl;}}
     const byClass={};for(const cl of CLASSES)if(c.capC[cl]>0)byClass[cl]={pax:Math.round(c.paxC[cl]*2),seats:Math.round(c.capC[cl]*2)};
-    report.rev+=rev;r.last={pax,seats:c.cap*2,lf:pax/(c.cap*2),rev,cost,profit:rev-cost,flights:r._flights,comp:cs.length-1,fare:fare*c.mult,byClass,q:r._q};}
+    report.rev+=rev;r.last={pax,seats:c.cap*2,lf:pax/(c.cap*2),rev,cost,profit:rev-cost,flights:r._flights,comp:cs.length-1,fare:fare*c.mult,byClass,q:r._q,cx:r._cx,delay:r._delay};}
    else{const cost=(c.cap*2*(25+0.058*d)/D.q)*ff+40000;c.rr.lf=pax/(c.cap*2);c.rr._p=rev-cost;}}
  }
  // --- fixed costs
  for(const p of S.fleet){const t=ACT[p.type];if(p.sched&&p.sched.length&&!p.grounded)p.flown=(p.flown||0)+1;if(p.mode==='lease')report.lease+=leaseWeekly(t);report.maint+=maintWeekly(p);p.age++;if(p.grounded>0)p.grounded--;}
  report.overhead=150000+S.hubs.length*100000+S.fleet.length*20000;
  report.interest=S.loan*0.07/52;
- report.cost=report.fuel+report.crew+report.fees+report.lease+report.maint+report.overhead+report.interest+report.repairs;
+ report.cost=report.fuel+report.crew+report.fees+(report.disrupt||0)+report.lease+report.maint+report.overhead+report.interest+report.repairs;
  report.profit=report.rev-report.cost;S.cash+=report.profit;S.cumProfit+=report.profit;
  // --- rivals
  S.rivals.forEach((R,i)=>{let p=-300000;R.routes.forEach(rr=>{p+=(rr._p||0);rr.weak=(rr.lf<0.45)?rr.weak+1:0;});
@@ -684,8 +802,15 @@ function advance(S){
  if(S.debtWeeks>0&&!(S.cash<-80e6||S.debtWeeks>=BANKRUPT_WEEKS))addLog(S,`Cash is negative (${money(S.cash)}). ${BANKRUPT_WEEKS-S.debtWeeks} week${BANKRUPT_WEEKS-S.debtWeeks===1?'':'s'} left to recover before the administrators step in.`,'bad');
  if(!S.unlimited&&(S.cash<-80e6||S.debtWeeks>=BANKRUPT_WEEKS)){S.over={reason:'bankrupt',week:S.week};addLog(S,'The administrators have taken over. Your airline is grounded.','bad');}
  S.week++;
+ // settings changed during the week take effect now, then next week's weather and airspace are drawn
+ S.opts={...(S.optsNext||S.opts)};genConditions(S);conditionsLog(S);
  return report;
 }
+function conditionsLog(S){const o=opts(S);if(!o.weather&&!o.airspace)return;const big=(S.wx||[]).filter(c=>c.s>=3);
+ const myRoutes=S.routes.length;let hit=0;for(const r of S.routes){const im=legImpact(S,r.a,r.b,null);if(im.extra||im.cancel>0.05||im.delay>=20)hit++;}
+ const parts=[];if(o.weather&&big.length)parts.push(big.slice(0,2).map(c=>{const n=nearestCity(c.lat,c.lon);return `${c.label} near ${n?n.a.city:'open sea'}`;}).join(', '));
+ const newZ=(S.zones||[]).filter(z=>z.k!=='airport'&&String(z.id).startsWith('z'+S.week+'-'));if(o.airspace&&newZ.length)parts.push(newZ.slice(0,2).map(z=>{const n=nearestCity(z.lat,z.lon);return `${z.label.replace(/^Temporary closure: /,'Closure: ')} near ${n?n.a.city:'—'}`;}).join(', '));
+ if(parts.length||hit)addLog(S,`Week ${S.week} conditions: ${parts.join('; ')||'mostly calm'}.${hit?` ${hit} of your ${myRoutes} routes affected.`:''}`,hit?'bad':'info');}
 
 function rollEvents(S,report){
  if(rng()>0.42)return;
@@ -705,7 +830,7 @@ function rollEvents(S,report){
 
 function weekDate(w){const d=new Date(Date.UTC(2027,0,4+(w-1)*7));return d.toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'});}
 
-if(typeof module!=='undefined')module.exports={addFlight,removeFlight,editFlight,autoFill,clearSchedule,rot,tzOff,hhmm,nextFn,weeklyRotations,busyMinutes,ensureSchedules,WEEK,refit,defaultLayout,layoutFromFractions,unitsOf,maxUnits,seatsOf,AP,canServe,BIG3,AIRPORTS,AIRCRAFT,newGame,advance,openRoute,acquire,assign,borrow,companyValue,money,dist,roundTrips,ACT};
+if(typeof module!=='undefined')module.exports={legImpact,disrupt,genConditions,hashN,flightDelay,addFlight,removeFlight,editFlight,autoFill,clearSchedule,rot,tzOff,hhmm,nextFn,weeklyRotations,busyMinutes,ensureSchedules,WEEK,refit,defaultLayout,layoutFromFractions,unitsOf,maxUnits,seatsOf,AP,canServe,BIG3,AIRPORTS,AIRCRAFT,newGame,advance,openRoute,acquire,assign,borrow,companyValue,money,dist,roundTrips,ACT};
 
 </script>
 <script>
@@ -713,17 +838,19 @@ if(typeof module!=='undefined')module.exports={addFlight,removeFlight,editFlight
 const $=s=>document.querySelector(s);
 const SAVE_KEY='cruising-altitude-save-v1';
 let S=null;
-const UI={fp:null,track:null,boardRows:[],clock0:420,board:{ap:null,day:0,mode:'dep'},sched:null,sf:null,buy:null,tab:'routes',view:'apac',sel:null,from:null,to:null,auto:false,speed:1,timer:null,confirm:null,setup:{diff:'normal',hub:'SIN',name:'Orchid Airways',rivals:3,unlimited:false},mk:'All'};
+const UI={fp:null,track:null,boardRows:[],clock0:420,board:{ap:null,day:0,mode:'dep'},sched:null,sf:null,buy:null,tab:'routes',view:'apac',sel:null,from:null,to:null,auto:false,speed:1,timer:null,confirm:null,setup:{diff:'normal',hub:'SIN',name:'Orchid Airways',rivals:3,unlimited:false,weather:true,airspace:true},mk:'All'};
 const PRESETS={world:{cx:10,cy:12,span:360},apac:{cx:128,cy:2,span:120},emea:{cx:22,cy:20,span:92},amer:{cx:-88,cy:6,span:125}};
 UI.v={...PRESETS.apac};
 
 const SLOTS=3,slotKey=n=>'cruising-altitude-slot-'+n;
 function normalize(G){if(!G||!Array.isArray(G.hubs)||!Array.isArray(G.fleet)||!Array.isArray(G.routes)||!Array.isArray(G.rivals))return null;
+ const RETIRED={GA4C:['Gulfstream G400',50e6],GA7C:['Gulfstream G700',78e6],GA8C:['Gulfstream G800',72e6]};
+ G.fleet.forEach(p=>{const r=RETIRED[p.type];if(!r)return;if(p.mode==='buy'){G.cash+=r[1];G.log.unshift({w:G.week,text:`${r[0]} ${p.tail} withdrawn from the game. Refunded ${money(r[1])}.`,kind:'info'});}else G.log.unshift({w:G.week,text:`Leased ${r[0]} ${p.tail} withdrawn from the game.`,kind:'info'});});
  G.fleet=G.fleet.filter(p=>ACT[p.type]);
  const gone=G.routes.filter(r=>!AP[r.a]||!AP[r.b]).map(r=>r.id);if(gone.length){G.routes=G.routes.filter(r=>!gone.includes(r.id));G.fleet.forEach(p=>{if(gone.includes(p.route))p.route=null;});}
  G.hubs=G.hubs.filter(h=>AP[h]);if(!G.hubs.length)G.hubs=[AIRPORTS.find(a=>a.size>=7).code];
  G.rivals.forEach(R=>{R.hubs=R.hubs.filter(h=>AP[h]);if(!R.hubs.length)R.hubs=[BIG3.find(a=>a.size>=8).code];R.routes=R.routes.filter(x=>AP[x.a]&&AP[x.b]);});
- G.fx=(G.fx||[]).filter(e=>e.kind!=='apt'||AP[e.key]);ensureSchedules(G);
+ G.fx=(G.fx||[]).filter(e=>e.kind!=='apt'||AP[e.key]);ensureSchedules(G);if(!G.opts)G.opts={weather:false,airspace:false};if(!G.optsNext)G.optsNext={...G.opts};if(!G.wx)G.wx=[];if(!G.zones)G.zones=[];
  if(G.debtWeeks==null)G.debtWeeks=0;if(G.peak==null)G.peak=START_CASH;if(G.over&&G.over.reason!=='bankrupt')G.over=null;return G;}
 function save(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(S))}catch(e){}}
 function load(){try{const s=localStorage.getItem(SAVE_KEY);return s?normalize(JSON.parse(s)):null}catch(e){return null}}
@@ -783,6 +910,7 @@ function showStart(){const saved=load();const st=$('#start');stopAuto();
   <div class="row"><div class="field" style="flex:3 1 180px"><label for="iName">Airline name</label><input type="text" id="iName" maxlength="28" value="${esc(UI.setup.name)}"></div><div class="field" style="flex:1 1 80px"><label for="iCode">Airline code</label><input type="text" id="iCode" maxlength="2" autocapitalize="characters" placeholder="${codeFrom(UI.setup.name,new Set())}" style="text-transform:uppercase;font-family:var(--f-mono)"></div></div>
   <div class="field"><label for="iHubQ">Home hub · ${AIRPORTS.length.toLocaleString('en-AU')} airports</label><div class="picked" id="hubPicked">${apLine(AP[UI.setup.hub])}</div><input type="text" id="iHubQ" autocomplete="off" placeholder="Search by city, airport name, IATA or ICAO code"><div class="results" id="hubRes"></div></div>
   <div class="field"><label>Starting budget</label><div class="seg2" role="group" aria-label="Starting budget"><button type="button" data-budget="std" aria-pressed="${!UI.setup.unlimited}">$1 billion</button><button type="button" data-budget="inf" aria-pressed="${UI.setup.unlimited}">Unlimited</button></div><small class="mute" id="budNote">${UI.setup.unlimited?'Sandbox: buy anything, never go bankrupt. Profit is still tracked.':'Run out of cash for 8 weeks and the airline goes bust.'}</small></div>
+  <div class="field"><label>Simulation</label><div class="seg2" role="group" aria-label="Simulation"><button type="button" data-sim="weather" aria-pressed="${UI.setup.weather}">Weather ${UI.setup.weather?'on':'off'}</button><button type="button" data-sim="airspace" aria-pressed="${UI.setup.airspace}">Airspace restrictions ${UI.setup.airspace?'on':'off'}</button></div><small class="mute">Weather brings storms, fog, monsoons and jet streams. Airspace adds closures, military activity and airport restrictions. Both can force detours, delays and cancellations. You can change them later in Conditions.</small></div>
   <div class="field"><label for="iRiv">CPU rival airlines · <b class="mono" id="rivN">${UI.setup.rivals||'None'}</b></label><input type="range" id="iRiv" min="0" max="${MAX_RIVALS}" step="1" value="${UI.setup.rivals}"><div class="row sp mute mono" style="font-size:11px"><span>None</span><span>${MAX_RIVALS}</span></div><small class="mute" id="rivNote">${UI.setup.rivals===0?'Solo mode: no competition, just you against the market.':''}</small></div>
   <div class="field" id="diffField" ${UI.setup.rivals===0?'hidden':''}><label>Rival difficulty</label><div class="seg">
    ${['easy','normal','hard'].map(d=>`<button type="button" data-diff="${d}" aria-pressed="${UI.setup.diff===d}"><b>${DIFF[d].label}</b><small>${{easy:'Slow rivals, higher fares',normal:'Rivals expand and sometimes chase you',hard:'Aggressive rivals undercut your best routes'}[d]}</small></button>`).join('')}
@@ -794,6 +922,7 @@ $('#start').addEventListener('input',e=>{if(e.target.id==='iRiv'){UI.setup.rival
  $('#hubRes').innerHTML=r.map(a=>`<button type="button" class="res" data-pickhub="${a.code}">${apLine(a)} <span class="chip">${SIZE_LABEL[a.size]}</span></button>`).join('')||(e.target.value.trim()?'<div class="empty">No airports match.</div>':'');});
 $('#start').addEventListener('click',e=>{const ph=e.target.closest('[data-pickhub]');if(ph){UI.setup.hub=ph.dataset.pickhub;$('#hubPicked').innerHTML=apLine(AP[UI.setup.hub]);$('#hubRes').innerHTML='';$('#iHubQ').value='';return;}const ls=e.target.closest('[data-loadslot]');if(ls){const o=slotGet(+ls.dataset.loadslot);if(o){setGame(o.game);toast(`Loaded slot ${ls.dataset.loadslot}.`);}return;}
  const im=e.target.closest('[data-act=importstart]');if(im){const G=importCode($('#sImp').value);if(typeof G==='string'){toast(G,true);return;}setGame(G);toast('Save code loaded.');return;}
+ const sm=e.target.closest('[data-sim]');if(sm){const k=sm.dataset.sim;UI.setup[k]=!UI.setup[k];sm.setAttribute('aria-pressed',UI.setup[k]);sm.textContent=(k==='weather'?'Weather ':'Airspace restrictions ')+(UI.setup[k]?'on':'off');return;}
  const bu=e.target.closest('[data-budget]');if(bu){UI.setup.unlimited=bu.dataset.budget==='inf';document.querySelectorAll('[data-budget]').forEach(b=>b.setAttribute('aria-pressed',b===bu));$('#budNote').textContent=UI.setup.unlimited?'Sandbox: buy anything, never go bankrupt. Profit is still tracked.':'Run out of cash for 8 weeks and the airline goes bust.';return;}
  const nr=e.target.closest('[data-nriv]');if(nr){UI.setup.rivals=+nr.dataset.nriv;document.querySelectorAll('[data-nriv]').forEach(b=>b.setAttribute('aria-pressed',b===nr));$('#diffField').hidden=UI.setup.rivals===0;$('#rivNote').textContent=UI.setup.rivals===0?'Solo mode: no competition, just you against the market.':'';return;}
  const d=e.target.closest('[data-diff]');if(d){UI.setup.diff=d.dataset.diff;document.querySelectorAll('[data-diff]').forEach(b=>b.setAttribute('aria-pressed',b===d));return;}
@@ -801,7 +930,7 @@ $('#start').addEventListener('click',e=>{const ph=e.target.closest('[data-pickhu
  if(a.dataset.act==='continue'){setGame(load(),true);resumeWithCatchUp();return;}
  if(a.dataset.act==='begin'){const saved=load();if(saved&&!saved.over&&a.dataset.armed!=='1'){a.dataset.armed='1';a.textContent='Tap again to replace your saved airline';return;}
   UI.setup.name=$('#iName').value.trim()||'Orchid Airways';
-  const cd=($('#iCode').value||'').toUpperCase().replace(/[^A-Z0-9]/g,'');if(cd&&cd.length!==2){toast('Airline codes are 2 letters or digits, like SQ or 9W.',true);return;}S=newGame(UI.setup.name,UI.setup.hub,UI.setup.diff,UI.setup.rivals,cd,UI.setup.unlimited);S.anchor={real:Date.now(),game:420};S.lastSeen=Date.now();UI.sel=null;UI.from=UI.setup.hub;UI.to=null;UI.tab='market';setView(viewFor(UI.setup.hub));
+  const cd=($('#iCode').value||'').toUpperCase().replace(/[^A-Z0-9]/g,'');if(cd&&cd.length!==2){toast('Airline codes are 2 letters or digits, like SQ or 9W.',true);return;}S=newGame(UI.setup.name,UI.setup.hub,UI.setup.diff,UI.setup.rivals,cd,UI.setup.unlimited,{weather:UI.setup.weather,airspace:UI.setup.airspace});S.anchor={real:Date.now(),game:420};S.lastSeen=Date.now();UI.sel=null;UI.from=UI.setup.hub;UI.to=null;UI.tab='market';setView(viewFor(UI.setup.hub));
   save();$('#start').hidden=true;render();toast('Lease your first aircraft, then open a route.');}});
 function viewFor(code){const r=AP[code].region;return r==='EU'||r==='AF'||r==='ME'?'emea':r==='NA'||r==='SA'?'amer':r==='AN'?'world':'apac';}
 function goHome(){if(S&&S.hubs[0]&&AP[S.hubs[0]]){setView(viewFor(S.hubs[0]));}}
@@ -865,7 +994,7 @@ function renderRoutes(){
   h+=`<div class="box"><div class="row sp"><div class="rt">${r.a}<span class="arrow">⇄</span>${r.b}</div><span class="mono mute">${km(d)}</span></div>`;
   if(L&&L.seats){h+=`<div class="kv"><div><small>Passengers</small><b>${L.pax.toLocaleString()}</b></div><div><small>Load factor</small><b>${fmtPct(L.lf)}</b></div><div><small>Revenue</small><b>${money(L.rev)}</b></div><div><small>Flight costs</small><b>${money(L.cost)}</b></div><div><small>Margin</small><b class="${L.profit>=0?'good':'bad'}">${money(L.profit)}</b></div><div><small>Flights</small><b>${L.flights}/wk</b></div></div>
    <div class="lf" aria-hidden="true"><span style="width:${Math.min(100,L.lf*100)}%"></span></div>
-   <div class="row">${L.comp?`<span class="chip warn">${L.comp} rival${L.comp>1?'s':''} on route</span>`:'<span class="chip ok">No competition</span>'}${L.lf>0.97?'<span class="chip amb">Sold out: add flights or raise fares</span>':''}${L.lf<0.5?'<span class="chip warn">Low load: cut fares or flights</span>':''}${L.q&&L.q<0.95?'<span class="chip warn">Some late-night departures</span>':''}</div>
+   <div class="row">${L.comp?`<span class="chip warn">${L.comp} rival${L.comp>1?'s':''} on route</span>`:'<span class="chip ok">No competition</span>'}${L.lf>0.97?'<span class="chip amb">Sold out: add flights or raise fares</span>':''}${L.lf<0.5?'<span class="chip warn">Low load: cut fares or flights</span>':''}${L.q&&L.q<0.95&&!L.delay?'<span class="chip warn">Some late-night departures</span>':''}${L.cx?`<span class="chip warn">${L.cx} flight${L.cx>1?'s':''} cancelled</span>`:''}${L.delay>=10?`<span class="chip warn">Avg delay ${Math.round(L.delay)} min</span>`:''}${(()=>{const im=legImpact(S,r.a,r.b,null);return im.extra?`<span class="chip amb">Rerouted this week +${im.extra} km</span>`:'';})()}</div>
    ${L.byClass?`<div class="row">${CLASSES.filter(c=>L.byClass[c]).map(c=>`<span class="cab"><i style="background:${CLS_COLOR[c]}"></i>${CLASS_NAME[c]} <b class="mono">${fmtPct(L.byClass[c].pax/L.byClass[c].seats)}</b></span>`).join('')}</div>`:''}`;}
   else h+=`<div class="mute">${fl.length?'Flies from next week.':'Nothing scheduled yet, so nothing flies.'}</div>`;
   h+=`<div class="field"><label for="m${r.id}">Fare · $${Math.round(baseFare(d)*r.mult)} one way (${r.mult<1?'':'+'}${Math.round((r.mult-1)*100)}% vs market)</label><input type="range" id="m${r.id}" min="0.6" max="1.6" step="0.05" value="${r.mult}" data-mult="${r.id}"></div>`;
@@ -885,7 +1014,7 @@ function renderFleet(){let h=`<div class="sec"><h3>Fleet <span class="mono" styl
   <div class="util" aria-label="Week booked ${Math.round(util*100)}%"><span style="width:${Math.min(100,util*100)}%"></span></div>
   <div class="row sp" style="font-size:12.5px"><span class="mute">${fns.length?fns.map(n=>S.code+' '+n).join(', '):'No flights scheduled'}</span><span class="mono">${Math.round(util*100)}% of week booked</span></div>
   ${p.grounded?'<span class="chip warn">Out of service this week</span>':''}
-  <div class="row sp"><div class="cabinline">${cabinChips(p.layout)}</div>${t.cls==='Supersonic'?'<span class="chip">Fixed single cabin</span>':UI.edit===p.id?'':`<button class="btn sm" type="button" data-edit="${p.id}">Edit cabin</button>`}</div>
+  <div class="row sp"><div class="cabinline">${cabinChips(p.layout)}</div>${t.fixed?'<span class="chip">Fixed single cabin</span>':UI.edit===p.id?'':`<button class="btn sm" type="button" data-edit="${p.id}">Edit cabin</button>`}</div>
   ${UI.edit===p.id?cabinEditor(p):''}
   <div class="row"><button class="btn sm primary" type="button" data-sched="${p.id}">Schedule</button>
   <button class="btn sm danger" type="button" data-dispose="${p.id}">${conf?(p.mode==='buy'?'Confirm sale '+money(planeValue(p)):'Confirm return'):(p.mode==='buy'?'Sell':'Return lease')}</button></div></div>`;});
@@ -912,12 +1041,12 @@ function cabinEditor(p){const t=ACT[p.type];const same=S.fleet.filter(x=>x.type=
  <div class="row"><button class="btn sm primary" type="button" data-applycab="${p.id}">Apply</button>${same?`<button class="btn sm" type="button" data-applyall="${p.id}">Apply to all ${same+1} ${esc(t.name)}</button>`:''}<button class="btn sm ghost" type="button" data-act="cancelcab">Cancel</button></div></div>`;}
 /* purchase panel: choose cabin first, then quantity */
 function buySummary(){const B=UI.buy,t=ACT[B.type],L=leaseWeekly(t);const each=B.mode==='buy'?t.price:L*4;const total=each*B.qty;const can=Math.floor(Math.max(0,S.cash)/each);
- const over=t.cls!=='Supersonic'&&(unitsOf(t,B.layout)>maxUnits(t)+1e-9||seatsOf(B.layout)<1);
+ const over=!t.fixed&&(unitsOf(t,B.layout)>maxUnits(t)+1e-9||seatsOf(B.layout)<1);
  return `<div class="kv"><div><small>${B.mode==='buy'?'Price each':'Deposit each'}</small><b>${money(each)}</b></div><div><small>Pay now</small><b class="${total>S.cash&&!S.unlimited?'bad':''}">${money(total)}</b></div>${B.mode==='lease'?`<div><small>Then weekly</small><b>${money(L*B.qty)}</b></div>`:''}<div><small>You can afford</small><b>${S.unlimited?'∞':can}</b></div></div>
  ${over?'<div class="bad" style="font-size:12.5px">Fix the cabin layout before ordering.</div>':''}`;}
 function buyPanel(t){const B=UI.buy;const routes=S.routes.filter(r=>dist(r.a,r.b)<=t.range&&canServe(t,r.a)&&canServe(t,r.b));
  return `<div class="buyp"><div class="seg2" role="group" aria-label="Lease or buy"><button type="button" data-bmode="lease" aria-pressed="${B.mode==='lease'}">Lease · ${money(leaseWeekly(t))}/wk</button><button type="button" data-bmode="buy" aria-pressed="${B.mode==='buy'}">Buy · ${money(t.price)}</button></div>
- <div class="cabinedit" style="border-top:0;padding-top:0">${t.cls==='Supersonic'?'<div class="mute" style="font-size:12.5px">Concorde comes with its fixed 100-seat premium cabin.</div>':`<div class="mute" style="font-size:12.5px">Cabin for every aircraft in this order</div>${cabinFields(t,B.layout,'buy')}<div id="cabmeter-buy">${meterHTML(t,B.layout,'')}</div>`}</div>
+ <div class="cabinedit" style="border-top:0;padding-top:0">${t.fixed?`<div class="mute" style="font-size:12.5px">The ${esc(t.name)} comes with a fixed ${t.seats}-seat ${t.fixed.f?'first-class':'premium'} cabin.</div>`:`<div class="mute" style="font-size:12.5px">Cabin for every aircraft in this order</div>${cabinFields(t,B.layout,'buy')}<div id="cabmeter-buy">${meterHTML(t,B.layout,'')}</div>`}</div>
  <div class="row sp"><span class="field" style="flex:0 0 auto"><label for="buyQty">Quantity</label><span class="step"><button class="btn sm" type="button" data-qty="-1" aria-label="One fewer">−</button><input type="number" id="buyQty" min="1" max="50" value="${B.qty}"><button class="btn sm" type="button" data-qty="1" aria-label="One more">+</button></span></span>
  <span class="field" style="flex:1 1 180px"><label for="buyRoute">Then schedule on</label><select id="buyRoute"><option value="">Nothing yet</option>${routes.map(r=>`<option value="${r.id}" ${B.route===r.id?'selected':''}>${r.a}–${r.b} · ${km(dist(r.a,r.b))}</option>`).join('')}</select></span></div>
  <div id="buySum">${buySummary()}</div>
@@ -930,13 +1059,13 @@ function renderMarket(){const list=AC_SORTED.filter(t=>UI.mk==='All'||t.cls===UI
  <div class="row" role="group" aria-label="Filter by type">${AC_CLASSES.map(c=>`<button class="btn sm ${UI.mk===c?'on':''}" type="button" data-mk="${c}">${c}</button>`).join('')}</div><div class="acgrid">`;
  list.forEach(t=>{const L=leaseWeekly(t);h+=`<div class="box ac"><div><div class="maker">${t.maker} · ${t.cls}</div><h4>${t.name}</h4></div>
   <div class="row">${t.used?`<span class="chip">Used · ${t.used} yrs old</span>`:'<span class="chip ok">New build</span>'}${t.prem?`<span class="chip amb">Supersonic: business fares ×${t.prem}, max 7 round trips/wk</span>`:''}${t.mm&&t.mm>=2.5?'<span class="chip warn">High maintenance</span>':''}<span class="chip">Lands at: ${SIZE_LABEL[MIN_SIZE[t.cls]].toLowerCase()}s and up</span><span class="chip">Cabins: ${allowedClasses(t).map(c=>c.toUpperCase()).join(' ')}</span></div>
-  <div class="kv"><div><small>Seats</small><b>${t.cls==='Supersonic'?t.seats:seatsOf(defaultLayout(t))}</b></div><div><small>Max seats</small><b>${maxUnits(t)}</b></div><div><small>Range</small><b>${km(t.range)}</b></div><div><small>Cruise</small><b>${t.spd.toLocaleString('en-AU')} km/h</b></div><div><small>Fuel burn</small><b>${t.burn} kg/km</b></div></div>
+  <div class="kv"><div><small>Seats</small><b>${t.fixed?t.seats:seatsOf(defaultLayout(t))}</b></div><div><small>Max seats</small><b>${maxUnits(t)}</b></div><div><small>Range</small><b>${km(t.range)}</b></div><div><small>Cruise</small><b>${t.spd.toLocaleString('en-AU')} km/h</b></div><div><small>Fuel burn</small><b>${t.burn} kg/km</b></div></div>
   ${UI.buy&&UI.buy.type===t.id?buyPanel(t):`<div class="row"><button class="btn sm primary" type="button" data-lease="${t.id}">Lease · ${money(L)}/wk</button><button class="btn sm" type="button" data-buy="${t.id}">Buy · ${money(t.price)}</button></div>`}</div>`;});
  return h+'</div></div>';}
 
 function renderFinance(){const L=S.last;let h='<div class="sec"><h3>Last week</h3><div class="box">';
  if(!L)h+='<div class="empty">Results appear after your first week.</div>';
- else{const rows=[['Ticket revenue',L.rev,1],['Fuel',-L.fuel],['Crew',-L.crew],['Airport fees',-L.fees],['Leases',-L.lease],['Maintenance',-L.maint],['Overheads',-L.overhead],['Loan interest',-L.interest],['Repairs',-L.repairs]];
+ else{const rows=[['Ticket revenue',L.rev,1],['Fuel',-L.fuel],['Crew',-L.crew],['Airport fees',-L.fees],['Delays and disruption',-(L.disrupt||0)],['Leases',-L.lease],['Maintenance',-L.maint],['Overheads',-L.overhead],['Loan interest',-L.interest],['Repairs',-L.repairs]];
   h+=`<table><tbody>${rows.filter(r=>r[1]!==0||r[2]).map(r=>`<tr><td>${r[0]}</td><td class="n ${r[1]<0?'mute':''}">${money(r[1])}</td></tr>`).join('')}<tr><td><b>Profit</b></td><td class="n ${L.profit>=0?'good':'bad'}"><b>${money(L.profit)}</b></td></tr></tbody></table>`;}
  h+=`</div></div><div class="sec"><h3>Weekly profit <span class="mute" style="letter-spacing:.1em">last 26 weeks</span></h3><div class="box chartbox"><canvas id="chart"></canvas></div></div>`;
  const ml=maxLoan(S);
@@ -961,11 +1090,9 @@ function renderRivals(){const rows=standings();
   <div class="mute mono" style="font-size:12px">${r.routes.slice(0,14).map(x=>x.a+'–'+x.b).join('  ')}${r.routes.length>14?'  …':''}</div></div></div>`;});
  return h;}
 
-function hashN(str){let h=2166136261;for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
 const shortType=t=>t.name.replace(' Dreamliner','');
 function rivalType(d){return d<1600?ACT.A20N:d<4500?ACT.B38M:d<9000?ACT.B789:d<12500?ACT.A359:ACT.B77W;}
 // one delay per flight per UTC day per week, shared by boards, popup and map
-function flightDelay(fn,depU){const h=hashN(fn+'|'+S.week+'|'+Math.floor(wmod(depU)/1440));return h%17===0?15+(h>>>8)%5*15:0;}
 function boardRows(ap,day,mode){const rows=[];const push=(m,o)=>{m=wmod(m);if(Math.floor(m/1440)===day)rows.push({m,...o});};
  S.fleet.forEach(p=>(p.sched||[]).forEach(e=>{const R=rot(S,p,e);if(!R)return;const t=ACT[p.type];
   e.days.forEach((on,k)=>{if(!on)return;const b=k*1440;const st=p.grounded?'cancel':null;const u0=b+e.t-tzOff(R.from);
@@ -982,17 +1109,18 @@ function boardRows(ap,day,mode){const rows=[];const push=(m,o)=>{m=wmod(m);if(Ma
     if(mode==='dep'){if(rr.a===ap)push(b+dep,{...out,place:rr.b});if(rr.b===ap)push(b+back,{...ret,place:rr.a});}
     else{if(rr.b===ap)push(b+dep+leg+diff,{...out,place:rr.a});if(rr.a===ap)push(b+back+leg-diff,{...ret,place:rr.b});}}}}));
  rows.sort((a,b)=>a.m-b.m||a.fn.localeCompare(b.fn));
- rows.forEach(r=>{const hs=hashN(r.fn+S.week+day);r.gate='ABCDEF'[hs%6]+(1+(hs>>>4)%38);r.delay=r.st==='cancel'?0:flightDelay(r.fn,r.depU);
-  if(r.st==='cancel')r.status=['CANCELLED','bad'];else if(r.delay){r.status=['DELAYED '+r.delay,'warn'];}else if(hs%11===0)r.status=['NEW GATE','warn'];else r.status=['ON TIME','ok'];});
+ rows.forEach(r=>{const hs=hashN(r.fn+S.week+day);r.gate='ABCDEF'[hs%6]+(1+(hs>>>4)%38);const x=disrupt(S,r.fn,r.depU,r.o,r.d,r.t);r.imp=x.imp;r.reason=x.reason;
+  if(x.cancel&&r.st!=='cancel'){r.st='cancel';r.cx=1;}r.delay=r.st==='cancel'?0:x.delay;
+  if(r.st==='cancel')r.status=[r.cx?'CANCELLED':'CANCELLED','bad'];else if(r.delay){r.status=['DELAYED '+r.delay,'warn'];}else if(x.imp.extra){r.status=['REROUTED','warn'];}else if(hs%11===0)r.status=['NEW GATE','warn'];else r.status=['ON TIME','ok'];});
  return rows;}
 
 /* ---------- live flight details ---------- */
 const CRUISE_FT={Turboprop:25000,'Regional jet':37000,Narrowbody:37000,Widebody:39000,Jumbo:37000,Supersonic:58000};
 function bearing(a,b){const f1=toRad(a[1]),f2=toRad(b[1]),dl=toRad(b[0]-a[0]);return (Math.atan2(Math.sin(dl)*Math.cos(f2),Math.cos(f1)*Math.sin(f2)-Math.sin(f1)*Math.cos(f2)*Math.cos(dl))*180/Math.PI+360)%360;}
 function flightState(r){const clock=wmod(gameNow());let rel=wmod(clock-(r.depU+r.delay));if(rel>WEEK/2)rel-=WEEK;
- const leg=r.leg,taxiOut=10,taxiIn=8,A=Math.max(10,leg-taxiOut-taxiIn),a=rel-taxiOut;const t=r.t;const cr=CRUISE_FT[t.cls]||37000;
+ const ax=r.imp?r.imp.airborneExtra:0;const leg=r.leg+ax,taxiOut=10,taxiIn=8,A=Math.max(10,r.leg-taxiOut-taxiIn+ax),a=rel-taxiOut;const t=r.t;const cr=CRUISE_FT[t.cls]||37000;
  const cl=Math.min(t.cls==='Supersonic'?45:24,A*0.3),de=Math.min(t.cls==='Supersonic'?40:30,A*0.35);const vk=t.spd,v0=t.cls==='Turboprop'?200:290;
- const st={rel,phase:'',alt:0,vs:0,spd:0,frac:0,pos:AP[r.o],hdg:null,onGround:true};
+ const st={rel,phase:'',alt:0,vs:0,spd:0,frac:0,pos:AP[r.o],hdg:null,onGround:true,actualLeg:leg};
  if(r.st==='cancel'){st.phase='Cancelled';return st;}
  if(rel<-45){st.phase='Scheduled';}
  else if(rel<-10){st.phase='Boarding';}
@@ -1001,12 +1129,12 @@ function flightState(r){const clock=wmod(gameNow());let rel=wmod(clock-(r.depU+r
  else if(a<A){st.onGround=false;
   if(a<cl){const x=a/cl;st.phase='Climbing';st.alt=cr*(1-Math.pow(1-x,1.6));st.vs=cr*1.6*Math.pow(1-x,0.6)/cl;st.spd=v0+(vk-v0)*x;}
   else if(a>A-de){const x=(A-a)/de;st.phase='Descending';st.alt=cr*Math.pow(x,1.15);st.vs=-cr*1.15*Math.pow(x,0.15)/de;st.spd=v0+(vk-v0)*x;}
-  else{st.phase='Cruising';st.alt=cr;st.spd=vk;}
+  else{st.phase=r.imp&&r.imp.extra?'Cruising, rerouted':'Cruising';st.alt=cr;st.spd=vk/(r.imp?r.imp.mult:1);}
   st.frac=a/A;}
  else if(rel<leg){st.phase='Landed, taxiing to gate';st.frac=1;st.spd=25;st.pos=AP[r.d];}
  else if(rel<leg+30){st.phase='Arrived';st.frac=1;st.pos=AP[r.d];}
  else{st.phase=rel<WEEK/2?'Arrived':'Scheduled';st.frac=rel<WEEK/2?1:0;st.pos=st.frac?AP[r.d]:AP[r.o];}
- if(!st.onGround){const pts=arc(r.o,r.d);const idx=st.frac*(pts.length-1);const i=Math.min(pts.length-2,Math.floor(idx)),f=idx-i;const p0=pts[i],p1=pts[i+1];
+ if(!st.onGround){const pts=(r.imp&&r.imp.pts)||arc(r.o,r.d);const idx=st.frac*(pts.length-1);const i=Math.min(pts.length-2,Math.floor(idx)),f=idx-i;const p0=pts[i],p1=pts[i+1];
   st.lon=p0[0]+(p1[0]-p0[0])*f;st.lat=p0[1]+(p1[1]-p0[1])*f;st.hdg=bearing(p0,p1);}
  else{st.lon=st.pos.lon;st.lat=st.pos.lat;}
  st.lon=((st.lon+540)%360)-180;return st;}
@@ -1015,25 +1143,27 @@ const compass=h=>['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW'
 const utcLine=u=>`${DAYS[Math.floor(wmod(u)/1440)]} ${hhmm(wmod(u))} UTC`;
 const locLine=(u,code)=>{const m=wmod(u+tzOff(code));return `${DAYS[Math.floor(m/1440)]} ${hhmm(m)}`;};
 function flightPopHTML(r){const st=flightState(r);const d=dist(r.o,r.d);const flown=Math.round(d*st.frac);const dep=r.depU+r.delay,arr=dep+r.leg;
- const airborne=!st.onGround;const pc=Math.round(st.frac*100);
+ const airborne=!st.onGround;const pc=Math.round(st.frac*100);const im=r.imp||{why:[],extra:0,airborneExtra:0};const flyKm=d+im.extra;const flownKm=Math.round(flyKm*st.frac);const eta=dep+st.actualLeg;
  return `<div class="card fpop" role="dialog" aria-modal="true" aria-labelledby="fpTitle">
  <div class="row sp" style="flex-wrap:nowrap;align-items:flex-start"><div style="min-width:0"><div class="fp-fn" id="fpTitle"><i style="background:${r.mine?'var(--accent)':r.color}"></i>${r.fn}</div>
   <div class="fp-rt">${esc(AP[r.o].city)} <span class="amber">→</span> ${esc(AP[r.d].city)}</div><div class="mute" style="font-size:12.5px">${r.mine?esc(S.name):esc(r.airline||'')} · ${esc(r.t.maker)} ${esc(r.t.name)}${r.tail?' · '+r.tail:''} · ${r.seats} seats</div></div>
   <button class="btn sm ghost" type="button" data-fp="close" aria-label="Close flight details">✕</button></div>
  <div class="row"><span class="chip ${st.phase==='Cancelled'?'warn':airborne?'ok':'amb'}">${st.phase}</span>${r.delay?`<span class="chip warn">Delayed ${r.delay} min</span>`:''}<span class="chip">Gate ${r.gate}</span></div>
  <div class="fp-track"><span class="fp-a mono">${r.o}</span><div class="fp-bar"><span style="width:${pc}%"></span><b style="left:${pc}%" aria-hidden="true">✈</b></div><span class="fp-a mono">${r.d}</span></div>
- <div class="row sp mono" style="font-size:12px"><span>${flown.toLocaleString('en-AU')} km flown</span><span>${(d-flown).toLocaleString('en-AU')} km to go</span></div>
+ <div class="row sp mono" style="font-size:12px"><span>${flownKm.toLocaleString('en-AU')} km flown</span><span>${(flyKm-flownKm).toLocaleString('en-AU')} km to go${im.extra?` · route ${flyKm.toLocaleString('en-AU')} km (+${im.extra})`:''}</span></div>
+ ${im.why.length||r.reason?`<div class="fp-cond"><b>${st.phase==='Cancelled'?'Cancelled: ':''}Conditions</b><ul>${(r.reason&&!im.why.includes(r.reason)?[r.reason]:[]).concat(im.why).map(w=>`<li>${esc(w)}</li>`).join('')}</ul></div>`:''}
  <div class="kv fp-kv">
   <div><small>Position</small><b>${fmtLat(st.lat)}<br>${fmtLon(st.lon)}</b></div>
   <div><small>Altitude</small><b>${airborne?Math.round(st.alt/100)*100>=18000?'FL'+String(Math.round(st.alt/1000)*10).padStart(3,'0'):Math.round(st.alt/100)*100+' ft':'On ground'}</b>${airborne?`<em>${Math.round(st.alt).toLocaleString('en-AU')} ft · ${Math.round(st.alt*0.3048).toLocaleString('en-AU')} m</em>`:''}</div>
   <div><small>Ground speed</small><b>${Math.round(st.spd/1.852)} kt</b><em>${Math.round(st.spd).toLocaleString('en-AU')} km/h${r.t.cls==='Supersonic'&&st.spd>1300?' · Mach '+(st.spd/1062).toFixed(2):''}</em></div>
   <div><small>Vertical speed</small><b>${airborne&&Math.abs(st.vs)>50?(st.vs>0?'+':'−')+Math.round(Math.abs(st.vs)/50)*50+' ft/min':'Level'}</b></div>
   <div><small>Heading</small><b>${st.hdg==null?'—':Math.round(st.hdg)+'° '+compass(st.hdg)}</b></div>
-  <div><small>Flight time</small><b>${dur(r.leg)}</b><em>gate to gate</em></div>
+  <div><small>Flight time</small><b>${dur(Math.round(st.actualLeg))}</b><em>${Math.round(st.actualLeg)!==r.leg?`planned ${dur(r.leg)}`:'gate to gate'}</em></div>
  </div>
  <div class="tt" style="min-width:0"><div class="tt-h fp-tt"><span></span><span>Local</span><span>UTC</span></div>
   <div class="tt-r fp-tt"><span>Departs ${r.o}</span><span class="mono">${locLine(dep,r.o)}</span><span class="mono">${utcLine(dep)}</span></div>
-  <div class="tt-r fp-tt"><span>Arrives ${r.d}</span><span class="mono">${locLine(arr,r.d)}</span><span class="mono">${utcLine(arr)}</span></div></div>
+  <div class="tt-r fp-tt"><span>Arrives ${r.d}</span><span class="mono">${locLine(arr,r.d)}</span><span class="mono">${utcLine(arr)}</span></div>
+  ${Math.round(eta-arr)!==0&&st.phase!=='Cancelled'?`<div class="tt-r fp-tt"><span>Expected</span><span class="mono">${locLine(eta,r.d)}</span><span class="mono ${eta>arr?'bad':'good'}">${eta>arr?'+':'−'}${Math.abs(Math.round(eta-arr))} min</span></div>`:''}</div>
  <div class="row"><button class="btn sm primary" type="button" data-fp="map">${airborne?'Follow on map':'Show on map'}</button><button class="btn sm ghost" type="button" data-fp="close">Close</button><span class="mute mono" style="font-size:11px;margin-left:auto">Live · ${utcLine(gameNow())}</span></div></div>`;}
 let fpTimer=null;
 function openFlight(r){UI.fp=r;const el=$('#fpop');const draw=()=>{if(!UI.fp){clearInterval(fpTimer);return;}el.innerHTML=flightPopHTML(UI.fp);};draw();el.hidden=false;clearInterval(fpTimer);fpTimer=setInterval(draw,1000);}
@@ -1055,6 +1185,25 @@ function renderBoard(){const B=UI.board;if(!B.ap||!AP[B.ap])B.ap=S.hubs[0];const
   ${rows.length?rows.map((r,i)=>`<div class="brow ${r.mine?'mine':''}" style="--i:${Math.min(i,30)}" role="button" tabindex="0" data-frow="${i}" aria-label="Flight details for ${r.fn}"><span class="fl">${hhmm(r.m)}</span><span class="fl"><i style="background:${r.mine?'var(--accent)':r.color}"></i>${r.fn}</span><span class="fl">${esc(AP[r.place].city.toUpperCase())} <em>${r.place}</em></span><span class="fl ac">${esc(r.ac)}${r.tail?` <em>${r.tail}</em>`:''}</span><span class="fl gt">${r.gate}</span><span class="fl st ${r.status[1]}">${r.status[0]}</span></div>`).join('')
    :`<div class="bempty">No ${B.mode==='dep'?'departures':'arrivals'} on ${['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'][B.day]}. Open routes here and schedule aircraft to fill the board.</div>`}</div>
   <div class="bfoot">Tap a flight for live position, altitude and speed · ${rows.length} ${B.mode==='dep'?'departures':'arrivals'} · your flights in amber${S.rivals.length?' · rival flights marked with their colour':''}</div></div>`;}
+const WX_ICON={typhoon:'TC',cyclone:'TC',hurricane:'TC',monsoon:'RA',winter:'SN',storms:'TS',fog:'FG',dust:'DU',ash:'VA'};
+function nearTxt(lat,lon){const n=nearestCity(lat,lon);return n?(n.d<120?`over ${n.a.city}`:`${Math.round(n.d/10)*10} km from ${n.a.city}`):'over open water';}
+function renderCond(){const o=opts(S),nx=S.optsNext||o;const pend=k=>nx[k]!==o[k];
+ let h=`<div class="sec"><h3>Simulation settings</h3><div class="box">
+  <div class="row">${['weather','airspace'].map(k=>`<button class="btn sm ${nx[k]?'on':''}" type="button" data-opt="${k}" aria-pressed="${nx[k]}">${k==='weather'?'Weather':'Airspace restrictions'}: ${nx[k]?'on':'off'}</button>`).join('')}</div>
+  <div class="mute" style="font-size:12.5px">${pend('weather')||pend('airspace')?`<span class="amber">Changes take effect from week ${S.week+1}.</span> This week still runs with weather ${o.weather?'on':'off'} and airspace restrictions ${o.airspace?'on':'off'}.`:'Changes you make here take effect from the next game week.'}</div></div></div>`;
+ const wx=o.weather?(S.wx||[]):[];const zs=o.airspace?(S.zones||[]):[];
+ // your affected routes
+ const aff=S.routes.map(r=>({r,im:legImpact(S,r.a,r.b,null),L:r.last})).filter(x=>x.im.extra||x.im.cancel>0||x.im.delay||Math.abs(x.im.mult-1)>0.025);
+ h+=`<div class="sec"><h3>Your routes this week <span class="mono" style="letter-spacing:0">${aff.length}/${S.routes.length}</span></h3>`;
+ if(!o.weather&&!o.airspace)h+='<div class="empty">Weather and airspace simulation are off. Turn them on above to see their effect from next week.</div>';
+ else if(!aff.length)h+='<div class="empty">None of your routes are affected this week.</div>';
+ else h+=`<div class="tt"><div class="tt-h cond-tt"><span>Route</span><span>Detour</span><span>Flight time</span><span>Delay risk</span><span>Cancel risk</span></div>${aff.map(({r,im})=>`<div class="tt-r cond-tt"><span class="mono"><b>${r.a}–${r.b}</b></span><span class="mono ${im.extra?'amber':''}">${im.extra?'+'+im.extra+' km':'—'}</span><span class="mono ${im.mult>1.025?'bad':im.mult<0.975?'good':''}">${Math.abs(im.mult-1)<0.005?(im.extra?'detour':'—'):(im.mult>1?'+':'−')+Math.abs(Math.round((im.mult-1)*100))+'% wind'+(im.extra?' + detour':'')}</span><span class="mono ${im.delay>=30?'bad':im.delay?'amber':''}">${im.delay?'~'+im.delay+' min':'—'}</span><span class="mono ${im.cancel>=0.2?'bad':im.cancel?'amber':''}">${im.cancel?Math.round(im.cancel*100)+'%':'—'}</span></div><div class="tt-r cond-why"><span>${im.why.map(esc).join(' · ')}</span></div>`).join('')}</div>`;
+ h+=`</div><div class="sec"><h3>Weather · week ${S.week} <span class="mono" style="letter-spacing:0">${wx.length}</span></h3>`;
+ h+=!o.weather?'<div class="empty">Weather simulation is off.</div>':!wx.length?'<div class="empty">Calm skies everywhere this week.</div>':`<div class="clist">${wx.slice().sort((a,b)=>b.s-a.s).map(c=>`<div class="citem"><span class="cic" aria-hidden="true">${WX_ICON[c.k]||'•'}</span><div><b>${esc(c.label)}</b><div class="mute">${nearTxt(c.lat,c.lon)} · ${c.r*2} km wide · ${c.route?(c.s>=2?'flights reroute around it':'light turbulence'):'affects airports only'}</div></div><span class="sev s${c.s}" title="Severity ${c.s} of 3">${'●'.repeat(c.s)}${'○'.repeat(3-c.s)}</span><button class="btn sm ghost" type="button" data-cgo="${c.lat},${c.lon},${Math.max(14,c.r/40)}">Map</button></div>`).join('')}</div>`;
+ h+=`</div><div class="sec"><h3>Airspace · week ${S.week} <span class="mono" style="letter-spacing:0">${zs.length}</span></h3>`;
+ h+=!o.airspace?'<div class="empty">Airspace restrictions are off.</div>':!zs.length?'<div class="empty">No restrictions in force this week.</div>':`<div class="clist">${zs.map(z=>`<div class="citem"><span class="cic z ${z.k}" aria-hidden="true">${{airport:'APT',military:'MIL',political:'POL',temporary:'TMP'}[z.k]}</span><div><b>${esc(z.label)}</b><div class="mute">${ZONE_NAME[z.k]} · ${z.k==='airport'?`${z.ap} ${esc(AP[z.ap].city)} · delays ~${z.delay} min, ${Math.round(z.cancel*100)}% of flights cancelled`:`${nearTxt(z.lat,z.lon)} · ${z.r} km radius · flights detour, airports inside lose flights`}${z.left>1?` · ${z.left} more weeks`:' · ends this week'}</div></div><button class="btn sm ghost" type="button" data-cgo="${z.lat},${z.lon},${z.r?Math.max(12,z.r/35):10}">Map</button></div>`).join('')}</div>`;
+ h+=`</div><div class="mute" style="font-size:12px">The jet stream also speeds up eastbound and slows westbound flights in the mid-latitudes, most strongly in winter.</div>`;
+ return h;}
 function renderSaves(){let h=`<div class="sec"><h3>Autosave</h3><div class="box"><div>Your airline saves itself every week and after every change, in this browser. Last autosave: week ${S.week}.</div></div></div>`;
  h+=`<div class="sec"><h3>Save slots</h3>`;
  for(let n=1;n<=SLOTS;n++){const o=slotGet(n);const c=UI.confirm;
@@ -1069,7 +1218,7 @@ function renderSaves(){let h=`<div class="sec"><h3>Autosave</h3><div class="box"
  return h;}
 function render(){if(!S)return;renderTop();renderFeed();
  const v=$('#view');const st=v.scrollTop;
- v.innerHTML={routes:renderRoutes,fleet:renderFleet,market:renderMarket,finance:renderFinance,rivals:renderRivals,saves:renderSaves,board:renderBoard}[UI.tab]();
+ v.innerHTML={routes:renderRoutes,fleet:renderFleet,market:renderMarket,finance:renderFinance,rivals:renderRivals,saves:renderSaves,board:renderBoard,cond:renderCond}[UI.tab]();
  if(UI.tab==='finance')drawChart();
  dirty=true;
  if(S.over)showOver();}
@@ -1092,6 +1241,8 @@ $('#view').addEventListener('click',e=>{const t=e.target.closest('button');if(!t
  if(d.preset){const C=ctxOf(d.ctx);const L=layoutFromFractions(C.t,PRESET_FR[d.preset]);if(d.ctx==='buy')UI.buy.layout=L;else UI.draft=L;render();return;}
  if(d.seat){const C=ctxOf(d.ctx),c=d.seat;C.D[c]=Math.max(0,(C.D[c]||0)+(+d.d)*SEAT_STEP[c]);const inp=$(`#lay-${d.ctx}-${c}`);if(inp)inp.value=C.D[c];refreshMeter(d.ctx);return;}
  if(d.sched){openSched(+d.sched);return;}
+ if(d.opt){S.optsNext=S.optsNext||{...opts(S)};S.optsNext[d.opt]=!S.optsNext[d.opt];save();render();toast(`${d.opt==='weather'?'Weather':'Airspace restrictions'} ${S.optsNext[d.opt]?'on':'off'} from week ${S.week+1}.`);return;}
+ if(d.cgo){const [la,lo,sp]=d.cgo.split(',').map(Number);UI.view=null;UI.v={cx:lo,cy:la,span:sp};clampView();renderTop();dirty=true;const m=document.querySelector('.mapcard');if(m&&window.innerWidth<=980)m.scrollIntoView({behavior:reduceMotion?'auto':'smooth'});return;}
  if(d.board){UI.board.ap=d.board;UI.tab='board';render();return;}
  if(d.bmd){UI.board.mode=d.bmd;render();return;}
  if(d.bday!=null){UI.board.day=+d.bday;render();return;}
@@ -1099,7 +1250,7 @@ $('#view').addEventListener('click',e=>{const t=e.target.closest('button');if(!t
  if(d.bmode){UI.buy.mode=d.bmode;render();return;}
  if(d.qty){UI.buy.qty=Math.max(1,Math.min(50,UI.buy.qty+(+d.qty)));render();return;}
  if(d.act==='cancelbuy'){UI.buy=null;render();return;}
- if(d.confirmbuy){const B=UI.buy,t=ACT[B.type];if(t.cls!=='Supersonic'&&(unitsOf(t,B.layout)>maxUnits(t)+1e-9||seatsOf(B.layout)<1)){toast('Fix the cabin layout before ordering.',true);return;}
+ if(d.confirmbuy){const B=UI.buy,t=ACT[B.type];if(!t.fixed&&(unitsOf(t,B.layout)>maxUnits(t)+1e-9||seatsOf(B.layout)<1)){toast('Fix the cabin layout before ordering.',true);return;}
   let n=0,err=null,sch=0;const got=[];for(let i=0;i<B.qty;i++){const r=acquire(S,B.type,B.mode,B.layout);if(typeof r==='string'){err=r;break;}n++;got.push(r);}
   if(B.route)for(const p of got){const r=autoFill(S,p.id,B.route);if(typeof r!=='string')sch+=r;}
   if(!n){toast(err,true);return;}UI.buy=null;save();render();
@@ -1240,6 +1391,14 @@ function offsFor(pts){const s=near(pts[0][0])-pts[0][0];return UI.v.span>200?[s-
 function sizeMap(){const w=cv.clientWidth||600;let h=Math.round(Math.max(240,Math.min(w*0.62,window.innerHeight*0.62)));
  const dpr=Math.min(2,window.devicePixelRatio||1);if(MAP.w!==w||MAP.h!==h||MAP.dpr!==dpr){cv.width=w*dpr;cv.height=h*dpr;cv.style.height=h+'px';MAP.w=w;MAP.h=h;MAP.dpr=dpr;MAP.layer.width=w*dpr;MAP.layer.height=h*dpr;MAP.key='';}}
 function drawPath(g,pts){for(const o of offsFor(pts)){g.beginPath();pts.forEach((p,i)=>{const [x,y]=proj(p[0]+o,p[1]);i?g.lineTo(x,y):g.moveTo(x,y);});g.stroke();}}
+function circleKm(g,lat,lon,rkm){const k=MAP.w/UI.v.span;const ry=rkm/111.2*k,rx=rkm/(111.2*Math.max(0.15,Math.cos(toRad(lat))))*k;const [x,y]=proj(near(lon),lat);g.beginPath();g.ellipse(x,y,rx,ry,0,0,Math.PI*2);return [x,y,rx,ry];}
+function drawConditions(g,v){const o=opts(S);if(!o.weather&&!o.airspace)return;const wxc=css('--wx'),zc=css('--zone');g.save();g.font=`600 10.5px ${css('--f-mono')}`;g.textBaseline='middle';
+ if(o.weather)for(const c of (S.wx||[])){const [x,y,rx]=circleKm(g,c.lat,c.lon,c.r);if(x+rx<0||x-rx>MAP.w)continue;const gr=g.createRadialGradient(x,y,0,x,y,rx);gr.addColorStop(0,wxc+(c.s>=3?'66':c.s===2?'44':'26'));gr.addColorStop(1,wxc+'08');g.fillStyle=gr;g.fill();
+  g.strokeStyle=wxc+'88';g.lineWidth=1;g.setLineDash([3,4]);g.stroke();g.setLineDash([]);if(v.span<150&&rx>14){g.fillStyle=wxc;g.fillText(c.label,x+4,y);}}
+ if(o.airspace)for(const z of (S.zones||[])){if(z.k==='airport'){const [x,y]=proj(near(z.lon),z.lat);g.strokeStyle=zc;g.lineWidth=2;g.beginPath();g.arc(x,y,7,0,7);g.stroke();if(v.span<60){g.fillStyle=zc;g.fillText(z.label,x+10,y+12);}continue;}
+  const [x,y,rx]=circleKm(g,z.lat,z.lon,z.r);if(x+rx<0||x-rx>MAP.w)continue;g.fillStyle=zc+(z.k==='political'?'22':'1a');g.fill();g.strokeStyle=zc;g.lineWidth=z.k==='political'?1.6:1.2;g.setLineDash(z.k==='temporary'?[2,3]:[6,4]);g.stroke();g.setLineDash([]);
+  if(v.span<150&&rx>12){g.fillStyle=zc;g.fillText(z.label.replace(/^Temporary closure: /,'Closure: '),x-rx*0.6,y);}}
+ g.restore();}
 function labelMin(span){return span>200?9:span>110?7:span>55?5:span>22?3:span>7?2:1;}
 function dotMin(span){return span>180?3:span>70?2:1;}
 function renderLayer(){clampView();const {w,h,dpr}=MAP;const L=MAP.layer,g=L.getContext('2d');g.setTransform(dpr,0,0,dpr,0,0);
@@ -1253,6 +1412,8 @@ function renderLayer(){clampView();const {w,h,dpr}=MAP;const L=MAP.layer,g=L.get
  if(window.WORLD){g.fillStyle=css('--land');g.strokeStyle=css('--land-edge');g.lineWidth=.6;
   const offs=[-360,0,360];for(const o of offs){if(lonB<-180+o-1||lonA>180+o+1)continue;
    for(const r of window.WORLD){g.beginPath();for(let i=0;i<r.length;i+=2){const [x,y]=proj(r[i]+o,r[i+1]);i?g.lineTo(x,y):g.moveTo(x,y);}g.closePath();g.fill();g.stroke();}}}
+ // weather systems and airspace restrictions
+ drawConditions(g,v);
  // rival routes live in the cached layer (they only change once a week)
  g.lineWidth=1;S.rivals.forEach(R=>{g.strokeStyle=R.color;g.globalAlpha=S.rivals.length>8?.22:.32;R.routes.forEach(rr=>drawPath(g,arc(rr.a,rr.b)));});g.globalAlpha=1;
  // airports
@@ -1270,10 +1431,12 @@ function renderLayer(){clampView();const {w,h,dpr}=MAP;const L=MAP.layer,g=L.get
  MAP.pts=pts;
  $('#mapHint').textContent=v.span>70?'Zoom in to see smaller airfields':`${pts.length.toLocaleString('en-AU')} airports in view`;}
 function drawMap(t){if(!S)return;sizeMap();const {w,h,dpr}=MAP;const v=UI.v;
- const key=[v.cx.toFixed(3),v.cy.toFixed(3),v.span.toFixed(3),w,h,dpr,!!window.WORLD,S.week,S.rivals.reduce((n,R)=>n+R.routes.length,0),S.rivals.length].join('|');if(key!==MAP.key){renderLayer();MAP.key=key;}
+ const key=[v.cx.toFixed(3),v.cy.toFixed(3),v.span.toFixed(3),w,h,dpr,!!window.WORLD,S.week,JSON.stringify(opts(S)),S.rivals.reduce((n,R)=>n+R.routes.length,0),S.rivals.length].join('|');if(key!==MAP.key){renderLayer();MAP.key=key;}
  cx.setTransform(1,0,0,1,0,0);cx.drawImage(MAP.layer,0,0);cx.setTransform(dpr,0,0,dpr,0,0);
  const acc=css('--accent');
- S.routes.forEach(r=>{const live=S.fleet.some(p=>(p.sched||[]).some(e=>e.r===r.id));cx.strokeStyle=acc;cx.lineWidth=live?2:1.2;cx.setLineDash(live?[]:[4,4]);cx.globalAlpha=live?.95:.6;drawPath(cx,arc(r.a,r.b));});
+ S.routes.forEach(r=>{const live=S.fleet.some(p=>(p.sched||[]).some(e=>e.r===r.id));const im=legImpact(S,r.a,r.b,null);cx.strokeStyle=acc;
+  if(im.pts){cx.lineWidth=1;cx.setLineDash([2,4]);cx.globalAlpha=.4;drawPath(cx,arc(r.a,r.b));cx.setLineDash([]);cx.globalAlpha=live?.95:.6;cx.lineWidth=live?2:1.2;drawPath(cx,im.pts);return;}
+  cx.lineWidth=live?2:1.2;cx.setLineDash(live?[]:[4,4]);cx.globalAlpha=live?.95:.6;drawPath(cx,arc(r.a,r.b));});
  cx.setLineDash([]);cx.globalAlpha=1;
  const clock=S.anchor?wmod(gameNow()):420;const cl=$('#mapClock');if(cl){const txt=`${DAYS[Math.floor(clock/1440)]} ${hhmm(clock)} UTC · week ends in ${S.anchor?weekEndsIn():'—'}`;if(cl.textContent!==txt)cl.textContent=txt;}
  cx.fillStyle=css('--fg');
@@ -1282,7 +1445,7 @@ function drawMap(t){if(!S)return;sizeMap();const {w,h,dpr}=MAP;const v=UI.v;
  for(const p of S.fleet){if(p.grounded)continue;const t=ACT[p.type];for(const e of (p.sched||[])){const R=rot(S,p,e);if(!R)continue;
   for(let k=0;k<7;k++){if(!e.days[k])continue;const u0=k*1440+e.t-tzOff(R.from);
    for(const lg of [{fn:`${S.code} ${e.fn}`,o:R.from,d:R.to,depU:u0},{fn:`${S.code} ${e.fn+1}`,o:R.to,d:R.from,depU:u0+R.leg+R.turn}]){
-    const f={...lg,leg:R.leg,t,delay:flightDelay(lg.fn,lg.depU)};if(tk===f.fn+'@'+wmod(f.depU))continue;const st=flightState(f);if(st.onGround)continue;
+    const x=disrupt(S,lg.fn,lg.depU,lg.o,lg.d,t);if(x.cancel)continue;const f={...lg,leg:R.leg,t,delay:x.delay,imp:x.imp};if(tk===f.fn+'@'+wmod(f.depU))continue;const st=flightState(f);if(st.onGround)continue;
     for(const o of (UI.v.span>200?[-360,0,360]:[0])){const [x,y]=proj(near(st.lon)+o,st.lat);if(x<-5||x>w+5||y<-5||y>h+5)continue;cx.beginPath();cx.arc(x,y,2.6,0,7);cx.fill();}}}}}
  // hubs, rival hubs, selection on top
  cx.font=`600 11px ${css('--f-mono')}`;cx.textBaseline='middle';
