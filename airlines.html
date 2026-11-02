@@ -221,13 +221,27 @@ input[type=time]{background:var(--raised);border:1px solid var(--line);border-ra
 .brow.mine .fl:first-child,.brow.mine .fl:nth-child(2){color:var(--bd-amber)}
 .brow .st.ok{color:var(--good)}.brow .st.warn{color:var(--bd-amber)}.brow .st.bad{color:var(--bad)}
 .brow .ac{font-size:11.5px}
-.brow{grid-template-columns:56px 84px minmax(110px,1.4fr) minmax(104px,1.2fr) 44px minmax(96px,1fr);min-width:560px}
-@media (max-width:620px){.brow{grid-template-columns:48px 76px minmax(0,1fr) 86px;gap:4px;min-width:0}.brow .ac,.brow .gt,.brow.bhd .ac,.brow.bhd .gt{display:none}.brow .fl{font-size:12px;padding:6px 5px}}
+.brow{grid-template-columns:56px 84px minmax(0,1fr) 46px 140px;gap:4px;min-width:0}
+.brow .fl{padding:6px 6px}
+.brow .st{font-size:11.5px}
+@media (max-width:620px){.brow{grid-template-columns:46px 72px minmax(0,1fr) 112px;gap:4px;min-width:0}.brow .gt,.brow.bhd .gt{display:none}.brow .fl{font-size:12px;padding:6px 5px}}
 .card.wide>.row.sp:first-child{flex-wrap:nowrap;align-items:flex-start}
 .card.wide>.row.sp:first-child>div{min-width:0}
+
+.bday{font-family:var(--f-display);font-weight:600;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--bd-amber);padding:8px 2px 2px;min-width:0}
+.bnow{font-size:13px;color:var(--bd-amber);background:var(--bd-cell);padding:4px 8px;border-radius:4px}
+.brow .st.mute{color:var(--mute)}
+.brow.done .fl:not(.st){opacity:.55}
+@media (prefers-reduced-motion:no-preference){.brow .st.blink{animation:bblink 1.1s steps(2,jump-none) infinite}}
+@keyframes bblink{0%{opacity:1}100%{opacity:.35}}
+.brow .fl.place{text-overflow:clip}
+.brow .fl.place .mq{display:inline-block;white-space:nowrap;will-change:transform}
+@media (prefers-reduced-motion:no-preference){.brow .fl.place.scroll .mq{animation:mq var(--t) ease-in-out var(--dl) infinite alternate}}
+@media (prefers-reduced-motion:reduce){.brow .fl.place.scroll{text-overflow:ellipsis}.brow .fl.place .mq{display:inline}}
+@keyframes mq{0%,18%{transform:translateX(0)}82%,100%{transform:translateX(calc(-1 * var(--d)))}}
 .bempty{color:var(--mute);padding:14px 4px;font-size:13px}
 .bfoot{font-size:11.5px;color:var(--mute)}
-@media (prefers-reduced-motion:no-preference){.brow:not(.bhd) .fl{animation:flap .42s cubic-bezier(.3,.7,.4,1) both;animation-delay:calc(var(--i)*22ms)}}
+@media (prefers-reduced-motion:no-preference){.board2.anim .brow:not(.bhd) .fl{animation:flap .42s cubic-bezier(.3,.7,.4,1) both;animation-delay:calc(var(--i)*22ms)}}
 @keyframes flap{0%{transform:perspective(300px) rotateX(-80deg);opacity:.2}100%{transform:none;opacity:1}}
 
 .brow[data-frow]{cursor:pointer;border-radius:4px}
@@ -272,11 +286,7 @@ input[type=time]{background:var(--raised);border:1px solid var(--line);border-ra
   <div class="stat"><small>Last week</small><b id="sProfit">—</b></div>
   <div class="stat"><small>Reputation</small><b id="sRep">—</b></div>
   <div class="stat"><small>Jet fuel</small><b id="sFuel">—</b></div>
- </div>
- <div class="ctrl">
-  <button class="btn" id="bAuto" type="button" aria-pressed="false">Auto ▸</button>
-  <button class="btn" id="bSpeed" type="button" title="Auto speed">1×</button>
-  <button class="btn primary" id="bNext" type="button">Next week</button>
+  <div class="stat"><small>Week ends in</small><b id="sEnds">—</b></div>
  </div>
 </header>
 
@@ -600,8 +610,8 @@ function repay(S,amt){amt=Math.min(amt,S.loan,Math.max(0,S.cash));if(amt<=0)retu
 function companyValue(S){if(S.unlimited)return (S.cumProfit||0)+START_CASH+S.fleet.filter(p=>p.mode==='buy').reduce((s,p)=>s+planeValue(p),0)+S.hubs.length*HUB_COST*0.5;return S.cash-S.loan+S.fleet.filter(p=>p.mode==='buy').reduce((s,p)=>s+planeValue(p),0)+S.hubs.length*HUB_COST*0.5;}
 
 function money(n){const s=n<0?'-':'';n=Math.abs(n);
- if(n>=1e9)return s+'$'+(n/1e9).toFixed(2)+'B';if(n>=1e6)return s+'$'+(n/1e6).toFixed(n>=1e8?0:1)+'M';
- if(n>=1e3)return s+'$'+Math.round(n/1e3)+'k';return s+'$'+Math.round(n);}
+ if(n>=999.5e6)return s+'$'+(n/1e9).toFixed(2)+'B';if(n>=999.5e3)return s+'$'+(n/1e6).toFixed(n>=99.95e6?0:1)+'M';
+ if(n>=999.5)return s+'$'+Math.round(n/1e3)+'k';return s+'$'+Math.round(n);}
 
 function routeEstimate(S,a,b){const d=dist(a,b);const k=pairKey(a,b);
  const comp=S.rivals.map((r,i)=>r.routes.some(x=>pairKey(x.a,x.b)===k)?i:-1).filter(i=>i>=0);
@@ -962,8 +972,7 @@ function renderTop(){$('#hName').textContent=S.name;
  const p=$('#sProfit');if(S.last){p.textContent=(S.last.profit>=0?'+':'')+money(S.last.profit);p.className=S.last.profit>=0?'good':'bad';}else{p.textContent='—';p.className='';}
  $('#sRep').textContent=Math.round(S.rep)+'/100';
  $('#sFuel').textContent='$'+S.fuel.toFixed(2)+'/kg';
- $('#bAuto').textContent=UI.auto?'Pause ❚❚':'Auto ▸';$('#bAuto').classList.toggle('on',UI.auto);$('#bAuto').setAttribute('aria-pressed',UI.auto);
- $('#bSpeed').textContent=UI.speed+'×';$('#bNext').disabled=!!S.over;
+ const se=$('#sEnds');if(se)se.textContent=S.over?'—':weekEndsIn();
  document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('on',b.dataset.view===UI.view));
  document.querySelectorAll('[data-tab]').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===UI.tab));
 }
@@ -1112,26 +1121,39 @@ function renderRivals(){const rows=standings();
 const shortType=t=>t.name.replace(' Dreamliner','');
 function rivalType(d){return d<1600?ACT.A20N:d<4500?ACT.B38M:d<9000?ACT.B789:d<12500?ACT.A359:ACT.B77W;}
 // one delay per flight per UTC day per week, shared by boards, popup and map
-function boardRows(ap,day,mode){const rows=[];const push=(m,o)=>{m=wmod(m);if(Math.floor(m/1440)===day)rows.push({m,...o});};
+// every flight touching this airport, one entry per weekday, departure time as UTC minutes in the week
+function boardFlights(ap){const out=[];
  S.fleet.forEach(p=>(p.sched||[]).forEach(e=>{const R=rot(S,p,e);if(!R)return;const t=ACT[p.type];
-  e.days.forEach((on,k)=>{if(!on)return;const b=k*1440;const st=p.grounded?'cancel':null;const u0=b+e.t-tzOff(R.from);
-   const out={fn:`${S.code} ${e.fn}`,o:R.from,d:R.to,depU:u0,leg:R.leg,t,tail:p.tail,seats:seatsOf(p.layout),mine:1,st,ac:shortType(t)};
-   const ret={fn:`${S.code} ${e.fn+1}`,o:R.to,d:R.from,depU:u0+R.leg+R.turn,leg:R.leg,t,tail:p.tail,seats:seatsOf(p.layout),mine:1,st,ac:shortType(t)};
-   if(mode==='dep'){if(R.from===ap)push(b+R.depOut,{...out,place:R.to});if(R.to===ap)push(b+R.depBack,{...ret,place:R.from});}
-   else{if(R.to===ap)push(b+R.arrOut,{...out,place:R.from});if(R.from===ap)push(b+R.arrBack,{...ret,place:R.to});}});}));
+  e.days.forEach((on,k)=>{if(!on)return;const st=p.grounded?'cancel':null;const u0=k*1440+e.t-tzOff(R.from);const base={leg:R.leg,t,tail:p.tail,seats:seatsOf(p.layout),mine:1,st,ac:shortType(t)};
+   if(R.from===ap||R.to===ap){out.push({...base,fn:`${S.code} ${e.fn}`,o:R.from,d:R.to,depU:u0});out.push({...base,fn:`${S.code} ${e.fn+1}`,o:R.to,d:R.from,depU:u0+R.leg+R.turn});}});}));
  S.rivals.forEach(Rv=>Rv.routes.forEach(rr=>{if(rr.a!==ap&&rr.b!==ap)return;const d=dist(rr.a,rr.b);const t=rivalType(d);const n=Math.max(1,Math.min(5,Math.round(rr.cap/7/190)));
   const leg=legMin(t,d),diff=tzOff(rr.b)-tzOff(rr.a);const hs=hashN(Rv.code+rr.a+rr.b);const fn0=10+(hs%440)*2+1;
   for(let i=0;i<n;i++){const dep=360+Math.round((i*(960/n)+(hs>>>(i+3))%90)/5)*5;const back=dep+leg+turnMin(t)+diff+60;
-   for(let k=0;k<7;k++){const b=k*1440;
-    const out={fn:`${Rv.code} ${fn0+i*2}`,o:rr.a,d:rr.b,depU:b+dep-tzOff(rr.a),leg,t,ac:shortType(t),color:Rv.color,airline:Rv.name,seats:t.seats};
-    const ret={fn:`${Rv.code} ${fn0+i*2+1}`,o:rr.b,d:rr.a,depU:b+back-tzOff(rr.b),leg,t,ac:shortType(t),color:Rv.color,airline:Rv.name,seats:t.seats};
-    if(mode==='dep'){if(rr.a===ap)push(b+dep,{...out,place:rr.b});if(rr.b===ap)push(b+back,{...ret,place:rr.a});}
-    else{if(rr.b===ap)push(b+dep+leg+diff,{...out,place:rr.a});if(rr.a===ap)push(b+back+leg-diff,{...ret,place:rr.b});}}}}));
- rows.sort((a,b)=>a.m-b.m||a.fn.localeCompare(b.fn));
- rows.forEach(r=>{const hs=hashN(r.fn+S.week+day);r.gate='ABCDEF'[hs%6]+(1+(hs>>>4)%38);const x=disrupt(S,r.fn,r.depU,r.o,r.d,r.t);r.imp=x.imp;r.reason=x.reason;
-  if(x.cancel&&r.st!=='cancel'){r.st='cancel';r.cx=1;}r.delay=r.st==='cancel'?0:x.delay;
-  if(r.st==='cancel')r.status=[r.cx?'CANCELLED':'CANCELLED','bad'];else if(r.delay){r.status=['DELAYED '+r.delay,'warn'];}else if(x.imp.extra){r.status=['REROUTED','warn'];}else if(hs%11===0)r.status=['NEW GATE','warn'];else r.status=['ON TIME','ok'];});
- return rows;}
+   for(let k=0;k<7;k++){const base={leg,t,ac:shortType(t),color:Rv.color,airline:Rv.name,seats:t.seats};
+    out.push({...base,fn:`${Rv.code} ${fn0+i*2}`,o:rr.a,d:rr.b,depU:k*1440+dep-tzOff(rr.a)});out.push({...base,fn:`${Rv.code} ${fn0+i*2+1}`,o:rr.b,d:rr.a,depU:k*1440+back-tzOff(rr.b)});}}}));
+ return out;}
+const BOARD_DAYS=3;
+// rolling 3-day board: what a real airport shows, departed and landed flights drop off
+function boardRows(ap,mode){const G=gameNow(),ws=Math.floor(G/WEEK)*WEEK,off0=tzOff(ap),horizon=(Math.floor((G+off0)/1440)+BOARD_DAYS)*1440-off0-1,rows=[];// today plus the next two local days
+ for(const f of boardFlights(ap)){if(mode==='dep'?f.o!==ap:f.d!==ap)continue;
+  for(const off of [-WEEK,0,WEEK]){const abs=ws+f.depU+off;if(abs<G-3*1440||abs>horizon+1440)continue;
+   const x=disrupt(S,f.fn,f.depU,f.o,f.d,f.t);const cx=f.st==='cancel'||x.cancel;const delay=cx?0:x.delay;const actLeg=f.leg+(x.imp.airborneExtra||0);
+   const sched=mode==='dep'?abs:abs+f.leg,est=mode==='dep'?abs+delay:abs+delay+actLeg;
+   const keep=cx?sched+30:mode==='dep'?est+15:est+40;if(keep<G||sched>horizon)continue;
+   const hs=hashN(f.fn+'@'+Math.floor(abs/1440));
+   rows.push({...f,st:cx?'cancel':null,cx:x.cancel?1:0,delay,imp:x.imp,reason:x.reason,absDep:abs,sched,est,place:mode==='dep'?f.d:f.o,
+    gate:'ABCDEF'[hs%6]+(1+(hs>>>4)%38),belt:1+(hs>>>9)%14,m:sched+tzOff(ap)});}}
+ rows.sort((a,b)=>a.sched-b.sched||a.fn.localeCompare(b.fn));return rows;}
+// live status from the game clock
+function boardStatus(r,mode){const G=gameNow();const loc=m=>hhmm(m+tzOff(UI.board.ap));
+ if(r.st==='cancel')return ['CANCELLED','bad'];
+ if(mode==='dep'){const rel=G-r.est;const early=r.t.seats>250?55:40;
+  if(rel>=0)return ['DEPARTED '+loc(r.est),'mute'];if(rel>=-5)return ['GATE CLOSED','bad'];if(rel>=-10)return ['GATE CLOSING','warn blink'];
+  if(rel>=-15)return ['LAST CALL','warn blink'];if(rel>=-early)return ['BOARDING NOW','ok blink'];if(rel>=-early-20)return ['GATE OPEN','ok'];
+  if(r.delay)return ['DELAYED '+loc(r.est),'warn'];return ['ON TIME','ok'];}
+ const rel=G-r.est;if(rel>=12)return [`BAGGAGE BELT ${r.belt}`,'ok'];if(rel>=0)return ['LANDED '+loc(r.est),'ok'];
+ if(G>=r.absDep+r.delay)return [(rel>=-25?'LANDING ':'EXPECTED ')+loc(r.est),rel>=-25?'ok':'mute'];
+ if(r.delay)return ['DELAYED '+loc(r.est),'warn'];return ['ON TIME','ok'];}
 
 /* ---------- live flight details ---------- */
 const CRUISE_FT={Turboprop:25000,'Regional jet':37000,Narrowbody:37000,Widebody:39000,Jumbo:37000,Supersonic:58000};
@@ -1195,15 +1217,25 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&UI.fp)closeFlight()
 $('#view').addEventListener('click',e=>{const row=e.target.closest('.brow[data-frow]');if(!row)return;const r=(UI.boardRows||[])[+row.dataset.frow];if(r)openFlight(r);});
 $('#view').addEventListener('keydown',e=>{if(e.key!=='Enter'&&e.key!==' ')return;const row=e.target.closest('.brow[data-frow]');if(!row)return;e.preventDefault();const r=(UI.boardRows||[])[+row.dataset.frow];if(r)openFlight(r);});
 
-function renderBoard(){const B=UI.board;if(!B.ap||!AP[B.ap])B.ap=S.hubs[0];const a=AP[B.ap];const rows=boardRows(B.ap,B.day,B.mode);UI.boardRows=rows;const off=tzOff(B.ap);
- const offTxt=`UTC${off>=0?'+':'−'}${Math.floor(Math.abs(off)/60)}${Math.abs(off)%60?':'+String(Math.abs(off)%60).padStart(2,'0'):''}`;
+function renderBoard(){const B=UI.board;if(!B.ap||!AP[B.ap])B.ap=S.hubs[0];const a=AP[B.ap];const rows=boardRows(B.ap,B.mode);UI.boardRows=rows;const off=tzOff(B.ap);
+ const offTxt=`UTC${off>=0?'+':'−'}${Math.floor(Math.abs(off)/60)}${Math.abs(off)%60?':'+String(Math.abs(off)%60).padStart(2,'0'):''}`;const G=gameNow();const today=Math.floor((G+off)/1440);
+ const dayLbl=m=>{const dd=Math.floor(m/1440)-today;const wd=DAYS[Math.floor(wmod(m)/1440)];return dd===0?`Today · ${wd}`:dd===1?`Tomorrow · ${wd}`:wd;};
+ const anim=UI.boardAnim;UI.boardAnim=false;let lastDay=null,i=0;
+ const body=rows.map((r,idx)=>{const st=boardStatus(r,B.mode);const dl=Math.floor(r.m/1440);let sep='';if(dl!==lastDay){lastDay=dl;sep=`<div class="bday">${dayLbl(r.m)}</div>`;}
+  const landed=B.mode==='arr'&&G>=r.est&&r.st!=='cancel';
+  return sep+`<div class="brow ${r.mine?'mine':''} ${st[0].startsWith('DEPARTED')||st[0].startsWith('BAGGAGE')?'done':''}" style="--i:${Math.min(i++,30)}" role="button" tabindex="0" data-frow="${idx}" aria-label="Flight details for ${r.fn}"><span class="fl">${hhmm(r.m)}</span><span class="fl"><i style="background:${r.mine?'var(--accent)':r.color}"></i>${r.fn}</span><span class="fl place"><span class="mq">${esc(AP[r.place].city.toUpperCase())} <em>${r.place}</em></span></span><span class="fl gt">${B.mode==='dep'?r.gate:landed?r.belt:''}</span><span class="fl st ${st[1]}">${st[0]}</span></div>`;}).join('');
  return `<div class="sec"><h3>Airport boards</h3><div class="field"><label for="bQ">Airport</label><input type="text" id="bQ" autocomplete="off" placeholder="Search by city, airport or code"></div><div class="results" id="bRes"></div></div>
- <div class="board2"><div class="bhead"><div><div class="bcode">${a.code}</div><div class="bcity">${esc(a.city)} · ${esc(a.name)}</div></div><div class="bmode" role="group" aria-label="Board"><button type="button" data-bmd="dep" aria-pressed="${B.mode==='dep'}">Departures</button><button type="button" data-bmd="arr" aria-pressed="${B.mode==='arr'}">Arrivals</button></div></div>
-  <div class="bdays" role="group" aria-label="Day">${DAYS.map((d,i)=>`<button type="button" data-bday="${i}" aria-pressed="${B.day===i}">${d}</button>`).join('')}<span class="btz">Local time ${offTxt}</span></div>
-  <div class="bscroll"><div class="brow bhd"><span>Time</span><span>Flight</span><span>${B.mode==='dep'?'To':'From'}</span><span class="ac">Aircraft</span><span class="gt">Gate</span><span>Remarks</span></div>
-  ${rows.length?rows.map((r,i)=>`<div class="brow ${r.mine?'mine':''}" style="--i:${Math.min(i,30)}" role="button" tabindex="0" data-frow="${i}" aria-label="Flight details for ${r.fn}"><span class="fl">${hhmm(r.m)}</span><span class="fl"><i style="background:${r.mine?'var(--accent)':r.color}"></i>${r.fn}</span><span class="fl">${esc(AP[r.place].city.toUpperCase())} <em>${r.place}</em></span><span class="fl ac">${esc(r.ac)}${r.tail?` <em>${r.tail}</em>`:''}</span><span class="fl gt">${r.gate}</span><span class="fl st ${r.status[1]}">${r.status[0]}</span></div>`).join('')
-   :`<div class="bempty">No ${B.mode==='dep'?'departures':'arrivals'} on ${['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'][B.day]}. Open routes here and schedule aircraft to fill the board.</div>`}</div>
+ <div class="board2${anim?' anim':''}"><div class="bhead"><div><div class="bcode">${a.code}</div><div class="bcity">${esc(a.city)} · ${esc(a.name)}</div></div><div class="bmode" role="group" aria-label="Board"><button type="button" data-bmd="dep" aria-pressed="${B.mode==='dep'}">Departures</button><button type="button" data-bmd="arr" aria-pressed="${B.mode==='arr'}">Arrivals</button></div></div>
+  <div class="bdays"><span class="bnow mono">${DAYS[Math.floor(wmod(G+off)/1440)]} ${hhmm(G+off)}</span><span class="btz">Next ${BOARD_DAYS} days · local time ${offTxt}</span></div>
+  <div class="bscroll"><div class="brow bhd"><span>Time</span><span>Flight</span><span>${B.mode==='dep'?'To':'From'}</span><span class="gt">${B.mode==='dep'?'Gate':'Belt'}</span><span>Remarks</span></div>
+  ${rows.length?body:`<div class="bempty">No ${B.mode==='dep'?'departures':'arrivals'} in the next ${BOARD_DAYS} days. Open routes here and schedule aircraft to fill the board.</div>`}</div>
   <div class="bfoot">Tap a flight for live position, altitude and speed · ${rows.length} ${B.mode==='dep'?'departures':'arrivals'} · your flights in amber${S.rivals.length?' · rival flights marked with their colour':''}</div></div>`;}
+// long destination names slide left and right inside their cell, like a real board; the phase follows the clock so live refreshes don't restart it
+function applyMarquee(){document.querySelectorAll('.brow .fl.place').forEach(c=>{const m=c.firstElementChild;if(!m)return;const over=m.scrollWidth-c.clientWidth+12;
+ if(over>2){const t=Math.max(5,3+over/22);c.classList.add('scroll');c.style.setProperty('--d',over+'px');c.style.setProperty('--t',t+'s');c.style.setProperty('--dl',(-(performance.now()/1000)%(t*2))+'s');}else c.classList.remove('scroll');});}
+// keep the board live while it is on screen
+setInterval(()=>{if(!S||UI.tab!=='board'||document.hidden||!$('#start').hidden||!$('#sched').hidden)return;const q=$('#bQ');if(q&&(document.activeElement===q||q.value))return;
+ const v=$('#view'),y=window.scrollY,bs=document.querySelector('.bscroll'),bx=bs?bs.scrollLeft:0;v.innerHTML=renderBoard();applyMarquee();window.scrollTo(0,y);const nb=document.querySelector('.bscroll');if(nb)nb.scrollLeft=bx;},3000);
 const WX_ICON={typhoon:'TC',cyclone:'TC',hurricane:'TC',monsoon:'RA',winter:'SN',storms:'TS',fog:'FG',dust:'DU',ash:'VA'};
 function nearTxt(lat,lon){const n=nearestCity(lat,lon);return n?(n.d<120?`over ${n.a.city}`:`${Math.round(n.d/10)*10} km from ${n.a.city}`):'over open water';}
 function renderCond(){const o=opts(S),nx=S.optsNext||o;const pend=k=>nx[k]!==o[k];
@@ -1239,16 +1271,15 @@ function render(){if(!S)return;renderTop();renderFeed();
  const v=$('#view');const st=v.scrollTop;
  v.innerHTML={routes:renderRoutes,fleet:renderFleet,market:renderMarket,finance:renderFinance,rivals:renderRivals,saves:renderSaves,board:renderBoard,cond:renderCond}[UI.tab]();
  if(UI.tab==='finance')drawChart();
+ if(UI.tab==='board')applyMarquee();
  dirty=true;
  if(S.over)showOver();}
 
 /* ---------- events ---------- */
-document.querySelector('.tabs').addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(!b)return;UI.tab=b.dataset.tab;UI.confirm=null;UI.code=null;UI.edit=null;UI.buy=null;render();});
+document.querySelector('.tabs').addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(!b)return;UI.tab=b.dataset.tab;UI.boardAnim=true;UI.confirm=null;UI.code=null;UI.edit=null;UI.buy=null;render();});
 document.querySelector('.views').addEventListener('click',e=>{const b=e.target.closest('[data-view]');if(!b)return;setView(b.dataset.view);clampView();renderTop();dirty=true;});
-$('#bNext').addEventListener('click',()=>step());
-$('#bAuto').addEventListener('click',()=>{UI.auto?stopAuto():startAuto();renderTop();});
-$('#bSpeed').addEventListener('click',()=>{UI.speed=UI.speed===1?2:UI.speed===2?4:1;if(UI.auto){stopAuto();startAuto();}renderTop();});
-function startAuto(){if(!S||S.over)return;UI.auto=true;clearInterval(UI.timer);UI.timer=setInterval(()=>step(),{1:1600,2:800,4:350}[UI.speed]);}
+// the game runs in real time: weeks settle on their own (see the real-time clock), so there are no manual week controls
+setInterval(()=>{const se=$('#sEnds');if(S&&se&&!document.hidden)se.textContent=S.over?'—':weekEndsIn();},1000);
 function stopAuto(){UI.auto=false;clearInterval(UI.timer);}
 function step(){if(!S||S.over)return;const r=advance(S);S.anchor={real:Date.now(),game:(S.week-1)*WEEK};S.lastSeen=Date.now();save();UI.confirm=null;render();
  if(r&&!UI.auto&&r.events.length)toast(r.events[0],/grounded|cut|spike|up 18/.test(r.events[0]));}
@@ -1262,10 +1293,10 @@ $('#view').addEventListener('click',e=>{const t=e.target.closest('button');if(!t
  if(d.sched){openSched(+d.sched);return;}
  if(d.opt){S.optsNext=S.optsNext||{...opts(S)};S.optsNext[d.opt]=!S.optsNext[d.opt];save();render();toast(`${d.opt==='weather'?'Weather':'Airspace restrictions'} ${S.optsNext[d.opt]?'on':'off'} from week ${S.week+1}.`);return;}
  if(d.cgo){const [la,lo,sp]=d.cgo.split(',').map(Number);UI.view=null;UI.v={cx:lo,cy:la,span:sp};clampView();renderTop();dirty=true;const m=document.querySelector('.mapcard');if(m&&window.innerWidth<=980)m.scrollIntoView({behavior:reduceMotion?'auto':'smooth'});return;}
- if(d.board){UI.board.ap=d.board;UI.tab='board';render();return;}
- if(d.bmd){UI.board.mode=d.bmd;render();return;}
+ if(d.board){UI.board.ap=d.board;UI.boardAnim=true;UI.tab='board';render();return;}
+ if(d.bmd){UI.board.mode=d.bmd;UI.boardAnim=true;render();return;}
  if(d.bday!=null){UI.board.day=+d.bday;render();return;}
- if(d.pickboard){UI.board.ap=d.pickboard;render();return;}
+ if(d.pickboard){UI.board.ap=d.pickboard;UI.boardAnim=true;render();return;}
  if(d.bmode){UI.buy.mode=d.bmode;render();return;}
  if(d.qty){UI.buy.qty=Math.max(1,Math.min(50,UI.buy.qty+(+d.qty)));render();return;}
  if(d.act==='cancelbuy'){UI.buy=null;render();return;}
