@@ -426,3 +426,21 @@ button:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
 .power b { color: var(--cyan); min-width: 2ch; text-align: right; font-variant-numeric: tabular-nums; }
 .power input { width: 100%; accent-color: var(--cyan); min-width: 0; }
 .btn.drop.is-firing { transform: translateY(4px); box-shadow: 0 2px 0 #9a5d00, 0 4px 14px rgba(255,170,30,.3); }
+
+.open-panel { overflow: hidden; }
+#resPanel { gap: 10px; }
+.res-grid.many {
+  flex: 1 1 auto; min-height: 0; align-content: start;
+  max-height: none; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+  padding: 4px 4px 8px; scrollbar-width: thin;
+}
+.res-grid.many .rcard { min-width: 0; }
+.res-grid.many::after { content: ""; grid-column: 1 / -1; height: 1px; }
+#resPanel .open-actions, #resPanel .open-head, #resPanel .res-kicker, #resPanel .res-title { flex: 0 0 auto; }
+#resPanel .res-title { font-size: clamp(28px, 8vw, 46px); }
+.res-grid.many ~ .open-head { font-size: 14px; }
+.res-scrollhint { flex: 0 0 auto; margin: -4px 0 0; font-size: 12px; color: var(--muted); letter-spacing: .06em; }
+.rtype {
+  position: absolute; left: 50%; transform: translateX(-50%); bottom: 26px; padding: 1px 6px; border-radius: 999px;
+  font-size: 9px; font-weight: 700; letter-spacing: .04em; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.6);
+}
