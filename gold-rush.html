@@ -302,7 +302,7 @@ td.nm{font-weight:600;max-width:180px;overflow:hidden;text-overflow:ellipsis;whi
 (function(){
 const KEY_LB='goldrush.leaderboard.v1', KEY_SAVE='goldrush.save.v1';
 const GAP_TO_WIN=25000;
-const CPU_NAME='Prospector Pete';
+const CPU_NAME='CPU';
 const LS={
   get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},
   set(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}},
