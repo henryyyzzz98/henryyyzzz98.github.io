@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Primordia — Endless Card Crafting</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0e0c16; --bg2:#17142a; --panel:#141224; --line:#2b2645;
+    --card:#fbf7ef; --ink:#1d1830; --muted:#8a84a6; --gold:#f5c451; --hot:#ff7a59; --teal:#5fd4c4;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:#ece9f7;font-family:"DM Sans",system-ui,sans-serif;overflow:hidden;-webkit-tap-highlight-color:transparent}
+  #app{display:flex;height:100%;width:100%}
+  /* Board */
+  #board{position:relative;flex:1;overflow:hidden;touch-action:none;
+    background:
+      radial-gradient(1200px 700px at 30% 20%, #241c44 0%, transparent 60%),
+      radial-gradient(900px 600px at 80% 90%, #2a1530 0%, transparent 60%),
+      var(--bg);}
+  #board::before{content:"";position:absolute;inset:0;pointer-events:none;
+    background-image:radial-gradient(rgba(255,255,255,.07) 1px, transparent 1px);background-size:26px 26px}
+  #brand{position:absolute;left:18px;top:14px;pointer-events:none;z-index:2}
+  #brand h1{margin:0;font-family:Fraunces,serif;font-weight:800;font-size:26px;letter-spacing:.5px;
+    background:linear-gradient(90deg,var(--gold),var(--hot) 60%,#c57bff);-webkit-background-clip:text;background-clip:text;color:transparent}
+  #brand p{margin:2px 0 0;font-size:12px;color:var(--muted)}
+  #hint{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);text-align:center;color:var(--muted);font-size:14px;pointer-events:none;max-width:300px;line-height:1.5}
+  #toolbar{position:absolute;right:14px;top:14px;display:flex;gap:8px;z-index:3}
+  .tbtn{background:rgba(255,255,255,.06);border:1px solid var(--line);color:#ddd8f3;border-radius:10px;padding:7px 11px;font:500 13px "DM Sans";cursor:pointer}
+  .tbtn:hover{background:rgba(255,255,255,.12)}
+  /* Cards */
+  .card{position:absolute;display:inline-flex;align-items:center;gap:7px;padding:8px 13px 8px 10px;border-radius:12px;
+    background:var(--card);color:var(--ink);font-weight:700;font-size:15px;white-space:nowrap;user-select:none;-webkit-user-select:none;
+    box-shadow:0 2px 0 #d9cfb9, 0 8px 20px rgba(0,0,0,.35);cursor:grab;touch-action:none;transition:box-shadow .15s, transform .15s;z-index:5}
+  .card .em{font-size:19px;line-height:1}
+  .card.dragging{cursor:grabbing;transform:scale(1.06) rotate(-2deg);box-shadow:0 2px 0 #d9cfb9,0 16px 34px rgba(0,0,0,.5);z-index:50}
+  .card.target{box-shadow:0 0 0 3px var(--gold),0 8px 24px rgba(245,196,81,.45)}
+  .card.selected{box-shadow:0 0 0 3px var(--teal),0 8px 24px rgba(95,212,196,.45)}
+  .card.pending{animation:pulse .8s ease-in-out infinite;pointer-events:none}
+  .card.pending .em{animation:spin 1.2s linear infinite;display:inline-block}
+  .card.born{animation:born .5s cubic-bezier(.2,1.6,.4,1)}
+  .card.first{background:linear-gradient(135deg,#fff6d6,#ffe39a);box-shadow:0 2px 0 #d8b55b,0 8px 22px rgba(245,196,81,.35)}
+  @keyframes pulse{50%{transform:scale(1.08)}}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @keyframes born{0%{transform:scale(.3);opacity:0}100%{transform:scale(1);opacity:1}}
+  .spark{position:absolute;width:7px;height:7px;border-radius:50%;pointer-events:none;z-index:60}
+  /* Sidebar */
+  #side{width:320px;max-width:42vw;background:var(--panel);border-left:1px solid var(--line);display:flex;flex-direction:column;z-index:10}
+  #sideHead{padding:12px 12px 8px;border-bottom:1px solid var(--line)}
+  #stats{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:8px}
+  #stats b{color:#fff}
+  #search{width:100%;background:#0f0d1c;border:1px solid var(--line);color:#fff;border-radius:10px;padding:9px 11px;font:15px "DM Sans";outline:none}
+  #search:focus{border-color:#5a4f8f}
+  #sortRow{display:flex;gap:6px;margin-top:8px}
+  .chip{flex:1;font:500 12px "DM Sans";padding:6px 4px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--muted);cursor:pointer}
+  .chip.on{background:#2a2450;color:#fff;border-color:#4a3f84}
+  #list{flex:1;overflow-y:auto;padding:10px;display:flex;flex-wrap:wrap;align-content:flex-start;gap:7px;touch-action:pan-y}
+  .item{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;background:#221e3a;border:1px solid #332d57;
+    font-weight:500;font-size:14px;cursor:pointer;user-select:none;-webkit-user-select:none;transition:background .12s}
+  .item:hover{background:#2d2750}
+  .item .em{font-size:16px}
+  .item.first{border-color:#8a7330;background:#2c2618}
+  .item.first::after{content:"✦";color:var(--gold);font-size:11px;margin-left:2px}
+  #side.droppable{background:#2a1420}
+  /* Toasts */
+  #toasts{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;z-index:80;pointer-events:none}
+  .toast{background:rgba(20,18,36,.95);border:1px solid var(--line);padding:10px 16px;border-radius:14px;font-size:14px;box-shadow:0 10px 30px rgba(0,0,0,.4);
+    animation:tin .35s ease-out;text-align:center;max-width:86vw}
+  .toast.gold{border-color:#a8873a;background:linear-gradient(135deg,#3a2d10,#20190c)}
+  .toast .big{font-family:Fraunces,serif;font-size:18px;font-weight:800;display:block}
+  .toast small{color:var(--muted);display:block;margin-top:2px}
+  .toast.gold .big{color:var(--gold)}
+  @keyframes tin{from{opacity:0;transform:translateY(10px)}}
+  #notice{position:absolute;left:18px;bottom:18px;right:18px;max-width:420px;background:#2a1830;border:1px solid #5a2f55;padding:10px 12px;border-radius:12px;font-size:13px;color:#f0d7ee;display:none;z-index:70}
+  /* Modal */
+  #modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:100}
+  #modal .box{background:var(--bg2);border:1px solid var(--line);border-radius:16px;padding:20px;width:min(360px,90vw);text-align:center}
+  #modal h3{margin:0 0 8px;font-family:Fraunces,serif}
+  #modal p{color:var(--muted);font-size:14px;margin:0 0 16px}
+  #modal .row{display:flex;gap:8px;justify-content:center}
+  .danger{background:#7a2433;border-color:#a33a4c}
+  /* Mobile */
+  @media (max-width:720px){
+    #app{flex-direction:column}
+    #side{width:100%;max-width:none;height:38%;border-left:none;border-top:1px solid var(--line)}
+    #sideHead{padding:8px 10px 6px}
+    #sortRow{display:none}
+    #stats{margin-bottom:6px}
+    #brand h1{font-size:21px}
+    #toolbar{top:10px;right:10px}
+    .tbtn{padding:6px 9px;font-size:12px}
+    #toasts{bottom:12px}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="board">
+    <div id="brand"><h1>Primordia</h1><p>Stack two cards. Make something new.</p></div>
+    <div id="toolbar">
+      <button class="tbtn" id="tidyBtn" title="Tidy the board">Tidy</button>
+      <button class="tbtn" id="clearBtn" title="Clear the board">Clear</button>
+      <button class="tbtn" id="resetBtn" title="Start over">Reset</button>
+    </div>
+    <div id="hint">Drag a card onto another to combine them.<br>On a phone, tap one card, then tap another.<br>Tap an element in your collection to place it.</div>
+    <div id="toasts"></div>
+    <div id="notice"></div>
+  </div>
+  <aside id="side">
+    <div id="sideHead">
+      <div id="stats"><span><b id="count">4</b> discovered</span><span><b id="firsts">0</b> ✦ first discoveries</span></div>
+      <input id="search" placeholder="Search your elements…" autocomplete="off">
+      <div id="sortRow">
+        <button class="chip on" data-sort="time">Oldest</button>
+        <button class="chip" data-sort="new">Newest</button>
+        <button class="chip" data-sort="name">A–Z</button>
+        <button class="chip" data-sort="first">✦ Firsts</button>
+      </div>
+    </div>
+    <div id="list"></div>
+  </aside>
+</div>
+<div id="modal"><div class="box"><h3>Start over?</h3><p>This forgets everything you've discovered on this device. Recipes already in the shared book stay.</p>
+  <div class="row"><button class="tbtn" id="mCancel">Cancel</button><button class="tbtn danger" id="mOk">Start over</button></div></div></div>
+
+<script>
+(() => {
+  const BASE = [
+    {name:"Water", emoji:"💧"}, {name:"Fire", emoji:"🔥"},
+    {name:"Earth", emoji:"🌍"}, {name:"Air", emoji:"💨"}
+  ];
+  const SAVE_KEY = "primordia.v1";
+  // When hosted on your own site (e.g. GitHub Pages), paste your Cloudflare Worker URL here.
+  // Leave it empty to use Claude's built-in AI when opened on claude.ai.
+  const API_URL = "https://primordia.henrylai543.workers.dev";
+
+  // ---------- State ----------
+  let state = { elements: [], recipes: {}, board: [] }; // elements:[{name,emoji,t,first}]
+  let sortMode = "time";
+  const byName = new Map();
+
+  function load(){
+    try{
+      const raw = localStorage.getItem(SAVE_KEY);
+      if(raw){ const s = JSON.parse(raw); if(s && Array.isArray(s.elements)) state = Object.assign({elements:[],recipes:{},board:[]}, s); }
+    }catch(e){}
+    if(!state.elements.length) state.elements = BASE.map((b,i)=>({...b,t:i,first:false}));
+    byName.clear(); state.elements.forEach(e=>byName.set(keyOf(e.name), e));
+  }
+  let saveTimer=null;
+  function save(){
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(()=>{ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }catch(e){} }, 150);
+  }
+  const keyOf = s => s.trim().toLowerCase();
+  const slug = s => keyOf(s).normalize("NFKD").replace(/[^\w\s-]/g,"").replace(/[\s_]+/g,"-").replace(/-+/g,"-").replace(/^-|-$/g,"").slice(0,60) || ("x"+hash(s));
+  function hash(s){ let h=0; for(const c of s) h=(h*31 + c.codePointAt(0))|0; return Math.abs(h).toString(36); }
+  const pairKey = (a,b) => [slug(a),slug(b)].sort().join("--");
+  const emojiOf = n => (byName.get(keyOf(n))||{}).emoji || "✨";
+
+  // ---------- Platform capabilities ----------
+  let sample=null, db=null, user=null, userId=null;
+  (async () => {
+    if(API_URL) return;
+    if(!window.claude || !window.claude.use){ showNotice(); return; }
+    try{ sample = await window.claude.use("sample"); }catch(e){}
+    if(!sample) showNotice();
+    try{ db = await window.claude.use("db"); }catch(e){}
+    try{ user = await window.claude.use("user"); if(user && user.id) userId = await user.id(); }catch(e){}
+  })();
+  setTimeout(()=>{ if(!API_URL && !sample) showNotice(); }, 11000);
+  function showNotice(){
+    const n=document.getElementById("notice");
+    n.textContent = "AI crafting isn't set up for this copy of the game yet. Add your Worker URL to API_URL in index.html, or open the game on claude.ai.";
+    n.style.display="block";
+  }
+
+  async function dbGet(path){
+    if(!db) return null;
+    try{
+      const r = await db.doc(path).get();
+      if(!r) return null;
+      if(typeof r.data === "function"){ if(r.exists === false) return null; return r.data() || null; }
+      if(r.exists === false) return null;
+      return r.data !== undefined ? r.data : r;
+    }catch(e){ return null; }
+  }
+  async function dbSet(path, val){
+    if(!db) return false;
+    try{ await db.doc(path).set(val); return true; }catch(e){ return false; }
+  }
+
+  // ---------- AI ----------
+  function promptFor(a,b){
+    return `You are the crafting engine of an endless element-combining game that starts from Water, Fire, Earth and Air.
+The player stacked two cards: "${a}" + "${b}".
+Invent the ONE thing that results from combining them.
+
+Rules:
+- The result is a single noun or short noun phrase, 1 to 3 words, in Title Case.
+- It should feel like a logical, clever, or playfully surprising result of the two. Think materials, nature, creatures, foods, tools, inventions, places, jobs, phenomena, myths, ideas, and eventually anything at all.
+- Do not simply glue the inputs together (no "Fire Water"), and do not return one of the inputs unchanged unless nothing else makes sense.
+- Combining something with itself gives a bigger, stronger or plural version (e.g. Water + Water = Puddle or Lake).
+- Keep it family-friendly.
+- Pick exactly one emoji that best represents the result.
+- desc: a witty description of under 12 words.
+
+Reply with JSON only, no other text: {"name":"...","emoji":"...","desc":"..."}`;
+  }
+  function cleanName(n){
+    n = String(n||"").replace(/["“”]/g,"").replace(/\s+/g," ").trim().slice(0,40);
+    return n.split(" ").map(w=> w ? w[0].toUpperCase()+w.slice(1) : w).join(" ");
+  }
+  function firstEmoji(e){
+    try{ const seg = new Intl.Segmenter(undefined,{granularity:"grapheme"}); for(const s of seg.segment(String(e||""))) { if(/\p{Extended_Pictographic}|\p{Regional_Indicator}/u.test(s.segment)) return s.segment; } }catch(_){}
+    const m = String(e||"").match(/\p{Extended_Pictographic}/u); return m ? m[0] : "✨";
+  }
+  async function askAI(a,b){
+    if(!sample) throw new Error("AI unavailable");
+    let v;
+    const input = promptFor(a,b);
+    if(typeof sample.json === "function"){
+      v = await sample.json(input, {modelTier:"quick"});
+    } else {
+      const r = await sample(input, {modelTier:"quick"});
+      v = r && r.text;
+    }
+    if(typeof v === "string"){ const m = v.match(/\{[\s\S]*\}/); v = m ? JSON.parse(m[0]) : null; }
+    if(!v || !v.name) throw new Error("No result");
+    return { name: cleanName(v.name), emoji: firstEmoji(v.emoji), desc: String(v.desc||"").slice(0,90) };
+  }
+
+  const inflight = new Map();
+  async function craft(a,b){
+    const pk = pairKey(a,b);
+    if(state.recipes[pk]) return { ...state.recipes[pk], cached:true };
+    if(inflight.has(pk)) return inflight.get(pk);
+    const p = (async () => {
+      if(API_URL){
+        const res = await fetch(API_URL.replace(/\/$/,"")+"/craft", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({a,b})});
+        if(res.status===429){ const e=new Error("rate"); e.code="rate_limited"; throw e; }
+        if(!res.ok) throw new Error("Server error "+res.status);
+        const v = await res.json();
+        if(!v || !v.name) throw new Error("No result");
+        return { name:cleanName(v.name), emoji:firstEmoji(v.emoji), desc:String(v.desc||"").slice(0,90), worldFirst:!!v.worldFirst };
+      }
+      // 1) shared recipe book
+      const shared = await dbGet("recipes/"+pk);
+      if(shared && shared.name) return { name:cleanName(shared.name), emoji:shared.emoji||"✨", desc:shared.desc||"", shared:true };
+      // 2) invent with AI
+      const r = await askAI(a,b);
+      // 3) first discovery in the world?
+      let worldFirst = false;
+      if(db){
+        const el = await dbGet("elements/"+slug(r.name));
+        if(!el){
+          worldFirst = await dbSet("elements/"+slug(r.name), { name:r.name, emoji:r.emoji, from:[a,b], by:userId||"", t:Date.now() });
+        }
+        dbSet("recipes/"+pk, { a, b, name:r.name, emoji:r.emoji, desc:r.desc, by:userId||"", t:Date.now() });
+      }
+      return { ...r, worldFirst };
+    })();
+    inflight.set(pk,p);
+    try{ return await p; } finally { inflight.delete(pk); }
+  }
+
+  // ---------- Sidebar ----------
+  const list = document.getElementById("list");
+  const search = document.getElementById("search");
+  function renderList(){
+    const q = keyOf(search.value);
+    let els = state.elements.filter(e=> !q || keyOf(e.name).includes(q));
+    if(sortMode==="name") els = [...els].sort((x,y)=>x.name.localeCompare(y.name));
+    else if(sortMode==="new") els = [...els].sort((x,y)=>y.t-x.t);
+    else if(sortMode==="first") els = els.filter(e=>e.first);
+    list.innerHTML = "";
+    const frag = document.createDocumentFragment();
+    for(const e of els){
+      const d = document.createElement("div");
+      d.className = "item"+(e.first?" first":"");
+      d.dataset.name = e.name;
+      const em = document.createElement("span"); em.className="em"; em.textContent=e.emoji;
+      const nm = document.createElement("span"); nm.textContent=e.name;
+      d.append(em,nm);
+      frag.appendChild(d);
+    }
+    list.appendChild(frag);
+    document.getElementById("count").textContent = state.elements.length;
+    document.getElementById("firsts").textContent = state.elements.filter(e=>e.first).length;
+  }
+  search.addEventListener("input", renderList);
+  document.querySelectorAll(".chip").forEach(c=>c.addEventListener("click",()=>{
+    document.querySelectorAll(".chip").forEach(x=>x.classList.remove("on")); c.classList.add("on"); sortMode=c.dataset.sort; renderList();
+  }));
+
+  // Sidebar: tap to place; mouse-drag to place at pointer
+  list.addEventListener("pointerdown", ev=>{
+    const it = ev.target.closest(".item"); if(!it) return;
+    const name = it.dataset.name;
+    const sx=ev.clientX, sy=ev.clientY; let started=false;
+    const move = e=>{
+      if(started || ev.pointerType!=="mouse") return;
+      if(Math.hypot(e.clientX-sx,e.clientY-sy)>6){
+        started=true; cleanup();
+        const br = board.getBoundingClientRect();
+        const c = addCard(name, e.clientX-br.left-40, e.clientY-br.top-18);
+        beginDrag(c, e, 40, 18);
+      }
+    };
+    const up = ()=>{ cleanup(); if(!started) placeNear(name); };
+    const cleanup = ()=>{ window.removeEventListener("pointermove",move); window.removeEventListener("pointerup",up); };
+    window.addEventListener("pointermove",move); window.addEventListener("pointerup",up);
+  });
+
+  // ---------- Board ----------
+  const board = document.getElementById("board");
+  const hint = document.getElementById("hint");
+  let uid = 1;
+  const cardEls = new Map(); // id -> el
+  let selectedId = null;
+
+  function updateHint(){ hint.style.display = state.board.length ? "none" : "block"; }
+
+  function makeCardEl(c){
+    const el = document.createElement("div");
+    el.className = "card";
+    const e = byName.get(keyOf(c.name));
+    if(e && e.first) el.classList.add("first");
+    const em = document.createElement("span"); em.className="em"; em.textContent = c.pending ? "🌀" : emojiOf(c.name);
+    const nm = document.createElement("span"); nm.textContent = c.pending ? "Crafting…" : c.name;
+    el.append(em,nm);
+    el.style.left = c.x+"px"; el.style.top = c.y+"px";
+    el.dataset.id = c.id;
+    if(c.pending) el.classList.add("pending");
+    el.addEventListener("pointerdown", e=>onCardDown(e, c.id));
+    board.appendChild(el);
+    cardEls.set(c.id, el);
+    return el;
+  }
+  function addCard(name, x, y, opts={}){
+    const br = board.getBoundingClientRect();
+    x = Math.max(4, Math.min(x, br.width-120)); y = Math.max(60, Math.min(y, br.height-50));
+    const c = { id: uid++, name, x, y };
+    state.board.push(c);
+    const el = makeCardEl(c);
+    if(opts.born) el.classList.add("born");
+    updateHint(); save();
+    return c;
+  }
+  function removeCard(id){
+    state.board = state.board.filter(c=>c.id!==id);
+    const el = cardEls.get(id); if(el) el.remove(); cardEls.delete(id);
+    if(selectedId===id) selectedId=null;
+    updateHint(); save();
+  }
+  function placeNear(name){
+    const br = board.getBoundingClientRect();
+    // find a free-ish spot
+    let best=null, bestScore=-1;
+    for(let i=0;i<24;i++){
+      const x = 20 + Math.random()*(br.width-160), y = 70 + Math.random()*(br.height-130);
+      let minD = 1e9; for(const c of state.board){ minD=Math.min(minD, Math.hypot(c.x-x,c.y-y)); }
+      if(minD>bestScore){ bestScore=minD; best={x,y}; }
+    }
+    const c = addCard(name, best.x, best.y, {born:true});
+    if(selectedId!=null){ const s = selectedId; clearSelect(); combine(s, c.id); }
+  }
+  function clearSelect(){ if(selectedId!=null){ const el=cardEls.get(selectedId); el&&el.classList.remove("selected"); } selectedId=null; }
+
+  function onCardDown(ev, id){
+    ev.preventDefault();
+    const c = state.board.find(x=>x.id===id); if(!c || c.pending) return;
+    const el = cardEls.get(id); const r = el.getBoundingClientRect();
+    beginDrag(c, ev, ev.clientX-r.left, ev.clientY-r.top, true);
+  }
+
+  function beginDrag(c, ev, offX, offY, tapCheck){
+    const el = cardEls.get(c.id);
+    const br = board.getBoundingClientRect();
+    const sx=ev.clientX, sy=ev.clientY; let moved=!tapCheck;
+    let target=null;
+    if(moved) el.classList.add("dragging");
+    const side = document.getElementById("side");
+    const move = e=>{
+      if(!moved && Math.hypot(e.clientX-sx,e.clientY-sy)>5){ moved=true; el.classList.add("dragging"); clearSelect(); }
+      if(!moved) return;
+      c.x = e.clientX - br.left - offX; c.y = e.clientY - br.top - offY;
+      el.style.left=c.x+"px"; el.style.top=c.y+"px";
+      const nt = findOverlap(c.id);
+      if(nt!==target){ if(target!=null) cardEls.get(target)?.classList.remove("target"); target=nt; if(target!=null) cardEls.get(target)?.classList.add("target"); }
+      const sr = side.getBoundingClientRect();
+      side.classList.toggle("droppable", e.clientX>=sr.left && e.clientX<=sr.right && e.clientY>=sr.top && e.clientY<=sr.bottom);
+    };
+    const up = e=>{
+      window.removeEventListener("pointermove",move); window.removeEventListener("pointerup",up); window.removeEventListener("pointercancel",up);
+      el.classList.remove("dragging");
+      if(target!=null) cardEls.get(target)?.classList.remove("target");
+      const overSide = side.classList.contains("droppable"); side.classList.remove("droppable");
+      if(!moved){ // tap
+        if(selectedId===c.id){ clearSelect(); }
+        else if(selectedId!=null){ const s=selectedId; clearSelect(); combine(s, c.id); }
+        else { selectedId=c.id; el.classList.add("selected"); }
+        return;
+      }
+      if(overSide){ removeCard(c.id); return; }
+      if(target!=null){ combine(c.id, target); return; }
+      save();
+    };
+    window.addEventListener("pointermove",move); window.addEventListener("pointerup",up); window.addEventListener("pointercancel",up);
+  }
+
+  function findOverlap(id){
+    const a = cardEls.get(id).getBoundingClientRect();
+    const ac = {x:a.left+a.width/2, y:a.top+a.height/2};
+    let best=null, bd=1e9;
+    for(const c of state.board){
+      if(c.id===id || c.pending) continue;
+      const r = cardEls.get(c.id).getBoundingClientRect();
+      if(a.right<r.left || a.left>r.right || a.bottom<r.top || a.top>r.bottom) continue;
+      const d = Math.hypot(ac.x-(r.left+r.width/2), ac.y-(r.top+r.height/2));
+      if(d<bd){ bd=d; best=c.id; }
+    }
+    return best;
+  }
+
+  async function combine(idA, idB){
+    const A = state.board.find(c=>c.id===idA), B = state.board.find(c=>c.id===idB);
+    if(!A||!B) return;
+    const x = B.x, y = B.y;
+    removeCard(idA); removeCard(idB);
+    const ph = { id: uid++, name:"…", x, y, pending:true };
+    state.board.push(ph); makeCardEl(ph); updateHint();
+    try{
+      const r = await craft(A.name, B.name);
+      state.recipes[pairKey(A.name,B.name)] = { name:r.name, emoji:r.emoji, desc:r.desc||"" };
+      removeCard(ph.id);
+      const isNew = !byName.has(keyOf(r.name));
+      if(isNew){
+        const e = { name:r.name, emoji:r.emoji, t:Date.now(), first:!!r.worldFirst };
+        state.elements.push(e); byName.set(keyOf(r.name), e);
+        renderList();
+      }
+      const nc = addCard(byName.get(keyOf(r.name)).name, x, y, {born:true});
+      burst(nc, r.worldFirst);
+      if(r.worldFirst) toast(`✦ First Discovery ✦`, `${r.emoji} ${r.name} — nobody has made this before`, r.desc, true);
+      else if(isNew) toast(`${r.emoji} ${r.name}`, "New discovery!", r.desc);
+      save();
+    }catch(err){
+      removeCard(ph.id);
+      addCard(A.name, x-30, y-20); addCard(B.name, x+30, y+20);
+      const msg = (err && err.code==="rate_limited") ? "Too many crafts at once — wait a moment and try again." :
+                  (err && err.code==="not_granted") ? "AI access wasn't allowed, so new things can't be invented." :
+                  (!API_URL && !sample ? "AI isn't available here, and this recipe isn't in the shared book yet." : "The forge fizzled — try that combo again.");
+      toast("Hmm…", msg);
+    }
+  }
+
+  function burst(c, gold){
+    const el = cardEls.get(c.id); if(!el) return;
+    const r = el.getBoundingClientRect(), br = board.getBoundingClientRect();
+    const cx = r.left-br.left+r.width/2, cy = r.top-br.top+r.height/2;
+    const colors = gold ? ["#f5c451","#ffe39a","#fff","#ff9f43"] : ["#5fd4c4","#c57bff","#ff7a59","#f5c451"];
+    const n = gold ? 34 : 16;
+    for(let i=0;i<n;i++){
+      const s = document.createElement("div"); s.className="spark";
+      s.style.background = colors[i%colors.length]; s.style.left=cx+"px"; s.style.top=cy+"px";
+      board.appendChild(s);
+      const ang = Math.random()*Math.PI*2, dist = (gold?70:45)+Math.random()*(gold?90:45);
+      s.animate([{transform:"translate(-50%,-50%) scale(1)",opacity:1},{transform:`translate(${Math.cos(ang)*dist-3}px,${Math.sin(ang)*dist-3}px) scale(.2)`,opacity:0}],
+        {duration:600+Math.random()*400, easing:"cubic-bezier(.2,.8,.3,1)"}).onfinish=()=>s.remove();
+    }
+  }
+
+  function toast(big, line, small, gold){
+    const t = document.createElement("div"); t.className="toast"+(gold?" gold":"");
+    const b = document.createElement("span"); b.className="big"; b.textContent=big;
+    const l = document.createElement("span"); l.textContent=line||"";
+    t.append(b,l);
+    if(small){ const s=document.createElement("small"); s.textContent=small; t.append(s); }
+    const box = document.getElementById("toasts"); box.appendChild(t);
+    while(box.children.length>3) box.firstChild.remove();
+    setTimeout(()=>{ t.style.transition="opacity .4s"; t.style.opacity="0"; setTimeout(()=>t.remove(),400); }, gold?4200:2800);
+  }
+
+  // ---------- Toolbar ----------
+  document.getElementById("clearBtn").onclick = ()=>{ [...state.board].forEach(c=>{ if(!c.pending) removeCard(c.id); }); };
+  document.getElementById("tidyBtn").onclick = ()=>{
+    const br = board.getBoundingClientRect(); let x=16, y=72, rowH=0;
+    for(const c of state.board){ if(c.pending) continue; const el=cardEls.get(c.id); const w=el.offsetWidth, h=el.offsetHeight;
+      if(x+w>br.width-12){ x=16; y+=rowH+10; rowH=0; }
+      c.x=x; c.y=y; el.style.transition="left .3s, top .3s"; el.style.left=x+"px"; el.style.top=y+"px"; setTimeout(()=>el.style.transition="",320);
+      x+=w+10; rowH=Math.max(rowH,h); }
+    save();
+  };
+  const modal = document.getElementById("modal");
+  document.getElementById("resetBtn").onclick = ()=> modal.style.display="flex";
+  document.getElementById("mCancel").onclick = ()=> modal.style.display="none";
+  document.getElementById("mOk").onclick = ()=>{
+    modal.style.display="none";
+    [...state.board].forEach(c=>removeCard(c.id));
+    state = { elements: BASE.map((b,i)=>({...b,t:i,first:false})), recipes:{}, board:[] };
+    byName.clear(); state.elements.forEach(e=>byName.set(keyOf(e.name), e));
+    renderList(); startBoard(); save();
+  };
+
+  // ---------- Init ----------
+  function startBoard(){
+    const br = board.getBoundingClientRect();
+    const cx = br.width/2, cy = br.height/2;
+    const pos = [[-110,-50],[30,-50],[-110,20],[30,20]];
+    BASE.forEach((b,i)=> addCard(b.name, cx+pos[i][0], cy+pos[i][1], {born:true}));
+  }
+  load();
+  renderList();
+  const saved = state.board.filter(c=>!c.pending); state.board = [];
+  if(saved.length){ saved.forEach(c=>{ const nc = { id: uid++, name:c.name, x:c.x, y:c.y }; state.board.push(nc); makeCardEl(nc); }); updateHint(); }
+  else startBoard();
+})();
+</script>
+</body>
+</html>
