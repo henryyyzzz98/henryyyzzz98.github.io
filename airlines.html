@@ -96,11 +96,15 @@ canvas#map:active{cursor:grabbing}
 .tabs::-webkit-scrollbar{display:none}
 @media (max-width:980px){
  .tabs{position:sticky;top:env(safe-area-inset-top,0px);margin-inline:calc(-1 * max(16px,env(safe-area-inset-left,0px)));padding-inline:max(16px,env(safe-area-inset-left,0px));
-  -webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent)}
+}
  .tab{padding:12px 11px}
 }
 .tab{background:none;border:0;border-bottom:2px solid transparent;padding:10px 12px;color:var(--mute);font-family:var(--f-display);font-weight:600;letter-spacing:.06em;text-transform:uppercase;font-size:13px;white-space:nowrap}
 .tab[aria-selected="true"]{color:var(--fg);border-color:var(--accent)}
+.tscroll{position:sticky;z-index:2;flex:0 0 auto;width:30px;border:0;padding:0;color:var(--fg);font-size:20px;line-height:1;display:none;align-items:center;justify-content:center}
+.tscroll.l{left:0;order:-1;margin-right:-30px;background:linear-gradient(90deg,var(--bg) 55%,transparent)}
+.tscroll.r{right:0;margin-left:-30px;background:linear-gradient(270deg,var(--bg) 55%,transparent)}
+.tabs.ml .tscroll.l,.tabs.mr .tscroll.r{display:flex}
 .view{display:flex;flex-direction:column;gap:14px;padding-top:14px}
 .sec{display:flex;flex-direction:column;gap:10px}
 .sec h3{display:flex;justify-content:space-between;align-items:baseline}
@@ -273,6 +277,58 @@ input[type=time]{background:var(--raised);border:1px solid var(--line);border-ra
 .sev.s3{color:var(--bad)}
 .mapclock{position:absolute;left:10px;top:8px;font-family:var(--f-mono);font-size:11px;color:var(--mute);pointer-events:none;z-index:2;background:color-mix(in srgb,var(--ocean) 80%,transparent);padding:2px 6px;border-radius:4px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* expansion */
+.seg.scen{grid-template-columns:1fr 1fr}
+.seg3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.row .seg3{flex:1 1 260px}
+.seg3 button,.seg2.sm2 button{border:1px solid var(--line);background:var(--raised);border-radius:6px;padding:6px 8px;font-size:12.5px;color:var(--fg);min-width:0}
+.seg3 button[aria-pressed="true"],.seg2.sm2 button[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);color:var(--accent)}
+.seg2.sm2{flex:0 1 280px}
+.spark{display:block;max-width:100%}
+.fc{display:flex;flex-direction:column;gap:10px}
+.fc-row,.hist{display:flex;flex-wrap:wrap;gap:12px 22px;align-items:flex-end}
+.hist>div,.fc-row>div{display:flex;flex-direction:column;gap:3px;font-size:12px}
+.dow{display:flex;align-items:flex-end;gap:4px;height:26px}.dow span{width:14px;background:var(--c-w);border-radius:2px 2px 0 0}
+.dowl{font-size:10px;color:var(--mute);letter-spacing:.53em}
+.warnbox{border:1px solid var(--accent);background:color-mix(in srgb,var(--accent) 8%,transparent);border-radius:6px;padding:8px 10px;font-size:12.5px;justify-content:space-between}
+.buckets{font-size:11.5px;color:var(--mute)}
+.condrow{display:grid;grid-template-columns:auto minmax(0,1fr) 28px;gap:10px;align-items:center;font-size:12.5px}
+.cbar{height:6px;background:var(--raised);border-radius:3px;overflow:hidden}.cbar span{display:block;height:100%}
+.chk{display:inline-flex;align-items:center;gap:8px;font-size:13px;cursor:pointer}.chk input{accent-color:var(--accent);width:16px;height:16px}
+.tt-h.ob,.tt-r.ob{grid-template-columns:minmax(160px,1.6fr) 120px 90px 100px 150px}
+.tt-h.crew,.tt-r.crew{grid-template-columns:minmax(70px,1fr) 40px 48px 76px auto;min-width:440px}
+.ac .chip{white-space:normal}
+.tt-r.ob,.tt-r.crew{border-bottom:1px solid var(--line)}.tt-r.ob:last-child,.tt-r.crew:last-child{border-bottom:0}
+.gchart{display:flex;flex-direction:column;gap:4px}
+.sharebar{display:flex;height:10px;border-radius:5px;overflow:hidden;background:var(--raised);margin-top:4px}.sharebar span{display:block;height:100%}
+.box.season{flex-direction:row;flex-wrap:wrap;align-items:baseline;gap:6px 12px;font-size:13px}
+.notams{display:flex;flex-direction:column;gap:6px}
+.notam{display:flex;flex-wrap:wrap;gap:4px 12px;justify-content:space-between;background:var(--bd-cell);border-left:3px solid var(--bd-amber);border-radius:4px;padding:7px 10px;font-size:12px;color:var(--bd-fg)}
+.notam em{font-style:normal;font-size:11.5px}
+.bs{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px 22px}
+.bs table{width:100%}
+.rating{font-family:var(--f-display);letter-spacing:.06em}.rating.r0,.rating.r1,.rating.r2{color:var(--good)}.rating.r3{color:var(--accent)}.rating.r4,.rating.r5,.rating.r6{color:var(--bad)}
+.cc{display:grid;grid-template-columns:minmax(0,1fr) minmax(110px,180px) 44px;gap:10px;align-items:center}
+.cc label{display:flex;flex-direction:column;font-size:13px}.cc small{font-size:11.5px}.cc input{accent-color:var(--accent);width:100%}
+.brandrow{display:grid;grid-template-columns:110px minmax(0,1fr) 30px minmax(0,auto);gap:10px;align-items:center;font-size:13px}
+.stars{font-size:20px;color:var(--accent);letter-spacing:2px}
+.reviews{display:flex;flex-direction:column;gap:6px}.reviews blockquote{margin:0;padding:6px 10px;border-left:2px solid var(--line);color:var(--mute);font-size:13px;font-style:italic}
+.citem.al{grid-template-columns:36px minmax(0,1fr) auto auto}
+@media (max-width:620px){.seg.scen{grid-template-columns:1fr}.cc{grid-template-columns:minmax(0,1fr) 44px}.cc input{grid-column:1/-1;grid-row:2}.brandrow{grid-template-columns:96px minmax(0,1fr) 28px}.brandrow .chip{grid-column:1/-1}}
+.ticker{position:relative;overflow:hidden;background:var(--bd-bg);border:1px solid var(--bd-edge);border-radius:6px;padding:9px 0;cursor:pointer;
+ -webkit-mask-image:linear-gradient(90deg,transparent,#000 24px,#000 calc(100% - 24px),transparent);mask-image:linear-gradient(90deg,transparent,#000 24px,#000 calc(100% - 24px),transparent);
+ background-image:radial-gradient(rgba(255,194,77,.07) 1px,transparent 1.2px);background-size:4px 4px}
+.tk-track{display:flex;width:max-content;animation:tk linear infinite}
+.ticker:hover .tk-track,.ticker.paused .tk-track{animation-play-state:paused}
+.tk-run{display:flex;align-items:center;flex:0 0 auto;font-family:var(--f-mono);font-weight:600;font-size:14px;letter-spacing:.08em;color:var(--bd-amber);white-space:nowrap;text-shadow:0 0 6px rgba(255,194,77,.45)}
+.tk-tag{background:var(--bd-amber);color:var(--bd-bg);text-shadow:none;font-family:var(--f-display);font-weight:700;font-size:11px;letter-spacing:.14em;padding:2px 7px;border-radius:3px;margin:0 16px}
+.tk-sep{margin:0 16px;font-size:9px;opacity:.7}
+.tk-i.hit{color:var(--bad);text-shadow:0 0 6px rgba(255,122,122,.5)}
+@keyframes tk{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@media (prefers-reduced-motion:reduce){.tk-track{animation:none;flex-wrap:wrap;width:auto}.tk-run{white-space:normal;flex-wrap:wrap;row-gap:6px}.tk-run[aria-hidden]{display:none}.ticker{-webkit-mask-image:none;mask-image:none}}
+.nlist summary{list-style:none;cursor:pointer}.nlist summary::-webkit-details-marker{display:none}
+.nlist summary h3::after{content:"▸";margin-left:auto;color:var(--mute)}.nlist[open] summary h3::after{content:"▾"}
+.nlist .notams{margin-top:8px}
 </style>
 </head>
 <body>
@@ -311,7 +367,10 @@ input[type=time]{background:var(--raised);border:1px solid var(--line);border-ra
    <button class="tab" role="tab" data-tab="cond" type="button">Conditions</button>
    <button class="tab" role="tab" data-tab="finance" type="button">Finance</button>
    <button class="tab" role="tab" data-tab="rivals" type="button">Rivals</button>
+   <button class="tab" role="tab" data-tab="company" type="button">Company</button>
    <button class="tab" role="tab" data-tab="saves" type="button">Save</button>
+   <button class="tscroll r" type="button" data-tscroll="1" aria-label="More tabs">›</button>
+   <button class="tscroll l" type="button" data-tscroll="-1" aria-label="Earlier tabs">‹</button>
   </nav>
   <div class="view" id="view"></div>
  </section>
@@ -345,7 +404,7 @@ const AIRPORTS = (typeof AIRPORT_DATA!=='undefined'?AIRPORT_DATA:require('./buil
  return {code:f[0],icao:f[1],iata:f[2],name:f[3],city:f[4]||f[3],state:f[5],cc:f[6],lat:+f[7],lon:+f[8],elev:f[9]===''?null:+f[9],size:+f[10],region:f[11],tz:f[12]};});
 const AP = Object.fromEntries(AIRPORTS.map(a=>[a.code,a]));
 const REGION_NAMES={OC:'Oceania',AS:'Asia',ME:'Middle East',EU:'Europe',AF:'Africa',NA:'North America',SA:'South America',AN:'Antarctica'};
-const MIN_SIZE={Turboprop:1,'Regional jet':2,Narrowbody:2,Widebody:3,Jumbo:4,Supersonic:5};
+const MIN_SIZE={Freighter:3,Turboprop:1,'Regional jet':2,Narrowbody:2,Widebody:3,Jumbo:4,Supersonic:5};
 const SIZE_LABEL=['Heliport','Airstrip','Regional airport','Airport','City airport','Major airport','Major airport','Large hub','Large hub','Mega hub','Mega hub'];
 const canServe=(t,code)=>AP[code].size>=MIN_SIZE[t.cls];
 const BIG3=AIRPORTS.filter(a=>a.size>=3);
@@ -389,6 +448,9 @@ const AIRCRAFT = [
  {id:'B77W',maker:'Boeing',name:'777-300ER',cls:'Widebody',seats:396,range:13600,spd:900,burn:7.8,price:280e6,crew:6600},
  {id:'B744',maker:'Boeing',name:'747-400',cls:'Jumbo',seats:416,range:13450,spd:913,burn:11.0,price:35e6,crew:8000,used:24,mm:2},
  {id:'B748',maker:'Boeing',name:'747-8',cls:'Jumbo',seats:467,range:14300,spd:917,burn:10.2,price:400e6,crew:8400},
+ {id:'B77F',maker:'Boeing',name:'777F',cls:'Freighter',seats:0,cargo:102,range:9200,spd:900,burn:7.6,price:350e6,crew:5000,fixed:{}},
+ {id:'B48F',maker:'Boeing',name:'747-8F',cls:'Freighter',seats:0,cargo:137,range:8100,spd:910,burn:10.0,price:420e6,crew:6000,fixed:{}},
+ {id:'A33F',maker:'Airbus',name:'A330-200F',cls:'Freighter',seats:0,cargo:61,range:7400,spd:870,burn:5.6,price:240e6,crew:4600,fixed:{}},
  {id:'A388',maker:'Airbus',name:'A380-800',cls:'Jumbo',seats:516,range:15000,spd:900,burn:11.5,price:330e6,crew:9000},
  {id:'CONC',maker:'Aérospatiale/BAC',name:'Concorde',cls:'Supersonic',seats:100,range:7200,spd:2150,burn:11.5,price:150e6,crew:4500,used:25,mm:2.5,prem:1.5,maxRt:7,fixed:{j:100}},
  {id:'COMT',maker:'de Havilland',name:'DH.106 Comet 4',cls:'Narrowbody',seats:81,range:5190,spd:809,burn:5.6,price:3e6,crew:2600,used:62,mm:4},
@@ -437,7 +499,7 @@ const baseFare=d=>40+0.08*d;
 function distFactor(d){return d<400?0.5+0.5*d/400:1/(1+(d/8000)**2);}
 const SIZE_W=[0,0.03,0.5];const sizeW=s=>s<3?SIZE_W[s]:s;
 function baseDemand(a,b){const d=dist(a,b);return 900*Math.sqrt(sizeW(AP[a].size)*sizeW(AP[b].size))*distFactor(d);}
-function turnaround(t){return t.seats>250?1.5:0.8;}
+function turnaround(t){return t.seats>250||t.cls==='Freighter'?1.5:0.8;}
 function blockHours(t,d){return d/t.spd+0.3;}
 const CLASSES=['f','j','w','y'];
 const CLASS_NAME={f:'First',j:'Business',w:'Premium economy',y:'Economy'};
@@ -467,9 +529,9 @@ function refit(S,id,L){const p=S.fleet.find(x=>x.id===id);if(!p)return 'Aircraft
  addLog(S,`${t.name} ${p.tail} refitted to ${layoutText(N)}${fresh?'':` (${money(cost)}, out of service 1 week)`}.`,'info');return true;}
 function layoutText(L){return CLASSES.filter(c=>L[c]).map(c=>c.toUpperCase()+L[c]).join(' · ')+` = ${seatsOf(L)} seats`;}
 function roundTrips(t,d){return Math.max(0,Math.min(t.maxRt||28,Math.floor(126/(2*(blockHours(t,d)+turnaround(t))))));}
-function planeValue(p){const t=ACT[p.type];return t.price*Math.max(0.3,1-(p.age-(p.age0||0))/1040*0.7);}
+function planeValue(p){const t=ACT[p.type];return t.price*Math.max(0.3,1-(p.age-(p.age0||0))/1040*0.7)*condFactor(p);}
 function leaseWeekly(t){return t.price*0.0016;}
-function maintWeekly(p){const t=ACT[p.type];return Math.max(t.price,25e6)*0.0005*(t.mm||1)*(1+Math.min(p.age,1560)/1040);}
+function maintWeekly(p){const t=ACT[p.type];const S0=S_cur();return (S0&&S0.budget?S0.budget.mx:1)*Math.max(t.price,25e6)*0.0005*(t.mm||1)*(1+Math.min(p.age,1560)/1040);}
 let rng=Math.random;
 const pick=a=>a[Math.floor(rng()*a.length)];
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -523,11 +585,12 @@ function addFlight(S,planeId,spec,keepId){const p=S.fleet.find(x=>x.id===planeId
  let fn=spec.fn?Math.floor(+spec.fn):((all.find(sameSlot)||{}).fn||nextFn(S));
  if(!fn||fn<1||fn>9998)return 'Flight numbers run from 1 to 9998.';if(fn%2===0)return 'Use an odd number for the outbound flight. The return gets the next even number.';
  for(const o of all){if(o.fn===fn||o.fn+1===fn||o.fn===fn+1){if(!(o.fn===fn&&sameSlot(o)))return `${S.code} ${fn}/${fn+1} is already used by another flight. A number can only be shared by the same route and departure time on different days.`;}}
- const e={id:keepId||S.nextId++,r:r.id,from,t:tm,days:days.map(x=>x?1:0),fn};const R=rot(S,p,e);
+ const e={id:keepId||S.nextId++,r:r.id,from,t:tm,days:days.map(x=>x?1:0),fn,season:spec.season||'all'};const R=rot(S,p,e);
  if(R.busy*nDays(e)>WEEK)return 'That many rotations do not fit in a week.';
  const mine=intervalsOf(S,p,e);for(let i=0;i<mine.length;i++)for(let j=i+1;j<mine.length;j++)if(clash([mine[i]],[mine[j]]))return `Each rotation takes ${dur(R.busy)} including turnarounds, so it can't run on back-to-back days at this time.`;
- for(const o of p.sched){if(clash(mine,intervalsOf(S,p,o))){const oR=rot(S,p,o);return `Clashes with ${S.code} ${o.fn} (${o.from}–${oR?oR.to:''}, ${hhmm(o.t)}). Each rotation of this one takes ${dur(R.busy)} with turnarounds.`;}}
+ for(const o of p.sched){if(seasonsExclusive(o,e))continue;if(clash(mine,intervalsOf(S,p,o))){const oR=rot(S,p,o);return `Clashes with ${S.code} ${o.fn} (${o.from}–${oR?oR.to:''}, ${hhmm(o.t)}). Each rotation of this one takes ${dur(R.busy)} with turnarounds.`;}}
  const t=ACT[p.type];if(t.maxRt&&weeklyRotations(p)+nDays(e)>t.maxRt)return `${t.name} is limited to ${t.maxRt} round trips a week.`;
+ const sc=slotCharge(S,p,e);if(typeof sc==='string')return sc;
  p.sched.push(e);p.sched.sort((x,y)=>x.t-y.t);return e;}
 function removeFlight(S,planeId,entryId){const p=S.fleet.find(x=>x.id===planeId);if(!p)return;p.sched=(p.sched||[]).filter(e=>e.id!==entryId);}
 function editFlight(S,planeId,entryId,spec){const p=S.fleet.find(x=>x.id===planeId);const old=(p.sched||[]).find(e=>e.id===entryId);if(!old)return 'Flight not found.';
@@ -573,14 +636,14 @@ function newGame(name,hub,diff,nRivals,code,unlimited,cond){nRivals=Math.max(0,M
  {const taken=new Set([S.code]);rivals.forEach(R=>{R.code=codeFrom(R.name,taken);taken.add(R.code);});}
  // rivals start with a few routes
  rivals.forEach((r,i)=>{for(let k=0;k<4+(diff==='hard'?3:diff==='normal'?1:0);k++)rivalOpen(S,i,false);});
- _S=S;genConditions(S);
+ _S=S;ensureExpansion(S);genConditions(S);
  addLog(S,`${name} is cleared for takeoff from ${AP[hub].city}.`,'info');
  return S;
 }
 function addLog(S,text,kind){S.log.unshift({w:S.week,text,kind:kind||'info'});if(S.log.length>60)S.log.length=60;}
 
 function hasRoute(S,a,b){const k=pairKey(a,b);return S.routes.some(r=>pairKey(r.a,r.b)===k);}
-function openRoute(S,a,b){
+function openRouteCore(S,a,b){
  if(a===b)return 'Pick two different airports.';
  if(!S.hubs.includes(a)&&!S.hubs.includes(b))return 'A route must start or end at one of your hubs.';
  if(hasRoute(S,a,b))return 'You already fly this route.';
@@ -591,23 +654,23 @@ function openRoute(S,a,b){
 }
 function closeRoute(S,id){const r=S.routes.find(x=>x.id===id);if(!r)return;
  S.fleet.forEach(p=>{p.sched=(p.sched||[]).filter(e=>e.r!==id);});S.routes=S.routes.filter(x=>x.id!==id);addLog(S,`Route ${r.a}–${r.b} closed.`,'info');}
-function acquire(S,type,mode,layout){const t=ACT[type];
+function acquireCore(S,type,mode,layout){const t=ACT[type];
  const cost=mode==='buy'?t.price:leaseWeekly(t)*4;
  if(!afford(S,cost))return mode==='buy'?'Not enough cash to buy this aircraft.':'Not enough cash for the 4-week lease deposit.';
  S.cash-=cost;const used=new Set(S.fleet.map(p=>p.tail));
  const a0=(t.used||0)*52;const p={id:S.nextId++,type,mode,age:a0,age0:a0,sched:[],grounded:0,flown:0,layout:(layout&&!t.fixed&&seatsOf(layout)>0&&unitsOf(t,layout)<=maxUnits(t)+1e-9)?{f:0,j:0,w:0,y:0,...layout}:defaultLayout(t),tail:makeTail(AP[S.hubs[0]].cc,used)};
  S.fleet.push(p);addLog(S,`${mode==='buy'?'Bought':'Leased'} ${t.used?'a '+t.used+'-year-old ':''}${t.maker} ${t.name} ${p.tail}.`,'good');return p;}
-function dispose(S,id){const p=S.fleet.find(x=>x.id===id);if(!p)return;const t=ACT[p.type];
+function disposeCore(S,id){const p=S.fleet.find(x=>x.id===id);if(!p)return;const t=ACT[p.type];
  if(p.mode==='buy'){const v=planeValue(p);S.cash+=v;addLog(S,`Sold ${t.name} ${p.tail} for ${money(v)}.`,'info');}
  else{const fee=leaseWeekly(t)*4;S.cash-=fee;addLog(S,`Returned leased ${t.name} ${p.tail} (early return fee ${money(fee)}).`,'info');}
  S.fleet=S.fleet.filter(x=>x.id!==id);}
 function assign(S,planeId,routeId){if(routeId==null){clearSchedule(S,planeId,null);return true;}const r=autoFill(S,planeId,routeId);return typeof r==='string'?r:true;}
-function openHub(S,code){if(S.hubs.includes(code))return 'Already a hub.';if(!afford(S,HUB_COST))return 'Not enough cash to open a hub.';
+function openHubCore(S,code){if(S.hubs.includes(code))return 'Already a hub.';if(!afford(S,HUB_COST))return 'Not enough cash to open a hub.';
  S.cash-=HUB_COST;S.hubs.push(code);addLog(S,`New hub opened at ${AP[code].city} (${code}).`,'good');return true;}
-function maxLoan(S){return 60e6+S.fleet.filter(p=>p.mode==='buy').reduce((s,p)=>s+planeValue(p)*0.5,0);}
-function borrow(S,amt){if(S.loan+amt>maxLoan(S))return 'The bank won\'t lend that much.';S.loan+=amt;S.cash+=amt;addLog(S,`Borrowed ${money(amt)}.`,'info');return true;}
-function repay(S,amt){amt=Math.min(amt,S.loan,Math.max(0,S.cash));if(amt<=0)return 'Nothing to repay.';S.loan-=amt;S.cash-=amt;addLog(S,`Repaid ${money(amt)} of debt.`,'info');return true;}
-function companyValue(S){if(S.unlimited)return (S.cumProfit||0)+START_CASH+S.fleet.filter(p=>p.mode==='buy').reduce((s,p)=>s+planeValue(p),0)+S.hubs.length*HUB_COST*0.5;return S.cash-S.loan+S.fleet.filter(p=>p.mode==='buy').reduce((s,p)=>s+planeValue(p),0)+S.hubs.length*HUB_COST*0.5;}
+function maxLoanCore(S){return 60e6+S.fleet.filter(p=>p.mode==='buy').reduce((s,p)=>s+planeValue(p)*0.5,0);}
+function borrowCore(S,amt){if(S.loan+amt>maxLoan(S))return 'The bank won\'t lend that much.';S.loan+=amt;S.cash+=amt;addLog(S,`Borrowed ${money(amt)}.`,'info');return true;}
+function repayCore(S,amt){amt=Math.min(amt,S.loan,Math.max(0,S.cash));if(amt<=0)return 'Nothing to repay.';S.loan-=amt;S.cash-=amt;addLog(S,`Repaid ${money(amt)} of debt.`,'info');return true;}
+function companyValueCore(S){if(S.unlimited)return (S.cumProfit||0)+START_CASH+S.fleet.filter(p=>p.mode==='buy').reduce((s,p)=>s+planeValue(p),0)+S.hubs.length*HUB_COST*0.5;return S.cash-S.loan+S.fleet.filter(p=>p.mode==='buy').reduce((s,p)=>s+planeValue(p),0)+S.hubs.length*HUB_COST*0.5;}
 
 function money(n){const s=n<0?'-':'';n=Math.abs(n);
  if(n>=999.5e6)return s+'$'+(n/1e9).toFixed(2)+'B';if(n>=999.5e3)return s+'$'+(n/1e6).toFixed(n>=99.95e6?0:1)+'M';
@@ -638,13 +701,14 @@ function weightedPick(list){let tot=0;for(const c of list)tot+=c.w;let x=rng()*t
 function rivalOpen(S,i,announce=true){const R=S.rivals[i],D=DIFF[S.diff];if(R.routes.length>=Math.min(D.max+Math.floor(S.week/104)*3,D.max*2))return;
  let a,b;const has=(x,y)=>R.routes.some(q=>pairKey(q.a,q.b)===pairKey(x,y));
  // go after the player's best routes, but only where that makes sense for this airline's network
- const playerRoutes=S.routes.filter(r=>r.last&&r.last.profit>0&&!has(r.a,r.b)&&rivalLogical(R,r));
+ const PR=PERS[R.pers||'hub'];const partner=S.alliance!=null&&S.alliance===R.alliance;
+ const playerRoutes=partner?[]:S.routes.filter(r=>r.last&&r.last.profit>0&&!has(r.a,r.b)&&rivalLogical(R,r)&&(!PR.maxD||dist(r.a,r.b)<=PR.maxD));
  if(announce&&playerRoutes.length&&rng()<D.target){const r=playerRoutes.sort((x,y)=>y.last.profit-x.last.profit)[Math.floor(rng()*Math.min(3,playerRoutes.length))];
   a=R.hubs.includes(r.b)?r.b:r.a;b=a===r.a?r.b:r.a;}
- else{for(let tries=0;tries<6&&!b;tries++){a=pick(R.hubs);const c=rivalCands(a).filter(x=>!has(a,x.code));if(!c.length)continue;b=weightedPick(c).code;}}
+ else{for(let tries=0;tries<6&&!b;tries++){a=pick(R.hubs);const c=rivalCands(a).filter(x=>!has(a,x.code)&&(!PR.maxD||dist(a,x.code)<=PR.maxD));if(!c.length)continue;b=weightedPick(c).code;}}
  if(!b)return;
  const competing=S.routes.find(r=>pairKey(r.a,r.b)===pairKey(a,b));
- let mult=D.mult*(0.92+rng()*0.16);if(competing&&S.diff==='hard')mult=Math.max(0.75,Math.min(mult,competing.mult-0.08));
+ let mult=D.mult*PR.mult*(0.92+rng()*0.16);if(competing&&S.diff==='hard'&&R.pers!=='premium')mult=Math.max(0.75,Math.min(mult,competing.mult-0.08));
  const cap=Math.round(D.cap*(0.55+rng()*0.7)*Math.sqrt(AP[a].size*AP[b].size)/7);
  R.routes.push({a,b,cap,mult:+mult.toFixed(2),weak:0,since:S.week});
  if(announce){if(competing)addLog(S,`${R.name} launched ${a}–${b}, head to head with you.`,'bad');
@@ -701,7 +765,7 @@ const inWk=(w,rng2)=>{const rs=Array.isArray(rng2[0])?rng2:[rng2];return rs.some
 const rr=(a,b)=>a+rng()*(b-a),ri=(a,b)=>Math.floor(rr(a,b+1));
 function nearestCity(lat,lon){let best=null,bd=1e9;for(const a of BIG3){if(a.size<4)continue;const d=hav(lat,lon,a.lat,a.lon);if(d<bd){bd=d;best=a;}}return best?{a:best,d:bd}:null;}
 function opts(S){return S.opts||{weather:false,airspace:false};}
-function genConditions(S){S.wx=[];const wk=((S.week-1)%52)+1;let id=1;
+function genConditionsCore(S){S.wx=[];const wk=((S.week-1)%52)+1;let id=1;
  if(opts(S).weather){for(const T of WX_T){if(!inWk(wk,T.wk)||rng()>T.p)continue;const n=ri(T.n[0],T.n[1]);for(let i=0;i<n;i++){let lat,lon;
    if(T.spots){const sp=T.spots[ri(0,T.spots.length-1)];lat=sp[0];lon=sp[1];}else{lat=rr(T.box[0],T.box[1]);lon=rr(T.box[2],T.box[3]);}
    S.wx.push({id:id++,k:T.k,label:T.label,lat:+lat.toFixed(2),lon:+lon.toFixed(2),r:Math.round(rr(T.r[0],T.r[1])),s:ri(T.s[0],T.s[1]),route:T.route});}}}
@@ -744,15 +808,17 @@ function legImpact(S,o,d,t){const key=S.week+'|'+o+'|'+d+'|'+(t?t.id:'');if(IMPA
    if(pts.length){const lastLon=pts[pts.length-1][0];let sh=0;while(seg[0][0]+sh-lastLon>180)sh-=360;while(seg[0][0]+sh-lastLon<-180)sh+=360;seg.forEach(q=>q[0]+=sh);seg.shift();}pts=pts.concat(seg);}
   res.extra=Math.max(0,Math.round(L-D));res.pts=pts;res.wps=used;const names=[...new Set(used.map(w=>w.why.charAt(0).toLowerCase()+w.why.slice(1)))];res.why.push(`Detour around ${names.join(' and ')} (+${res.extra} km)`);}
  res.cancel=Math.min(1,res.cancel);res.delay=Math.round(res.delay);
- if(t){const A0=Math.max(10,legMin(t,D)-18);res.airborneExtra=Math.round(A0*(res.mult-1)+res.extra/t.spd*60);}
+ if(t&&t.range&&(D+res.extra)>0.95*t.range){const mid=res.pts?{lon:res.pts[Math.floor(res.pts.length/2)][0],lat:res.pts[Math.floor(res.pts.length/2)][1]}:interp(A,B,0.5);let best=null,bd=1e9;
+  for(const x of BIG3){if(x.size<4)continue;const dd=hav(mid.lat,mid.lon,x.lat,x.lon);if(dd<bd){bd=dd;best=x;}}if(best){res.stop=best.code;res.stopFee=6000;res.extra+=Math.round(Math.max(0,hav(A.lat,A.lon,best.lat,best.lon)+hav(best.lat,best.lon,B.lat,B.lon)-D)*0.5);res.why.push(`Technical fuel stop at ${best.code} (${best.city})`);}}
+ if(t){const A0=Math.max(10,legMin(t,D)-18);res.airborneExtra=Math.round(A0*(res.mult-1)+res.extra/t.spd*60)+(res.stop?75:0);}
  IMPACT.set(key,res);return res;}
 // one outcome per flight, shared by economics, boards, popup and map
 function disrupt(S,fn,depU,o,d,t){const imp=legImpact(S,o,d,t);const h=hashN(fn+'#'+S.week+'#'+Math.floor(wmod(depU)/1440));
- const cancel=imp.cancel>0&&(h%1000)/1000<imp.cancel;const base=flightDelay(fn,depU);const wd=imp.delay?Math.round(imp.delay*(0.4+((h>>>10)%121)/100)/5)*5:0;
+ const cancel=imp.cancel>0&&(h%1000)/1000<imp.cancel;const base=flightDelay(fn,depU)+(S.code&&fn.startsWith(S.code+' ')?opsDelay(S,o,d,depU,t,h):0);const wd=imp.delay?Math.round(imp.delay*(0.4+((h>>>10)%121)/100)/5)*5:0;
  const reason=cancel?(imp.why.find(w=>/inside|at /.test(w))||imp.why[0]||'Operational'):wd>base?(imp.why.find(w=>/ at /.test(w))||imp.why[0]):null;
  return {cancel,delay:cancel?0:Math.max(base,wd),imp,reason};}
 
-function advance(S){
+function advanceCore(S){
  if(S.over)return null;ensureSchedules(S);_S=S;tidyRivalRoutes(S);if(!S.opts){S.opts={weather:false,airspace:false};S.optsNext={...S.opts};}
  const D=DIFF[S.diff];const report={week:S.week,rev:0,fuel:0,crew:0,fees:0,lease:0,maint:0,overhead:0,interest:0,repairs:0,events:[]};
  // --- market conditions
@@ -841,7 +907,7 @@ function conditionsLog(S){const o=opts(S);if(!o.weather&&!o.airspace)return;cons
  const newZ=(S.zones||[]).filter(z=>z.k!=='airport'&&String(z.id).startsWith('z'+S.week+'-'));if(o.airspace&&newZ.length)parts.push(newZ.slice(0,2).map(z=>{const n=nearestCity(z.lat,z.lon);return `${z.label.replace(/^Temporary closure: /,'Closure: ')} near ${n?n.a.city:'—'}`;}).join(', '));
  if(parts.length||hit)addLog(S,`Week ${S.week} conditions: ${parts.join('; ')||'mostly calm'}.${hit?` ${hit} of your ${myRoutes} routes affected.`:''}`,hit?'bad':'info');}
 
-function rollEvents(S,report){
+function rollEventsCore(S,report){
  if(rng()>0.42)return;
  const assigned=S.fleet.filter(p=>p.sched&&p.sched.length&&!p.grounded);
  const opts=[
@@ -859,7 +925,406 @@ function rollEvents(S,report){
 
 function weekDate(w){const d=new Date(Date.UTC(2027,0,4+(w-1)*7));return d.toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'});}
 
-if(typeof module!=='undefined')module.exports={rivalRouteOK,rivalLogical,tidyRivalRoutes,legImpact,disrupt,genConditions,hashN,flightDelay,addFlight,removeFlight,editFlight,autoFill,clearSchedule,rot,tzOff,hhmm,nextFn,weeklyRotations,busyMinutes,ensureSchedules,WEEK,refit,defaultLayout,layoutFromFractions,unitsOf,maxUnits,seatsOf,AP,canServe,BIG3,AIRPORTS,AIRCRAFT,newGame,advance,openRoute,acquire,assign,borrow,companyValue,money,dist,roundTrips,ACT};
+/* ===================== EXPANSION: deeper airline systems ===================== */
+const FAMILY={AT46:'ATR',AT76:'ATR',DH8D:'Dash 8',CRJ1:'CRJ',CRJ2:'CRJ',CRJ7:'CRJ',CRJ9:'CRJ',CRJX:'CRJ',AJ27:'C909/C919',C919:'C909/C919',E295:'E-Jet',SU95:'Superjet',
+ DC93:'MD-80/90',MD82:'MD-80/90',MD90:'MD-80/90',B712:'MD-80/90',B722:'727',B703:'707',COMT:'Comet',B752:'757/767',B763:'757/767',BCS3:'A220',A318:'A320',A319:'A320',A20N:'A320',A21N:'A320',
+ B38M:'737',A306:'A300/A310',A310:'A300/A310',A333:'A330/A340',A343:'A330/A340',A33F:'A330/A340',DC10:'DC-10/MD-11',MD11:'DC-10/MD-11',B772:'777/787',B77W:'777/787',B789:'777/787',B77F:'777/787',
+ A359:'A350',A35K:'A350',B744:'747',B748:'747',B48F:'747',A388:'A380',CONC:'Concorde'};
+const famOf=t=>FAMILY[t.id]||t.id;
+const WIDE=new Set(['Widebody','Jumbo','Freighter','Supersonic']);
+const crewsPer=t=>WIDE.has(t.cls)?9:6;
+const crewPay=t=>WIDE.has(t.cls)?12000:9000;
+const SLOT_APS=new Set('LHR LGW HND NRT JFK LGA EWR CDG ORY FRA AMS PEK PKX PVG SIN HKG SYD DXB ICN MUC'.split(' '));
+const slotPrice=ap=>(ap==='LHR'||ap==='HND')?1.5e6:0.8e6;
+const ALLIANCES=['Aurora Alliance','Compass Alliance','Horizon Alliance'];
+const PERS={hub:{label:'Hub builder',mult:1,q:1,open:1.3},lcc:{label:'Low-cost',mult:0.8,q:0.95,open:1.1,maxD:3500},premium:{label:'Full-service premium',mult:1.15,q:1.15,open:0.9}};
+const PRODUCT={basic:{label:'Basic',f:0.92,seat:0,prem:1},std:{label:'Standard',f:1,seat:4000,prem:1},prem:{label:'Premium',f:1.10,seat:12000,prem:1.15}};
+const HANDLING={basic:{label:'Basic',cost:1500,delay:8},std:{label:'Standard',cost:2500,delay:0},prem:{label:'Premium',cost:4000,delay:-5}};
+const POLICY={rebook:{label:'Rebook',pp:40,rep:0.4},standby:{label:'Standby aircraft',pp:40,rep:0.4},compensate:{label:'Compensate',pp:250,rep:0.1}};
+const RATINGS=[['AAA',.10,.04],['AA',.20,.05],['A',.30,.06],['BBB',.45,.075],['BB',.60,.095],['B',.75,.12],['CCC',99,.15]];
+const ORDER_WEEKS={Turboprop:6,'Regional jet':6,Narrowbody:10,Widebody:16,Freighter:16,Jumbo:24,Supersonic:24};
+const CAMPAIGN=[{label:'Light',cost:0.5e6,pts:1},{label:'Strong',cost:1e6,pts:2},{label:'Saturation',cost:2e6,pts:3.5}];
+const BELLY={Turboprop:1,'Regional jet':1,Narrowbody:3,Widebody:20,Jumbo:20,Supersonic:0.5,Freighter:0};
+const seasonOf=w=>{const k=((w-1)%52)+1;return k>=13&&k<=43?'S':'W';};
+const activeIn=(e,w)=>!e.season||e.season==='all'||e.season===seasonOf(w);
+const seasonsExclusive=(a,b)=>!!(a.season&&b.season&&a.season!=='all'&&b.season!=='all'&&a.season!==b.season);
+const gatesFor=ap=>{const s=AP[ap].size;return s>=10?40:s>=9?32:s>=8?26:s>=7?20:s>=6?16:s>=5?12:8;};
+function condFactor(p){return clamp(0.7+0.3*(((p&&p.cond!=null)?p.cond:90)-40)/50,0.7,1);}
+const ccKey=(a,b)=>[AP[a].cc,AP[b].cc].sort().join('-');
+const rightsRestricted=(a,b)=>AP[a].cc!==AP[b].cc&&hashN('rights:'+ccKey(a,b))%8===0;
+
+function spend(S,amt,cat){S.cash-=amt;S.acc=S.acc||{capex:0,fin:0,cash0:S.cash};if(cat==='capex')S.acc.capex-=amt;else if(cat==='fin')S.acc.fin-=amt;}
+function initPlane(S,p,migr){const yrs=p.age/52;
+ if(p.cond==null)p.cond=migr?Math.max(50,Math.round(90-yrs/2)):(p.age0?Math.max(45,Math.round(92-yrs*1.5)):100);
+ if(p.nextC==null)p.nextC=S.week+(migr?1+hashN(p.tail+'C')%52:52);
+ if(p.nextD==null)p.nextD=S.week+(migr?1+hashN(p.tail+'D')%312:312);
+ if(!p.product)p.product='std';if(p.mode==='lease'&&!p.lease)p.lease={term:'long',start:S.week-52};}
+function ensureExpansion(S){if(S.xv>=1)return;S.xv=1;
+ S.budget=S.budget||{mkt:1,svc:1,mx:1,it:1,pay:1};S.policy=S.policy||'rebook';if(S.autoHire==null)S.autoHire=true;
+ S.orders=S.orders||[];S.used=S.used||[];S.rights=S.rights||{};S.gates=S.gates||{};S.gateBuild=S.gateBuild||[];S.handling=S.handling||{};
+ S.bonds=S.bonds||[];S.stake=S.stake||1;S.shareIssues=S.shareIssues||0;S.ledger=S.ledger||[];S.acc={capex:0,fin:0,cash0:S.cash};
+ S.brand=S.brand||{};const home=AP[S.hubs[0]].region;for(const k of Object.keys(REGION_NAMES))if(k!=='AN'&&S.brand[k]==null)S.brand[k]=k===home?45:20;
+ S.campaigns=S.campaigns||[];S.members=S.members||0;S.homeCC=S.homeCC||AP[S.hubs[0]].cc;S.hireLeft=25;
+ S.rivals.forEach((R,i)=>{if(!R.pers)R.pers=['hub','lcc','premium'][i%3];if(R.alliance==null)R.alliance=i%3;});
+ for(const p of S.fleet)initPlane(S,p,true);
+ S.hubs.forEach(h=>{if(!S.gates[h])S.gates[h]=Math.max(gatesFor(h),peakMovements(S,h));if(!S.handling[h])S.handling[h]='std';});
+ S.routes.forEach(r=>{S.rights[ccKey(r.a,r.b)]=0;r.hist=r.hist||[];r.pricing=r.pricing||'manual';});
+ S.slots=S.slots||{};const need=slotNeed(S);for(const ap in need)S.slots[ap]=Math.max(S.slots[ap]||0,need[ap]);
+ S.crews=S.crews||{};const cn=crewNeed(S);for(const f in cn)if(!S.crews[f])S.crews[f]={have:cn[f],train:[]};
+ if(!S.used.length)refreshUsed(S);}
+
+/* ---------- slots and traffic rights ---------- */
+function slotNeed(S,extra){const sN={},wN={};const addTo=(m,ap,n)=>{if(SLOT_APS.has(ap)&&!S.hubs.includes(ap))m[ap]=(m[ap]||0)+n;};
+ for(const p of S.fleet)for(const e of (p.sched||[]).concat(extra&&extra.p===p?[extra.e]:[])){const r=routeById(S,e.r);if(!r)continue;const n=nDays(e)*2;
+  for(const ap of [r.a,r.b]){if(e.season!=='W')addTo(sN,ap,n);if(e.season!=='S')addTo(wN,ap,n);}}
+ const out={};for(const ap of new Set([...Object.keys(sN),...Object.keys(wN)]))out[ap]=Math.max(sN[ap]||0,wN[ap]||0);return out;}
+function slotCharge(S,p,e){if(!S.slots)return true;const need=slotNeed(S,{p,e});let cost=0;const buy={};
+ for(const ap in need){const miss=need[ap]-(S.slots[ap]||0);if(miss>0){buy[ap]=miss;cost+=miss*slotPrice(ap);}}
+ if(!cost)return true;if(!afford(S,cost))return `This needs ${Object.entries(buy).map(([a,n])=>n+' weekly slot'+(n>1?'s':'')+' at '+a).join(' and ')} (${money(cost)}). Not enough cash.`;
+ spend(S,cost,'capex');for(const ap in buy)S.slots[ap]=(S.slots[ap]||0)+buy[ap];
+ addLog(S,`Bought ${Object.entries(buy).map(([a,n])=>n+' slot'+(n>1?'s':'')+' at '+a).join(', ')} for ${money(cost)}.`,'info');return true;}
+function sellSlots(S,ap){const need=slotNeed(S)[ap]||0;const spare=(S.slots[ap]||0)-need;if(spare<=0)return 'No unused slots to sell.';const v=spare*slotPrice(ap)*0.7;
+ S.slots[ap]=need;S.cash+=v;S.acc.capex+=v;addLog(S,`Sold ${spare} unused slot${spare>1?'s':''} at ${ap} for ${money(v)}.`,'info');return true;}
+function rightsState(S,a,b){if(!rightsRestricted(a,b))return 'open';const v=S.rights[ccKey(a,b)];if(v==null)return 'needed';return v<=S.week?'granted':'pending';}
+function applyRights(S,a,b){const st=rightsState(S,a,b);if(st!=='needed')return 'No application needed.';if(!afford(S,2e6))return 'Not enough cash for the application.';
+ spend(S,2e6);S.rights[ccKey(a,b)]=S.week+4;addLog(S,`Applied for traffic rights ${AP[a].cc}–${AP[b].cc}. Approval expected in week ${S.week+4}.`,'info');return true;}
+function openRoute(S,a,b){const st=AP[a]&&AP[b]?rightsState(S,a,b):'open';
+ if(st==='needed')return `Flights between ${AP[a].cc} and ${AP[b].cc} need traffic rights. Apply in the route planner ($2M, 4 weeks).`;
+ if(st==='pending')return `Traffic rights ${AP[a].cc}–${AP[b].cc} are still being approved (week ${S.rights[ccKey(a,b)]}).`;
+ const r=openRouteCore(S,a,b);if(typeof r!=='string'){r.hist=[];r.pricing='manual';}return r;}
+function openHub(S,code){const r=openHubCore(S,code);if(r===true){S.acc.capex-=HUB_COST;S.gates[code]=S.gates[code]||gatesFor(code);S.handling[code]=S.handling[code]||'std';}return r;}
+
+/* ---------- crews ---------- */
+function crewNeed(S){const n={};for(const p of S.fleet){const t=ACT[p.type];const f=famOf(t);n[f]=(n[f]||0)+crewsPer(t);}return n;}
+function famWide(f){return AIRCRAFT.some(t=>famOf(t)===f&&WIDE.has(t.cls));}
+function hireCrews(S,f,n,kind){n=Math.max(0,Math.floor(n));if(!n)return 0;S.crews[f]=S.crews[f]||{have:0,train:[]};
+ if(kind==='trained'){n=Math.min(n,S.hireLeft||0);if(!n)return 0;const c=n*120000;if(!afford(S,c))return 0;S.cash-=c;S.hireLeft-=n;S.crews[f].have+=n;S.trainCost=(S.trainCost||0)+c;return n;}
+ const c=n*50000;if(!afford(S,c))return 0;S.cash-=c;S.crews[f].train.push({n,w:S.week+4});S.trainCost=(S.trainCost||0)+c;return n;}
+function autoHireNow(S){if(!S.autoHire||!S.crews)return;const need=crewNeed(S);for(const f in need){const c=S.crews[f]||(S.crews[f]={have:0,train:[]});
+ const inT=c.train.reduce((s,x)=>s+x.n,0);let def=need[f]-c.have-inT;if(def<=0)continue;const got=hireCrews(S,f,def,'trained');def-=got;if(def>0)hireCrews(S,f,def,'cadet');}}
+function crewRatios(S){const need=crewNeed(S),out={};for(const f in need){const h=(S.crews[f]||{have:0}).have;out[f]=need[f]?Math.min(1,h/need[f]):1;}return out;}
+
+/* ---------- aircraft: leases, orders, used market, products, checks ---------- */
+function leaseRate(t,term){return leaseWeekly(t)*(term==='short'?1.2:0.85);}
+function makePlane(S,type,mode,layout,o){o=o||{};const t=ACT[type];const used=new Set(S.fleet.map(p=>p.tail));const a0=o.ageW!=null?o.ageW:(t.used||0)*52;
+ const L=(layout&&!t.fixed&&seatsOf(layout)>0&&unitsOf(t,layout)<=maxUnits(t)+1e-9)?{f:0,j:0,w:0,y:0,...layout}:defaultLayout(t);
+ const p={id:S.nextId++,type,mode,age:a0,age0:a0,sched:[],grounded:0,flown:0,layout:L,tail:makeTail(AP[S.hubs[0]].cc,used),
+  cond:o.cond!=null?o.cond:(a0?Math.max(45,Math.round(92-a0/52*1.5)):100),nextC:S.week+(o.nextC||52),nextD:S.week+(o.dIn||312),product:'std'};
+ if(mode==='lease')p.lease={term:o.term||'long',start:S.week};S.fleet.push(p);autoHireNow(S);return p;}
+function acquire(S,type,mode,layout,o){o=o||{};const t=ACT[type];
+ if(mode==='buy'&&!t.used&&!o.immediate)return placeOrder(S,type,1,layout,false,null);
+ const cost=mode==='buy'?(o.price!=null?o.price:t.price):leaseRate(t,o.term||'long')*4;
+ if(!afford(S,cost))return mode==='buy'?'Not enough cash to buy this aircraft.':'Not enough cash for the 4-week lease deposit.';
+ spend(S,cost,mode==='buy'?'capex':null);const p=makePlane(S,type,mode,layout,o);
+ addLog(S,`${mode==='buy'?'Bought':'Leased'} ${p.age0?'a '+Math.round(p.age0/52)+'-year-old ':''}${t.maker} ${t.name} ${p.tail}${mode==='lease'?` on a ${o.term==='short'?'1-year':'6-year'} lease`:''}.`,'good');return p;}
+function orderDiscount(q){return q>=20?.15:q>=10?.10:q>=5?.05:0;}
+function orderWeeks(S,t,priority){const queued=S.orders.filter(o=>o.type===t.id).length;let wk=(ORDER_WEEKS[t.cls]||10)+Math.floor(queued/3);if(t.id==='B748'||t.id==='A388')wk=24+Math.floor(queued/3);return priority?Math.ceil(wk/2):wk;}
+function placeOrder(S,type,qty,layout,priority,route){const t=ACT[type];if(t.used)return 'Out-of-production aircraft are sold used only.';
+ const each=t.price*(1-orderDiscount(qty))*(priority?1.06:1);const dep=each*0.2*qty;if(!afford(S,dep))return `Not enough cash for the 20% deposit (${money(dep)}).`;
+ const wk=orderWeeks(S,t,priority);spend(S,dep,'capex');
+ for(let i=0;i<qty;i++)S.orders.push({id:S.nextId++,type,due:S.week+wk,each,paid:each*0.2,layout:layout?{...layout}:null,route:route||null,priority:!!priority});
+ addLog(S,`Ordered ${qty} × ${t.maker} ${t.name}${orderDiscount(qty)?` (${Math.round(orderDiscount(qty)*100)}% bulk discount)`:''}. Delivery in week ${S.week+wk}.`,'good');
+ return {order:true,qty,due:S.week+wk,each};}
+function cancelOrder(S,id){const o=S.orders.find(x=>x.id===id);if(!o)return;S.orders=S.orders.filter(x=>x.id!==id);addLog(S,`Cancelled an order for a ${ACT[o.type].name}. The ${money(o.paid)} deposit is lost.`,'bad');}
+function deliverOrders(S){const due=S.orders.filter(o=>o.due<=S.week);if(!due.length)return;S.orders=S.orders.filter(o=>o.due>S.week);let sch=0;
+ for(const o of due){const bal=o.each-o.paid;if(!afford(S,bal)){const room=maxLoan(S)-S.loan,needed=bal-Math.max(0,S.cash);if(room>=needed){borrow(S,Math.ceil(needed/1e6)*1e6);addLog(S,`Borrowed to pay for a ${ACT[o.type].name} delivery.`,'info');}else{o.due=S.week+4;S.orders.push(o);addLog(S,`${ACT[o.type].name} delivery deferred 4 weeks: not enough cash or credit for the ${money(bal)} balance.`,'bad');continue;}}
+  spend(S,bal,'capex');const p=makePlane(S,o.type,'buy',o.layout,{});if(o.route&&routeById(S,o.route)){const r=autoFill(S,p.id,o.route);if(typeof r!=='string')sch+=r;}}
+ const got=due.filter(o=>!S.orders.includes(o));if(!got.length)return;const names=[...new Set(got.map(o=>ACT[o.type].name))].join(', ');addLog(S,`Delivered ${got.length} new aircraft: ${names}.${sch?` ${sch} round trips scheduled.`:''}`,'good');}
+function refreshUsed(S){const pool=AIRCRAFT.filter(t=>t.cls!=='Supersonic'||rng()<0.3);S.used=[];
+ for(let i=0;i<12;i++){const t=pick(pool);const minAge=t.used||3;const age=Math.round(rr(minAge,t.used?t.used+8:25));const cond=Math.round(rr(45,92));
+  const base=t.used?t.price*(0.6+0.5*cond/100):t.price*Math.max(0.12,1-age*0.035)*(0.6+0.4*cond/100);const dIn=Math.round(rr(3,300));
+  S.used.push({id:S.nextId++,type:t.id,age,cond,dIn,price:Math.round(base/1e4)*1e4});}
+ S.used.sort((a,b)=>a.price-b.price);}
+function buyUsed(S,id){const u=(S.used||[]).find(x=>x.id===id);if(!u)return 'That aircraft has been sold.';if(!afford(S,u.price))return 'Not enough cash.';
+ spend(S,u.price,'capex');S.used=S.used.filter(x=>x.id!==id);const p=makePlane(S,u.type,'buy',null,{ageW:u.age*52,cond:u.cond,dIn:u.dIn,nextC:1+hashN(String(u.id))%40});
+ addLog(S,`Bought a used ${ACT[u.type].maker} ${ACT[u.type].name} ${p.tail} (${u.age} years, condition ${u.cond}).`,'good');return p;}
+function dispose(S,id){const p=S.fleet.find(x=>x.id===id);if(!p)return;const t=ACT[p.type];
+ if(p.mode==='buy'){const v=planeValue(p);S.cash+=v;S.acc.capex+=v;addLog(S,`Sold ${t.name} ${p.tail} for ${money(v)}.`,'info');}
+ else{const r=leaseRate(t,p.lease?p.lease.term:'long');const held=S.week-(p.lease?p.lease.start:0);const fee=(p.lease&&p.lease.term==='short')?(held<52?r*8:0):(held<312?r*26:0);
+  S.cash-=fee;addLog(S,`Returned leased ${t.name} ${p.tail}${fee?` (early return fee ${money(fee)})`:''}.`,'info');}
+ S.fleet=S.fleet.filter(x=>x.id!==id);}
+function setProduct(S,id,level){const p=S.fleet.find(x=>x.id===id);if(!p||!PRODUCT[level])return 'Aircraft not found.';const t=ACT[p.type];if(t.cls==='Freighter')return 'Freighters have no cabin.';
+ if(p.product===level)return 'Already fitted.';const ord=['basic','std','prem'];const cost=ord.indexOf(level)>ord.indexOf(p.product||'std')?seatsOf(p.layout)*PRODUCT[level].seat:0;
+ if(!afford(S,cost))return 'Not enough cash for this cabin upgrade.';spend(S,cost,'capex');p.product=level;if(p.flown&&cost)p.grounded=Math.max(p.grounded,1);
+ addLog(S,`${t.name} ${p.tail} cabin set to ${PRODUCT[level].label}${cost?` for ${money(cost)}, out of service 1 week`:''}.`,'info');return true;}
+function startCheck(S,p,type,forced){const t=ACT[p.type];const cost=t.price*(type==='C'?0.006:0.05)*(forced?1.25:1);S.cash-=cost;S.checkCost=(S.checkCost||0)+cost;
+ p.check={type,left:type==='C'?1:4};p.grounded=Math.max(p.grounded,p.check.left);
+ addLog(S,`${t.name} ${p.tail} ${forced?'grounded for an overdue':'in the hangar for its'} ${type}-check (${type==='C'?'1 week':'4 weeks'}, ${money(cost)}).`,forced?'bad':'info');}
+function bookCheck(S,id,type){const p=S.fleet.find(x=>x.id===id);if(!p)return 'Aircraft not found.';if(p.check)return 'Already in a check.';
+ const due=type==='C'?p.nextC:p.nextD;if(due-S.week>8)return `Can be booked from week ${due-8}, 8 weeks before it falls due.`;startCheck(S,p,type,false);return true;}
+function maxGapMinutes(S,p){const iv=(p.sched||[]).filter(e=>activeIn(e,S.week)).flatMap(e=>intervalsOf(S,p,e)).map(([a,b])=>[wmod(a),wmod(a)+(b-a)]).sort((x,y)=>x[0]-y[0]);
+ if(!iv.length)return WEEK;let gap=0;for(let i=0;i<iv.length;i++){const end=iv[i][1],next=i+1<iv.length?iv[i+1][0]:iv[0][0]+WEEK;gap=Math.max(gap,next-end);}return gap;}
+
+/* ---------- hubs: gates, handling, recovery ---------- */
+function hubMovements(S,H){const m=new Float32Array(168);for(const p of S.fleet){for(const e of (p.sched||[])){if(!activeIn(e,S.week))continue;const R=rot(S,p,e);if(!R||(R.from!==H&&R.to!==H))continue;
+ e.days.forEach((on,k)=>{if(!on)return;const u0=k*1440+e.t-tzOff(R.from);const times=R.from===H?[u0,u0+R.occupy]:[u0+R.leg,u0+R.leg+R.turn];for(const u of times)m[Math.floor(wmod(u)/60)%168]++;});}}return m;}
+function peakMovements(S,H){const m=hubMovements(S,H);let x=0;for(const v of m)x=Math.max(x,v);return x;}
+let GATE_CACHE={key:'',load:{}};
+function gateLoad(S){const key=S.week+'|'+S.nextId+'|'+S.fleet.length+'|'+JSON.stringify(S.gates||{});if(GATE_CACHE.key===key)return GATE_CACHE.load;const load={};
+ for(const H of S.hubs){const m=hubMovements(S,H);const cap=(S.gates&&S.gates[H]||gatesFor(H))*((S.rwyHub||[]).includes(H)?0.75:1);load[H]={m,cap};}GATE_CACHE={key,load};return load;}
+function opsDelay(S,o,d,depU,t,h){if(!S.gates)return 0;const L=gateLoad(S);let dl=0;const leg=t?legMin(t,dist(o,d)):120;
+ if(L[o]){const v=L[o].m[Math.floor(wmod(depU)/60)%168];dl+=Math.max(0,v-L[o].cap)*4;const hd=HANDLING[(S.handling||{})[o]||'std'];dl+=hd.delay>0?((h>>>13)%100<30?hd.delay*3:0):hd.delay;}
+ if(L[d]){const v=L[d].m[Math.floor(wmod(depU+leg)/60)%168];dl+=Math.max(0,v-L[d].cap)*4;}
+ dl=dl/Math.sqrt((S.budget||{}).it||1);return Math.max(0,Math.round(dl/5)*5);}
+function expandTerminal(S,H){if(!S.hubs.includes(H))return 'Only your hubs have terminals.';if(S.gateBuild.some(g=>g.hub===H))return 'An expansion is already being built here.';
+ if(!afford(S,40e6))return 'Not enough cash ($40M).';spend(S,40e6,'capex');S.gateBuild.push({hub:H,ready:S.week+8});addLog(S,`Terminal expansion started at ${H}: +10 gates in week ${S.week+8}.`,'good');return true;}
+
+/* ---------- finance ---------- */
+function slotsValue(S){let v=0;for(const ap in (S.slots||{}))v+=S.slots[ap]*slotPrice(ap)*0.7;return v;}
+function balanceSheet(S){const planes=S.fleet.filter(p=>p.mode==='buy').reduce((s,p)=>s+planeValue(p),0);const dep=(S.orders||[]).reduce((s,o)=>s+o.paid,0);
+ const terms=Object.keys(S.gates||{}).reduce((s,h)=>s+Math.max(0,(S.gates[h]-gatesFor(h)))/10*40e6*0.8,0)+S.hubs.length*HUB_COST*0.5;
+ const bonds=(S.bonds||[]).reduce((s,b)=>s+b.amt,0);const assets={cash:Math.max(0,S.cash),aircraft:planes,deposits:dep,slots:slotsValue(S),infrastructure:terms};
+ const liab={overdraft:Math.max(0,-S.cash),loans:S.loan,bonds};const ta=Object.values(assets).reduce((a,b)=>a+b,0),tl=Object.values(liab).reduce((a,b)=>a+b,0);return {assets,liab,ta,tl,equity:ta-tl};}
+function creditRating(S){const b=balanceSheet(S);const debt=S.loan+(S.bonds||[]).reduce((s,x)=>s+x.amt,0)+Math.max(0,-S.cash);const ratio=b.ta?debt/b.ta:1;
+ let i=RATINGS.findIndex(r=>ratio<r[1]);if(i<0)i=RATINGS.length-1;if(S.cash<0)i=RATINGS.length-1;
+ const ebit=(S.ledger||[]).slice(-4).reduce((s,l)=>s+l.profit+l.interest,0)/Math.max(1,Math.min(4,(S.ledger||[]).length));const intw=(S.last&&S.last.interest)||0;
+ if(intw>0&&ebit/intw<2)i=Math.min(RATINGS.length-1,i+1);return {grade:RATINGS[i][0],rate:RATINGS[i][2],ratio,idx:i};}
+function companyValue(S){const b=balanceSheet(S);if(S.unlimited)return (S.cumProfit||0)+START_CASH+b.assets.aircraft+b.assets.deposits+b.assets.slots+b.assets.infrastructure;return b.equity;}
+function maxLoan(S){return 60e6+S.fleet.filter(p=>p.mode==='buy').reduce((s,p)=>s+planeValue(p)*0.5,0)+slotsValue(S)*0.5;}
+function borrow(S,amt){const r=borrowCore(S,amt);if(r===true)S.acc.fin+=amt;return r;}
+function repay(S,amt){const before=S.loan;const r=repayCore(S,amt);if(r===true)S.acc.fin-=before-S.loan;return r;}
+function issueBond(S,amt){const c=creditRating(S);const rate=c.rate+0.005;S.bonds.push({id:S.nextId++,amt,rate,matures:S.week+260,issued:S.week});S.cash+=amt;S.acc.fin+=amt;
+ addLog(S,`Issued a ${money(amt)} 5-year bond at ${(rate*100).toFixed(1)}%.`,'info');return true;}
+function issueShares(S){if(S.shareIssues>=3)return 'You have already sold shares three times.';const v=Math.max(0,companyValue(S))*0.10;if(v<5e6)return 'The company is not worth enough to sell shares.';
+ S.cash+=v;S.acc.fin+=v;S.stake*=0.9;S.shareIssues++;addLog(S,`Sold 10% of the company to investors for ${money(v)}. Your stake is now ${Math.round(S.stake*100)}%.`,'info');return true;}
+function buyHedge(S,pct,weeks){if(S.hedge&&S.hedge.left>0)return 'A hedge is already running.';const fuelW=(S.last&&S.last.fuel)||0;if(!fuelW)return 'Fly for a week first so the hedge can be sized.';
+ const prem=fuelW*pct*weeks*0.03;if(!afford(S,prem))return 'Not enough cash for the premium.';S.cash-=prem;S.hedgeCost=(S.hedgeCost||0)+prem;S.hedge={pct,price:S.fuel,left:weeks,total:weeks};
+ addLog(S,`Hedged ${Math.round(pct*100)}% of fuel at $${S.fuel.toFixed(2)}/kg for ${weeks} weeks (premium ${money(prem)}).`,'info');return true;}
+
+/* ---------- rivals: alliances, acquisitions ---------- */
+function joinAlliance(S,i){if(S.alliance!=null)return `You are already in ${ALLIANCES[S.alliance]}.`;if(S.rep<55)return 'You need a reputation of 55 or more.';if(S.fleet.length<10)return 'You need at least 10 aircraft.';
+ if(!afford(S,20e6))return 'Not enough cash for the $20M joining fee.';S.cash-=20e6;S.alliance=i;addLog(S,`${S.name} joined ${ALLIANCES[i]}.`,'good');return true;}
+function leaveAlliance(S){if(S.alliance==null)return 'Not in an alliance.';addLog(S,`${S.name} left ${ALLIANCES[S.alliance]}.`,'info');S.alliance=null;return true;}
+function rivalPrice(S,i){return Math.max(50e6,S.rivals[i].value*1.3);}
+function acquireRival(S,i){const R=S.rivals[i];if(!R)return 'Airline not found.';const price=rivalPrice(S,i);if(!afford(S,price))return `Not enough cash: ${money(price)} needed.`;
+ spend(S,price,'capex');let routes=0,planes=0;for(const h of R.hubs)if(!S.hubs.includes(h)){S.hubs.push(h);S.gates[h]=S.gates[h]||gatesFor(h);S.handling[h]='std';}
+ for(const rr of R.routes){if(hasRoute(S,rr.a,rr.b))continue;const r={id:S.nextId++,a:R.hubs.includes(rr.a)?rr.a:rr.b,b:R.hubs.includes(rr.a)?rr.b:rr.a,mult:1,last:null,opened:S.week,hist:[],pricing:'manual'};S.routes.push(r);routes++;
+  S.rights[ccKey(r.a,r.b)]=0;const t=rivalType(dist(r.a,r.b));const ah=S.autoHire;S.autoHire=false;const p=makePlane(S,t.id,'buy',null,{ageW:416,cond:80,dIn:150});S.autoHire=ah;
+  const f=famOf(t);S.crews[f]=S.crews[f]||{have:0,train:[]};S.crews[f].have+=crewsPer(t);for(const ap of [r.a,r.b])if(SLOT_APS.has(ap))S.slots[ap]=(S.slots[ap]||0)+28;autoFill(S,p.id,r.id);planes++;}
+ S.rivals.splice(i,1);addLog(S,`${S.name} bought ${R.name} for ${money(price)}: ${R.hubs.join(', ')} added as hubs, ${routes} routes and ${planes} aircraft taken over.`,'good');return true;}
+function rivalType(d){return d<1600?ACT.A20N:d<4500?ACT.B38M:d<9000?ACT.B789:d<12500?ACT.A359:ACT.B77W;}
+function marketShare(S,ap){const by={};const add=(k,v)=>by[k]=(by[k]||0)+v;
+ for(const r of S.routes)if(r.a===ap||r.b===ap)add('__me',(r.last&&r.last.seats)||0);
+ S.rivals.forEach(R=>R.routes.forEach(rr=>{if(rr.a===ap||rr.b===ap)add(R.code,rr.cap*2);}));const tot=Object.values(by).reduce((a,b)=>a+b,0);return {by,tot};}
+
+/* ---------- brand, campaigns ---------- */
+function startCampaign(S,region,level,weeks){if(S.campaigns.some(c=>c.region===region))return 'A campaign is already running there.';const L=CAMPAIGN[level];if(!L)return 'Pick a level.';
+ if(!afford(S,L.cost))return 'Not enough cash for the first week.';S.campaigns.push({region,level,left:weeks});addLog(S,`${L.label} marketing campaign launched in ${REGION_NAMES[region]} for ${weeks} weeks.`,'good');return true;}
+function brandF(S,a,b){if(!S.brand)return 1;const v=((S.brand[AP[a].region]||30)+(S.brand[AP[b].region]||30))/2;return 0.85+v/100*0.3;}
+
+/* ---------- conditions: forecast and NOTAMs ---------- */
+function genConditions(S){const fc=S.wxNext&&S.fcFor===S.week;
+ if(fc){S.wx=[];for(const c of S.wxNext){if(rng()<0.7)S.wx.push({...c,lat:+(c.lat+rr(-1.5,1.5)).toFixed(2),lon:+(c.lon+rr(-1.5,1.5)).toFixed(2),r:Math.round(c.r*rr(0.85,1.15))});}
+  const keep=(S.zones||[]).filter(z=>z.k==='political'&&z.left>1).map(z=>({...z,left:z.left-1}));S.zones=keep.concat((S.zonesNext||[]).filter(z=>z.k!=='political'||!keep.some(k=>k.id===z.id)).filter(()=>rng()<0.85));
+  const tmp={...S,zones:[],wx:[]};genConditionsCore(tmp);const extra=(tmp.wx||[]).filter(()=>rng()<0.3);S.wx=S.wx.concat(extra.map((c,i)=>({...c,id:100+i})));IMPACT.clear();}
+ else genConditionsCore(S);
+ // forecast for next week
+ const nx={...S,week:S.week+1,zones:(S.zones||[]).map(z=>({...z})),wx:[]};genConditionsCore(nx);S.wxNext=nx.wx;S.zonesNext=nx.zones;S.fcFor=S.week+1;IMPACT.clear();
+ genNotams(S);}
+function genNotams(S){S.notams=[];S.rwyHub=[];const icao=c=>AP[c].icao||c;const net=[...new Set(S.routes.flatMap(r=>[r.a,r.b]).concat(S.hubs))].filter(c=>AP[c]);
+ const rwy=()=>{const n=1+Math.floor(rng()*18),sfx=pick(['L','R','C','']);const m=n+18;const opp={L:'R',R:'L',C:'C','':''}[sfx];return `${String(n).padStart(2,'0')}${sfx}/${String(m).padStart(2,'0')}${opp}`;};
+ const k=Math.min(net.length,2+Math.floor(rng()*3));for(let i=0;i<k;i++){const ap=pick(net);const hrs=pick(['2200-0600','2300-0500','0100-0500','DAILY 2100-0700']);
+  S.notams.push({ap,text:`${icao(ap)} RWY ${rwy()} CLSD ${hrs} DUE WIP`,kind:'rwy'});if(S.hubs.includes(ap)&&!S.rwyHub.includes(ap)&&rng()<0.6)S.rwyHub.push(ap);}
+ for(const z of (S.zones||[])){const n=nearestCity(z.lat,z.lon);const ic=n?icao(n.a.code):'ZZZZ';
+  if(z.k==='airport')S.notams.push({ap:z.ap,text:`${icao(z.ap)} ${z.label.toUpperCase()}. EXP DLA ${z.delay} MIN`,kind:'apt'});
+  else if(z.k==='military')S.notams.push({ap:n&&n.a.code,text:`${ic} TEMPO DANGER AREA ACT SFC-FL450 RADIUS ${Math.round(z.r/1.852)}NM. CIVIL ACFT AVOID`,kind:'zone'});
+  else if(z.k==='temporary')S.notams.push({ap:n&&n.a.code,text:`${ic} TEMPO RESTRICTED AREA ${z.label.replace(/^Temporary closure: /,'').toUpperCase()} RADIUS ${Math.round(z.r/1.852)}NM`,kind:'zone'});
+  else S.notams.push({ap:n&&n.a.code,text:`${ic} FIR: OVERFLIGHT BY FOREIGN OPR NOT PERMITTED WI ${Math.round(z.r/1.852)}NM OF ${z.lat.toFixed(1)} ${z.lon.toFixed(1)}`,kind:'zone'});}}
+
+/* ---------- scenarios ---------- */
+const SCENARIOS={
+ sandbox:{name:'Sandbox',desc:'Your choice of budget, hub and rivals. No goal.'},
+ lcc:{name:'Low-cost upstart',desc:'Kuala Lumpur, $150M and 6 low-cost rivals. Reach 40 aircraft and 8 profitable weeks in a row within 3 years.',hub:'KUL',weeks:156},
+ rescue:{name:'Flag carrier rescue',desc:'Frankfurt, 12 ageing widebodies and $1B of debt. Get your credit rating to BBB or better within 2 years.',hub:'FRA',weeks:104},
+ longhaul:{name:'Long-haul pioneer',desc:'Dubai and $600M. Run 10 profitable routes over 8,000 km within 2 years.',hub:'DXB',weeks:104}};
+function setupScenario(S,id){if(!SCENARIOS[id]||id==='sandbox'){S.scenario=null;return;}const sc=SCENARIOS[id];S.scenario={id,name:sc.name,deadline:S.week+sc.weeks,done:false,failed:false};
+ if(id==='lcc'){S.cash=150e6;S.rivals.forEach(R=>R.pers='lcc');}
+ if(id==='rescue'){S.cash=60e6;S.loan=1e9;const plan=[['JFK','B763'],['ORD','B763'],['DXB','A343'],['DEL','A343'],['PEK','B744'],['GRU','A343'],['JNB','B763'],['SIN','B744'],['NRT','A343'],['IAD','B763'],['YYZ','B763'],['MIA','B763']];
+  const H=S.hubs[0];for(const [b,ty] of plan){if(!AP[b]||b===H)continue;S.cash=1e10;let r=openRouteCore(S,H,b);if(typeof r==='string')r=S.routes.find(x=>x.b===b);if(!r)continue;r.hist=[];r.pricing='manual';S.rights[ccKey(H,b)]=0;
+   S.autoHire=false;const p=makePlane(S,ty,'buy',null,{ageW:(18+Math.floor(rng()*6))*52,cond:55+Math.floor(rng()*10),dIn:20+Math.floor(rng()*200),nextC:1+Math.floor(rng()*30)});S.autoHire=true;const f=famOf(ACT[ty]);S.crews[f]=S.crews[f]||{have:0,train:[]};S.crews[f].have+=crewsPer(ACT[ty]);
+   if(SLOT_APS.has(b))S.slots[b]=(S.slots[b]||0)+28;autoFill(S,p.id,r.id);}S.cash=60e6;S.log=S.log.filter(l=>!/^New route|^Bought/.test(l.text));}
+ if(id==='longhaul'){S.cash=600e6;}}
+function checkScenario(S){const sc=S.scenario;if(!sc||sc.done||sc.failed)return;let met=false;
+ if(sc.id==='lcc')met=S.fleet.length>=40&&(S.profitStreak||0)>=8;
+ if(sc.id==='rescue')met=creditRating(S).idx<=3&&S.week>4;
+ if(sc.id==='longhaul')met=S.routes.filter(r=>dist(r.a,r.b)>8000&&r.last&&r.last.profit>0).length>=10;
+ if(met){sc.done=true;sc.doneWeek=S.week;addLog(S,`Scenario complete: ${sc.name} in ${S.week-1} weeks.`,'good');}
+ else if(S.week>sc.deadline){sc.failed=true;addLog(S,`Scenario deadline passed for ${sc.name}. You can keep playing.`,'bad');}}
+function scenarioProgress(S){const sc=S.scenario;if(!sc)return null;
+ if(sc.id==='lcc')return [`${S.fleet.length}/40 aircraft`,`${S.profitStreak||0}/8 profitable weeks in a row`];
+ if(sc.id==='rescue'){const c=creditRating(S);return [`Credit rating ${c.grade} (goal BBB)`,`Debt-to-assets ${Math.round(c.ratio*100)}%`];}
+ if(sc.id==='longhaul')return [`${S.routes.filter(r=>dist(r.a,r.b)>8000&&r.last&&r.last.profit>0).length}/10 profitable routes over 8,000 km`];return null;}
+
+/* ---------- events without the old random groundings (breakdowns now come from condition) ---------- */
+function rollEvents(S,report){if(rng()>0.42)return;
+ const opts=[
+  ()=>{S.fuel=clamp(S.fuel*1.18,0.45,1.7);return ['Crude oil spikes after production cuts. Jet fuel up 18%.','bad'];},
+  ()=>{S.fuel=clamp(S.fuel*0.86,0.45,1.7);return ['Oil prices slump. Jet fuel down 14%.','good'];},
+  ()=>{const a=pick(BIG3);S.fx.push({kind:'apt',key:a.code,mult:1.35,weeks:6,label:`Tourism boom in ${a.city}`});return [`Tourism boom in ${a.city}: demand up 35% for six weeks.`,'good'];},
+  ()=>{const a=pick(BIG3);const ev=pick(['a major trade fair','a music festival','a sporting final','a big conference']);S.fx.push({kind:'apt',key:a.code,mult:1.2,weeks:2,label:`${a.city} hosts ${ev}`});return [`${a.city} hosts ${ev}: demand up 20% for two weeks.`,'good'];},
+  ()=>{const n=Math.round(10+rng()*25);S.hireLeft=Math.max(0,(S.hireLeft||0)-n);return [`Pilot shortage: fewer trained crews are on the market this week.`,'bad'];}];
+ const r=pick(opts)();if(r){addLog(S,r[0],r[1]);report.events.push(r[0]);}}
+
+/* ---------- the weekly settlement ---------- */
+function bankQ(arr,dep){if(!arr.length||!dep.length)return 0;let ok=0;for(const a of arr){for(const d of dep){const g=wmod(d-a);if(g>=45&&g<=240){ok++;break;}}}return ok/arr.length;}
+function hubTimes(S,H){const m={};for(const p of S.fleet){if(p.grounded)continue;for(const e of (p.sched||[])){if(!activeIn(e,S.week))continue;const R=rot(S,p,e);if(!R||(R.from!==H&&R.to!==H))continue;
+ const x=m[e.r]||(m[e.r]={arr:[],dep:[]});e.days.forEach((on,k)=>{if(!on)return;const b=k*1440;if(R.from===H){x.dep.push(wmod(b+R.depOut));x.arr.push(wmod(b+R.arrBack));}else{x.arr.push(wmod(b+R.arrOut));x.dep.push(wmod(b+R.depBack));}});}}return m;}
+function advance(S){
+ if(S.over)return null;ensureSchedules(S);_S=S;tidyRivalRoutes(S);if(!S.opts){S.opts={weather:false,airspace:false};S.optsNext={...S.opts};}ensureExpansion(S);
+ const D=DIFF[S.diff];const B=S.budget;
+ const report={week:S.week,rev:0,cargo:0,fuel:0,crew:0,fees:0,handling:0,disrupt:0,lease:0,maint:0,checks:S.checkCost||0,salaries:0,training:S.trainCost||0,overhead:0,commonality:0,marketing:0,service:0,it:0,loyalty:0,alliance:0,interest:0,hedge:S.hedgeCost||0,repairs:0,events:[]};
+ const prepaid=(S.checkCost||0)+(S.trainCost||0)+(S.hedgeCost||0);S.checkCost=0;S.trainCost=0;S.hedgeCost=0;
+ // --- deliveries, terminal works, crews in training, market changes
+ deliverOrders(S);
+ S.gateBuild=S.gateBuild.filter(g=>{if(g.ready<=S.week){S.gates[g.hub]=(S.gates[g.hub]||gatesFor(g.hub))+10;addLog(S,`Terminal expansion finished at ${g.hub}: ${S.gates[g.hub]} gates.`,'good');return false;}return true;});
+ for(const f in S.crews){const c=S.crews[f];c.train=c.train.filter(x=>{if(x.w<=S.week){c.have+=x.n;return false;}return true;});}
+ for(const k of Object.keys(S.rights))if(S.rights[k]===S.week)addLog(S,`Traffic rights ${k} approved.`,'good');
+ S.fuel=clamp(S.fuel*(1+(rng()-0.5)*0.06)+(FUEL_BASE-S.fuel)*0.05,0.45,1.7);
+ rollEvents(S,report);
+ const season=seasonFactor(S.week);
+ // --- breakdowns: worse condition, more risk
+ for(const p of S.fleet){if(p.grounded||!(p.sched||[]).length)continue;const risk=0.003+Math.max(0,90-p.cond)/50*0.037;
+  if(rng()<risk){const t=ACT[p.type];p.grounded=1;const c=t.price*0.002;report.repairs+=c;addLog(S,`${t.name} ${p.tail} went technical (condition ${Math.round(p.cond)}). Out of service this week, repairs ${money(c)}.`,'bad');report.events.push(`${t.name} ${p.tail} went technical.`);}}
+ const crewR=crewRatios(S);
+ // spare aircraft for the standby policy: idle passenger aircraft, 14 legs each
+ const spares=S.policy==='standby'?S.fleet.filter(p=>!p.grounded&&!(p.sched||[]).some(e=>activeIn(e,S.week))&&ACT[p.type].cls!=='Freighter').map(p=>({p,t:ACT[p.type],left:14})):[];
+ // --- every leg of every route: what flies, what it costs
+ const markets={};const add=(a,b,c)=>{const k=pairKey(a,b);(markets[k]=markets[k]||{a,b,carriers:[]}).carriers.push(c);};
+ const repA=0.6+S.rep/100*0.8;const loyalA=S.loyalty?1.05:1;
+ const ops={};for(const p of S.fleet){for(const e of (p.sched||[])){if(!activeIn(e,S.week))continue;(ops[e.r]=ops[e.r]||[]).push({p,e});}}
+ const todQ=m=>{const h=((m%1440)+1440)%1440/60;return h>=6&&h<22?1:(h>=5||h>=22)?0.85:0.65;};
+ const stats={legs:0,cx:0,delaySum:0,late:0,recovered:0,crewCx:0,mxCx:0};let repHit=0;
+ for(const r of S.routes){const list=ops[r.id]||[];const d=dist(r.a,r.b);
+  const capC={f:0,j:0,w:0,y:0};let flights=0,conc=0,qs=0,qw=0,cx=0,dsum=0,dn=0,cost=0,prodS=0,belly=0,freight=0;
+  for(const o of list){const {p,e}=o;const t=ACT[p.type];const L=p.layout||defaultLayout(t);const R=rot(S,p,e);if(!R)continue;let legs=0;o.legs=[];const seats=seatsOf(L);const fam=famOf(t);
+   e.days.forEach((on,k)=>{if(!on)return;const u0=k*1440+e.t-tzOff(R.from);
+    for(const [fn,a,b,u] of [[`${S.code} ${e.fn}`,R.from,R.to,u0],[`${S.code} ${e.fn+1}`,R.to,R.from,u0+R.leg+R.turn]]){let x=disrupt(S,fn,u,a,b,t);let why=null;
+     if(p.grounded){x={...x,cancel:true};why=p.check?'mx':'tech';}
+     else if(!x.cancel&&(hashN('crew'+fn+S.week+k)%1000)/1000>=crewR[fam]){x={...x,cancel:true};why='crew';}
+     if(x.cancel){
+      if(why&&S.policy==='standby'){const sp=spares.find(s=>s.left>0&&s.t.range>=d&&canServe(s.t,a)&&canServe(s.t,b)&&seatsOf(s.p.layout)>=seats*0.7);if(sp){sp.left--;stats.recovered++;x={...x,cancel:false,delay:x.delay+45};}}
+      if(x.cancel){cx++;stats.cx++;if(why==='crew')stats.crewCx++;if(why==='mx'||why==='tech')stats.mxCx++;const pol=POLICY[S.policy==='standby'?'rebook':S.policy];report.disrupt+=pol.pp*seats*0.8;repHit+=pol.rep;continue;}}
+     legs++;dsum+=x.delay;dn++;stats.legs++;stats.delaySum+=x.delay;if(x.delay>=15)stats.late++;o.legs.push(x);
+     const im=x.imp;const fu=(d+im.extra)*t.burn*S.fuel*im.mult,cr=(blockHours(t,d)+im.airborneExtra/60)*t.crew,fe=600+seats*6+(t.cargo||0)*10+(im.stopFee||0),dl=x.delay*seats*0.4;
+     const hd=S.hubs.includes(a)?HANDLING[S.handling[a]||'std'].cost:0;report.fuel+=fu;report.crew+=cr;report.fees+=fe;report.disrupt+=dl;report.handling+=hd;cost+=fu+cr+fe+dl+hd;}});
+   const n=legs/2;for(const c of CLASSES)capC[c]+=n*(L[c]||0);if(t.prem)conc+=n*(L.j||0);flights+=legs;const q=(todQ(R.depOut)+todQ(R.depBack))/2;qs+=q*n*seats;qw+=n*seats;prodS+=PRODUCT[p.product||'std'].f*n*seats;
+   if(t.cls==='Freighter')freight+=n*t.cargo;else belly+=n*(BELLY[t.cls]||0);}
+  r._cx=cx;r._delay=dn?dsum/dn:0;r._cost=cost;r._belly=belly;r._freight=freight;
+  const cap=seatsOf(capC);r._ops=list;r._flights=flights;r._conc=capC.j?conc/capC.j:0;r._q=(qw?qs/qw:1)*(1-Math.min(0.35,r._delay/200));r._prod=qw?prodS/qw:1;
+  r._premF=list.length?list.reduce((s,o)=>s+(PRODUCT[o.p.product||'std'].prem),0)/list.length:1;
+  r.last={pax:0,local:0,conn:0,seats:cap*2,lf:0,rev:0,paxRev:0,connRev:0,cargo:{t:0,rev:0},cost,profit:-cost,flights,comp:0,fare:baseFare(d)*r.mult,byClass:{},q:r._q,cx,delay:r._delay,idle:!flights};
+  if(cap>0)add(r.a,r.b,{who:'P',r,cap,capC,mult:r.mult,a:repA*r._q*r._prod*brandF(S,r.a,r.b)*loyalA*(S.alliance!=null?1.02:1)});}
+ S.rivals.forEach((R,i)=>R.routes.forEach(rr=>{const im=legImpact(S,rr.a,rr.b,null);const cap=rr.cap*(1-im.cancel);const PR=PERS[R.pers||'hub'];if(cap>0)add(rr.a,rr.b,{who:i,rr,cap,mult:rr.mult,a:D.q*PR.q*(1-Math.min(0.35,im.delay/200))});else{rr.lf=0;rr._p=-40000;}}));
+ // --- passenger markets
+ for(const k in markets){const m=markets[k];const d=dist(m.a,m.b);const cs=m.carriers;const sh=classShare(d);
+  const totCap=cs.reduce((s,c)=>s+c.cap,0);const mAvg=cs.reduce((s,c)=>s+c.cap*c.mult,0)/totCap;
+  const Dm=baseDemand(m.a,m.b)*season*fxMult(S,m.a)*fxMult(S,m.b)*Math.pow(mAvg,-1.3);
+  let jBoost=1;cs.forEach(c=>{if(!c.capC)c.capC={f:c.cap*sh.f,j:c.cap*sh.j,w:c.cap*sh.w,y:c.cap*sh.y};else if(c.r._conc)jBoost=Math.max(jBoost,1+0.8*c.r._conc);c.paxC={f:0,j:0,w:0,y:0};});
+  let carry=0;
+  for(const cl of CLASSES){const Dc=Dm*sh[cl]*(cl==='j'?jBoost:1)+carry;const list=cs.filter(c=>c.capC[cl]>0);
+   if(!list.length){carry=Dc*0.6;continue;}
+   list.forEach(c=>c.w=c.a*Math.pow(c.mult,-2)*Math.pow(c.capC[cl],0.6)*(cl==='j'&&c.who==='P'?1+1.5*c.r._conc:1)*((cl==='j'||cl==='f')&&c.who==='P'?c.r._premF*(S.loyalty?1.08:1):1));const W=list.reduce((s,c)=>s+c.w,0);
+   list.forEach(c=>c.paxC[cl]=Math.min(c.capC[cl],Dc*c.w/W));
+   let left=Dc-list.reduce((s,c)=>s+c.paxC[cl],0);const open=list.filter(c=>c.paxC[cl]<c.capC[cl]);const Wo=open.reduce((s,c)=>s+c.w,0);
+   if(left>0&&Wo>0){open.forEach(c=>c.paxC[cl]=Math.min(c.capC[cl],c.paxC[cl]+left*c.w/Wo));left=Dc-list.reduce((s,c)=>s+c.paxC[cl],0);}
+   carry=Math.max(0,left)*0.6;}
+  const fare=baseFare(d);const ff=CLASSES.reduce((s,c)=>s+sh[c]*CLASS_FARE[c],0);
+  for(const c of cs){const pax=Math.round(seatsOf(c.paxC)*2);
+   let rev=CLASSES.reduce((s,cl)=>s+c.paxC[cl]*2*fare*c.mult*CLASS_FARE[cl]*(cl==='j'&&c.who==='P'?1+0.5*c.r._conc:1),0);
+   if(c.who==='P'){const r=c.r;if(r.pricing==='auto')rev*=1.05;const byClass={};for(const cl of CLASSES)if(c.capC[cl]>0)byClass[cl]={pax:Math.round(c.paxC[cl]*2),seats:Math.round(c.capC[cl]*2)};
+    r._spare=Math.max(0,c.cap-seatsOf(c.paxC));Object.assign(r.last,{pax,local:pax,paxRev:rev,comp:cs.length-1,byClass});}
+   else{const cost=(c.cap*2*(25+0.058*d)/D.q)*ff+40000;c.rr.lf=pax/(c.cap*2);c.rr._p=rev-cost;}}}
+ // --- connecting passengers through your hubs (and alliance partners' feed)
+ S.bankQ={};const priceF=r=>Math.pow(r.mult,-1.3);
+ for(const H of S.hubs){const times=hubTimes(S,H);const rs=S.routes.filter(r=>(r.a===H||r.b===H)&&times[r.id]).sort((x,y)=>(y._spare||0)-(x._spare||0)).slice(0,40);let qs=0,qn=0;
+  for(let i=0;i<rs.length;i++)for(let j=i+1;j<rs.length;j++){const A=rs[i],Bq=rs[j];const X=A.a===H?A.b:A.a,Y=Bq.a===H?Bq.b:Bq.a;if(X===Y)continue;const dXY=dist(X,Y),dA=dist(H,X),dB=dist(H,Y);
+   if(dXY<300||dA+dB>1.35*dXY)continue;const q=(bankQ(times[A.id].arr,times[Bq.id].dep)+bankQ(times[Bq.id].arr,times[A.id].dep))/2;qs+=q;qn++;if(q<=0)continue;
+   const cd=baseDemand(X,Y)*season*0.3*q*priceF({mult:(A.mult+Bq.mult)/2});const served=Math.min(cd,A._spare||0,Bq._spare||0);if(served<1)continue;A._spare-=served;Bq._spare-=served;
+   const fareXY=baseFare(dXY)*(A.mult+Bq.mult)/2;for(const [r,dd] of [[A,dA],[Bq,dB]]){const rv=served*2*fareXY*dd/(dA+dB);r.last.conn+=Math.round(served*2);r.last.connRev+=rv;}}
+  S.bankQ[H]=qn?qs/qn:0;
+  if(S.alliance!=null){for(const R of S.rivals){if(R.alliance!==S.alliance)continue;for(const rr of R.routes){if(rr.a!==H&&rr.b!==H)continue;const Z=rr.a===H?rr.b:rr.a;
+   for(const Bq of rs){const Y=Bq.a===H?Bq.b:Bq.a;if(Y===Z||!(Bq._spare>=1))continue;const dZY=dist(Z,Y),dZ=dist(H,Z),dB=dist(H,Y);if(dZ+dB>1.35*dZY)continue;
+    const served=Math.min(baseDemand(Z,Y)*season*0.08,Bq._spare);if(served<1)continue;Bq._spare-=served;Bq.last.conn+=Math.round(served*2);Bq.last.connRev+=served*2*baseFare(dZY)*Bq.mult*dB/(dZ+dB);}}}}}
+ // --- cargo
+ for(const r of S.routes){const cap=(r._belly||0)+(r._freight||0);if(!cap)continue;const d=dist(r.a,r.b);const cdf=d<500?0.3:Math.min(1,0.3+0.7*(d-500)/2500);
+  const Dc=30*Math.sqrt(sizeW(AP[r.a].size)*sizeW(AP[r.b].size))*cdf*season;let rcap=0;S.rivals.forEach(R=>R.routes.forEach(rr=>{if(pairKey(rr.a,rr.b)===pairKey(r.a,r.b))rcap+=rr.cap*0.06;}));
+  const share=cap/(cap+rcap);const carried=Math.min(cap,Dc*share+Math.max(0,Dc*(1-share)-rcap));const fr=cap?r._freight/cap:0;const rev=carried*2*d*(0.22*(1-fr)+0.28*fr);
+  r.last.cargo={t:Math.round(carried*2),rev,cap:Math.round(cap*2)};}
+ // --- route results, auto pricing, history
+ for(const r of S.routes){const L=r.last;L.pax=L.local+L.conn;L.lf=L.seats?L.pax/L.seats:0;L.rev=L.paxRev+L.connRev+L.cargo.rev;L.profit=L.rev-L.cost;
+  report.rev+=L.paxRev+L.connRev;report.cargo+=L.cargo.rev;
+  if(r.pricing==='auto'&&L.seats){if(L.lf>0.93)r.mult=+Math.min(1.6,r.mult*1.05).toFixed(3);else if(L.lf<0.78)r.mult=+Math.max(0.6,r.mult*0.95).toFixed(3);}
+  r.hist=r.hist||[];if(L.flights){r.hist.push({w:S.week,lf:+L.lf.toFixed(3),yld:L.pax?Math.round(L.paxRev/L.pax):0,profit:Math.round(L.profit)});if(r.hist.length>12)r.hist.shift();
+   r.loss=L.profit<0?(r.loss||0)+1:0;if(r.loss===4)addLog(S,`${r.a}–${r.b} has lost money 4 weeks in a row.`,'bad');}}
+ // --- fleet costs, crews, company costs
+ const fams=new Set();let paxFlown=0;S.routes.forEach(r=>paxFlown+=r.last.pax);
+ for(const p of S.fleet){const t=ACT[p.type];fams.add(famOf(t));if(p.sched&&p.sched.length&&!p.grounded)p.flown=(p.flown||0)+1;
+  if(p.mode==='lease')report.lease+=leaseRate(t,p.lease?p.lease.term:'long');report.maint+=maintWeekly(p);p.age++;if(p.grounded>0)p.grounded--;}
+ for(const f in S.crews){const c=S.crews[f];report.salaries+=c.have*(famWide(f)?12000:9000)*B.pay;const q=c.have*0.005*(B.pay<1?1+(1-B.pay)*4:1/B.pay);const quit=Math.floor(q)+(rng()<q%1?1:0);if(quit){c.have=Math.max(0,c.have-quit);}}
+ report.commonality=Math.max(0,fams.size-1)*150000;
+ report.overhead=150000+S.hubs.length*100000+S.fleet.length*20000;
+ report.marketing=(50000+0.02*((S.last&&S.last.rev)||0))*B.mkt+S.campaigns.reduce((s,c)=>s+CAMPAIGN[c.level].cost,0);
+ report.service=paxFlown*3*B.svc;report.it=100000*B.it;report.loyalty=S.loyalty?paxFlown*2:0;report.alliance=S.alliance!=null?250000:0;
+ const cr=creditRating(S);report.interest=S.loan*cr.rate/52+(S.bonds||[]).reduce((s,b)=>s+b.amt*b.rate/52,0);
+ if(S.hedge&&S.hedge.left>0){const g=(S.fuel-S.hedge.price)/S.fuel*report.fuel*S.hedge.pct;report.hedge-=g;S.hedge.left--;if(!S.hedge.left){addLog(S,'Your fuel hedge has ended.','info');}}
+ report.cost=['fuel','crew','fees','handling','disrupt','lease','maint','checks','salaries','training','overhead','commonality','marketing','service','it','loyalty','alliance','interest','hedge','repairs'].reduce((s,k)=>s+(report[k]||0),0);
+ // checks, training and hedge premiums were paid in cash when they happened: they stay in the statement but are not taken twice
+ report.profit=report.rev+report.cargo-report.cost;S.cash+=report.profit+prepaid;S.cumProfit+=report.profit;
+ // bonds that mature
+ S.bonds=(S.bonds||[]).filter(b=>{if(b.matures<=S.week){S.cash-=b.amt;S.acc.fin-=b.amt;addLog(S,`Repaid a ${money(b.amt)} bond at maturity.`,'info');return false;}return true;});
+ // --- rivals
+ S.rivals.forEach((R,i)=>{let p=-300000;R.routes.forEach(rr=>{p+=(rr._p||0);rr.weak=(rr.lf<0.45)?rr.weak+1:0;});R.lastProfit=p;R.value+=p;
+  const before=R.routes.length;R.routes=R.routes.filter(rr=>rr.weak<5);if(R.routes.length<before&&rng()<0.5)addLog(S,`${R.name} dropped a loss-making route.`,'info');
+  const partner=S.alliance!=null&&S.alliance===R.alliance;
+  R.routes.forEach(rr=>{const pr=S.routes.find(r=>pairKey(r.a,r.b)===pairKey(rr.a,rr.b));if(!pr||partner||S.diff==='easy')return;
+   if(R.pers==='premium'){if(pr.mult<rr.mult-0.1&&rng()<0.3)rr.cap=Math.round(rr.cap*1.1);return;}
+   const k=R.pers==='lcc'?0.04:0.1;if(pr.mult<rr.mult-k&&rng()<(S.diff==='hard'?0.5:0.2))rr.mult=+Math.max(R.pers==='lcc'?0.6:0.7,rr.mult-0.06).toFixed(2);});
+  if(rng()<D.open*PERS[R.pers||'hub'].open)rivalOpen(S,i,true);
+  const hubAt=R.pers==='hub'?1.25:1.4;if(R.hubs.length<3&&R.value>RIVAL_BASE+D.start*hubAt&&rng()<(R.pers==='hub'?0.05:0.03)){const hc=BIG3.filter(a=>a.size>=7&&!R.hubs.includes(a.code));if(hc.length){const h=pick(hc).code;R.hubs.push(h);addLog(S,`${R.name} opened a new hub in ${AP[h].city}.`,'info');}}});
+ // --- brand
+ for(const k in S.brand){S.brand[k]+=(30-S.brand[k])*0.015;}
+ const flownRegions=new Set(S.routes.filter(r=>r.last.flights).flatMap(r=>[AP[r.a].region,AP[r.b].region]));for(const k of flownRegions)if(S.brand[k]!=null)S.brand[k]+=0.2*(B.mkt-1)+0.05;
+ S.campaigns=S.campaigns.filter(c=>{S.brand[c.region]=(S.brand[c.region]||30)+CAMPAIGN[c.level].pts;c.left--;if(!c.left)addLog(S,`Marketing campaign in ${REGION_NAMES[c.region]} ended.`,'info');return c.left>0;});
+ for(const k in S.brand)S.brand[k]=clamp(S.brand[k],0,100);
+ if(S.loyalty)S.members=Math.round((S.members||0)+paxFlown*0.1);
+ // --- reputation
+ const flown=S.routes.filter(r=>r.last&&r.last.seats>0);
+ if(flown.length){const seats=flown.reduce((s,r)=>s+r.last.seats,0);const lf=flown.reduce((s,r)=>s+r.last.pax,0)/seats;
+  const mult=flown.reduce((s,r)=>s+r.mult*r.last.seats,0)/seats;const prod=flown.reduce((s,r)=>s+(r._prod||1)*r.last.seats,0)/seats;
+  const hp=S.hubs.filter(h=>S.handling[h]==='prem').length/Math.max(1,S.hubs.length);
+  const target=clamp(45+(lf-0.7)*50+(1-mult)*45+Math.min(12,flown.length*1.5)+(B.svc-1)*8+(prod-1)*40+hp*3+(S.alliance!=null?5:0)-Math.min(25,repHit),5,98);
+  S.rep=clamp(S.rep+(target-S.rep)*0.12,0,100);}
+ S.opsStats={...stats,lf:flown.length?flown.reduce((s,r)=>s+r.last.pax,0)/Math.max(1,flown.reduce((s,r)=>s+r.last.seats,0)):0,prod:flown.length?flown.reduce((s,r)=>s+(r._prod||1),0)/flown.length:1};
+ // --- aircraft wear and checks
+ for(const p of S.fleet){const t=ACT[p.type];
+  if(p.check){p.check.left--;if(p.check.left<=0){if(p.check.type==='C'){p.cond=Math.min(100,p.cond+15);p.nextC=S.week+52;}else{p.cond=95;p.nextC=S.week+52;p.nextD=S.week+312;}addLog(S,`${t.name} ${p.tail} finished its ${p.check.type}-check (condition ${Math.round(p.cond)}).`,'good');p.check=null;}continue;}
+  const util=busyMinutes(S,p)/WEEK;const gap=maxGapMinutes(S,p);
+  const decay=0.2/Math.pow(B.mx,0.6)+(util>0.85?(util-0.85)*3:0)+((p.sched||[]).length&&gap<480?0.6:0)+(S.week>p.nextC?0.5:0)+(S.week>p.nextD?1:0);p.cond=Math.max(5,p.cond-decay);
+  if(S.week>p.nextD+4)startCheck(S,p,'D',true);else if(S.week>p.nextC+4)startCheck(S,p,'C',true);
+  else if(S.autoChecks!==false){if(S.week>=p.nextD)startCheck(S,p,'D',false);else if(S.week>=p.nextC)startCheck(S,p,'C',false);}}
+ if(S.autoHire)autoHireNow(S);
+ // --- tick effects
+ S.fx.forEach(e=>e.weeks--);S.fx=S.fx.filter(e=>e.weeks>0);
+ const value=companyValue(S);
+ S.hist.push({w:S.week,rev:report.rev+report.cargo,cost:report.cost,profit:report.profit,cash:S.cash,value});if(S.hist.length>104)S.hist.shift();
+ report.cash0=S.acc.cash0;report.cashEnd=S.cash;report.capex=S.acc.capex;report.fin=S.acc.fin;report.operating=S.cash-S.acc.cash0-S.acc.capex-S.acc.fin;
+ S.ledger.push(report);if(S.ledger.length>52)S.ledger.shift();
+ S.last=report;S.profitStreak=report.profit>0?(S.profitStreak||0)+1:0;
+ S.debtWeeks=(S.cash<0&&!S.unlimited)?(S.debtWeeks||0)+1:0;S.peak=Math.max(S.peak||0,value);
+ if(S.debtWeeks>0&&!(S.cash<-80e6||S.debtWeeks>=BANKRUPT_WEEKS))addLog(S,`Cash is negative (${money(S.cash)}). ${BANKRUPT_WEEKS-S.debtWeeks} week${BANKRUPT_WEEKS-S.debtWeeks===1?'':'s'} left to recover before the administrators step in.`,'bad');
+ if(S.debtWeeks>=3&&!S.offer&&(S.offerCool||0)<=S.week&&S.rivals.length){const i=S.rivals.reduce((bi,R,j)=>R.value>S.rivals[bi].value?j:bi,0);S.offer={rival:S.rivals[i].name,amount:Math.max(10e6,value*0.6+50e6)};addLog(S,`${S.rivals[i].name} has offered to buy ${S.name} for ${money(S.offer.amount)}.`,'bad');}
+ if(!S.unlimited&&(S.cash<-80e6||S.debtWeeks>=BANKRUPT_WEEKS)){S.over={reason:'bankrupt',week:S.week};addLog(S,'The administrators have taken over. Your airline is grounded.','bad');}
+ S.week++;
+ checkScenario(S);
+ S.hireLeft=Math.round(25*Math.min(1.5,B.pay));if(S.week%1===0)refreshUsed(S);
+ S.acc={capex:0,fin:0,cash0:S.cash};
+ S.opts={...(S.optsNext||S.opts)};genConditions(S);conditionsLog(S);
+ return report;
+}
+function respondOffer(S,accept){if(!S.offer)return;if(accept){S.over={reason:'sold',week:S.week,amount:S.offer.amount,buyer:S.offer.rival};addLog(S,`${S.name} was sold to ${S.offer.rival} for ${money(S.offer.amount)}.`,'info');}
+ else{addLog(S,`You turned down ${S.offer.rival}'s offer.`,'info');S.offerCool=S.week+8;}S.offer=null;}
+
+if(typeof module!=='undefined')module.exports={ensureExpansion,placeOrder,cancelOrder,buyUsed,refreshUsed,setProduct,bookCheck,hireCrews,crewNeed,crewRatios,expandTerminal,issueBond,issueShares,buyHedge,joinAlliance,leaveAlliance,acquireRival,rivalPrice,startCampaign,applyRights,rightsState,sellSlots,setupScenario,scenarioProgress,creditRating,balanceSheet,marketShare,respondOffer,slotNeed,seasonOf,famOf,SCENARIOS,PERS,rivalRouteOK,rivalLogical,tidyRivalRoutes,legImpact,disrupt,genConditions,hashN,flightDelay,addFlight,removeFlight,editFlight,autoFill,clearSchedule,rot,tzOff,hhmm,nextFn,weeklyRotations,busyMinutes,ensureSchedules,WEEK,refit,defaultLayout,layoutFromFractions,unitsOf,maxUnits,seatsOf,AP,canServe,BIG3,AIRPORTS,AIRCRAFT,newGame,advance,openRoute,acquire,assign,borrow,companyValue,money,dist,roundTrips,ACT};
 
 </script>
 <script>
@@ -867,7 +1332,7 @@ if(typeof module!=='undefined')module.exports={rivalRouteOK,rivalLogical,tidyRiv
 const $=s=>document.querySelector(s);
 const SAVE_KEY='cruising-altitude-save-v1';
 let S=null;
-const UI={fp:null,track:null,boardRows:[],clock0:420,board:{ap:null,day:0,mode:'dep'},sched:null,sf:null,buy:null,tab:'routes',view:'apac',sel:null,from:null,to:null,auto:false,speed:1,timer:null,confirm:null,setup:{diff:'normal',hub:'SIN',name:'Orchid Airways',rivals:3,unlimited:false,weather:true,airspace:true},mk:'All'};
+const UI={fp:null,track:null,boardRows:[],clock0:420,board:{ap:null,day:0,mode:'dep'},sched:null,sf:null,buy:null,tab:'routes',view:'apac',sel:null,from:null,to:null,auto:false,speed:1,timer:null,confirm:null,setup:{diff:'normal',hub:'SIN',name:'Orchid Airways',rivals:3,unlimited:false,weather:true,airspace:true,scen:'sandbox'},mk:'All'};
 const PRESETS={world:{cx:10,cy:12,span:360},apac:{cx:128,cy:2,span:120},emea:{cx:22,cy:20,span:92},amer:{cx:-88,cy:6,span:125}};
 UI.v={...PRESETS.apac};
 
@@ -880,13 +1345,14 @@ function normalize(G){if(!G||!Array.isArray(G.hubs)||!Array.isArray(G.fleet)||!A
  G.hubs=G.hubs.filter(h=>AP[h]);if(!G.hubs.length)G.hubs=[AIRPORTS.find(a=>a.size>=7).code];
  G.rivals.forEach(R=>{R.hubs=R.hubs.filter(h=>AP[h]);if(!R.hubs.length)R.hubs=[BIG3.find(a=>a.size>=8).code];R.routes=R.routes.filter(x=>AP[x.a]&&AP[x.b]);});
  G.fx=(G.fx||[]).filter(e=>e.kind!=='apt'||AP[e.key]);ensureSchedules(G);if(!G.opts)G.opts={weather:false,airspace:false};if(!G.optsNext)G.optsNext={...G.opts};if(!G.wx)G.wx=[];if(!G.zones)G.zones=[];_S=G;tidyRivalRoutes(G);
- if(G.debtWeeks==null)G.debtWeeks=0;if(G.peak==null)G.peak=START_CASH;if(G.over&&G.over.reason!=='bankrupt')G.over=null;return G;}
-function save(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(S))}catch(e){}}
+ if(G.debtWeeks==null)G.debtWeeks=0;if(G.peak==null)G.peak=START_CASH;if(G.over&&!['bankrupt','sold'].includes(G.over.reason))G.over=null;ensureExpansion(G);return G;}
+const SAVE_REP=(k,v)=>k[0]==='_'?undefined:v;
+function save(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(S,SAVE_REP))}catch(e){}}
 function load(){try{const s=localStorage.getItem(SAVE_KEY);return s?normalize(JSON.parse(s)):null}catch(e){return null}}
 function slotGet(n){try{const s=localStorage.getItem(slotKey(n));if(!s)return null;const o=JSON.parse(s);o.game=normalize(o.game);return o.game?o:null}catch(e){return null}}
 function slotSave(n){try{localStorage.setItem(slotKey(n),JSON.stringify({savedAt:Date.now(),game:S}));return true}catch(e){return 'This browser blocked saving. Use the save code instead.'}}
 function slotDelete(n){try{localStorage.removeItem(slotKey(n))}catch(e){}}
-function exportCode(){return 'CA1.'+btoa(unescape(encodeURIComponent(JSON.stringify(S))));}
+function exportCode(){return 'CA1.'+btoa(unescape(encodeURIComponent(JSON.stringify(S,SAVE_REP))));}
 function importCode(txt){txt=(txt||'').trim();if(!txt)return 'Paste a save code first.';
  try{const json=txt.startsWith('CA1.')?decodeURIComponent(escape(atob(txt.slice(4).replace(/\s+/g,'')))):txt;const G=normalize(JSON.parse(json));return G||'That code is not a Cruising Altitude save.';}
  catch(e){return 'That save code is damaged or incomplete. Copy the whole code and try again.';}}
@@ -938,7 +1404,8 @@ function showStart(){const saved=load();const st=$('#start');stopAuto();
   <div class="hr"></div>
   <div class="row"><div class="field" style="flex:3 1 180px"><label for="iName">Airline name</label><input type="text" id="iName" maxlength="28" value="${esc(UI.setup.name)}"></div><div class="field" style="flex:1 1 80px"><label for="iCode">Airline code</label><input type="text" id="iCode" maxlength="2" autocapitalize="characters" placeholder="${codeFrom(UI.setup.name,new Set())}" style="text-transform:uppercase;font-family:var(--f-mono)"></div></div>
   <div class="field"><label for="iHubQ">Home hub · ${AIRPORTS.length.toLocaleString('en-AU')} airports</label><div class="picked" id="hubPicked">${apLine(AP[UI.setup.hub])}</div><input type="text" id="iHubQ" autocomplete="off" placeholder="Search by city, airport name, IATA or ICAO code"><div class="results" id="hubRes"></div></div>
-  <div class="field"><label>Starting budget</label><div class="seg2" role="group" aria-label="Starting budget"><button type="button" data-budget="std" aria-pressed="${!UI.setup.unlimited}">$1 billion</button><button type="button" data-budget="inf" aria-pressed="${UI.setup.unlimited}">Unlimited</button></div><small class="mute" id="budNote">${UI.setup.unlimited?'Sandbox: buy anything, never go bankrupt. Profit is still tracked.':'Run out of cash for 8 weeks and the airline goes bust.'}</small></div>
+  <div class="field"><label>Game mode</label><div class="seg scen" role="group" aria-label="Game mode">${Object.entries(SCENARIOS).map(([k,v])=>`<button type="button" data-scen="${k}" aria-pressed="${UI.setup.scen===k}"><b>${esc(v.name)}</b><small>${esc(v.desc)}</small></button>`).join('')}</div></div>
+  <div class="field" id="budField" ${UI.setup.scen!=='sandbox'?'hidden':''}><label>Starting budget</label><div class="seg2" role="group" aria-label="Starting budget"><button type="button" data-budget="std" aria-pressed="${!UI.setup.unlimited}">$1 billion</button><button type="button" data-budget="inf" aria-pressed="${UI.setup.unlimited}">Unlimited</button></div><small class="mute" id="budNote">${UI.setup.unlimited?'Sandbox: buy anything, never go bankrupt. Profit is still tracked.':'Run out of cash for 8 weeks and the airline goes bust.'}</small></div>
   <div class="field"><label>Simulation</label><div class="seg2" role="group" aria-label="Simulation"><button type="button" data-sim="weather" aria-pressed="${UI.setup.weather}">Weather ${UI.setup.weather?'on':'off'}</button><button type="button" data-sim="airspace" aria-pressed="${UI.setup.airspace}">Airspace restrictions ${UI.setup.airspace?'on':'off'}</button></div><small class="mute">Weather brings storms, fog, monsoons and jet streams. Airspace adds closures, military activity and airport restrictions. Both can force detours, delays and cancellations. You can change them later in Conditions.</small></div>
   <div class="field"><label for="iRiv">CPU rival airlines · <b class="mono" id="rivN">${UI.setup.rivals||'None'}</b></label><input type="range" id="iRiv" min="0" max="${MAX_RIVALS}" step="1" value="${UI.setup.rivals}"><div class="row sp mute mono" style="font-size:11px"><span>None</span><span>${MAX_RIVALS}</span></div><small class="mute" id="rivNote">${UI.setup.rivals===0?'Solo mode: no competition, just you against the market.':''}</small></div>
   <div class="field" id="diffField" ${UI.setup.rivals===0?'hidden':''}><label>Rival difficulty</label><div class="seg">
@@ -954,13 +1421,15 @@ $('#start').addEventListener('click',e=>{const ph=e.target.closest('[data-pickhu
  const sm=e.target.closest('[data-sim]');if(sm){const k=sm.dataset.sim;UI.setup[k]=!UI.setup[k];sm.setAttribute('aria-pressed',UI.setup[k]);sm.textContent=(k==='weather'?'Weather ':'Airspace restrictions ')+(UI.setup[k]?'on':'off');return;}
  const bu=e.target.closest('[data-budget]');if(bu){UI.setup.unlimited=bu.dataset.budget==='inf';document.querySelectorAll('[data-budget]').forEach(b=>b.setAttribute('aria-pressed',b===bu));$('#budNote').textContent=UI.setup.unlimited?'Sandbox: buy anything, never go bankrupt. Profit is still tracked.':'Run out of cash for 8 weeks and the airline goes bust.';return;}
  const nr=e.target.closest('[data-nriv]');if(nr){UI.setup.rivals=+nr.dataset.nriv;document.querySelectorAll('[data-nriv]').forEach(b=>b.setAttribute('aria-pressed',b===nr));$('#diffField').hidden=UI.setup.rivals===0;$('#rivNote').textContent=UI.setup.rivals===0?'Solo mode: no competition, just you against the market.':'';return;}
+ const sn=e.target.closest('[data-scen]');if(sn){const k=sn.dataset.scen,sc=SCENARIOS[k];UI.setup.scen=k;document.querySelectorAll('[data-scen]').forEach(b=>b.setAttribute('aria-pressed',b===sn));$('#budField').hidden=k!=='sandbox';
+  if(sc.hub&&AP[sc.hub]){UI.setup.hub=sc.hub;$('#hubPicked').innerHTML=apLine(AP[sc.hub]);}if(k==='lcc'&&UI.setup.rivals<6){UI.setup.rivals=6;$('#iRiv').value=6;$('#rivN').textContent=6;$('#diffField').hidden=false;}if(k!=='sandbox')UI.setup.unlimited=false;return;}
  const d=e.target.closest('[data-diff]');if(d){UI.setup.diff=d.dataset.diff;document.querySelectorAll('[data-diff]').forEach(b=>b.setAttribute('aria-pressed',b===d));return;}
  const a=e.target.closest('[data-act]');if(!a)return;
  if(a.dataset.act==='continue'){setGame(load(),true);resumeWithCatchUp();return;}
  if(a.dataset.act==='begin'){const saved=load();if(saved&&!saved.over&&a.dataset.armed!=='1'){a.dataset.armed='1';a.textContent='Tap again to replace your saved airline';return;}
   UI.setup.name=$('#iName').value.trim()||'Orchid Airways';
-  const cd=($('#iCode').value||'').toUpperCase().replace(/[^A-Z0-9]/g,'');if(cd&&cd.length!==2){toast('Airline codes are 2 letters or digits, like SQ or 9W.',true);return;}S=newGame(UI.setup.name,UI.setup.hub,UI.setup.diff,UI.setup.rivals,cd,UI.setup.unlimited,{weather:UI.setup.weather,airspace:UI.setup.airspace});S.anchor={real:Date.now(),game:420};S.lastSeen=Date.now();UI.sel=null;UI.from=UI.setup.hub;UI.to=null;UI.tab='market';setView(viewFor(UI.setup.hub));
-  save();$('#start').hidden=true;render();toast('Lease your first aircraft, then open a route.');}});
+  const cd=($('#iCode').value||'').toUpperCase().replace(/[^A-Z0-9]/g,'');if(cd&&cd.length!==2){toast('Airline codes are 2 letters or digits, like SQ or 9W.',true);return;}const scn=UI.setup.scen||'sandbox',scd=SCENARIOS[scn];if(scd.hub)UI.setup.hub=scd.hub;S=newGame(UI.setup.name,UI.setup.hub,UI.setup.diff,UI.setup.rivals,cd,scn==='sandbox'&&UI.setup.unlimited,{weather:UI.setup.weather,airspace:UI.setup.airspace});setupScenario(S,scn);S.anchor={real:Date.now(),game:420};S.lastSeen=Date.now();UI.sel=null;UI.from=UI.setup.hub;UI.to=null;UI.tab='market';setView(viewFor(UI.setup.hub));
+  save();$('#start').hidden=true;render();toast(scn==='rescue'?'Your ageing fleet is already flying. Check Finance and Fleet first.':'Lease your first aircraft, then open a route.');if(scn==='rescue')UI.tab='finance',render();}});
 function viewFor(code){const r=AP[code].region;return r==='EU'||r==='AF'||r==='ME'?'emea':r==='NA'||r==='SA'?'amer':r==='AN'?'world':'apac';}
 function goHome(){if(S&&S.hubs[0]&&AP[S.hubs[0]]){setView(viewFor(S.hubs[0]));}}
 
@@ -975,6 +1444,7 @@ function renderTop(){$('#hName').textContent=S.name;
  const se=$('#sEnds');if(se)se.textContent=S.over?'—':weekEndsIn();
  document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('on',b.dataset.view===UI.view));
  document.querySelectorAll('[data-tab]').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===UI.tab));
+ {const n=document.querySelector('.tabs'),a=n&&n.querySelector('[aria-selected="true"]');if(a&&UI.lastTab!==UI.tab){UI.lastTab=UI.tab;const l=a.offsetLeft-n.offsetLeft,r=l+a.offsetWidth;if(l<n.scrollLeft+30||r>n.scrollLeft+n.clientWidth-30)n.scrollLeft=l-n.clientWidth/2+a.offsetWidth/2;}tabEdges();}
 }
 function renderFeed(){$('#feed').innerHTML='<h4>Ops feed</h4>'+S.log.slice(0,14).map(l=>`<div><span class="w">W${l.w}</span><span class="${l.kind}">${esc(l.text)}</span></div>`).join('');
  $('#legend').innerHTML=`<span><i style="background:var(--accent)"></i>${esc(S.name)}</span>`+S.rivals.map(r=>`<span><i style="background:${r.color}"></i>${esc(r.name)}</span>`).join('');}
@@ -998,14 +1468,14 @@ function airportInspector(){if(!UI.sel)return '';const a=AP[UI.sel];const isHub=
  </div>`;}
 
 function routeFlights(r){const g={};S.fleet.forEach(p=>(p.sched||[]).forEach(e=>{if(e.r!==r.id)return;const R=rot(S,p,e);if(!R)return;const k=e.fn;
-  const x=g[k]||(g[k]={fn:e.fn,from:e.from,to:R.to,t:e.t,R,days:[0,0,0,0,0,0,0],tails:[]});e.days.forEach((v,i)=>{if(v)x.days[i]=1;});if(!x.tails.find(q=>q.id===p.id))x.tails.push(p);}));
+  const x=g[k]||(g[k]={fn:e.fn,from:e.from,to:R.to,t:e.t,R,days:[0,0,0,0,0,0,0],tails:[],season:e.season||'all'});e.days.forEach((v,i)=>{if(v)x.days[i]=1;});if(!x.tails.find(q=>q.id===p.id))x.tails.push(p);}));
  return Object.values(g).sort((a,b)=>a.t-b.t);}
 const shiftDays=(d,s)=>{s=((s%7)+7)%7;const o=[0,0,0,0,0,0,0];d.forEach((v,i)=>{if(v)o[(i+s)%7]=1;});return o;};
 const dayPat=d=>d.every(Boolean)?'Daily':d.map((v,i)=>v?i+1:'·').join('');
 const dayShift=(m,base)=>{const s=Math.floor(m/1440)-Math.floor(base/1440);return s>0?`<sup>+${s}</sup>`:s<0?`<sup>${s}</sup>`:'';};
 function renderRoutes(){
  const from=UI.from&&S.hubs.includes(UI.from)?UI.from:S.hubs[0];
- let est='';if(UI.to&&UI.to!==from){const e=routeEstimate(S,from,UI.to);est=`<div class="kv"><div><small>Distance</small><b>${km(e.d)}</b></div><div><small>Demand / wk</small><b>~${e.demand.toLocaleString()}</b></div><div><small>Base fare</small><b>$${e.fare}</b></div><div><small>Rivals</small><b class="${e.comp.length?'bad':''}">${e.comp.length}</b></div></div>`;}
+ let est='';if(UI.to&&UI.to!==from)est=forecastHTML(from,UI.to);
  let h=airportInspector();
  h+=`<div class="sec"><h3>Open a route</h3><div class="box">
   <div class="row"><div class="field"><label for="rFrom">From hub</label><select id="rFrom">${S.hubs.map(c=>`<option ${c===from?'selected':''}>${c}</option>`).join('')}</select></div>
@@ -1025,24 +1495,26 @@ function renderRoutes(){
    <div class="row">${L.comp?`<span class="chip warn">${L.comp} rival${L.comp>1?'s':''} on route</span>`:'<span class="chip ok">No competition</span>'}${L.lf>0.97?'<span class="chip amb">Sold out: add flights or raise fares</span>':''}${L.lf<0.5?'<span class="chip warn">Low load: cut fares or flights</span>':''}${L.q&&L.q<0.95&&!L.delay?'<span class="chip warn">Some late-night departures</span>':''}${L.cx?`<span class="chip warn">${L.cx} flight${L.cx>1?'s':''} cancelled</span>`:''}${L.delay>=10?`<span class="chip warn">Avg delay ${Math.round(L.delay)} min</span>`:''}${(()=>{const im=legImpact(S,r.a,r.b,null);return im.extra?`<span class="chip amb">Rerouted this week +${im.extra} km</span>`:'';})()}</div>
    ${L.byClass?`<div class="row">${CLASSES.filter(c=>L.byClass[c]).map(c=>`<span class="cab"><i style="background:${CLS_COLOR[c]}"></i>${CLASS_NAME[c]} <b class="mono">${fmtPct(L.byClass[c].pax/L.byClass[c].seats)}</b></span>`).join('')}</div>`:''}`;}
   else h+=`<div class="mute">${fl.length?'Flies from next week.':'Nothing scheduled yet, so nothing flies.'}</div>`;
+  h+=routeExtras(r);
   h+=`<div class="field"><label for="m${r.id}">Fare · $${Math.round(baseFare(d)*r.mult)} one way (${r.mult<1?'':'+'}${Math.round((r.mult-1)*100)}% vs market)</label><input type="range" id="m${r.id}" min="0.6" max="1.6" step="0.05" value="${r.mult}" data-mult="${r.id}"></div>`;
   if(fl.length)h+=`<div class="tt" role="table" aria-label="Timetable ${r.a}–${r.b}"><div class="tt-h" role="row"><span>Flight</span><span>Days</span><span>Departs</span><span>Arrives</span><span>Aircraft</span></div>
-   ${fl.map(f=>`<div class="tt-r" role="row"><span class="mono"><b>${S.code} ${f.fn}</b> ${f.from}→${f.to}</span><span class="mono">${dayPat(f.days)}</span><span class="mono">${hhmm(f.R.depOut)}</span><span class="mono">${hhmm(f.R.arrOut)}${dayShift(f.R.arrOut,f.R.depOut)}</span><span>${f.tails.map(p=>`<button class="tail tl" type="button" data-sched="${p.id}">${p.tail}</button>`).join(' ')}</span></div>
+   ${fl.map(f=>`<div class="tt-r" role="row"><span class="mono"><b>${S.code} ${f.fn}</b> ${f.from}→${f.to}${f.season!=='all'?` <span class="chip ${activeIn({season:f.season},S.week)?'amb':''}">${f.season==='S'?'Summer':'Winter'}</span>`:''}</span><span class="mono">${dayPat(f.days)}</span><span class="mono">${hhmm(f.R.depOut)}</span><span class="mono">${hhmm(f.R.arrOut)}${dayShift(f.R.arrOut,f.R.depOut)}</span><span>${f.tails.map(p=>`<button class="tail tl" type="button" data-sched="${p.id}">${p.tail}</button>`).join(' ')}</span></div>
     <div class="tt-r ret" role="row"><span class="mono"><b>${S.code} ${f.fn+1}</b> ${f.to}→${f.from}</span><span class="mono">${dayPat(shiftDays(f.days,Math.floor(f.R.depBack/1440)))}</span><span class="mono">${hhmm(f.R.depBack)}</span><span class="mono">${hhmm(f.R.arrBack)}${dayShift(f.R.arrBack,f.R.depBack)}</span><span class="mute" style="font-size:12px">local times</span></div>`).join('')}</div>`;
   h+=`<div class="row">${fits.length?`<select data-assign="${r.id}" style="flex:1 1 200px;width:auto"><option value="">Auto-schedule an aircraft…</option>${fits.map(p=>`<option value="${p.id}">${p.tail} · ${ACT[p.type].name} · ${Math.round(busyMinutes(S,p)/WEEK*100)}% booked</option>`).join('')}</select>`:`<span class="mute" style="font-size:12.5px">${S.fleet.length?'No aircraft can fly this route from its base.':'No aircraft yet. Buy or lease one.'}</span>`}
    <button class="btn sm danger" type="button" data-close="${r.id}">${UI.confirm==='close'+r.id?'Confirm close':'Close route'}</button></div></div>`;});
  return h+'</div>';}
 
 function renderFleet(){let h=`<div class="sec"><h3>Fleet <span class="mono" style="letter-spacing:0">${S.fleet.length}</span></h3>`;
- if(!S.fleet.length)return h+'<div class="empty">No aircraft yet. Visit Buy aircraft to lease or purchase one.</div></div>';
+ if(!S.fleet.length)return h+`<div class="empty">No aircraft yet${S.orders.length?`. ${S.orders.length} on order: the first arrives in week ${Math.min(...S.orders.map(o=>o.due))}`:'. Visit Buy aircraft to order or lease one'}.</div></div>`;
+ h+=fleetSummary();
  S.fleet.forEach(p=>{const t=ACT[p.type];const yrs=(p.age/52).toFixed(1);const conf=UI.confirm==='disp'+p.id;const base=planeBase(S,p);const util=busyMinutes(S,p)/WEEK;
   const fns=[...new Set((p.sched||[]).map(e=>e.fn))];
   h+=`<div class="box"><div class="row sp"><div class="row"><span class="tail">${p.tail}</span><b>${t.maker} ${t.name}</b></div><span class="chip ${p.mode==='buy'?'ok':''}">${p.mode==='buy'?'Owned':'Leased'}</span></div>
-  <div class="kv"><div><small>Seats</small><b>${seatsOf(p.layout)}</b></div><div><small>Range</small><b>${km(t.range)}</b></div><div><small>Age</small><b>${yrs} yrs</b></div><div><small>${p.mode==='buy'?'Value':'Lease/wk'}</small><b>${p.mode==='buy'?money(planeValue(p)):money(leaseWeekly(t))}</b></div><div><small>Base</small><b>${base||'—'}</b></div><div><small>Round trips</small><b>${weeklyRotations(p)}/wk</b></div></div>
+  <div class="kv"><div><small>${t.cls==='Freighter'?'Cargo':'Seats'}</small><b>${t.cls==='Freighter'?t.cargo+' t':seatsOf(p.layout)}</b></div><div><small>Range</small><b>${km(t.range)}</b></div><div><small>Age</small><b>${yrs} yrs</b></div><div><small>${p.mode==='buy'?'Value':'Lease/wk'}</small><b>${p.mode==='buy'?money(planeValue(p)):money(leaseRate(t,p.lease?p.lease.term:'long'))}</b></div><div><small>Base</small><b>${base||'—'}</b></div><div><small>Round trips</small><b>${weeklyRotations(p)}/wk</b></div></div>
   <div class="util" aria-label="Week booked ${Math.round(util*100)}%"><span style="width:${Math.min(100,util*100)}%"></span></div>
   <div class="row sp" style="font-size:12.5px"><span class="mute">${fns.length?fns.map(n=>S.code+' '+n).join(', '):'No flights scheduled'}</span><span class="mono">${Math.round(util*100)}% of week booked</span></div>
-  ${p.grounded?'<span class="chip warn">Out of service this week</span>':''}
-  <div class="row sp"><div class="cabinline">${cabinChips(p.layout)}</div>${t.fixed?'<span class="chip">Fixed single cabin</span>':UI.edit===p.id?'':`<button class="btn sm" type="button" data-edit="${p.id}">Edit cabin</button>`}</div>
+  ${planeExtras(p)}
+  <div class="row sp"><div class="cabinline">${cabinChips(p.layout)}</div>${t.cls==='Freighter'?'':t.fixed?'<span class="chip">Fixed single cabin</span>':UI.edit===p.id?'':`<button class="btn sm" type="button" data-edit="${p.id}">Edit cabin</button>`}</div>
   ${UI.edit===p.id?cabinEditor(p):''}
   <div class="row"><button class="btn sm primary" type="button" data-sched="${p.id}">Schedule</button>
   <button class="btn sm danger" type="button" data-dispose="${p.id}">${conf?(p.mode==='buy'?'Confirm sale '+money(planeValue(p)):'Confirm return'):(p.mode==='buy'?'Sell':'Return lease')}</button></div></div>`;});
@@ -1123,7 +1595,7 @@ function rivalType(d){return d<1600?ACT.A20N:d<4500?ACT.B38M:d<9000?ACT.B789:d<1
 // one delay per flight per UTC day per week, shared by boards, popup and map
 // every flight touching this airport, one entry per weekday, departure time as UTC minutes in the week
 function boardFlights(ap){const out=[];
- S.fleet.forEach(p=>(p.sched||[]).forEach(e=>{const R=rot(S,p,e);if(!R)return;const t=ACT[p.type];
+ S.fleet.forEach(p=>(p.sched||[]).forEach(e=>{if(!activeIn(e,S.week))return;const R=rot(S,p,e);if(!R)return;const t=ACT[p.type];
   e.days.forEach((on,k)=>{if(!on)return;const st=p.grounded?'cancel':null;const u0=k*1440+e.t-tzOff(R.from);const base={leg:R.leg,t,tail:p.tail,seats:seatsOf(p.layout),mine:1,st,ac:shortType(t)};
    if(R.from===ap||R.to===ap){out.push({...base,fn:`${S.code} ${e.fn}`,o:R.from,d:R.to,depU:u0});out.push({...base,fn:`${S.code} ${e.fn+1}`,o:R.to,d:R.from,depU:u0+R.leg+R.turn});}});}));
  S.rivals.forEach(Rv=>Rv.routes.forEach(rr=>{if(rr.a!==ap&&rr.b!==ap)return;const d=dist(rr.a,rr.b);const t=rivalType(d);const n=Math.max(1,Math.min(5,Math.round(rr.cap/7/190)));
@@ -1217,7 +1689,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&UI.fp)closeFlight()
 $('#view').addEventListener('click',e=>{const row=e.target.closest('.brow[data-frow]');if(!row)return;const r=(UI.boardRows||[])[+row.dataset.frow];if(r)openFlight(r);});
 $('#view').addEventListener('keydown',e=>{if(e.key!=='Enter'&&e.key!==' ')return;const row=e.target.closest('.brow[data-frow]');if(!row)return;e.preventDefault();const r=(UI.boardRows||[])[+row.dataset.frow];if(r)openFlight(r);});
 
-function renderBoard(){const B=UI.board;if(!B.ap||!AP[B.ap])B.ap=S.hubs[0];const a=AP[B.ap];const rows=boardRows(B.ap,B.mode);UI.boardRows=rows;const off=tzOff(B.ap);
+function renderBoardBase(){const B=UI.board;if(!B.ap||!AP[B.ap])B.ap=S.hubs[0];const a=AP[B.ap];const rows=boardRows(B.ap,B.mode);UI.boardRows=rows;const off=tzOff(B.ap);
  const offTxt=`UTC${off>=0?'+':'−'}${Math.floor(Math.abs(off)/60)}${Math.abs(off)%60?':'+String(Math.abs(off)%60).padStart(2,'0'):''}`;const G=gameNow();const today=Math.floor((G+off)/1440);
  const dayLbl=m=>{const dd=Math.floor(m/1440)-today;const wd=DAYS[Math.floor(wmod(m)/1440)];return dd===0?`Today · ${wd}`:dd===1?`Tomorrow · ${wd}`:wd;};
  const anim=UI.boardAnim;UI.boardAnim=false;let lastDay=null,i=0;
@@ -1238,7 +1710,7 @@ setInterval(()=>{if(!S||UI.tab!=='board'||document.hidden||!$('#start').hidden||
  const v=$('#view'),y=window.scrollY,bs=document.querySelector('.bscroll'),bx=bs?bs.scrollLeft:0;v.innerHTML=renderBoard();applyMarquee();window.scrollTo(0,y);const nb=document.querySelector('.bscroll');if(nb)nb.scrollLeft=bx;},3000);
 const WX_ICON={typhoon:'TC',cyclone:'TC',hurricane:'TC',monsoon:'RA',winter:'SN',storms:'TS',fog:'FG',dust:'DU',ash:'VA'};
 function nearTxt(lat,lon){const n=nearestCity(lat,lon);return n?(n.d<120?`over ${n.a.city}`:`${Math.round(n.d/10)*10} km from ${n.a.city}`):'over open water';}
-function renderCond(){const o=opts(S),nx=S.optsNext||o;const pend=k=>nx[k]!==o[k];
+function renderCondBase(){const o=opts(S),nx=S.optsNext||o;const pend=k=>nx[k]!==o[k];
  let h=`<div class="sec"><h3>Simulation settings</h3><div class="box">
   <div class="row">${['weather','airspace'].map(k=>`<button class="btn sm ${nx[k]?'on':''}" type="button" data-opt="${k}" aria-pressed="${nx[k]}">${k==='weather'?'Weather':'Airspace restrictions'}: ${nx[k]?'on':'off'}</button>`).join('')}</div>
   <div class="mute" style="font-size:12.5px">${pend('weather')||pend('airspace')?`<span class="amber">Changes take effect from week ${S.week+1}.</span> This week still runs with weather ${o.weather?'on':'off'} and airspace restrictions ${o.airspace?'on':'off'}.`:'Changes you make here take effect from the next game week.'}</div></div></div>`;
@@ -1269,13 +1741,284 @@ function renderSaves(){let h=`<div class="sec"><h3>Autosave</h3><div class="box"
  return h;}
 function render(){if(!S)return;renderTop();renderFeed();
  const v=$('#view');const st=v.scrollTop;
- v.innerHTML={routes:renderRoutes,fleet:renderFleet,market:renderMarket,finance:renderFinance,rivals:renderRivals,saves:renderSaves,board:renderBoard,cond:renderCond}[UI.tab]();
+ v.innerHTML={routes:renderRoutes,fleet:renderFleet,market:renderMarket,finance:renderFinance,rivals:renderRivals,company:renderCompany,saves:renderSaves,board:renderBoard,cond:renderCond}[UI.tab]();
  if(UI.tab==='finance')drawChart();
  if(UI.tab==='board')applyMarquee();
  dirty=true;
- if(S.over)showOver();}
+ if(S.over)showOver();else if(S.offer)showOffer();}
+
+/* ===================== EXPANSION INTERFACE ===================== */
+const pct=x=>Math.round(x*100)+'%';
+// small inline SVG sparkline; colours come from theme tokens
+function spark(vals,o){o=o||{};const w=o.w||120,h=o.h||28;if(!vals.length)return '';const mn=Math.min(o.zero?0:Infinity,...vals),mx=Math.max(o.zero?0:-Infinity,...vals);const rg=mx-mn||1;
+ const X=i=>vals.length<2?w/2:2+i*(w-4)/(vals.length-1),Y=v=>h-3-(v-mn)/rg*(h-6);const d=vals.map((v,i)=>(i?'L':'M')+X(i).toFixed(1)+' '+Y(v).toFixed(1)).join(' ');
+ const z=o.zero&&mn<0&&mx>0?`<line x1="0" x2="${w}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--line)" stroke-dasharray="2 3"/>`:'';
+ return `<svg class="spark" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" aria-hidden="true">${z}<path d="${d}" fill="none" stroke="${o.color||'var(--accent)'}" stroke-width="1.6"/><circle cx="${X(vals.length-1)}" cy="${Y(vals[vals.length-1])}" r="2.4" fill="${o.color||'var(--accent)'}"/></svg>`;}
+function condColor(c){return c>=75?'var(--good)':c>=55?'var(--accent)':'var(--bad)';}
+
+/* ---------- Routes: forecast and per-route extras ---------- */
+const DOW=[0.9,0.82,0.84,0.95,1.22,1.02,1.25];
+function forecastHTML(from,to){const d=dist(from,to);const e=routeEstimate(S,from,to);const sh=classShare(d);const dem=baseDemand(from,to)*seasonFactor(S.week);
+ const rivSeats=S.rivals.reduce((s,R)=>s+R.routes.filter(x=>pairKey(x.a,x.b)===pairKey(from,to)).reduce((a,x)=>a+x.cap,0),0);
+ const curve=Array.from({length:52},(_,i)=>baseDemand(from,to)*seasonFactor(i+1));const rs=rightsState(S,from,to);
+ const slotAps=[from,to].filter(a=>SLOT_APS.has(a)&&!S.hubs.includes(a));const ap=AP[to];
+ return `<div class="fc"><div class="kv"><div><small>Distance</small><b>${km(d)}</b></div><div><small>Demand / wk each way</small><b>~${Math.round(dem).toLocaleString()}</b></div><div><small>Expected fare</small><b>$${e.fare}</b></div><div><small>Rival seats / wk</small><b class="${rivSeats?'bad':''}">${rivSeats?rivSeats.toLocaleString():'none'}</b></div></div>
+  <div class="row">${CLASSES.filter(c=>sh[c]>0).map(c=>`<span class="cab"><i style="background:${CLS_COLOR[c]}"></i>${CLASS_NAME[c]} <b class="mono">~${Math.round(dem*sh[c]).toLocaleString()}</b></span>`).join('')}</div>
+  <div class="fc-row"><div><small class="mute">Season · week 1–52</small>${spark(curve,{w:160,h:30})}</div><div><small class="mute">Day of week</small><div class="dow">${DOW.map((v,i)=>`<span style="height:${Math.round(v*22)}px" title="${DAYS[i]}"></span>`).join('')}</div><div class="dowl mono">${DAYS.map(x=>x[0]).join(' ')}</div></div></div>
+  ${rs==='needed'?`<div class="row warnbox"><span>Traffic rights ${AP[from].cc}–${ap.cc} are restricted. Apply first: $2M, approved after 4 weeks.</span><button class="btn sm" type="button" data-rights="${from}|${to}">Apply for rights</button></div>`:rs==='pending'?`<div class="warnbox">Traffic rights ${AP[from].cc}–${ap.cc} under review: approved in week ${S.rights[ccKey(from,to)]}.</div>`:''}
+  ${slotAps.length?`<div class="mute" style="font-size:12.5px">${slotAps.join(' and ')} ${slotAps.length>1?'are':'is'} slot-controlled: each weekly arrival or departure needs a slot (${slotAps.map(a=>money(slotPrice(a))).join(' / ')}), bought automatically when you schedule flights.</div>`:''}</div>`;}
+function routeExtras(r){const L=r.last;if(!L)return '';let h='';
+ const bk=L.seats?(()=>{const s=clamp(0.62-L.lf*0.45,0.1,0.6),f=clamp(0.25+L.lf*0.15,0.2,0.45);return {s,f,full:Math.max(0,1-s-f)};})():null;
+ h+=`<div class="row sp"><div class="seg2 sm2" role="group" aria-label="Pricing"><button type="button" data-pricing="${r.id}|manual" aria-pressed="${r.pricing!=='auto'}">Manual fares</button><button type="button" data-pricing="${r.id}|auto" aria-pressed="${r.pricing==='auto'}">Auto pricing</button></div>
+  ${r.pricing==='auto'&&bk?`<span class="buckets mono" title="Fare bucket mix last week">Saver ${pct(bk.s)} · Flex ${pct(bk.f)} · Full ${pct(bk.full)}</span>`:''}</div>`;
+ const share=(()=>{const m=marketShare(S,r.a);let riv=0;S.rivals.forEach(R=>R.routes.forEach(x=>{if(pairKey(x.a,x.b)===pairKey(r.a,r.b))riv+=x.cap*2;}));return L.seats?L.seats/(L.seats+riv):0;})();
+ const bits=[];if(L.conn)bits.push(`<span class="cab">Connecting <b class="mono">${L.conn.toLocaleString()}</b></span>`);
+ if(L.cargo&&L.cargo.t)bits.push(`<span class="cab">Cargo <b class="mono">${L.cargo.t.toLocaleString()} t · ${money(L.cargo.rev)}</b></span>`);
+ if(L.seats)bits.push(`<span class="cab">Your seat share <b class="mono">${pct(share)}</b></span>`);
+ if(bits.length)h+=`<div class="row">${bits.join('')}</div>`;
+ const hs=r.hist||[];if(hs.length>1)h+=`<div class="hist"><div><small class="mute">Load factor · ${hs.length} wks</small>${spark(hs.map(x=>x.lf),{w:130,h:26})}</div><div><small class="mute">Profit</small>${spark(hs.map(x=>x.profit),{w:130,h:26,zero:1,color:hs[hs.length-1].profit>=0?'var(--good)':'var(--bad)'})}</div><div><small class="mute">Yield / pax</small><b class="mono">$${hs[hs.length-1].yld}</b></div></div>`;
+ if((r.loss||0)>=4)h+=`<span class="chip warn">Lost money ${r.loss} weeks in a row</span>`;
+ return h;}
+
+/* ---------- Fleet extras ---------- */
+function fleetSummary(){const fams=[...new Set(S.fleet.map(p=>famOf(ACT[p.type])))];const need=crewNeed(S),r=crewRatios(S);const short=Object.keys(need).filter(f=>r[f]<1);
+ const due=S.fleet.filter(p=>!p.check&&(p.nextC-S.week<=8||p.nextD-S.week<=8)).length;const avg=S.fleet.reduce((s,p)=>s+p.cond,0)/Math.max(1,S.fleet.length);
+ return `<div class="box"><div class="kv"><div><small>Aircraft families</small><b>${fams.length}</b></div><div><small>Commonality cost</small><b>${money(Math.max(0,fams.length-1)*150000)}/wk</b></div><div><small>Average condition</small><b style="color:${condColor(avg)}">${Math.round(avg)}</b></div><div><small>Checks due within 8 wks</small><b>${due}</b></div><div><small>On order</small><b>${S.orders.length}</b></div></div>
+  <div class="row">${short.length?`<span class="chip warn">Crew shortage: ${short.join(', ')}</span>`:'<span class="chip ok">Every family fully crewed</span>'}<label class="chk"><input type="checkbox" id="autoChecks" ${S.autoChecks!==false?'checked':''}> Book C and D checks automatically when due</label></div>
+  <div class="mute" style="font-size:12px">Families: ${fams.join(', ')||'none yet'}. Each family after the first costs $150,000 a week in training and spares.</div></div>`;}
+function planeExtras(p){const t=ACT[p.type];const nc=p.nextC-S.week,nd=p.nextD-S.week;
+ const chk=c=>{const w=c==='C'?nc:nd;return w<=8&&!p.check?`<button class="btn sm" type="button" data-check="${p.id}|${c}">Book ${c}-check</button>`:'';};
+ return `<div class="condrow"><span class="mute">Condition</span><div class="cbar"><span style="width:${p.cond}%;background:${condColor(p.cond)}"></span></div><b class="mono" style="color:${condColor(p.cond)}">${Math.round(p.cond)}</b></div>
+ <div class="row" style="font-size:12.5px">${p.check?`<span class="chip warn">In ${p.check.type}-check · ${p.check.left} wk left</span>`:p.grounded?'<span class="chip warn">Unserviceable this week</span>':''}
+  <span class="chip ${nc<0?'warn':nc<=8?'amb':''}">C-check ${nc<0?`overdue ${-nc} wk`:`in ${nc} wk`}</span><span class="chip ${nd<0?'warn':nd<=8?'amb':''}">D-check ${nd<0?`overdue ${-nd} wk`:nd>104?`in ${Math.round(nd/52)} yrs`:`in ${nd} wk`}</span>${chk('C')}${chk('D')}
+  ${p.mode==='lease'&&p.lease?`<span class="chip">${p.lease.term==='short'?'1-year':'6-year'} lease · ${money(leaseRate(t,p.lease.term))}/wk</span>`:''}</div>
+ ${t.cls!=='Freighter'?`<div class="row sp"><span class="mute" style="font-size:12.5px">Cabin product</span><div class="seg3" role="group" aria-label="Cabin product">${Object.keys(PRODUCT).map(k=>`<button type="button" data-product="${p.id}|${k}" aria-pressed="${(p.product||'std')===k}">${PRODUCT[k].label}${PRODUCT[k].seat&&k!==p.product&&['basic','std','prem'].indexOf(k)>['basic','std','prem'].indexOf(p.product||'std')?` · ${money(seatsOf(p.layout)*PRODUCT[k].seat)}`:''}</button>`).join('')}</div></div>`:`<span class="chip">${t.cargo} t cargo</span>`}`;}
+
+/* ---------- Buy aircraft: orders, leases, used listings ---------- */
+const AC_CLASSES2=['All','Turboprop','Regional jet','Narrowbody','Widebody','Jumbo','Freighter','Supersonic'];
+function buySummary(){const B=UI.buy,t=ACT[B.type];const L=leaseRate(t,B.term||'long');let rows='';const can=e=>S.unlimited?'∞':Math.floor(Math.max(0,S.cash)/e);
+ if(B.mode==='order'){const disc=orderDiscount(B.qty),each=t.price*(1-disc)*(B.priority?1.06:1),dep=each*0.2*B.qty;
+  rows=`<div><small>Price each</small><b>${money(each)}${disc?` <em class="good">−${pct(disc)}</em>`:''}</b></div><div><small>Deposit now (20%)</small><b class="${dep>S.cash&&!S.unlimited?'bad':''}">${money(dep)}</b></div><div><small>Balance on delivery</small><b>${money(each*B.qty-dep)}</b></div><div><small>Delivery</small><b>week ${S.week+orderWeeks(S,t,B.priority)}</b></div>`;}
+ else if(B.mode==='lease')rows=`<div><small>Deposit now (4 wks)</small><b class="${L*4*B.qty>S.cash&&!S.unlimited?'bad':''}">${money(L*4*B.qty)}</b></div><div><small>Then weekly</small><b>${money(L*B.qty)}</b></div><div><small>Ending early</small><b>${B.term==='short'?'free after 52 wks':'26 weeks\' rent'}</b></div><div><small>You can afford</small><b>${can(L*4)}</b></div>`;
+ else rows=`<div><small>Price each</small><b>${money(t.price)}</b></div><div><small>Pay now</small><b class="${t.price*B.qty>S.cash&&!S.unlimited?'bad':''}">${money(t.price*B.qty)}</b></div><div><small>Typical age</small><b>${t.used} yrs</b></div><div><small>You can afford</small><b>${can(t.price)}</b></div>`;
+ const over=!t.fixed&&(unitsOf(t,B.layout)>maxUnits(t)+1e-9||seatsOf(B.layout)<1);
+ return `<div class="kv">${rows}</div>${over?'<div class="bad" style="font-size:12.5px">Fix the cabin layout before ordering.</div>':''}`;}
+function buyPanel(t){const B=UI.buy;const routes=S.routes.filter(r=>dist(r.a,r.b)<=t.range&&canServe(t,r.a)&&canServe(t,r.b));
+ const modes=t.used?[['used','Buy used · '+money(t.price)],['lease','Lease']]:[['order','Order new · '+money(t.price)],['lease','Lease']];
+ return `<div class="buyp"><div class="seg2" role="group" aria-label="How to get it">${modes.map(([k,l])=>`<button type="button" data-xmode="${k}" aria-pressed="${B.mode===k}">${l}</button>`).join('')}</div>
+ ${B.mode==='lease'?`<div class="seg2" role="group" aria-label="Lease term"><button type="button" data-xterm="short" aria-pressed="${B.term==='short'}">1 year · ${money(leaseRate(t,'short'))}/wk</button><button type="button" data-xterm="long" aria-pressed="${B.term!=='short'}">6 years · ${money(leaseRate(t,'long'))}/wk</button></div>`:''}
+ ${B.mode==='order'?`<label class="chk"><input type="checkbox" id="xPrio" ${B.priority?'checked':''}> Priority delivery: half the wait for 6% more</label><div class="mute" style="font-size:12px">Bulk discount: 5% from 5, 10% from 10, 15% from 20 aircraft in one order.</div>`:''}
+ <div class="cabinedit" style="border-top:0;padding-top:0">${t.fixed?`<div class="mute" style="font-size:12.5px">${t.cls==='Freighter'?`Freighter: ${t.cargo} tonnes of cargo, no passengers.`:`The ${esc(t.name)} comes with a fixed ${t.seats}-seat cabin.`}</div>`:`<div class="mute" style="font-size:12.5px">Cabin for every aircraft in this order</div>${cabinFields(t,B.layout,'buy')}<div id="cabmeter-buy">${meterHTML(t,B.layout,'')}</div>`}</div>
+ <div class="row sp"><span class="field" style="flex:0 0 auto"><label for="buyQty">Quantity</label><span class="step"><button class="btn sm" type="button" data-qty="-1" aria-label="One fewer">−</button><input type="number" id="buyQty" min="1" max="50" value="${B.qty}"><button class="btn sm" type="button" data-qty="1" aria-label="One more">+</button></span></span>
+ <span class="field" style="flex:1 1 180px"><label for="buyRoute">${B.mode==='order'?'On delivery, schedule on':'Then schedule on'}</label><select id="buyRoute"><option value="">Nothing yet</option>${routes.map(r=>`<option value="${r.id}" ${B.route===r.id?'selected':''}>${r.a}–${r.b} · ${km(dist(r.a,r.b))}</option>`).join('')}</select></span></div>
+ <div id="buySum">${buySummary()}</div>
+ <div class="row"><button class="btn sm primary" type="button" data-xbuy="1">${B.mode==='order'?'Order':B.mode==='lease'?'Lease':'Buy'} ${B.qty} × ${esc(t.name)}</button><button class="btn sm ghost" type="button" data-act="cancelbuy">Cancel</button></div></div>`;}
+function renderMarket(){let h='';
+ if(S.orders.length){const g={};S.orders.forEach(o=>{const k=o.type+'|'+o.due;(g[k]=g[k]||[]).push(o);});
+  h+=`<div class="sec"><h3>Order book <span class="mono" style="letter-spacing:0">${S.orders.length}</span></h3><div class="tt"><div class="tt-h ob"><span>Aircraft</span><span>Delivery</span><span>Paid</span><span>Balance due</span><span></span></div>
+  ${Object.values(g).map(os=>{const o=os[0],t=ACT[o.type];return `<div class="tt-r ob"><span><b>${os.length} × ${esc(t.maker)} ${esc(t.name)}</b>${o.priority?' <span class="chip amb">Priority</span>':''}</span><span class="mono">week ${o.due} · ${o.due-S.week} wk</span><span class="mono">${money(os.reduce((s,x)=>s+x.paid,0))}</span><span class="mono">${money(os.reduce((s,x)=>s+x.each-x.paid,0))}</span><span><button class="btn sm ghost danger" type="button" data-cancelord="${o.id}">${UI.confirm==='co'+o.id?'Confirm: lose deposit':'Cancel one'}</button></span></div>`;}).join('')}</div></div>`;}
+ h+=`<div class="row" role="group" aria-label="Market view"><button class="btn sm ${UI.mview!=='used'?'on':''}" type="button" data-mview="new">Aircraft types</button><button class="btn sm ${UI.mview==='used'?'on':''}" type="button" data-mview="used">Used aircraft listings · ${(S.used||[]).length}</button></div>`;
+ if(UI.mview==='used'){h+=`<div class="sec"><h3>Used aircraft for sale <span class="mute" style="letter-spacing:.1em">refreshed weekly</span></h3><p class="mute" style="margin:0;font-size:13px">Each listing is a specific aircraft. Check how soon its D-check falls due: that's 4 weeks out of service and 5% of the list price.</p><div class="acgrid">`;
+  for(const u of (S.used||[])){const t=ACT[u.type];h+=`<div class="box ac"><div><div class="maker">${esc(t.maker)} · ${t.cls}</div><h4>${esc(t.name)}</h4></div>
+   <div class="kv"><div><small>Age</small><b>${u.age} yrs</b></div><div><small>Condition</small><b style="color:${condColor(u.cond)}">${u.cond}</b></div><div><small>D-check due</small><b class="${u.dIn<26?'bad':''}">${u.dIn<104?u.dIn+' wks':Math.round(u.dIn/52)+' yrs'}</b></div><div><small>${t.cls==='Freighter'?'Cargo':'Seats'}</small><b>${t.cls==='Freighter'?t.cargo+' t':t.seats}</b></div></div>
+   <div class="row"><button class="btn sm primary" type="button" data-buyused="${u.id}">${UI.confirm==='bu'+u.id?'Confirm':'Buy'} · ${money(u.price)}</button></div></div>`;}
+  return h+'</div></div>';}
+ const list=AC_SORTED.filter(t=>UI.mk==='All'||t.cls===UI.mk);
+ h+=`<div class="sec"><h3>Aircraft market <span class="mono" style="letter-spacing:0">${list.length}</span></h3><p class="mute" style="margin:0;font-size:13px">New aircraft are ordered and delivered later, with a 20% deposit. Leases start at once on a 1-year or 6-year term. Out-of-production types are sold used.</p>
+ <div class="row" role="group" aria-label="Filter by type">${AC_CLASSES2.map(c=>`<button class="btn sm ${UI.mk===c?'on':''}" type="button" data-mk="${c}">${c}</button>`).join('')}</div><div class="acgrid">`;
+ list.forEach(t=>{const fr=t.cls==='Freighter';h+=`<div class="box ac"><div><div class="maker">${t.maker} · ${t.cls}</div><h4>${t.name}</h4></div>
+  <div class="row">${t.used?`<span class="chip">Used only · around ${t.used} yrs old</span>`:`<span class="chip ok">New build · ${orderWeeks(S,t,false)} wk delivery</span>`}${t.prem?`<span class="chip amb">Supersonic: business fares ×${t.prem}, max 7 round trips/wk</span>`:''}${t.mm&&t.mm>=2.5?'<span class="chip warn">High maintenance</span>':''}<span class="chip">Family: ${famOf(t)}</span><span class="chip">Lands at: ${SIZE_LABEL[MIN_SIZE[t.cls]].toLowerCase()}s and up</span></div>
+  <div class="kv">${fr?`<div><small>Cargo</small><b>${t.cargo} t</b></div>`:`<div><small>Seats</small><b>${t.fixed?t.seats:seatsOf(defaultLayout(t))}</b></div><div><small>Max seats</small><b>${maxUnits(t)}</b></div>`}<div><small>Range</small><b>${km(t.range)}</b></div><div><small>Cruise</small><b>${t.spd.toLocaleString('en-AU')} km/h</b></div><div><small>Fuel burn</small><b>${t.burn} kg/km</b></div><div><small>Crews needed</small><b>${crewsPer(t)}</b></div></div>
+  ${UI.buy&&UI.buy.type===t.id?buyPanel(t):`<div class="row"><button class="btn sm primary" type="button" data-xopen="${t.id}|${t.used?'used':'order'}">${t.used?'Buy used':'Order'} · ${money(t.price)}</button><button class="btn sm" type="button" data-xopen="${t.id}|lease">Lease · from ${money(leaseRate(t,'long'))}/wk</button></div>`}</div>`;});
+ return h+'</div></div>';}
+
+/* ---------- Departures: hub operations ---------- */
+function hubOpsHTML(H){if(!S.hubs.includes(H))return '';const L=gateLoad(S)[H];const m=L?L.m:new Float32Array(168);const cap=Math.round(L?L.cap:gatesFor(H));
+ let bd=0,bv=-1;for(let d=0;d<7;d++){let s=0;for(let h=0;h<24;h++)s+=m[d*24+h];if(s>bv){bv=s;bd=d;}}const off=Math.round(tzOff(H)/60);
+ const day=Array.from({length:24},(_,lh)=>{const uh=((bd*24+lh-off)%168+168)%168;return m[uh];});const pk=Math.max(...day,1),mx=cap<=pk*1.6?Math.max(cap,pk)*1.1:pk*1.25,capOn=cap<=mx;
+ const bw=12,gp=3,W=24*(bw+gp),Hh=70;const y=v=>Hh-v/mx*(Hh-8);
+ const bars=day.map((v,i)=>`<rect x="${i*(bw+gp)}" y="${y(v)}" width="${bw}" height="${Hh-y(v)}" rx="2" fill="${v>cap?'var(--bad)':'var(--c-w)'}"/>`).join('');
+ const busy=S.gateBuild.find(g=>g.hub===H);const ms=marketShare(S,H);const segs=Object.entries(ms.by).sort((a,b)=>b[1]-a[1]);
+ const col=k=>k==='__me'?'var(--accent)':(S.rivals.find(R=>R.code===k)||{}).color||'var(--mute)';const nm=k=>k==='__me'?S.code:k;
+ return `<div class="sec"><h3>Hub operations · ${H}</h3><div class="box">
+  <div class="kv"><div><small>Gates</small><b>${S.gates[H]}${(S.rwyHub||[]).includes(H)?' <em class="bad">−25% runway works</em>':''}</b></div><div><small>Peak movements / hr</small><b class="${Math.max(...day)>cap?'bad':''}">${Math.max(...day)}</b></div><div><small>Connection bank quality</small><b>${S.bankQ&&S.bankQ[H]!=null?pct(S.bankQ[H]):'—'}</b></div><div><small>Busiest day</small><b>${DAYS[bd]}</b></div></div>
+  <div class="gchart"><svg viewBox="0 -2 ${W} ${Hh+16}" width="100%" height="${Hh+18}" preserveAspectRatio="none" role="img" aria-label="Movements per hour on ${DAYS[bd]} against ${cap} gates">${bars}${capOn?`<line x1="0" x2="${W}" y1="${y(cap)}" y2="${y(cap)}" stroke="var(--bad)" stroke-dasharray="4 3"/>`:''}${[0,6,12,18].map(hh=>`<text x="${hh*(bw+gp)}" y="${Hh+12}" font-size="9" fill="var(--mute)" font-family="var(--f-mono)">${String(hh).padStart(2,'0')}</text>`).join('')}</svg>
+   <div class="mute" style="font-size:11.5px">Arrivals and departures per hour, local time, against gate capacity (${capOn?'dashed':`${cap}, well above this chart`}). Each movement over capacity adds 4 minutes of delay that hour.</div></div>
+  <div class="row">${busy?`<span class="chip amb">Expansion ready in week ${busy.ready}</span>`:`<button class="btn sm" type="button" data-terminal="${H}">Expand terminal · +10 gates · $40M · 8 wks</button>`}</div>
+  <div class="row sp"><span class="mute" style="font-size:12.5px">Ground handling</span><div class="seg3" role="group" aria-label="Ground handling at ${H}">${Object.keys(HANDLING).map(k=>`<button type="button" data-handling="${H}|${k}" aria-pressed="${(S.handling[H]||'std')===k}">${HANDLING[k].label} · $${(HANDLING[k].cost/1000).toFixed(1)}k</button>`).join('')}</div></div>
+  ${ms.tot?`<div><small class="mute">Share of weekly seats at ${H}</small><div class="sharebar">${segs.map(([k,v])=>`<span style="width:${v/ms.tot*100}%;background:${col(k)}" title="${nm(k)} ${pct(v/ms.tot)}"></span>`).join('')}</div><div class="row" style="font-size:11.5px">${segs.slice(0,6).map(([k,v])=>`<span class="cab"><i style="background:${col(k)}"></i>${nm(k)} <b class="mono">${pct(v/ms.tot)}</b></span>`).join('')}</div></div>`:''}
+ </div></div>`;}
+function policyHTML(){return `<div class="sec"><h3>Disruption recovery</h3><div class="box"><div class="seg3" role="group" aria-label="Recovery policy">${Object.keys(POLICY).map(k=>`<button type="button" data-policy="${k}" aria-pressed="${S.policy===k}">${POLICY[k].label}</button>`).join('')}</div>
+ <div class="mute" style="font-size:12.5px">${S.policy==='rebook'?'Cancelled passengers move to later flights: $40 each, reputation −0.4 per cancellation.':S.policy==='standby'?`Idle aircraft fly cancelled flights instead (${S.fleet.filter(p=>!(p.sched||[]).length&&!p.grounded).length} idle now). Weather and airspace cancellations still rebook.`:'Passengers are refunded and compensated: $250 each, reputation −0.1 per cancellation.'}${S.opsStats?` Last week: ${S.opsStats.cx} cancelled, ${S.opsStats.recovered} recovered by standby aircraft.`:''}</div></div></div>`;}
+function renderBoard(){const B=UI.board;if(!B.ap||!AP[B.ap])B.ap=S.hubs[0];return hubOpsHTML(B.ap)+(S.hubs.includes(B.ap)?policyHTML():'')+renderBoardBase();}
+
+/* ---------- Conditions extras ---------- */
+const notamHit=n=>n.ap&&n.kind==='rwy'&&S.hubs.includes(n.ap)&&(S.rwyHub||[]).includes(n.ap);
+// Times Square style crawl; the start offset follows the wall clock so a re-render doesn't jump back to the beginning
+function notamTicker(){const ns=S.notams||[];
+ const items=ns.length?ns.map(n=>`<span class="tk-i${notamHit(n)?' hit':''}">${esc(n.text)}${notamHit(n)?' · HUB CAPACITY −25%':''}</span>`):[`<span class="tk-i">NO NOTICES FOR YOUR NETWORK THIS WEEK</span>`];
+ const run=`<span class="tk-run"><span class="tk-tag">NOTAM</span>${items.join('<span class="tk-sep" aria-hidden="true">◆</span>')}<span class="tk-sep" aria-hidden="true">◆</span></span>`;
+ const chars=ns.reduce((a,n)=>a+n.text.length+6,12)||40;const dur=Math.max(14,Math.round(chars*0.22));const off=(Date.now()/1000)%dur;
+ return `<div class="ticker" role="marquee" aria-label="NOTAM feed: ${ns.length} notice${ns.length===1?'':'s'}" title="Tap to pause"><div class="tk-track" style="animation-duration:${dur}s;animation-delay:-${off.toFixed(2)}s">${run}${run.replace('class="tk-run"','class="tk-run" aria-hidden="true"')}</div></div>`;}
+function renderCond(){let h=renderCondBase();const o=opts(S);const se=seasonOf(S.week);
+ h=`<div class="box season"><b>IATA ${se==='S'?'Summer':'Winter'} season</b><span class="mute">${(()=>{const w=((S.week-1)%52)+1;return se==='S'?`Weeks 13–43 of each year. Winter starts in ${44-w} week${44-w===1?'':'s'}; flights marked Winter only are not flying.`:`Weeks 44–12 of each year. Summer starts in ${(w>=44?52-w+13:13-w)} weeks; flights marked Summer only are not flying.`;})()}</span></div>`+h;
+ if(o.weather||o.airspace){const wx=o.weather?(S.wxNext||[]):[],zs=o.airspace?(S.zonesNext||[]).filter(z=>!(S.zones||[]).some(c=>c.id===z.id)):[];
+  h+=`<div class="sec"><h3>Forecast · week ${S.week+1}</h3><div class="mute" style="font-size:12.5px">Weather confidence 70%, airspace 85%: some systems will shift or fade before then.</div><div class="clist">${wx.slice().sort((a,b)=>b.s-a.s).slice(0,8).map(c=>`<div class="citem"><span class="cic" aria-hidden="true">${WX_ICON[c.k]||'•'}</span><div><b>${esc(c.label)}</b><div class="mute">${nearTxt(c.lat,c.lon)}</div></div><span class="sev s${c.s}">${'●'.repeat(c.s)}${'○'.repeat(3-c.s)}</span><span></span></div>`).join('')}
+   ${zs.slice(0,5).map(z=>`<div class="citem"><span class="cic z" aria-hidden="true">${{airport:'APT',military:'MIL',political:'POL',temporary:'TMP'}[z.k]}</span><div><b>${esc(z.label)}</b><div class="mute">${z.k==='airport'?z.ap:nearTxt(z.lat,z.lon)}</div></div><span></span><span></span></div>`).join('')}${!wx.length&&!zs.length?'<div class="empty">Nothing notable expected.</div>':''}</div></div>`;}
+ h=notamTicker()+h;
+ const ns=S.notams||[];if(ns.length)h+=`<details class="sec nlist"><summary><h3>All notices <span class="mono" style="letter-spacing:0">${ns.length}</span></h3></summary><div class="notams">${ns.map(n=>`<div class="notam ${n.kind}"><span class="mono">${esc(n.text)}</span>${notamHit(n)?'<em class="bad">Hub capacity −25%</em>':''}</div>`).join('')}</div></details>`;
+ return h;}
+
+/* ---------- Finance ---------- */
+const INC=[['Passenger revenue','rev',1],['Cargo revenue','cargo',1],['Fuel','fuel'],['Fuel hedge','hedge'],['Flight crew (variable)','crew'],['Pilot salaries','salaries'],['Hiring and training','training'],['Airport fees','fees'],['Ground handling','handling'],['Delays and disruption','disrupt'],['Leases','lease'],['Maintenance','maint'],['C and D checks','checks'],['Repairs','repairs'],['Overheads','overhead'],['Fleet commonality','commonality'],['Marketing','marketing'],['Cabin service','service'],['IT and operations','it'],['Loyalty programme','loyalty'],['Alliance fees','alliance'],['Interest','interest']];
+function sumLedger(n){const L=(S.ledger||[]).slice(-n);const o={};for(const r of L)for(const [,k] of INC)o[k]=(o[k]||0)+(r[k]||0);['profit','operating','capex','fin'].forEach(k=>o[k]=L.reduce((s,r)=>s+(r[k]||0),0));o.n=L.length;return o;}
+function renderFinance(){let h='';const sc=S.scenario;
+ if(sc){const pr=scenarioProgress(S)||[];h+=`<div class="box hl"><div class="row sp"><b>Scenario · ${esc(sc.name)}</b><span class="chip ${sc.done?'ok':sc.failed?'warn':'amb'}">${sc.done?`Complete in week ${sc.doneWeek}`:sc.failed?'Deadline passed':`${sc.deadline-S.week} weeks left`}</span></div><div class="row">${pr.map(x=>`<span class="cab">${esc(x)}</span>`).join('')}</div></div>`;}
+ const P=UI.fper||1;const A=sumLedger(P);
+ h+=`<div class="sec"><h3>Income statement</h3><div class="row" role="group" aria-label="Period">${[[1,'Last week'],[13,'13 weeks'],[52,'52 weeks']].map(([n,l])=>`<button class="btn sm ${P===n?'on':''}" type="button" data-fper="${n}">${l}</button>`).join('')}</div><div class="box">`;
+ if(!A.n)h+='<div class="empty">Results appear after your first week.</div>';
+ else{h+=`<table><tbody>${INC.filter(([,k,inc])=>A[k]||inc).map(([l,k,inc])=>`<tr><td>${l}</td><td class="n ${inc?'':'mute'}">${money(inc?A[k]:-A[k])}</td></tr>`).join('')}<tr><td><b>Profit${A.n>1?` · ${A.n} weeks`:''}</b></td><td class="n ${A.profit>=0?'good':'bad'}"><b>${money(A.profit)}</b></td></tr></tbody></table>`;}
+ h+=`</div></div>`;
+ if(A.n)h+=`<div class="sec"><h3>Cash flow · ${A.n} week${A.n>1?'s':''}</h3><div class="box"><table><tbody><tr><td>Operating</td><td class="n">${money(A.operating)}</td></tr><tr><td>Investing (aircraft, slots, terminals)</td><td class="n">${money(A.capex)}</td></tr><tr><td>Financing (loans, bonds, shares)</td><td class="n">${money(A.fin)}</td></tr><tr><td><b>Net change in cash</b></td><td class="n"><b>${money(A.operating+A.capex+A.fin)}</b></td></tr></tbody></table></div></div>`;
+ const b=balanceSheet(S);const cr=creditRating(S);
+ h+=`<div class="sec"><h3>Balance sheet</h3><div class="box"><div class="bs"><table><tbody><tr><th colspan="2">Assets</th></tr>${[['Cash',b.assets.cash],['Aircraft owned',b.assets.aircraft],['Deposits on order',b.assets.deposits],['Slots',b.assets.slots],['Hubs and terminals',b.assets.infrastructure]].map(([l,v])=>`<tr><td>${l}</td><td class="n">${money(v)}</td></tr>`).join('')}<tr><td><b>Total assets</b></td><td class="n"><b>${money(b.ta)}</b></td></tr></tbody></table>
+  <table><tbody><tr><th colspan="2">Liabilities</th></tr>${[['Overdraft',b.liab.overdraft],['Bank loans',b.liab.loans],['Bonds',b.liab.bonds]].map(([l,v])=>`<tr><td>${l}</td><td class="n">${money(v)}</td></tr>`).join('')}<tr><td><b>Total liabilities</b></td><td class="n"><b>${money(b.tl)}</b></td></tr><tr><td><b>Equity</b></td><td class="n ${b.equity>=0?'good':'bad'}"><b>${money(b.equity)}</b></td></tr><tr><td>Your stake</td><td class="n">${pct(S.stake||1)}</td></tr></tbody></table></div></div></div>`;
+ // breakdowns
+ const rs=S.routes.filter(r=>r.last&&r.last.flights);if(rs.length){const byType={},byHub={};
+  for(const r of rs){const ops=[];S.fleet.forEach(p=>(p.sched||[]).forEach(e=>{if(e.r===r.id&&activeIn(e,S.week))ops.push({p,n:e.days.filter(Boolean).length});}));const cap=o=>o.n*Math.max(1,seatsOf(o.p.layout)+(ACT[o.p.type].cargo||0)*5);const tot=ops.reduce((s,o)=>s+cap(o),0)||1;
+   for(const o of ops){const n=ACT[o.p.type].name;byType[n]=(byType[n]||0)+r.last.profit*cap(o)/tot;}
+   const hb=S.hubs.includes(r.a)?r.a:r.b;byHub[hb]=(byHub[hb]||0)+r.last.profit;}
+  const best=rs.slice().sort((a,b)=>b.last.profit-a.last.profit);const row=([k,v])=>`<tr><td>${esc(k)}</td><td class="n ${v>=0?'good':'bad'}">${money(v)}</td></tr>`;
+  h+=`<div class="sec"><h3>Profit breakdown · last week</h3><div class="box"><div class="bs"><table><tbody><tr><th colspan="2">By aircraft type</th></tr>${Object.entries(byType).sort((a,b)=>b[1]-a[1]).map(row).join('')}</tbody></table>
+   <table><tbody><tr><th colspan="2">By hub</th></tr>${Object.entries(byHub).sort((a,b)=>b[1]-a[1]).map(row).join('')}</tbody></table>
+   <table><tbody><tr><th colspan="2">Best and worst routes</th></tr>${best.slice(0,3).concat(best.length>5?best.slice(-2):[]).map(r=>row([r.a+'–'+r.b,r.last.profit])).join('')}</tbody></table></div></div></div>`;}
+ h+=`<div class="sec"><h3>Weekly profit <span class="mute" style="letter-spacing:.1em">last 26 weeks</span></h3><div class="box chartbox"><canvas id="chart"></canvas></div></div>`;
+ // credit, loans, bonds, shares
+ const ml=maxLoan(S);
+ h+=`<div class="sec"><h3>Credit and funding</h3><div class="box"><div class="kv"><div><small>Credit rating</small><b class="rating r${cr.idx}">${cr.grade}</b></div><div><small>Borrowing rate</small><b>${(cr.rate*100).toFixed(1)}%</b></div><div><small>Debt to assets</small><b>${pct(cr.ratio)}</b></div><div><small>Bank loans</small><b>${money(S.loan)}</b></div><div><small>Credit limit</small><b>${money(ml)}</b></div></div>
+  ${S.unlimited?'<div class="mute" style="font-size:12.5px">Unlimited budget: you never need to borrow, but the tools still work.</div>':''}
+  <div class="row"><button class="btn sm" type="button" data-borrow="10000000" ${S.loan+10e6>ml?'disabled':''}>Borrow $10M</button><button class="btn sm" type="button" data-borrow="50000000" ${S.loan+50e6>ml?'disabled':''}>Borrow $50M</button><button class="btn sm" type="button" data-repay="10000000" ${S.loan<=0?'disabled':''}>Repay $10M</button><button class="btn sm" type="button" data-repay="all" ${S.loan<=0?'disabled':''}>Repay all</button></div>
+  <div class="row"><span class="mute" style="font-size:12.5px">Issue a 5-year bond at ${((cr.rate+0.005)*100).toFixed(1)}%:</span>${[100e6,250e6,500e6,1e9].map(a=>`<button class="btn sm" type="button" data-bond="${a}">${money(a)}</button>`).join('')}</div>
+  ${(S.bonds||[]).length?`<div class="mute mono" style="font-size:12px">${S.bonds.map(x=>`${money(x.amt)} at ${(x.rate*100).toFixed(1)}% · matures week ${x.matures}`).join(' · ')}</div>`:''}
+  <div class="row"><button class="btn sm" type="button" data-shares="1" ${S.shareIssues>=3?'disabled':''}>${UI.confirm==='shares'?'Confirm: sell 10%':`Sell 10% of the company · ~${money(Math.max(0,companyValue(S))*0.1)}`}</button><span class="mute" style="font-size:12px">${3-(S.shareIssues||0)} share issues left · your stake ${pct(S.stake||1)}</span></div></div></div>`;
+ // hedging
+ const hg=S.hedge&&S.hedge.left>0?S.hedge:null;
+ h+=`<div class="sec"><h3>Fuel hedging</h3><div class="box">${hg?`<div>Hedged ${pct(hg.pct)} of fuel at $${hg.price.toFixed(2)}/kg · ${hg.left} of ${hg.total} weeks left. Market now $${S.fuel.toFixed(2)}/kg (${S.fuel>hg.price?'saving':'costing'} you money).</div>`:`<div class="mute" style="font-size:12.5px">Lock today's price ($${S.fuel.toFixed(2)}/kg) for part of your fuel. The premium is 3% of the hedged fuel bill, paid now.</div>
+  <div class="row">${[.25,.5,.75].map(p=>`<button class="btn sm ${UI.hp===p?'on':''}" type="button" data-hp="${p}">${pct(p)}</button>`).join('')}<span class="mute">for</span>${[13,26,52].map(w=>`<button class="btn sm ${UI.hw===w?'on':''}" type="button" data-hw="${w}">${w} wks</button>`).join('')}<button class="btn sm primary" type="button" data-hedge="1">Hedge</button></div>`}</div></div>`;
+ // cost centres
+ const CC=[['mkt','Marketing','Brand growth in every region you fly'],['svc','Cabin service','Reputation and reviews'],['mx','Maintenance quality','How fast aircraft condition falls'],['it','IT and operations','Delay minutes'],['pay','Staff pay','Pilot resignations and hiring speed']];
+ h+=`<div class="sec"><h3>Cost centres</h3><div class="box">${CC.map(([k,l,d])=>`<div class="cc"><label for="cc-${k}"><b>${l}</b><small class="mute">${d}</small></label><input type="range" id="cc-${k}" min="0.5" max="2" step="0.1" value="${S.budget[k]}" data-cc="${k}"><b class="mono" id="ccv-${k}">${pct(S.budget[k])}</b></div>`).join('')}</div></div>`;
+ h+=`<div class="sec"><h3>Game</h3><div class="row"><button class="btn sm ghost" type="button" data-act="newgame">${UI.confirm==='newgame'?'Confirm: abandon this airline':'Start a new airline'}</button></div></div>`;
+ return h;}
+
+/* ---------- Rivals ---------- */
+function standings(){const rows=[{name:S.name,me:true,color:'var(--accent)',value:companyValue(S)*(S.stake||1),routes:S.routes.length,hubs:S.hubs,profit:S.last?S.last.profit:0}]
+ .concat(S.rivals.map(r=>({name:r.name,color:r.color,value:r.value,routes:r.routes.length,hubs:r.hubs,profit:r.lastProfit,pers:r.pers,al:r.alliance})));return rows.sort((a,b)=>b.value-a.value);}
+function renderRivals(){if(!S.rivals.length)return `<div class="sec"><h3>Rivals</h3><div class="box"><div>No CPU airlines compete with you${S.alliance!=null?'':', so there is no alliance to join'}.</div><div class="kv"><div><small>Company value</small><b>${money(companyValue(S))}</b></div><div><small>Best so far</small><b>${money(S.peak||0)}</b></div></div></div></div>`;
+ const rows=standings();let h=`<div class="sec"><h3>Standings · company value</h3><div class="box" style="overflow-x:auto"><table><thead><tr><th>#</th><th>Airline</th><th class="n">Value</th><th class="n">Routes</th><th class="n">Last wk</th></tr></thead><tbody>
+ ${rows.map((r,i)=>`<tr class="${r.me?'me':''}"><td class="mono">${i+1}</td><td><span class="dot" style="background:${r.color}"></span>${esc(r.name)}<div class="mute" style="font-size:11.5px">${r.me?`Your ${pct(S.stake||1)} stake`:`${PERS[r.pers||'hub'].label} · ${ALLIANCES[r.al]}`} · hubs ${r.hubs.join(', ')}</div></td><td class="n">${money(r.value)}</td><td class="n">${r.routes}</td><td class="n ${r.profit>=0?'good':'bad'}">${money(r.profit)}</td></tr>`).join('')}
+ </tbody></table></div></div>`;
+ // alliances
+ h+=`<div class="sec"><h3>Alliances</h3><div class="mute" style="font-size:12.5px">Join with reputation 55+ and 10+ aircraft: $20M, then $250,000 a week. Partners feed connecting passengers at your hubs and stop undercutting you.</div><div class="clist">${ALLIANCES.map((n,i)=>{const mem=S.rivals.filter(R=>R.alliance===i);const me=S.alliance===i;
+  return `<div class="citem al"><span class="cic" style="color:var(--accent)">${n.split(' ')[0].slice(0,3).toUpperCase()}</span><div><b>${n}</b><div class="mute">${mem.map(R=>esc(R.name)).join(', ')||'No airlines yet'}${me?' · and you':''}</div></div><span></span>${me?`<button class="btn sm ghost danger" type="button" data-leaveal="1">Leave</button>`:S.alliance==null?`<button class="btn sm" type="button" data-joinal="${i}">Join</button>`:'<span></span>'}</div>`;}).join('')}</div></div>`;
+ // rival cards
+ const k=new Set(S.routes.map(r=>pairKey(r.a,r.b)));
+ S.rivals.forEach((r,i)=>{const clash=r.routes.filter(x=>k.has(pairKey(x.a,x.b)));const price=rivalPrice(S,i);
+  h+=`<div class="sec"><h3><span><span class="dot" style="background:${r.color}"></span>${esc(r.name)} <span class="mono" style="letter-spacing:0">${r.code}</span></span><span class="mono" style="letter-spacing:0">${r.routes.length} routes</span></h3><div class="box">
+  <div class="row"><span class="chip">${PERS[r.pers||'hub'].label}</span><span class="chip">${ALLIANCES[r.alliance]}${S.alliance===r.alliance?' · partner':''}</span><span class="chip">Hubs ${r.hubs.join(', ')}</span></div>
+  ${clash.length?`<div class="row">${clash.map(x=>`<span class="chip warn">${x.a}–${x.b} · fare ${x.mult<1?'':'+'}${Math.round((x.mult-1)*100)}%</span>`).join('')}</div>`:'<div class="mute">Not competing on any of your routes.</div>'}
+  <div class="mute mono" style="font-size:12px">${r.routes.slice(0,14).map(x=>x.a+'–'+x.b).join('  ')}${r.routes.length>14?'  …':''}</div>
+  <div class="row"><button class="btn sm ${UI.confirm==='buyr'+i?'danger':''}" type="button" data-buyrival="${i}">${UI.confirm==='buyr'+i?`Confirm: buy for ${money(price)}`:`Buy this airline · ${money(price)}`}</button><span class="mute" style="font-size:12px">You get its hubs, routes and one aircraft per route.</span></div></div></div>`;});
+ return h;}
+
+/* ---------- Company tab ---------- */
+function reviewData(){const st=S.opsStats||{legs:0,cx:0,late:0,lf:0,prod:1};const legs=Math.max(1,st.legs+st.cx);const onTime=1-st.late/Math.max(1,st.legs),cxr=st.cx/legs;
+ let score=2.6+(st.prod-1)*8+(onTime-0.8)*3-(cxr*8)+(S.budget.svc-1)*1.2+(st.lf>0.95?-0.3:0)+(S.loyalty?0.15:0);score=clamp(score,1,5);
+ const c=[];if(onTime<0.8)c.push(`"Late again. ${Math.round((1-onTime)*100)}% of my flights left more than 15 minutes behind."`);else c.push('"Left on time and landed early. Smooth trip."');
+ if(cxr>0.02)c.push('"My flight was cancelled and the rebooking took forever."');if(st.prod>1.04)c.push('"The lie-flat seat and Wi-Fi made the long flight easy."');else if(st.prod<0.97)c.push('"Cramped, worn cabin. You get what you pay for."');
+ if(S.budget.svc>=1.3)c.push('"Crew were attentive and the meal was genuinely good."');else if(S.budget.svc<=0.7)c.push('"Barely any service on board, not even water without asking."');
+ if(st.lf>0.95)c.push('"Completely full flight, no room for bags."');return {score,onTime,cxr,c:c.slice(0,4)};}
+function renderCompany(){let h='';const sc=S.scenario;
+ if(sc){const pr=scenarioProgress(S)||[];h+=`<div class="box hl"><div class="row sp"><b>Scenario · ${esc(sc.name)}</b><span class="chip ${sc.done?'ok':sc.failed?'warn':'amb'}">${sc.done?`Complete in week ${sc.doneWeek}`:sc.failed?'Deadline passed':`${sc.deadline-S.week} weeks left`}</span></div><div class="mute" style="font-size:12.5px">${esc(SCENARIOS[sc.id].desc)}</div><div class="row">${pr.map(x=>`<span class="cab">${esc(x)}</span>`).join('')}</div></div>`;}
+ // crews
+ const need=crewNeed(S);const fams=[...new Set(Object.keys(need).concat(Object.keys(S.crews||{})))];
+ h+=`<div class="sec"><h3>Pilots and type ratings</h3><div class="box"><div class="row sp"><label class="chk"><input type="checkbox" id="autoHire" ${S.autoHire?'checked':''}> Auto-hire to cover every family</label><span class="mono" style="font-size:12.5px">${S.hireLeft||0} trained crews on the market this week</span></div>
+  ${fams.length?`<div class="tt"><div class="tt-h crew"><span>Family</span><span>Need</span><span>Crews</span><span>Training</span><span>Hire</span></div>${fams.map(f=>{const c=S.crews[f]||{have:0,train:[]};const tr=c.train.reduce((s,x)=>s+x.n,0);const n=need[f]||0;const ok=c.have>=n;
+   return `<div class="tt-r crew"><span><b>${esc(f)}</b></span><span class="mono">${n}</span><span class="mono ${ok?'good':'bad'}">${c.have}</span><span class="mono">${tr?`${tr} · wk ${Math.min(...c.train.map(x=>x.w))}`:'—'}</span><span class="row" style="gap:4px"><button class="btn sm" type="button" data-hire="${f}|trained|1" title="$120,000, starts now">+1 trained</button><button class="btn sm" type="button" data-hire="${f}|cadet|5" title="$50,000 each, 4 weeks">+5 cadets</button></span></div>`;}).join('')}</div>`:'<div class="empty">No aircraft yet, so no crews needed.</div>'}
+  <div class="mute" style="font-size:12px">6 crews per regional or narrowbody aircraft, 9 per widebody, jumbo or freighter. Trained crews cost $120,000 and start at once; cadets cost $50,000 and take 4 weeks. Short of crews, a family cancels the flights it can't cover.</div></div></div>`;
+ // brand
+ const regs=Object.keys(S.brand||{});const camp=r=>S.campaigns.find(c=>c.region===r);
+ h+=`<div class="sec"><h3>Brand by region</h3><div class="box">${regs.map(r=>`<div class="brandrow"><span>${REGION_NAMES[r]}</span><div class="cbar"><span style="width:${S.brand[r]}%;background:var(--accent)"></span></div><b class="mono">${Math.round(S.brand[r])}</b>${camp(r)?`<span class="chip amb">${CAMPAIGN[camp(r).level].label} · ${camp(r).left} wk</span>`:'<span></span>'}</div>`).join('')}
+  <div class="row"><select id="cReg" aria-label="Campaign region" style="flex:1 1 130px;width:auto">${regs.map(r=>`<option value="${r}">${REGION_NAMES[r]}</option>`).join('')}</select><select id="cLvl" aria-label="Campaign level" style="flex:2 1 200px;width:auto">${CAMPAIGN.map((c,i)=>`<option value="${i}">${c.label} · ${money(c.cost)}/wk · +${c.pts}/wk</option>`).join('')}</select><select id="cWk" aria-label="Campaign length" style="flex:0 1 110px;width:auto">${[4,8,12].map(w=>`<option value="${w}">${w} weeks</option>`).join('')}</select><button class="btn sm primary" type="button" data-campaign="1">Launch campaign</button></div>
+  <div class="mute" style="font-size:12px">Brand makes routes touching a region up to 15% more attractive (or less, below 50). It fades slowly toward 30.</div></div></div>`;
+ // loyalty
+ h+=`<div class="sec"><h3>Loyalty programme</h3><div class="box"><div class="row sp"><label class="chk"><input type="checkbox" id="loyalty" ${S.loyalty?'checked':''}> Run a frequent flyer programme</label><span class="mono">${(S.members||0).toLocaleString()} members</span></div><div class="mute" style="font-size:12.5px">$2 a passenger. 5% more attractive and 8% more premium-cabin demand.</div></div></div>`;
+ // reviews
+ const rv=reviewData();const stars=Math.round(rv.score*2)/2;
+ h+=`<div class="sec"><h3>Passenger reviews</h3><div class="box"><div class="row"><span class="stars" aria-label="${stars} out of 5">${'★'.repeat(Math.floor(stars))}${stars%1?'½':''}<span class="mute">${'☆'.repeat(5-Math.ceil(stars))}</span></span><b class="mono">${rv.score.toFixed(1)} / 5</b></div>
+  <div class="kv"><div><small>On time</small><b>${pct(rv.onTime)}</b></div><div><small>Cancelled</small><b>${(rv.cxr*100).toFixed(1)}%</b></div><div><small>Reputation</small><b>${Math.round(S.rep)}</b></div></div>
+  <div class="reviews">${rv.c.map(x=>`<blockquote>${esc(x)}</blockquote>`).join('')}</div></div></div>`;
+ return h;}
+
+/* ---------- popup: passengers and onward connections ---------- */
+function paxHTML(r){if(!r.mine)return '';const R=S.routes.find(x=>pairKey(x.a,x.b)===pairKey(r.o,r.d));const L=R&&R.last;if(!L||!L.flights)return '';
+ const per=c=>Math.round((L.byClass[c].pax/Math.max(1,L.flights)));const conn=Math.round(L.conn/Math.max(1,L.flights));
+ let onward='';if(S.hubs.includes(r.d)&&conn){const arr=r.est!=null?r.est:(r.depU+r.delay+r.leg);const rows=boardRows(r.d,'dep').filter(x=>x.mine&&x.absDep!=null);const G=gameNow();
+  const ws=Math.floor(G/WEEK)*WEEK;const arrAbs=(()=>{let a=ws+r.depU+r.delay+r.leg;if(a<G-2*1440)a+=WEEK;return a;})();
+  const nxt=rows.filter(x=>{const g=x.est-arrAbs;return g>=0&&g<=240&&x.place!==r.o;}).slice(0,4);
+  if(nxt.length)onward=`<div class="mute" style="font-size:12px;margin-top:4px">Onward from ${r.d}: ${nxt.map(x=>{const g=x.est-arrAbs;return `<span class="${g<45?'bad':''}">${x.fn} to ${x.place} ${hhmm(x.m)}${g<45?' (misconnect)':''}</span>`;}).join(' · ')}</div>`;}
+ return `<div class="fp-cond"><b>On board (typical)</b><div class="row" style="margin-top:4px">${CLASSES.filter(c=>L.byClass[c]).map(c=>`<span class="cab"><i style="background:${CLS_COLOR[c]}"></i>${CLASS_NAME[c]} <b class="mono">${per(c)}/${Math.round(L.byClass[c].seats/Math.max(1,L.flights))}</b></span>`).join('')}${conn?`<span class="cab">Connecting <b class="mono">${conn}</b></span>`:''}${L.cargo&&L.cargo.t?`<span class="cab">Cargo <b class="mono">${(L.cargo.t/Math.max(1,L.flights)).toFixed(1)} t</b></span>`:''}</div>${onward}</div>`;}
+
+/* ---------- takeover offer ---------- */
+function showOffer(){const m=$('#modal');if(!S.offer||!m.hidden)return;
+ m.innerHTML=`<div class="card"><div class="board"><span>TAKEOVER OFFER</span><span>WK ${S.week}</span></div><h2>${esc(S.offer.rival)} wants to buy ${esc(S.name)}</h2>
+ <p>Your cash has been negative for ${S.debtWeeks} weeks. They offer ${money(S.offer.amount)} for the airline. Accepting ends the game as a sale; declining keeps you flying, and they won't ask again for 8 weeks.</p>
+ <div class="row"><button class="btn primary" type="button" id="bAcc">Sell the airline</button><button class="btn" type="button" id="bDec">Decline and keep flying</button></div></div>`;m.hidden=false;
+ $('#bAcc').onclick=()=>{respondOffer(S,true);m.hidden=true;save();render();};$('#bDec').onclick=()=>{respondOffer(S,false);m.hidden=true;save();render();};}
+
+/* ---------- events for the expansion ---------- */
+$('#view').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||!S)return;const d=b.dataset;
+ const done=(r,ok)=>{if(typeof r==='string'){toast(r,true);return;}if(ok)toast(ok);save();render();};
+ if(d.rights){const [a,c]=d.rights.split('|');done(applyRights(S,a,c),'Application sent.');return;}
+ if(d.pricing){const [id,m]=d.pricing.split('|');const r=routeById(S,+id);r.pricing=m;done(true,m==='auto'?'Auto pricing on: fares follow demand each week.':'Manual fares.');return;}
+ if(d.check){const [id,c]=d.check.split('|');done(bookCheck(S,+id,c),`${c}-check booked.`);return;}
+ if(d.product){const [id,l]=d.product.split('|');done(setProduct(S,+id,l));return;}
+ if(d.mview){UI.mview=d.mview;UI.buy=null;render();return;}
+ if(d.xopen){const [id,m]=d.xopen.split('|');UI.buy={type:id,mode:m,qty:1,layout:defaultLayout(ACT[id]),route:null,term:'long',priority:false};render();return;}
+ if(d.xmode){UI.buy.mode=d.xmode;render();return;}
+ if(d.xterm){UI.buy.term=d.xterm;render();return;}
+ if(d.xbuy){const B=UI.buy,t=ACT[B.type];if(!t.fixed&&(unitsOf(t,B.layout)>maxUnits(t)+1e-9||seatsOf(B.layout)<1)){toast('Fix the cabin layout before ordering.',true);return;}
+  if(B.mode==='order'){const r=placeOrder(S,B.type,B.qty,B.layout,B.priority,B.route);if(typeof r==='string'){toast(r,true);return;}UI.buy=null;save();render();toast(`Ordered ${B.qty} × ${t.name}. Delivery in week ${r.due}.`);return;}
+  let n=0,err=null,sch=0;for(let i=0;i<B.qty;i++){const p=acquire(S,B.type,B.mode==='used'?'buy':'lease',B.layout,{term:B.term});if(typeof p==='string'){err=p;break;}n++;if(B.route){const x=autoFill(S,p.id,B.route);if(typeof x!=='string')sch+=x;}}
+  if(!n){toast(err,true);return;}UI.buy=null;save();render();toast(`${B.mode==='lease'?'Leased':'Bought'} ${n} × ${t.name}${sch?`, scheduled ${sch} round trips`:''}.${err?' Stopped early: '+err:''}`,!!err);return;}
+ if(d.cancelord){if(UI.confirm!=='co'+d.cancelord){UI.confirm='co'+d.cancelord;render();return;}UI.confirm=null;cancelOrder(S,+d.cancelord);save();render();return;}
+ if(d.buyused){if(UI.confirm!=='bu'+d.buyused){UI.confirm='bu'+d.buyused;render();return;}UI.confirm=null;done(buyUsed(S,+d.buyused),'Bought. It is ready to schedule in Fleet.');return;}
+ if(d.terminal){done(expandTerminal(S,d.terminal),'Terminal expansion started.');return;}
+ if(d.handling){const [H,k]=d.handling.split('|');S.handling[H]=k;done(true,`${HANDLING[k].label} handling at ${H}.`);return;}
+ if(d.policy){S.policy=d.policy;done(true,`Recovery policy: ${POLICY[d.policy].label}.`);return;}
+ if(d.fper){UI.fper=+d.fper;render();return;}
+ if(d.bond){done(issueBond(S,+d.bond));return;}
+ if(d.shares){if(UI.confirm!=='shares'){UI.confirm='shares';render();return;}UI.confirm=null;done(issueShares(S));return;}
+ if(d.hp){UI.hp=+d.hp;render();return;}if(d.hw){UI.hw=+d.hw;render();return;}
+ if(d.hedge){done(buyHedge(S,UI.hp||0.5,UI.hw||26),'Fuel hedged.');return;}
+ if(d.joinal){done(joinAlliance(S,+d.joinal));return;}if(d.leaveal){done(leaveAlliance(S));return;}
+ if(d.buyrival){const i=+d.buyrival;if(UI.confirm!=='buyr'+i){UI.confirm='buyr'+i;render();return;}UI.confirm=null;done(acquireRival(S,i));return;}
+ if(d.hire){const [f,k,n]=d.hire.split('|');const got=hireCrews(S,f,+n,k);if(!got){toast(k==='trained'?'No trained crews left on the market this week, or not enough cash.':'Not enough cash.',true);return;}done(true,`${k==='trained'?'Hired':'Training'} ${got} ${f} crew${got>1?'s':''}.`);return;}
+ if(d.campaign){done(startCampaign(S,$('#cReg').value,+$('#cLvl').value,+$('#cWk').value),'Campaign launched.');return;}
+});
+$('#view').addEventListener('change',e=>{const t=e.target;if(!S)return;
+ if(t.id==='autoChecks'){S.autoChecks=t.checked;save();return;}
+ if(t.id==='autoHire'){S.autoHire=t.checked;if(t.checked)autoHireNow(S);save();render();return;}
+ if(t.id==='loyalty'){S.loyalty=t.checked;save();render();toast(t.checked?'Loyalty programme launched.':'Loyalty programme closed.');return;}
+ if(t.id==='xPrio'){UI.buy.priority=t.checked;const sm=$('#buySum');if(sm)sm.innerHTML=buySummary();return;}
+ if(t.dataset.cc){S.budget[t.dataset.cc]=+t.value;save();return;}});
+$('#view').addEventListener('click',e=>{const t=e.target.closest('.ticker');if(t)t.classList.toggle('paused');});
+$('#view').addEventListener('input',e=>{const t=e.target;if(t.dataset.cc){const v=$('#ccv-'+t.dataset.cc);if(v)v.textContent=pct(+t.value);}});
 
 /* ---------- events ---------- */
+function tabEdges(){const n=document.querySelector('.tabs');if(!n)return;n.classList.toggle('ml',n.scrollLeft>4);n.classList.toggle('mr',n.scrollLeft+n.clientWidth<n.scrollWidth-4);}
+document.querySelector('.tabs').addEventListener('scroll',tabEdges,{passive:true});window.addEventListener('resize',tabEdges);
+document.querySelector('.tabs').addEventListener('click',e=>{const sb=e.target.closest('[data-tscroll]');if(sb){const n=e.currentTarget;n.scrollBy({left:+sb.dataset.tscroll*n.clientWidth*0.7,behavior:'smooth'});return;}});
 document.querySelector('.tabs').addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(!b)return;UI.tab=b.dataset.tab;UI.boardAnim=true;UI.confirm=null;UI.code=null;UI.edit=null;UI.buy=null;render();});
 document.querySelector('.views').addEventListener('click',e=>{const b=e.target.closest('[data-view]');if(!b)return;setView(b.dataset.view);clampView();renderTop();dirty=true;});
 // the game runs in real time: weeks settle on their own (see the real-time clock), so there are no manual week controls
@@ -1350,9 +2093,9 @@ const RCOL=['#3E8FD8','#B88A4A','#5BAA7A','#A46BC2','#D0675E','#3BA9A3','#C9A93B
 function routeColor(id){const i=S.routes.findIndex(r=>r.id===id);return RCOL[(i<0?0:i)%RCOL.length];}
 function eligibleRoutes(p){const base=planeBase(S,p);return S.routes.filter(r=>canFly(S,p,r)===true&&(!base||r.a===base||r.b===base));}
 function openSched(id){const p=S.fleet.find(x=>x.id===id);if(!p)return;stopAuto();UI.sched=id;const er=eligibleRoutes(p);
- UI.sf={r:er[0]?er[0].id:null,t:360,days:[1,1,1,1,1,1,1],fn:'',editId:null,confirmClear:false};renderSched();}
+ UI.sf={r:er[0]?er[0].id:null,t:360,days:[1,1,1,1,1,1,1],fn:'',editId:null,confirmClear:false,season:'all'};renderSched();}
 function closeSched(){UI.sched=null;$('#sched').hidden=true;render();}
-function specFromForm(){const f=UI.sf;return {r:f.r,t:f.t,days:f.days,fn:f.fn?+f.fn:undefined};}
+function specFromForm(){const f=UI.sf;return {r:f.r,t:f.t,days:f.days,fn:f.fn?+f.fn:undefined,season:f.season||'all'};}
 function schedPreview(p){const f=UI.sf;if(!f.r)return 'Open a route that starts at this aircraft\'s base first.';const r=routeById(S,f.r);if(!r)return '';
  const base=planeBase(S,p);const from=base&&(r.a===base||r.b===base)?base:(S.hubs.includes(r.a)?r.a:r.b);const R=rot(S,p,{r:f.r,from,t:f.t,days:f.days});if(!R)return '';
  const fn=f.fn||(f.editId?(p.sched.find(e=>e.id===f.editId)||{}).fn:null)||nextFn(S);
@@ -1379,12 +2122,13 @@ function renderSched(){const el=$('#sched');const p=S.fleet.find(x=>x.id===UI.sc
    <div class="field" style="flex:1 1 110px"><label for="sTime">Departs (local)</label><input type="time" id="sTime" step="300" value="${hhmm(f.t)}"></div>
    <div class="field" style="flex:1 1 110px"><label for="sFn">Flight no. (odd)</label><div class="fnin"><span class="mono">${S.code}</span><input type="number" id="sFn" min="1" max="9997" step="2" placeholder="${editing?editing.fn:nextFn(S)}" value="${f.fn}"></div></div></div>
    <div class="field"><label>Days</label><div class="days">${DAYS.map((d,k)=>`<button type="button" data-sday="${k}" aria-pressed="${!!f.days[k]}">${d}</button>`).join('')}<button type="button" class="q" data-spat="all">Daily</button><button type="button" class="q" data-spat="wk">Mon–Fri</button><button type="button" class="q" data-spat="none">Clear</button></div></div>
+   <div class="field"><label>Season</label><div class="seg3" role="group" aria-label="Season">${[['all','All year'],['S','Summer only'],['W','Winter only']].map(([k,l])=>`<button type="button" data-sseason="${k}" aria-pressed="${(f.season||'all')===k}">${l}</button>`).join('')}</div><small class="mute">Summer is weeks 13–43, winter the rest. A summer and a winter flight can share the same slot in the week.</small></div>
    <div class="sprev" id="sPrev">${schedPreview(p)}</div>
    <div class="row">${editing?`<button class="btn sm primary" type="button" data-sx="save">Save changes</button><button class="btn sm danger" type="button" data-sx="del">Delete flight</button><button class="btn sm ghost" type="button" data-sx="new">Cancel edit</button>`:`<button class="btn sm primary" type="button" data-sx="add">Add flight</button><button class="btn sm" type="button" data-sx="fill">Fill free time on this route</button>`}
    ${p.sched.length?`<button class="btn sm ghost danger" type="button" data-sx="clear">${f.confirmClear?'Confirm: clear whole schedule':'Clear schedule'}</button>`:''}</div>`
    :`<div class="mute">This aircraft can't fly any of your routes${base?` from ${base}`:''}. Open a route within ${km(t.range)} of ${base||'a hub'}.</div>`}
   </div>
-  ${p.sched.length?`<div class="tt"><div class="tt-h"><span>Flight</span><span>Days</span><span>Departs</span><span>Arrives</span><span>Return</span></div>${p.sched.map(e=>{const R=rot(S,p,e);if(!R)return '';return `<div class="tt-r"><span class="mono"><b>${S.code} ${e.fn}/${e.fn+1}</b> ${R.from}–${R.to}</span><span class="mono">${dayPat(e.days)}</span><span class="mono">${hhmm(R.depOut)}</span><span class="mono">${hhmm(R.arrOut)}${dayShift(R.arrOut,R.depOut)}</span><span class="mono">${hhmm(R.depBack)}${dayShift(R.depBack,R.depOut)} → ${hhmm(R.arrBack)}${dayShift(R.arrBack,R.depOut)}</span></div>`;}).join('')}</div>`:''}
+  ${p.sched.length?`<div class="tt"><div class="tt-h"><span>Flight</span><span>Days</span><span>Departs</span><span>Arrives</span><span>Return</span></div>${p.sched.map(e=>{const R=rot(S,p,e);if(!R)return '';return `<div class="tt-r"><span class="mono"><b>${S.code} ${e.fn}/${e.fn+1}</b> ${R.from}–${R.to}${e.season&&e.season!=='all'?` <span class="chip">${e.season==='S'?'Summer':'Winter'}</span>`:''}</span><span class="mono">${dayPat(e.days)}</span><span class="mono">${hhmm(R.depOut)}</span><span class="mono">${hhmm(R.arrOut)}${dayShift(R.arrOut,R.depOut)}</span><span class="mono">${hhmm(R.depBack)}${dayShift(R.depBack,R.depOut)} → ${hhmm(R.arrBack)}${dayShift(R.arrBack,R.depOut)}</span></div>`;}).join('')}</div>`:''}
  </div>`;el.hidden=false;}
 $('#sched').addEventListener('click',e=>{const p=S.fleet.find(x=>x.id===UI.sched);if(!p)return;const f=UI.sf;
  if(e.target===$('#sched')){closeSched();return;}
@@ -1392,7 +2136,8 @@ $('#sched').addEventListener('click',e=>{const p=S.fleet.find(x=>x.id===UI.sched
  const lane=e.target.closest('.sg-lane');
  if(lane&&(!b||!b.dataset.sentry)){const rc=lane.getBoundingClientRect();const m=Math.max(0,Math.min(1435,Math.round(((e.clientX-rc.left)/rc.width*1440)/15)*15));f.t=m;f.days=[0,0,0,0,0,0,0];f.days[+lane.dataset.lane]=1;f.editId=null;f.fn='';renderSched();return;}
  if(!b)return;const d=b.dataset;
- if(d.sentry){const en=p.sched.find(x=>x.id===+d.sentry);if(en){f.editId=en.id;f.r=en.r;f.t=en.t;f.days=en.days.slice();f.fn=String(en.fn);}renderSched();return;}
+ if(d.sentry){const en=p.sched.find(x=>x.id===+d.sentry);if(en){f.editId=en.id;f.r=en.r;f.t=en.t;f.days=en.days.slice();f.fn=String(en.fn);f.season=en.season||'all';}renderSched();return;}
+ if(d.sseason){f.season=d.sseason;renderSched();return;}
  if(d.sday!=null){f.days[+d.sday]=f.days[+d.sday]?0:1;renderSched();return;}
  if(d.spat){f.days=d.spat==='all'?[1,1,1,1,1,1,1]:d.spat==='wk'?[1,1,1,1,1,0,0]:[0,0,0,0,0,0,0];renderSched();return;}
  if(d.sx==='close'){closeSched();return;}
@@ -1412,9 +2157,9 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&UI.sched!=null)clos
 /* ---------- game over ---------- */
 function showOver(){stopAuto();const m=$('#modal');if(!m.hidden)return;const rows=standings();const rank=rows.findIndex(r=>r.me)+1;
  
- m.innerHTML=`<div class="card"><div class="board"><span>GROUNDED</span><span>WK ${S.over.week}</span></div>
- <h2>${esc(S.name)} went bust</h2>
- <p>You stayed in business for ${Math.floor(S.over.week/52)} year${Math.floor(S.over.week/52)===1?'':'s'} and ${S.over.week%52} week${S.over.week%52===1?'':'s'}. Your best company value was ${money(S.peak||0)}.</p>
+ m.innerHTML=`<div class="card"><div class="board"><span>${S.over.reason==='sold'?'SOLD':'GROUNDED'}</span><span>WK ${S.over.week}</span></div>
+ <h2>${S.over.reason==='sold'?`${esc(S.name)} was sold to ${esc(S.over.buyer)}`:`${esc(S.name)} went bust`}</h2>
+ <p>${S.over.reason==='sold'?`The deal raised ${money(S.over.amount)}. `:''}You stayed in business for ${Math.floor(S.over.week/52)} year${Math.floor(S.over.week/52)===1?'':'s'} and ${S.over.week%52} week${S.over.week%52===1?'':'s'}. Your best company value was ${money(S.peak||0)}.</p>
  <table><tbody>${rows.map((r,i)=>`<tr class="${r.me?'me':''}"><td class="mono">${i+1}</td><td><span class="dot" style="background:${r.color}"></span>${esc(r.name)}</td><td class="n">${money(r.value)}</td></tr>`).join('')}</tbody></table>
  <div class="row"><button class="btn primary" type="button" id="bAgain">Start a new airline</button><button class="btn" type="button" id="bSaves">Load a save</button><button class="btn ghost" type="button" id="bLook">Look at the map</button></div></div>`;
  m.hidden=false;$('#bAgain').onclick=()=>{m.hidden=true;showStart();};$('#bLook').onclick=()=>{m.hidden=true;};$('#bSaves').onclick=()=>{m.hidden=true;showStart();};}
@@ -1492,7 +2237,7 @@ function drawMap(t){if(!S)return;sizeMap();const {w,h,dpr}=MAP;const v=UI.v;
  cx.fillStyle=css('--fg');
  // planes: same position model as the flight details popup, so a followed flight and its dot always coincide
  const tk=UI.track?UI.track.fn+'@'+wmod(UI.track.depU):null;
- for(const p of S.fleet){if(p.grounded)continue;const t=ACT[p.type];for(const e of (p.sched||[])){const R=rot(S,p,e);if(!R)continue;
+ for(const p of S.fleet){if(p.grounded)continue;const t=ACT[p.type];for(const e of (p.sched||[])){if(!activeIn(e,S.week))continue;const R=rot(S,p,e);if(!R)continue;
   for(let k=0;k<7;k++){if(!e.days[k])continue;const u0=k*1440+e.t-tzOff(R.from);
    for(const lg of [{fn:`${S.code} ${e.fn}`,o:R.from,d:R.to,depU:u0},{fn:`${S.code} ${e.fn+1}`,o:R.to,d:R.from,depU:u0+R.leg+R.turn}]){
     const x=disrupt(S,lg.fn,lg.depU,lg.o,lg.d,t);if(x.cancel)continue;const f={...lg,leg:R.leg,t,delay:x.delay,imp:x.imp};if(tk===f.fn+'@'+wmod(f.depU))continue;const st=flightState(f);if(st.onGround)continue;
