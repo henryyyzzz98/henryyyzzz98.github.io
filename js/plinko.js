@@ -326,7 +326,7 @@ function draw(time) {
 /* ---------- HUD + input ---------- */
 function updateHud() {
   chipCountEl.textContent = save.chips;
-  const label = save.chips <= 0 ? "Out of chips - 1 added every minute" : "Drop chip";
+  const label = save.chips <= 0 ? "Out of chips - 1 added every 10 secs" : "Drop chip";
   if (fireBtn.textContent !== label) fireBtn.textContent = label;
   fireBtn.disabled = save.chips <= 0;
 }
@@ -434,6 +434,7 @@ function showResult(wins) {
   const cols = Math.min(pulls.length, 4);
   resGrid.style.setProperty("--n", cols);
   resGrid.classList.toggle("many", pulls.length > 4);
+  $("resHint").hidden = pulls.length <= 8;
   resGrid.innerHTML = "";
   resGrid.scrollTop = 0;
   resSub.textContent = "";
