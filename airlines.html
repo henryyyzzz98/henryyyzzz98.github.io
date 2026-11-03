@@ -329,6 +329,7 @@ input[type=time]{background:var(--raised);border:1px solid var(--line);border-ra
 .nlist summary{list-style:none;cursor:pointer}.nlist summary::-webkit-details-marker{display:none}
 .nlist summary h3::after{content:"▸";margin-left:auto;color:var(--mute)}.nlist[open] summary h3::after{content:"▾"}
 .nlist .notams{margin-top:8px}
+.autofare{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;font-size:13px}
 </style>
 </head>
 <body>
@@ -1496,7 +1497,8 @@ function renderRoutes(){
    ${L.byClass?`<div class="row">${CLASSES.filter(c=>L.byClass[c]).map(c=>`<span class="cab"><i style="background:${CLS_COLOR[c]}"></i>${CLASS_NAME[c]} <b class="mono">${fmtPct(L.byClass[c].pax/L.byClass[c].seats)}</b></span>`).join('')}</div>`:''}`;}
   else h+=`<div class="mute">${fl.length?'Flies from next week.':'Nothing scheduled yet, so nothing flies.'}</div>`;
   h+=routeExtras(r);
-  h+=`<div class="field"><label for="m${r.id}">Fare · $${Math.round(baseFare(d)*r.mult)} one way (${r.mult<1?'':'+'}${Math.round((r.mult-1)*100)}% vs market)</label><input type="range" id="m${r.id}" min="0.6" max="1.6" step="0.05" value="${r.mult}" data-mult="${r.id}"></div>`;
+  h+=r.pricing==='auto'?`<div class="autofare"><span class="mute">Fare set automatically</span><b class="mono">$${Math.round(baseFare(d)*r.mult)} one way</b><span class="mono mute">(${r.mult<1?'':'+'}${Math.round((r.mult-1)*100)}% vs market)</span></div>`
+   :`<div class="field"><label for="m${r.id}">Fare · $${Math.round(baseFare(d)*r.mult)} one way (${r.mult<1?'':'+'}${Math.round((r.mult-1)*100)}% vs market)</label><input type="range" id="m${r.id}" min="0.6" max="1.6" step="0.05" value="${r.mult}" data-mult="${r.id}"></div>`;
   if(fl.length)h+=`<div class="tt" role="table" aria-label="Timetable ${r.a}–${r.b}"><div class="tt-h" role="row"><span>Flight</span><span>Days</span><span>Departs</span><span>Arrives</span><span>Aircraft</span></div>
    ${fl.map(f=>`<div class="tt-r" role="row"><span class="mono"><b>${S.code} ${f.fn}</b> ${f.from}→${f.to}${f.season!=='all'?` <span class="chip ${activeIn({season:f.season},S.week)?'amb':''}">${f.season==='S'?'Summer':'Winter'}</span>`:''}</span><span class="mono">${dayPat(f.days)}</span><span class="mono">${hhmm(f.R.depOut)}</span><span class="mono">${hhmm(f.R.arrOut)}${dayShift(f.R.arrOut,f.R.depOut)}</span><span>${f.tails.map(p=>`<button class="tail tl" type="button" data-sched="${p.id}">${p.tail}</button>`).join(' ')}</span></div>
     <div class="tt-r ret" role="row"><span class="mono"><b>${S.code} ${f.fn+1}</b> ${f.to}→${f.from}</span><span class="mono">${dayPat(shiftDays(f.days,Math.floor(f.R.depBack/1440)))}</span><span class="mono">${hhmm(f.R.depBack)}</span><span class="mono">${hhmm(f.R.arrBack)}${dayShift(f.R.arrBack,f.R.depBack)}</span><span class="mute" style="font-size:12px">local times</span></div>`).join('')}</div>`;
