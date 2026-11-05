@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bus Passenger Information Display</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&family=Roboto:wght@400;500;700&family=Roboto+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root{ --bg:#2b2e33; --panel:#3a3e44; --text:#e9ebee; --muted:#9aa0a8; --accent:#c8dc1e; --pole:#f2b705; }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:radial-gradient(ellipse at top,#4a4f56 0%,var(--bg) 60%);color:var(--text);
+    font-family:"Open Sans",system-ui,sans-serif;min-height:100%}
+  main{max-width:980px;margin:0 auto;padding:18px 14px 40px}
+  .top{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-bottom:16px}
+  h1{font-size:15px;font-weight:600;letter-spacing:.04em;color:var(--muted);margin:0;text-transform:uppercase;flex:1;min-width:220px}
+  .seg{display:inline-flex;background:#22252a;border-radius:12px;padding:4px;gap:4px}
+  .seg button{background:transparent;color:var(--muted);min-height:38px;padding:8px 14px;border-radius:9px}
+  .seg button[aria-pressed="true"]{background:#5a6069;color:#fff}
+
+  .view{display:none}
+  body.s1 .v1, body.s2 .v2{display:block}
+
+  /* ---------- Style 1: overhead LCD ---------- */
+  .lcd-housing{background:linear-gradient(#d6d9dc,#b9bdc2);border-radius:22px 22px 30px 30px;padding:14px 18px 22px;
+    box-shadow:0 10px 30px rgba(0,0,0,.45), inset 0 2px 0 rgba(255,255,255,.6)}
+  .lcd-bezel{background:#050505;border-radius:10px;padding:2.2% 2.6%;box-shadow:inset 0 0 0 2px #1b1b1b, inset 0 6px 18px rgba(0,0,0,.9)}
+  svg.lcd{display:block;width:100%;height:auto}
+  .fade{transition:opacity .22s ease}
+  .hidden{opacity:0}
+
+  /* ---------- Style 2: bracket-mounted LCD ---------- */
+  .b-mount{position:relative;padding:0 3.2%}
+  .b-mount::before,.b-mount::after{content:"";position:absolute;top:6%;bottom:12%;width:3.4%;background:linear-gradient(90deg,#d89e00,var(--pole) 40%,#ffd447 60%,#d89e00);
+    border-radius:6px;box-shadow:0 4px 10px rgba(0,0,0,.35)}
+  .b-mount::before{left:0}.b-mount::after{right:0}
+  .b-screen{background:#111316;border-radius:8px 8px 4px 4px;padding:2% 1.6% 1.6%;box-shadow:0 10px 28px rgba(0,0,0,.5), inset 0 0 0 2px #23262b}
+  .b-strip{height:14px;margin:0 .6%;border-radius:0 0 8px 8px;background:linear-gradient(#cfc7bd,#8f877e);box-shadow:0 4px 10px rgba(0,0,0,.4)}
+  @keyframes chev{0%,100%{opacity:.25}50%{opacity:1}}
+  .chev{animation:chev 1.2s ease-in-out infinite}
+
+  /* ---------- LED front sign ---------- */
+  .led-wrap{display:flex;justify-content:center;margin-top:22px}
+  .led-housing{position:relative;width:min(640px,100%);border-radius:14px;padding:22px 22px 18px;box-shadow:0 8px 22px rgba(0,0,0,.4);
+    background:linear-gradient(#eceef0,#d4d7da)}
+  .screw{position:absolute;top:7px;width:8px;height:8px;border-radius:50%;background:#777;box-shadow:inset 0 1px 1px #333}
+  .screw.l{left:20%}.screw.m{left:50%}.screw.r{right:20%}
+  .led-frame{background:#0a0a0a;border-radius:6px;padding:10px 12px;box-shadow:inset 0 0 0 2px #222}
+  #led{display:block;width:100%;height:auto}
+  .plate{margin:12px auto 0;width:max-content;background:#111;color:#f2f2f2;font:700 18px "Roboto Condensed",sans-serif;letter-spacing:.06em;padding:3px 12px;border-radius:3px}
+  body.s2 .led-housing{width:min(760px,100%);background:linear-gradient(#1c1d20,#0b0b0c);border-radius:18px 18px 10px 10px;padding:18px 26px 16px}
+  body.s2 .screw{display:none}
+  body.s2 .led-frame{background:#060504;box-shadow:inset 0 0 0 1px #2a2a2a}
+  body.s2 .plate{background:#e8e8e8;color:#111;border:2px solid #222}
+
+  .stop-lamp{display:flex;align-items:center;justify-content:center;gap:10px;margin:18px auto 0;width:max-content;padding:8px 16px;border-radius:8px;
+    background:#1c1c1c;font:700 14px "Roboto Condensed",sans-serif;letter-spacing:.12em;color:#4a2222;border:1px solid #333;transition:all .2s}
+  .stop-lamp .dot{width:12px;height:12px;border-radius:50%;background:#4a2222}
+  .stop-lamp.on{color:#ff4a3d;box-shadow:0 0 18px rgba(255,60,40,.45);border-color:#6b2520}
+  .stop-lamp.on .dot{background:#ff4a3d;box-shadow:0 0 10px #ff4a3d}
+
+  /* ---------- controls ---------- */
+  .controls{margin-top:22px;background:var(--panel);border-radius:14px;padding:14px;display:grid;gap:12px}
+  .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  button,select,input,textarea{font:inherit;color:var(--text)}
+  button{background:#50555d;border:0;border-radius:9px;padding:10px 14px;font-weight:600;cursor:pointer;min-height:42px}
+  button:hover{background:#5c626b}
+  button.primary{background:var(--accent);color:#1a1d10}
+  button.primary:hover{filter:brightness(1.07)}
+  button.bell{background:#b8332b}
+  button.bell:hover{background:#cc3c33}
+  select{background:#50555d;border:0;border-radius:9px;padding:10px;min-height:42px}
+  .status{font-size:13px;color:var(--muted);margin-left:auto}
+  details{background:#33373d;border-radius:10px;padding:10px 12px}
+  summary{cursor:pointer;font-weight:600}
+  .editor{display:grid;gap:10px;margin-top:12px}
+  .editor label{display:grid;gap:4px;font-size:13px;color:var(--muted)}
+  .editor input,.editor textarea{background:#24272b;border:1px solid #4a4f57;border-radius:8px;padding:9px 10px}
+  .editor textarea{min-height:190px;resize:vertical;line-height:1.45;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:14px}
+  .three{display:grid;grid-template-columns:110px 1fr 140px;gap:10px}
+  @media (max-width:560px){.three{grid-template-columns:1fr 1fr}.three label:nth-child(2){grid-column:1/-1;grid-row:1}}
+  .hint{font-size:12px;color:var(--muted);margin:0;line-height:1.5}
+  .pills{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}
+  .pill{font:700 11px "Roboto",sans-serif;color:#fff;padding:2px 8px;border-radius:9px}
+  kbd{background:#24272b;border:1px solid #555;border-radius:4px;padding:0 5px;font-size:11px}
+</style>
+</head>
+<body class="s1">
+<main>
+  <div class="top">
+    <h1>Bus Passenger Information Display — Simulator</h1>
+    <div class="seg" role="group" aria-label="Display style">
+      <button data-style="1" aria-pressed="true">Style 1 · Route strip</button>
+      <button data-style="2" aria-pressed="false">Style 2 · Stop list</button>
+    </div>
+  </div>
+
+  <!-- ===== Style 1 overhead LCD ===== -->
+  <div class="view v1">
+    <div class="lcd-housing"><div class="lcd-bezel">
+      <svg id="lcdA" class="lcd" viewBox="0 0 860 236" role="img" aria-label="Overhead passenger information display, style 1" font-family="Open Sans, sans-serif">
+        <defs>
+          <linearGradient id="band" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#5dbb34"/><stop offset="1" stop-color="#8fd650"/></linearGradient>
+          <radialGradient id="curDot" cx=".4" cy=".35" r=".7"><stop offset="0" stop-color="#f4ff6a"/><stop offset="1" stop-color="#cbd81a"/></radialGradient>
+        </defs>
+        <rect width="860" height="236" fill="#000"/>
+        <rect x="6" y="6" width="150" height="46" fill="#151515"/>
+        <rect x="156" y="6" width="520" height="46" fill="#0c0c0c"/>
+        <rect x="690" y="6" width="164" height="46" fill="#151515"/>
+        <text id="aRoute" x="81" y="41" text-anchor="middle" font-size="38" fill="#f1f1f1"></text>
+        <text id="aDest" x="170" y="41" font-size="33" fill="#f1f1f1"></text>
+        <g transform="translate(722,29)" fill="none" stroke="#e6e6e6" stroke-width="2.2"><circle r="11"/><path d="M0 -6 V0 H5" stroke-linecap="round"/></g>
+        <text id="aClock" class="clock" x="842" y="40" text-anchor="end" font-size="29" fill="#f1f1f1"></text>
+        <line x1="6" y1="56" x2="854" y2="56" stroke="#3a3a3a"/>
+        <g id="aTrack"></g>
+        <g id="aRows" class="fade"></g>
+      </svg>
+    </div></div>
+  </div>
+
+  <!-- ===== Style 2 overhead LCD ===== -->
+  <div class="view v2">
+    <div class="b-mount">
+      <div class="b-screen">
+        <svg id="lcdB" class="lcd" viewBox="0 0 1000 306" role="img" aria-label="Overhead passenger information display, style 2" font-family="Roboto, sans-serif">
+          <defs>
+            <pattern id="grille" width="9" height="9" patternUnits="userSpaceOnUse"><rect width="9" height="9" fill="#1d2025"/><rect x="2" y="2" width="5" height="5" rx="1" fill="#181a1e"/></pattern>
+          </defs>
+          <rect width="1000" height="306" fill="#22262b"/>
+          <rect x="820" y="0" width="180" height="306" fill="url(#grille)" opacity=".8"/>
+          <rect x="0" y="0" width="1000" height="84" fill="#1f2328" opacity=".85"/>
+          <circle cx="56" cy="50" r="45" fill="#2bc92b"/>
+          <text id="bRoute" x="56" y="66" text-anchor="middle" font-size="46" font-weight="700" fill="#fff"></text>
+          <text x="161" y="21" font-size="17" fill="#e4e8ec">Destination:</text>
+          <text id="bDest" x="160" y="72" font-size="52" font-weight="700" fill="#eef2f6"></text>
+          <circle cx="947" cy="36" r="29" fill="#1a1d21" stroke="#cdd5de" stroke-width="2.5"/>
+          <text id="bClock" class="clock" x="947" y="44" text-anchor="middle" font-size="22" font-weight="500" fill="#eef2f6"></text>
+          <g id="bRows" class="fade"></g>
+          <!-- bus icon (destination marker) -->
+          <g transform="translate(129,50)">
+            <circle r="17" fill="#22262b" stroke="#eef2f6" stroke-width="3"/>
+            <rect x="-7.5" y="-9" width="15" height="16" rx="3" fill="none" stroke="#eef2f6" stroke-width="2.2"/>
+            <line x1="-7.5" y1="-1" x2="7.5" y2="-1" stroke="#eef2f6" stroke-width="2"/>
+            <circle cx="-4" cy="3.5" r="1.4" fill="#eef2f6"/><circle cx="4" cy="3.5" r="1.4" fill="#eef2f6"/>
+            <line x1="-5" y1="7" x2="-5" y2="10" stroke="#eef2f6" stroke-width="2"/><line x1="5" y1="7" x2="5" y2="10" stroke="#eef2f6" stroke-width="2"/>
+          </g>
+        </svg>
+      </div>
+      <div class="b-strip"></div>
+    </div>
+  </div>
+
+  <div class="stop-lamp" id="lamp"><span class="dot"></span>BUS STOPPING</div>
+
+  <!-- LED front sign (shared canvas, restyled per display) -->
+  <div class="led-wrap">
+    <div class="led-housing">
+      <span class="screw l"></span><span class="screw m"></span><span class="screw r"></span>
+      <div class="led-frame"><canvas id="led"></canvas></div>
+      <div class="plate" id="plate"></div>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <section class="controls">
+    <div class="row">
+      <button id="btnPrev" title="Back (←)">◀ Back</button>
+      <button id="btnNext" class="primary" title="Advance (→ or Space)">Advance ▶</button>
+      <button id="btnBell" class="bell" title="Press bell (B)">🔔 Bell</button>
+      <button id="btnAuto">▶ Auto-run</button>
+      <select id="speed" aria-label="Auto-run speed">
+        <option value="5000">Slow</option><option value="3000" selected>Normal</option><option value="1400">Fast</option>
+      </select>
+      <span class="status" id="status"></span>
+    </div>
+    <p class="hint">Each stop goes <b>Next</b> → <b>Arr</b> → following stop. Keys: <kbd>→</kbd>/<kbd>Space</kbd> advance, <kbd>←</kbd> back, <kbd>B</kbd> bell, <kbd>1</kbd>/<kbd>2</kbd> switch display.</p>
+
+    <details>
+      <summary>Edit route (shared by both displays)</summary>
+      <div class="editor">
+        <div class="row">
+          <select id="sample" aria-label="Load a sample route">
+            <option value="">Load a sample route…</option>
+            <option value="944">944 · Bukit Batok Rd</option>
+            <option value="3">3 · Punggol Temp Int</option>
+          </select>
+        </div>
+        <div class="three">
+          <label>Service no.<input id="edRoute" maxlength="5"></label>
+          <label>Destination<input id="edDest" maxlength="32"></label>
+          <label>Bus plate<input id="edPlate" maxlength="12"></label>
+        </div>
+        <label>Stops, in order — one per line, first is the starting point
+          <textarea id="edStops" spellcheck="false"></textarea>
+        </label>
+        <p class="hint">Add rail interchange badges after a <b>|</b>, e.g. <code>Punggol Temp Int | NEL PGLRT</code>. Recognised codes:</p>
+        <div class="pills" id="legend"></div>
+        <div class="row">
+          <button id="btnApply" class="primary">Apply route</button>
+          <button id="btnReset">Restore sample 944</button>
+        </div>
+        <p class="hint">The sample stop lists are illustrative — paste in the real stop sequence for any service.</p>
+      </div>
+    </details>
+  </section>
+</main>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const NS = "http://www.w3.org/2000/svg";
+
+  // ---------------- data ----------------
+  const LINES = {
+    NSL:"#d42e12", EWL:"#009645", CGL:"#009645", NEL:"#9900aa", CCL:"#fa9e0d", CEL:"#fa9e0d",
+    DTL:"#005ec4", TEL:"#9d5b25", JRL:"#0099aa", BPLRT:"#748477", SKLRT:"#5f9e9b", PGLRT:"#5f9e9b"
+  };
+  const SAMPLES = {
+    "944": { route:"944", dest:"BUKIT BATOK RD", plate:"SG 3097 P",
+      text:"Bt Batok Int | NSL\nBlk 289E\nBlk 445C\nBlk 451A\nBlk 461C\nBlk 438A\nBlk 436A\nBlk 431\nOpp Blk 412\nBt Batok Stn | NSL\nBt Batok Int | NSL" },
+    "3": { route:"3", dest:"PUNGGOL TEMP INT", plate:"SG 4010 H",
+      text:"Tampines Int | EWL DTL\nBlk 497F\nOpp Blk 445\nPasir Ris Dr 10\nAft Pasir Ris Farmway\nOpp Punggol Sec/Blk 195E\nBlk 298\nPunggol Temp Int | NEL PGLRT" }
+  };
+  const parseStops = text => text.split("\n").map(l => l.trim()).filter(Boolean).map(l => {
+    const [name, tags = ""] = l.split("|");
+    return { name: name.trim(), tags: tags.trim().toUpperCase().split(/[\s,]+/).filter(Boolean) };
+  }).filter(s => s.name);
+  const stopsToText = stops => stops.map(s => s.name + (s.tags.length ? " | " + s.tags.join(" ") : "")).join("\n");
+  const fromSample = k => { const s = SAMPLES[k]; return { route:s.route, dest:s.dest, plate:s.plate, stops:parseStops(s.text) }; };
+
+  function load(){
+    try{
+      const r = JSON.parse(localStorage.getItem("pids-route-v2"));
+      if (r && Array.isArray(r.stops) && r.stops.length > 1) return r;
+      const old = JSON.parse(localStorage.getItem("pids-route"));       // migrate v1 (plain strings)
+      if (old && old.stops && old.stops.length > 1) return { ...old, stops: old.stops.map(n => ({ name:n, tags:[] })) };
+    }catch(e){}
+    return null;
+  }
+  function save(){ try{ localStorage.setItem("pids-route-v2", JSON.stringify(route)) }catch(e){} }
+
+  let route = load() || fromSample("944");
+  let idx = 1, phase = "next", bell = false, autoTimer = null;
+  let style = /style-2/.test(location.hash) ? 2 : (() => { try{ return +localStorage.getItem("pids-style") === 2 ? 2 : 1 }catch(e){ return 1 } })();
+
+  // ---------------- svg helpers ----------------
+  function el(tag, attrs, text){
+    const n = document.createElementNS(NS, tag);
+    for (const k in attrs) n.setAttribute(k, attrs[k]);
+    if (text != null) n.textContent = text;
+    return n;
+  }
+  function fit(t, max){
+    t.removeAttribute("textLength"); t.removeAttribute("lengthAdjust");
+    try{ if (t.getComputedTextLength() > max){ t.setAttribute("textLength", max); t.setAttribute("lengthAdjust", "spacingAndGlyphs"); } }catch(e){}
+  }
+  // draws right-aligned line badges ending at xRight; returns left edge x
+  function pills(g, tags, xRight, cy, h, fs){
+    let x = xRight;
+    for (let i = tags.length - 1; i >= 0; i--){
+      const tag = tags[i], w = Math.round(tag.length * fs * 0.66 + h * 0.9);
+      x -= w;
+      g.append(el("rect", { x, y: cy - h / 2, width: w, height: h, rx: h / 2, fill: LINES[tag] || "#6b7380" }));
+      g.append(el("text", { x: x + w / 2, y: cy + fs * 0.36, "text-anchor": "middle", "font-size": fs, "font-weight": 700, fill: "#fff", "font-family": "Roboto, sans-serif" }, tag));
+      x -= 5;
+    }
+    return x;
+  }
+
+  // ================= STYLE 1 =================
+  const A = { track: $("aTrack"), rows: $("aRows") };
+  const Y_BOT = 214, Y_TOP = 60;
+  const ROW_BASE = [0, 152, 113, 76], ROW_LINE = [0, 164, 125, 88], DOT_Y = [0, 156, 118, 82];
+  const tOf = y => Math.max(0, Math.min(1, (Y_BOT - y) / (Y_BOT - Y_TOP)));
+  const center = y => 30 + 32 * Math.pow(tOf(y), 0.75);
+  const half = y => { const t = tOf(y); return 24 * (1 - t) + 4 * t; };
+
+  function drawA(){
+    const g = A.rows, tr = A.track, stops = route.stops;
+    g.replaceChildren(); tr.replaceChildren();
+    const nAhead = Math.min(3, stops.length - 1 - idx);
+    for (let k = 1; k <= nAhead; k++){
+      const s = stops[idx + k];
+      const left = s.tags.length ? pills(g, s.tags, 850, ROW_BASE[k] - 6, 19, 12) : 850;
+      const t = el("text", { x: 80, y: ROW_BASE[k], "font-size": [0, 20, 19, 18][k], fill: "#d2d2d2" }, s.name.toUpperCase());
+      g.append(t); fit(t, left - 90);
+    }
+    const terminus = idx === stops.length - 1, cur = stops[idx];
+    g.append(el("text", { x: 78, y: 182, "font-size": 15, "font-weight": 600, fill: "#d8e41f" }, phase === "arr" ? "Arr" : "Next"));
+    let right = 850;
+    if (terminus) {
+      const note = el("text", { x: 850, y: 206, "text-anchor": "end", "font-size": 16, fill: "#d8e41f" }, phase === "arr" ? "END OF TRIP · PLEASE ALIGHT" : "LAST STOP");
+      g.append(note); right = 600;
+    } else if (cur.tags.length) right = pills(g, cur.tags, 850, 197, 22, 13);
+    const ct = el("text", { x: 80, y: 206, "font-size": 27, fill: "#fff" }, cur.name.toUpperCase());
+    g.append(ct); fit(ct, right - 92);
+
+    // receding green band
+    const topY = nAhead ? DOT_Y[nAhead] - 10 : Y_BOT - 8, L = [], R = [];
+    for (let y = Y_BOT + 4; y >= topY; y -= 3){ L.push([center(y) - half(y), y]); R.push([center(y) + half(y), y]); }
+    tr.append(el("polygon", { points: L.concat(R.reverse()).map(p => p.map(v => v.toFixed(1)).join(",")).join(" "), fill: "url(#band)" }));
+    if (nAhead) tr.append(el("ellipse", { cx: center(topY).toFixed(1), cy: topY, rx: half(topY), ry: 2.2, fill: "#8fd650" }));
+    for (let k = 1; k <= nAhead; k++){
+      const y = DOT_Y[k];
+      tr.append(el("line", { x1: center(y), y1: ROW_LINE[k], x2: 854, y2: ROW_LINE[k], stroke: "#3d3d3d" }));
+      tr.append(el("circle", { cx: center(y), cy: y, r: [0, 7, 5.5, 4][k], fill: "#7cc94a", stroke: "#e7f2df", "stroke-width": 1.4 }));
+    }
+    tr.append(el("line", { x1: 8, y1: Y_BOT + 2, x2: 854, y2: Y_BOT + 2, stroke: "#c8dc1e", "stroke-width": 4.5 }));
+    const dot = el("circle", { cx: center(Y_BOT - 1), cy: Y_BOT - 1, r: 12, fill: "url(#curDot)", stroke: "#2a2a10", "stroke-width": 2 });
+    if (phase === "arr") dot.append(el("animate", { attributeName: "r", values: "12;14;12", dur: "1.2s", repeatCount: "indefinite" }));
+    tr.append(dot);
+  }
+
+  // ================= STYLE 2 =================
+  const B_ROW_H = 53, B_BOTTOM = 300, B_X = 112, B_W = 880, B_LINE_X = 129;
+  function drawB(){
+    const g = $("bRows"), stops = route.stops;
+    g.replaceChildren();
+    const nAhead = Math.min(3, stops.length - 1 - idx);
+    const top = j => B_BOTTOM - B_ROW_H * (j + 1);
+    const cy = j => top(j) + 27;
+
+    // alternating bands (all four rows always shown, as on the real screen)
+    for (let j = 0; j < 4; j++)
+      g.append(el("rect", { x: B_X, y: top(j) + 1, width: B_W, height: B_ROW_H - 2, fill: j % 2 ? "#5b636f" : "#454c57" }));
+
+    // green progress line: bus icon → current stop
+    g.append(el("rect", { x: B_LINE_X - 3.5, y: 66, width: 7, height: cy(0) - 66, fill: "#33c43a" }));
+
+    // chevrons (direction of travel) between markers, and above the farthest one
+    const chev = (y, delay) => {
+      const c = el("polyline", { points: `${B_LINE_X - 5},${y + 3} ${B_LINE_X},${y - 2} ${B_LINE_X + 5},${y + 3}`, fill: "none", stroke: "#eaffea", "stroke-width": 2.4, "stroke-linecap": "round", class: "chev" });
+      c.style.animationDelay = delay + "s"; g.append(c);
+    };
+    for (let j = 0; j < nAhead; j++) chev((cy(j) + cy(j + 1)) / 2, -j * 0.3);
+    chev(cy(nAhead) - 22, -nAhead * 0.3);
+
+    // stops
+    for (let j = 0; j <= nAhead; j++){
+      const s = stops[idx + j];
+      g.append(el("circle", { cx: B_LINE_X, cy: cy(j), r: 13.5, fill: "#2a2f36", stroke: "#eef2f6", "stroke-width": 3.2 }));
+      const left = s.tags.length ? pills(g, s.tags, 984, cy(j), 30, 17) : 984;
+      const t = el("text", { x: 160, y: top(j) + 41, "font-size": j === 0 ? 41 : 39, "font-weight": j === 0 ? 700 : 400, fill: "#f2f5f8" }, s.name.toUpperCase());
+      g.append(t); fit(t, left - 175);
+    }
+    if (idx === stops.length - 1 && phase === "arr")
+      g.append(el("text", { x: 552, y: top(2) + 40, "text-anchor": "middle", "font-size": 30, "font-weight": 500, fill: "#e3ef2f" }, "END OF TRIP · PLEASE ALIGHT"));
+
+    // ARR / NEXT roundel
+    const arr = phase === "arr";
+    g.append(el("circle", { cx: 56, cy: cy(0), r: 30, fill: arr ? "#e3ef2f" : "#22262b", stroke: "#e3ef2f", "stroke-width": arr ? 0 : 3 }));
+    g.append(el("text", { x: 56, y: cy(0) + 6, "text-anchor": "middle", "font-size": arr ? 17 : 15, "font-weight": 500, fill: arr ? "#7d8452" : "#e3ef2f" }, arr ? "ARR" : "NEXT"));
+  }
+
+  // ---------------- header / clock ----------------
+  function drawHeaders(){
+    const ar = $("aRoute"), ad = $("aDest"), br = $("bRoute"), bd = $("bDest");
+    ar.textContent = br.textContent = route.route;
+    ad.textContent = bd.textContent = route.dest.toUpperCase();
+    br.setAttribute("font-size", route.route.length > 3 ? 34 : 46);
+    br.setAttribute("y", route.route.length > 3 ? 62 : 66);
+    if (style === 1){ fit(ar, 130); fit(ad, 505); } else { fit(br, 78); fit(bd, 740); }
+    $("plate").textContent = route.plate || "";
+  }
+  function tickClock(){
+    const s = new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Singapore" }).format(new Date());
+    document.querySelectorAll(".clock").forEach(c => c.textContent = s);
+  }
+
+  let renderTimer = null;
+  function render(animate = true){
+    $("lamp").classList.toggle("on", bell);
+    $("status").textContent = `Stop ${idx} of ${route.stops.length - 1} · ${phase === "arr" ? "Arriving" : "En route"}`;
+    const g = style === 1 ? A.rows : $("bRows");
+    const draw = style === 1 ? drawA : drawB;
+    if (!animate){ draw(); return; }
+    g.classList.add("hidden");
+    clearTimeout(renderTimer);
+    renderTimer = setTimeout(() => { draw(); g.classList.remove("hidden"); }, 200);
+  }
+
+  // ---------------- LED dot-matrix (both styles) ----------------
+  const led = $("led"), lctx = led.getContext("2d");
+  const off = document.createElement("canvas"), octx = off.getContext("2d", { willReadFrequently: true });
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  let scrollX = 0, lastLed = 0;
+
+  function scrolled(text, x0, w, base, top, h){
+    const tw = octx.measureText(text).width;
+    octx.save(); octx.beginPath(); octx.rect(x0, top, w, h); octx.clip();
+    if (tw <= w) octx.fillText(text, x0, base);
+    else { const span = tw + 30, x = x0 - (scrollX % span); octx.fillText(text, x, base); octx.fillText(text, x + span, base); }
+    octx.restore();
+  }
+
+  const LED = {
+    1: { cols: 168, rows: 32, pitch: 6,
+      draw(){
+        octx.font = '700 15px "Roboto Condensed", "Arial Narrow", sans-serif';
+        const rw = Math.ceil(octx.measureText(route.route).width);
+        octx.strokeStyle = "#00ff40"; octx.lineWidth = 1; octx.strokeRect(0.5, 0.5, rw + 5, 14);
+        octx.fillStyle = "#fff"; octx.fillText(route.route, 3, 13);
+        scrolled(route.dest.toUpperCase(), rw + 8, 168 - rw - 8, 13, 0, 16);
+        const lab = (phase === "arr" ? "Arr" : "Next") + "»";
+        octx.fillStyle = "#ffff00"; octx.fillText(lab, 1, 30);
+        const lw = Math.ceil(octx.measureText(lab).width) + 3;
+        octx.fillStyle = "#fff"; scrolled(route.stops[idx].name.toUpperCase(), lw, 168 - lw, 30, 16, 16);
+      },
+      color(R, G, B){
+        if (Math.max(R, G, B) <= 120) return "#1d1d1d";
+        if (G > 140 && R < 140 && B < 140) return "#5dff7a";
+        if (R > 140 && G > 140 && B < 110) return "#ffe94d";
+        return "#fff4dd";
+      }, bg: "#0a0a0a" },
+    2: { cols: 200, rows: 32, pitch: 5,
+      draw(){
+        octx.font = '700 15px "Roboto Condensed", "Arial Narrow", sans-serif';
+        octx.strokeStyle = octx.fillStyle = "#fff"; octx.lineWidth = 1;
+        octx.strokeRect(0.5, 0.5, 52, 14);
+        octx.textAlign = "center"; octx.fillText(route.route, 27, 13); octx.textAlign = "left";
+        scrolled(route.dest.toUpperCase(), 57, 200 - 57, 13, 0, 16);
+        const lab = phase === "arr" ? "ARR>>" : "NEXT>>";
+        octx.fillText(lab, 2, 30);
+        const lw = Math.ceil(octx.measureText(lab).width) + 6;
+        scrolled(route.stops[idx].name.toUpperCase(), lw, 200 - lw, 30, 16, 16);
+      },
+      color(R, G, B){ return Math.max(R, G, B) > 120 ? "#ff9d1c" : "#21130a"; },
+      bg: "#060504" }
+  };
+
+  function sizeLed(){
+    const c = LED[style];
+    off.width = c.cols; off.height = c.rows;
+    led.width = c.cols * c.pitch * dpr; led.height = c.rows * c.pitch * dpr;
+    lctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  function drawLed(ts){
+    requestAnimationFrame(drawLed);
+    if (ts - lastLed < 50) return;
+    lastLed = ts; scrollX += 1;
+    const c = LED[style];
+    octx.fillStyle = "#000"; octx.fillRect(0, 0, c.cols, c.rows);
+    octx.textBaseline = "alphabetic"; octx.textAlign = "left";
+    c.draw();
+    const px = octx.getImageData(0, 0, c.cols, c.rows).data, P = c.pitch, r = P * 0.38;
+    lctx.fillStyle = c.bg; lctx.fillRect(0, 0, c.cols * P, c.rows * P);
+    for (let y = 0; y < c.rows; y++) for (let x = 0; x < c.cols; x++){
+      const i = (y * c.cols + x) * 4;
+      lctx.fillStyle = c.color(px[i], px[i + 1], px[i + 2]);
+      lctx.beginPath(); lctx.arc(x * P + P / 2, y * P + P / 2, r, 0, 6.2832); lctx.fill();
+    }
+  }
+
+  // ---------------- style switching ----------------
+  function setStyle(s){
+    style = s;
+    document.body.className = "s" + s;
+    document.querySelectorAll(".seg button").forEach(b => b.setAttribute("aria-pressed", +b.dataset.style === s));
+    try{ localStorage.setItem("pids-style", s) }catch(e){}
+    if (location.hash !== "#style-" + s) history.replaceState(null, "", "#style-" + s);
+    sizeLed(); drawHeaders(); render(false);
+  }
+  document.querySelectorAll(".seg button").forEach(b => b.onclick = () => setStyle(+b.dataset.style));
+  window.addEventListener("hashchange", () => { const m = location.hash.match(/style-([12])/); if (m && +m[1] !== style) setStyle(+m[1]); });
+
+  // ---------------- behaviour ----------------
+  let audio;
+  function ding(){
+    try{
+      audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+      const t = audio.currentTime;
+      [880, 1318].forEach((f, j) => {
+        const o = audio.createOscillator(), g = audio.createGain();
+        o.type = "sine"; o.frequency.value = f;
+        g.gain.setValueAtTime(0.0001, t + j * 0.18);
+        g.gain.exponentialRampToValueAtTime(0.25, t + j * 0.18 + 0.01);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + j * 0.18 + 0.7);
+        o.connect(g).connect(audio.destination); o.start(t + j * 0.18); o.stop(t + j * 0.18 + 0.8);
+      });
+    }catch(e){}
+  }
+  function advance(fromAuto){
+    const last = route.stops.length - 1;
+    if (phase === "next") phase = "arr";
+    else if (idx < last){ idx++; phase = "next"; bell = false; }
+    else if (fromAuto){ idx = 1; phase = "next"; bell = false; }
+    else return;
+    scrollX = 0; render();
+    if (fromAuto && phase === "next" && Math.random() < 0.45)
+      setTimeout(() => { if (autoTimer && phase === "next" && !bell){ bell = true; ding(); render(false); } }, 900);
+  }
+  function back(){
+    if (phase === "arr") phase = "next";
+    else if (idx > 1){ idx--; phase = "arr"; }
+    else return;
+    bell = false; scrollX = 0; render();
+  }
+  function pressBell(){ if (!bell){ bell = true; ding(); render(false); } }
+  function toggleAuto(){
+    const b = $("btnAuto");
+    if (autoTimer){ clearInterval(autoTimer); autoTimer = null; b.textContent = "▶ Auto-run"; return; }
+    autoTimer = setInterval(() => advance(true), +$("speed").value);
+    b.textContent = "❚❚ Pause";
+  }
+  $("btnNext").onclick = () => advance(false);
+  $("btnPrev").onclick = back;
+  $("btnBell").onclick = pressBell;
+  $("btnAuto").onclick = toggleAuto;
+  $("speed").onchange = () => { if (autoTimer){ toggleAuto(); toggleAuto(); } };
+  document.addEventListener("keydown", e => {
+    if (e.target.matches("input,textarea,select")) return;
+    if (e.key === "ArrowRight" || e.key === " "){ e.preventDefault(); advance(false); }
+    else if (e.key === "ArrowLeft") back();
+    else if (e.key.toLowerCase() === "b") pressBell();
+    else if (e.key === "1" || e.key === "2") setStyle(+e.key);
+  });
+
+  // ---------------- route editor ----------------
+  const ed = { route: $("edRoute"), dest: $("edDest"), plate: $("edPlate"), stops: $("edStops") };
+  ed.stops.placeholder = "Bt Batok Int | NSL\nBlk 451A\n…";
+  function fillEditor(){ ed.route.value = route.route; ed.dest.value = route.dest; ed.plate.value = route.plate || ""; ed.stops.value = stopsToText(route.stops); }
+  function startAt(){
+    const i = route.stops.findIndex(s => /451A|195E/i.test(s.name));
+    idx = i > 0 ? i : 1; phase = i > 0 ? "arr" : "next"; bell = false; scrollX = 0;
+  }
+  function applyRoute(r, fromSample){
+    route = r; save(); fillEditor();
+    fromSample ? startAt() : (idx = 1, phase = "next", bell = false);
+    drawHeaders(); render();
+  }
+  $("btnApply").onclick = () => {
+    const stops = parseStops(ed.stops.value);
+    if (stops.length < 2){ ed.stops.focus(); ed.stops.style.borderColor = "#d9534f"; return; }
+    ed.stops.style.borderColor = "";
+    applyRoute({ route: ed.route.value.trim() || "000", dest: ed.dest.value.trim() || "NOT IN SERVICE", plate: ed.plate.value.trim(), stops }, false);
+  };
+  $("btnReset").onclick = () => applyRoute(fromSample("944"), true);
+  $("sample").onchange = e => { if (e.target.value) applyRoute(fromSample(e.target.value), true); e.target.value = ""; };
+  $("legend").append(...Object.entries(LINES).map(([k, c]) => { const s = document.createElement("span"); s.className = "pill"; s.style.background = c; s.textContent = k; return s; }));
+
+  // ---------------- boot ----------------
+  startAt();
+  const boot = () => { fillEditor(); setStyle(style); tickClock(); requestAnimationFrame(drawLed); };
+  (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(boot, boot);
+  setInterval(tickClock, 1000);
+})();
+</script>
+</body>
+</html>
