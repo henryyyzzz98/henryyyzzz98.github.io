@@ -330,6 +330,7 @@ input[type=time]{background:var(--raised);border:1px solid var(--line);border-ra
 .nlist summary h3::after{content:"▸";margin-left:auto;color:var(--mute)}.nlist[open] summary h3::after{content:"▾"}
 .nlist .notams{margin-top:8px}
 .autofare{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;font-size:13px}
+.closelist{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
 </style>
 </head>
 <body>
@@ -1325,7 +1326,26 @@ function advance(S){
 function respondOffer(S,accept){if(!S.offer)return;if(accept){S.over={reason:'sold',week:S.week,amount:S.offer.amount,buyer:S.offer.rival};addLog(S,`${S.name} was sold to ${S.offer.rival} for ${money(S.offer.amount)}.`,'info');}
  else{addLog(S,`You turned down ${S.offer.rival}'s offer.`,'info');S.offerCool=S.week+8;}S.offer=null;}
 
-if(typeof module!=='undefined')module.exports={ensureExpansion,placeOrder,cancelOrder,buyUsed,refreshUsed,setProduct,bookCheck,hireCrews,crewNeed,crewRatios,expandTerminal,issueBond,issueShares,buyHedge,joinAlliance,leaveAlliance,acquireRival,rivalPrice,startCampaign,applyRights,rightsState,sellSlots,setupScenario,scenarioProgress,creditRating,balanceSheet,marketShare,respondOffer,slotNeed,seasonOf,famOf,SCENARIOS,PERS,rivalRouteOK,rivalLogical,tidyRivalRoutes,legImpact,disrupt,genConditions,hashN,flightDelay,addFlight,removeFlight,editFlight,autoFill,clearSchedule,rot,tzOff,hhmm,nextFn,weeklyRotations,busyMinutes,ensureSchedules,WEEK,refit,defaultLayout,layoutFromFractions,unitsOf,maxUnits,seatsOf,AP,canServe,BIG3,AIRPORTS,AIRCRAFT,newGame,advance,openRoute,acquire,assign,borrow,companyValue,money,dist,roundTrips,ACT};
+/* ---------- closing a hub ---------- */
+// What closing a hub would do: routes from it close unless the far end is another of your hubs.
+function closeHubPreview(S,code){if(!S.hubs.includes(code))return null;const others=S.hubs.filter(h=>h!==code);
+ const close=S.routes.filter(r=>(r.a===code&&!others.includes(r.b))||(r.b===code&&!others.includes(r.a)));const ids=new Set(close.map(r=>r.id));
+ const idle=S.fleet.filter(p=>(p.sched||[]).length&&(p.sched||[]).every(e=>ids.has(e.r))).length;
+ const extra=Math.max(0,(S.gates&&S.gates[code]||0)-gatesFor(code));const building=(S.gateBuild||[]).filter(g=>g.hub===code).length;
+ const refund=HUB_COST*0.5+extra/10*40e6*0.5;
+ return {routes:close,keep:S.routes.filter(r=>(r.a===code||r.b===code)&&!ids.has(r.id)),idle,refund,extra,building,last:!others.length};}
+function closeHub(S,code){const pv=closeHubPreview(S,code);if(!pv)return 'Not one of your hubs.';if(pv.last)return 'You can\'t close your only hub. Open another one first.';
+ for(const r of pv.routes)closeRoute(S,r.id);
+ S.hubs=S.hubs.filter(h=>h!==code);
+ // flights still using it (hub-to-hub routes) keep the slots they already use there
+ if(S.slots&&SLOT_APS.has(code)){const need=slotNeed(S)[code]||0;S.slots[code]=Math.max(S.slots[code]||0,need);}
+ if(S.gates)delete S.gates[code];if(S.handling)delete S.handling[code];if(S.bankQ)delete S.bankQ[code];
+ S.gateBuild=(S.gateBuild||[]).filter(g=>g.hub!==code);S.rwyHub=(S.rwyHub||[]).filter(h=>h!==code);
+ S.cash+=pv.refund;if(S.acc)S.acc.capex+=pv.refund;
+ addLog(S,`Hub at ${AP[code].city} (${code}) closed: ${pv.routes.length} route${pv.routes.length===1?'':'s'} ended, ${money(pv.refund)} recovered.`,'info');return true;}
+
+if(typeof module!=='undefined')
+module.exports={closeHub,closeHubPreview,openHub,ensureExpansion,placeOrder,cancelOrder,buyUsed,refreshUsed,setProduct,bookCheck,hireCrews,crewNeed,crewRatios,expandTerminal,issueBond,issueShares,buyHedge,joinAlliance,leaveAlliance,acquireRival,rivalPrice,startCampaign,applyRights,rightsState,sellSlots,setupScenario,scenarioProgress,creditRating,balanceSheet,marketShare,respondOffer,slotNeed,seasonOf,famOf,SCENARIOS,PERS,rivalRouteOK,rivalLogical,tidyRivalRoutes,legImpact,disrupt,genConditions,hashN,flightDelay,addFlight,removeFlight,editFlight,autoFill,clearSchedule,rot,tzOff,hhmm,nextFn,weeklyRotations,busyMinutes,ensureSchedules,WEEK,refit,defaultLayout,layoutFromFractions,unitsOf,maxUnits,seatsOf,AP,canServe,BIG3,AIRPORTS,AIRCRAFT,newGame,advance,openRoute,acquire,assign,borrow,companyValue,money,dist,roundTrips,ACT};
 
 </script>
 <script>
@@ -1464,7 +1484,7 @@ function airportInspector(){if(!UI.sel)return '';const a=AP[UI.sel];const isHub=
   <div class="row">${Object.keys(MIN_SIZE).map(c=>`<span class="chip ${a.size>=MIN_SIZE[c]?'ok':''}">${a.size>=MIN_SIZE[c]?'✓':'✕'} ${c}</span>`).join('')}<button class="btn sm ghost" type="button" data-act="zoomsel">Zoom to</button><button class="btn sm ghost" type="button" data-board="${a.code}">Departure board</button></div>
   ${fx.length?`<div class="row">${fx.map(f=>`<span class="chip amb">${esc(f)}</span>`).join('')}</div>`:''}
   ${rivalsHere.length?`<div class="mute">Rival hub: ${rivalsHere.map(esc).join(', ')}</div>`:''}
-  ${isHub?'<span class="chip ok">Your hub</span>':fromHubs}
+  ${isHub?'<div class="row"><span class="chip ok">Your hub</span></div>'+closeHubHTML(a.code):fromHubs}
   ${isHub||a.size<1?'':`<div class="row"><button class="btn sm" type="button" data-hub="${a.code}">Make ${a.code} a hub · ${money(HUB_COST)}</button></div>`}
  </div>`;}
 
@@ -1847,12 +1867,26 @@ function hubOpsHTML(H){if(!S.hubs.includes(H))return '';const L=gateLoad(S)[H];c
   <div class="gchart"><svg viewBox="0 -2 ${W} ${Hh+16}" width="100%" height="${Hh+18}" preserveAspectRatio="none" role="img" aria-label="Movements per hour on ${DAYS[bd]} against ${cap} gates">${bars}${capOn?`<line x1="0" x2="${W}" y1="${y(cap)}" y2="${y(cap)}" stroke="var(--bad)" stroke-dasharray="4 3"/>`:''}${[0,6,12,18].map(hh=>`<text x="${hh*(bw+gp)}" y="${Hh+12}" font-size="9" fill="var(--mute)" font-family="var(--f-mono)">${String(hh).padStart(2,'0')}</text>`).join('')}</svg>
    <div class="mute" style="font-size:11.5px">Arrivals and departures per hour, local time, against gate capacity (${capOn?'dashed':`${cap}, well above this chart`}). Each movement over capacity adds 4 minutes of delay that hour.</div></div>
   <div class="row">${busy?`<span class="chip amb">Expansion ready in week ${busy.ready}</span>`:`<button class="btn sm" type="button" data-terminal="${H}">Expand terminal · +10 gates · $40M · 8 wks</button>`}</div>
+  ${closeHubHTML(H)}
   <div class="row sp"><span class="mute" style="font-size:12.5px">Ground handling</span><div class="seg3" role="group" aria-label="Ground handling at ${H}">${Object.keys(HANDLING).map(k=>`<button type="button" data-handling="${H}|${k}" aria-pressed="${(S.handling[H]||'std')===k}">${HANDLING[k].label} · $${(HANDLING[k].cost/1000).toFixed(1)}k</button>`).join('')}</div></div>
   ${ms.tot?`<div><small class="mute">Share of weekly seats at ${H}</small><div class="sharebar">${segs.map(([k,v])=>`<span style="width:${v/ms.tot*100}%;background:${col(k)}" title="${nm(k)} ${pct(v/ms.tot)}"></span>`).join('')}</div><div class="row" style="font-size:11.5px">${segs.slice(0,6).map(([k,v])=>`<span class="cab"><i style="background:${col(k)}"></i>${nm(k)} <b class="mono">${pct(v/ms.tot)}</b></span>`).join('')}</div></div>`:''}
  </div></div>`;}
 function policyHTML(){return `<div class="sec"><h3>Disruption recovery</h3><div class="box"><div class="seg3" role="group" aria-label="Recovery policy">${Object.keys(POLICY).map(k=>`<button type="button" data-policy="${k}" aria-pressed="${S.policy===k}">${POLICY[k].label}</button>`).join('')}</div>
  <div class="mute" style="font-size:12.5px">${S.policy==='rebook'?'Cancelled passengers move to later flights: $40 each, reputation −0.4 per cancellation.':S.policy==='standby'?`Idle aircraft fly cancelled flights instead (${S.fleet.filter(p=>!(p.sched||[]).length&&!p.grounded).length} idle now). Weather and airspace cancellations still rebook.`:'Passengers are refunded and compensated: $250 each, reputation −0.1 per cancellation.'}${S.opsStats?` Last week: ${S.opsStats.cx} cancelled, ${S.opsStats.recovered} recovered by standby aircraft.`:''}</div></div></div>`;}
 function renderBoard(){const B=UI.board;if(!B.ap||!AP[B.ap])B.ap=S.hubs[0];return hubOpsHTML(B.ap)+(S.hubs.includes(B.ap)?policyHTML():'')+renderBoardBase();}
+
+/* ---------- closing a hub ---------- */
+function closeHubHTML(H){const pv=closeHubPreview(S,H);if(!pv)return '';
+ if(pv.last)return `<div class="mute" style="font-size:12.5px">This is your only hub, so it can't be closed. Open another hub first.</div>`;
+ if(UI.confirm!=='closehub'+H)return `<div class="row"><button class="btn sm ghost danger" type="button" data-closehub="${H}">Close ${H} hub</button></div>`;
+ const n=pv.routes.length;
+ return `<div class="warnbox" style="flex-direction:column;align-items:stretch;display:flex;gap:8px"><b>Close the ${H} hub?</b>
+  <ul class="closelist"><li>${n?`${n} route${n===1?'':'s'} end${n===1?'s':''}: ${pv.routes.slice(0,8).map(r=>r.a+'–'+r.b).join(', ')}${n>8?' …':''}`:'No routes end.'}</li>
+  ${pv.keep.length?`<li>${pv.keep.map(r=>r.a+'–'+r.b).join(', ')} keep${pv.keep.length===1?'s':''} flying because the other end is still your hub.</li>`:''}
+  ${pv.idle?`<li>${pv.idle} aircraft will have nothing scheduled. Find them new routes or return them in Fleet.</li>`:''}
+  <li>You recover ${money(pv.refund)}${pv.extra?`, including half the cost of ${pv.extra} extra gates`:''}${pv.building?'. The terminal expansion under way is cancelled':''}.</li>
+  ${SLOT_APS.has(H)?`<li>${H} is slot-controlled: flights still using it keep their slots, but new ones will need to buy them.</li>`:''}</ul>
+  <div class="row"><button class="btn sm danger" type="button" data-closehub="${H}">Yes, close ${H} hub</button><button class="btn sm ghost" type="button" data-act="cancelclosehub">Keep it</button></div></div>`;}
 
 /* ---------- Conditions extras ---------- */
 const notamHit=n=>n.ap&&n.kind==='rwy'&&S.hubs.includes(n.ap)&&(S.rwyHub||[]).includes(n.ap);
@@ -1981,6 +2015,9 @@ function showOffer(){const m=$('#modal');if(!S.offer||!m.hidden)return;
 /* ---------- events for the expansion ---------- */
 $('#view').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||!S)return;const d=b.dataset;
  const done=(r,ok)=>{if(typeof r==='string'){toast(r,true);return;}if(ok)toast(ok);save();render();};
+ if(d.closehub){const H=d.closehub;if(UI.confirm!=='closehub'+H){UI.confirm='closehub'+H;render();return;}UI.confirm=null;const r=closeHub(S,H);if(typeof r==='string'){toast(r,true);return;}
+  if(UI.from===H)UI.from=S.hubs[0];if(UI.board.ap===H)UI.board.ap=S.hubs[0];if(UI.sel===H)UI.sel=null;save();render();toast(`${H} is no longer a hub.`);return;}
+ if(d.act==='cancelclosehub'){UI.confirm=null;render();return;}
  if(d.rights){const [a,c]=d.rights.split('|');done(applyRights(S,a,c),'Application sent.');return;}
  if(d.pricing){const [id,m]=d.pricing.split('|');const r=routeById(S,+id);r.pricing=m;done(true,m==='auto'?'Auto pricing on: fares follow demand each week.':'Manual fares.');return;}
  if(d.check){const [id,c]=d.check.split('|');done(bookCheck(S,+id,c),`${c}-check booked.`);return;}
