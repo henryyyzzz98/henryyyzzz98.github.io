@@ -93,6 +93,7 @@ input[type=text],input[type=number],select{background:#020628;color:#fff;border:
 .lights.on i{background:#ff4b3a;box-shadow:0 0 8px #ff4b3a}
 .timer{width:min(520px,90%);height:8px;background:#04104f;border-radius:4px;overflow:hidden}
 .timer b{display:block;height:100%;background:var(--gold);width:100%}
+.secs{font-family:Impact,"Arial Black",Arial,sans-serif;color:var(--gold);font-size:18px;min-height:20px;margin-top:-6px}
 .msg{font-size:clamp(16px,2.6vw,24px);text-align:center;min-height:30px;font-weight:700}
 .msg.good{color:var(--green)} .msg.bad{color:var(--red)}
 .answer-row{display:flex;gap:8px;width:min(620px,100%)}
@@ -501,6 +502,7 @@ async function startEpisode(season, idx){
 }
 function beginGame(ep, mixed, info, again){
   const players = collectPlayers();
+  ep = JSON.parse(JSON.stringify(ep));   // own copy: Daily Doubles get re-placed on it
   const respPool = [];
   ep.r.forEach(rd => rd.forEach(c => c[2].forEach(cl => cl && respPool.push(cl[1]))));
   G = { ep, mixed, again, round: 0, control: 0, respPool, players, used: [new Set(), new Set()], busy: false, lock: {} };
@@ -528,10 +530,6 @@ async function startMixed(from, to){
       seen.add(key);
       cats.push([c[0], c[1], c[2].map(cl => [cl[0], cl[1], 0, cl[3]]), g.d]);
     }
-    // Daily Doubles: 1 in the first round, 2 in the second (different columns), usually in lower rows
-    const ddRows = [0,0,1,2,2,3,3,3,4,4];
-    const cols = [0,1,2,3,4,5].sort(() => Math.random() - .5).slice(0, r === 0 ? 1 : 2);
-    cols.forEach(c => { if (cats[c]) cats[c][2][pick(ddRows)][2] = 1; });
     return cats;
   };
   const r0 = dealRound(0), r1 = dealRound(1);
@@ -550,6 +548,18 @@ function available(ci,row){
   if (!cl || G.used[G.round].has(ci*5+row)) return false;
   if (settings.hideMedia && cl[3]) return false;
   return true;
+}
+// 1 Daily Double in the first round, 2 in the second, on random playable clues (2nd-round pair in different columns),
+// ignoring where they were in the original episode.
+function placeDailyDoubles(){
+  G.ep.r[G.round].forEach(c => c[2].forEach(cl => { if (cl) cl[2] = 0; }));
+  const spots = remaining().sort(() => Math.random() - .5);
+  const want = G.round === 0 ? 1 : 2, cols = new Set();
+  for (const [c,r] of spots){
+    if (cols.size >= want) break;
+    if (cols.has(c)) continue;
+    cols.add(c); G.ep.r[G.round][c][2][r][2] = 1;
+  }
 }
 function remaining(){ const out=[]; for(let c=0;c<6;c++) for(let r=0;r<5;r++) if(available(c,r)) out.push([c,r]); return out; }
 
@@ -589,8 +599,9 @@ function setStatus(t){ $("#status").textContent = t; }
 function showOverlay(html){ $("#ov").innerHTML = html; $("#overlay").classList.remove("hidden"); $("#overlay").scrollTop = 0; }
 function hideOverlay(){ $("#overlay").classList.add("hidden"); $("#ov").innerHTML = ""; }
 function runTimer(ms, onDone){
-  const bar = $("#timerBar"); const t0 = performance.now();
-  const f = now => { const p = Math.min(1,(now-t0)/ms); if (bar) bar.style.width = (100-100*p)+"%"; if (p>=1){ tick=null; onDone(); } else tick = requestAnimationFrame(f); };
+  const bar = $("#timerBar"), secs = $("#timerSecs"); const t0 = performance.now();
+  const f = now => { const p = Math.min(1,(now-t0)/ms); if (bar) bar.style.width = (100-100*p)+"%";
+    if (secs) secs.textContent = Math.ceil((ms - (now - t0)) / 1000) > 0 ? Math.ceil((ms - (now - t0)) / 1000) + "s" : "0s"; if (p>=1){ tick=null; onDone(); } else tick = requestAnimationFrame(f); };
   tick = requestAnimationFrame(f);
 }
 
@@ -603,6 +614,7 @@ function startRound(r){
     const min = Math.min(...G.players.map(p=>p.score));
     G.control = G.players.findIndex(p => p.score === min);
   } else G.control = 0;
+  placeDailyDoubles();
   render();
   if (!remaining().length) return startRound(r+1);
   const cats = G.ep.r[r];
@@ -714,7 +726,7 @@ function buzzIn(i){
   $("#lights") && $("#lights").classList.remove("on");
   const br = $("#buzzRow"); if (br) br.remove();
   document.querySelectorAll("#ov .hint").forEach(h => h.remove());
-  if (!G.players[i].cpu) askPlayer(i, 15000, ans => resolveNormal(i, ans, judge(ans)));
+  if (!G.players[i].cpu) askPlayer(i, answerMs(), ans => resolveNormal(i, ans, judge(ans)));
   else cpuRespond(i, SKILL[settings.diff].right * (1 - cu.r*.03), right => resolveNormal(i, null, right));
 }
 function judge(ans){
@@ -734,23 +746,32 @@ function mcChoices(resp, catResps){
   return out.sort(() => Math.random() - .5);
 }
 const promptFor = (i, mc) => solo() ? (mc ? "Choose your response:" : "Your response:") : `${G.players[i].name}, ${mc ? "choose your" : "your"} response:`;
-function askPlayer(i, ms, done){
-  if (settings.mc) return askPlayerMC(i, ms, done);
+// Rounds 1–2: 5 s to answer in multiple choice (like the show), 15 s when typing. Final: always 30 s.
+const answerMs = () => settings.mc ? 5000 : 15000;
+const TIMER_HTML = `<div class="timer"><b id="timerBar"></b></div><div class="secs" id="timerSecs"></div>`;
+// hold = true (Final round): submitting locks the response in, but nothing is judged until time runs out.
+function lockedIn(){
+  document.querySelectorAll("#ansWrap form, #ansWrap .mc-grid, #ansWrap .hint").forEach(x => x.remove());
+  const m = $("#msg"); if (m){ m.textContent = "Response locked in. Waiting for time to run out…"; m.className = "msg"; }
+}
+function askPlayer(i, ms, done, hold=false){
+  if (settings.mc) return askPlayerMC(i, ms, done, hold);
   const msg = $("#msg"); if (msg){ msg.textContent = promptFor(i, false); msg.className = "msg"; }
   const wrap = document.createElement("div");
   wrap.id = "ansWrap";
   wrap.style.cssText = "display:flex;flex-direction:column;align-items:center;gap:8px;width:100%";
-  wrap.innerHTML = `<div class="timer"><b id="timerBar"></b></div>
+  wrap.innerHTML = `${TIMER_HTML}
     <form class="answer-row" id="ansForm" autocomplete="off"><input id="ansInput" type="text" placeholder="${settings.qform?"What is…":"Type your response"}" autocomplete="off" autocapitalize="off" spellcheck="false"><button class="btn">Submit</button></form>`;
   $("#ov").appendChild(wrap);
   const inp = $("#ansInput"); inp.focus();
-  let fired = false;
-  const finish = v => { if (fired) return; fired = true; clearTimers(); done(v); };
+  let fired = false, locked = null;
+  const deliver = v => { if (fired) return; fired = true; clearTimers(); done(v); };
+  const finish = v => { if (!hold) return deliver(v); if (locked === null){ locked = v; lockedIn(); } };
   const shownAt = performance.now();
   $("#ansForm").onsubmit = e => { e.preventDefault(); if (performance.now() - shownAt < 400 && !inp.value.trim()) return; finish(inp.value); };
-  runTimer(ms, () => finish(inp.value));
+  runTimer(ms, () => deliver(locked !== null ? locked : inp.value));
 }
-function askPlayerMC(i, ms, done){
+function askPlayerMC(i, ms, done, hold=false){
   const msg = $("#msg"); if (msg){ msg.textContent = promptFor(i, true); msg.className = "msg"; }
   let catResps = [], resp;
   if (G.round < 2 && G.cur){ resp = G.cur.resp; catResps = G.ep.r[G.round][G.cur.c][2].filter(Boolean).map(cl => cl[1]); }
@@ -760,11 +781,12 @@ function askPlayerMC(i, ms, done){
   const wrap = document.createElement("div");
   wrap.id = "ansWrap";
   wrap.style.cssText = "display:flex;flex-direction:column;align-items:center;gap:10px;width:100%";
-  wrap.innerHTML = `<div class="timer"><b id="timerBar"></b></div><div class="mc-grid">${choices.map((c,k) =>
+  wrap.innerHTML = `${TIMER_HTML}<div class="mc-grid">${choices.map((c,k) =>
     `<button data-i="${k}"><b>${"ABCD"[k]}</b>${esc(asQ(c))}</button>`).join("")}</div><div class="hint">Tap a choice or press 1–4</div>`;
   $("#ov").appendChild(wrap);
-  let fired = false;
-  const finish = v => { if (fired) return; fired = true; G.mcKeys = null; clearTimers(); done(v); };
+  let fired = false, locked = null;
+  const deliver = v => { if (fired) return; fired = true; G.mcKeys = null; clearTimers(); done(v); };
+  const finish = v => { if (!hold) return deliver(v); if (locked === null){ locked = v; G.mcKeys = null; lockedIn(); } };
   // Guard against the "ghost tap": on phones the tap that hit BUZZ also fires a click on whatever
   // appears under the finger. Only accept a choice whose own press started on it, after a short delay.
   const shownAt = performance.now();
@@ -778,7 +800,7 @@ function askPlayerMC(i, ms, done){
     };
   });
   G.mcKeys = n => { if (choices[n] != null) finish(choices[n]); };
-  runTimer(ms, () => finish(""));
+  runTimer(ms, () => deliver(locked !== null ? locked : ""));
 }
 function removeAns(){ const w = $("#ansWrap"); if (w) w.remove(); }
 function cpuRespond(i, pRight, done){
@@ -897,7 +919,7 @@ function showDDClue(){
     renderPodiums(i);
     T(reveal, 1100);
   };
-  if (!p.cpu) afterRead(cu.text, () => askPlayer(i, 20000, ans => { said = ans; finish(judge(ans)); }), 400);
+  if (!p.cpu) afterRead(cu.text, () => askPlayer(i, answerMs(), ans => { said = ans; finish(judge(ans)); }), 400);
   else afterRead(cu.text, () => cpuRespond(i, SKILL[settings.diff].right * (1 - cu.r*.03) * .95, finish), 0);
 }
 
@@ -974,7 +996,7 @@ function finalClue(){
   const nextAnswer = first => {
     if (!queue.length) return finishAll();
     const i = queue.shift();
-    const go = () => askPlayer(i, 30000, ans => { f.said[i] = ans; f.right[i] = judge2(ans); nextAnswer(false); });
+    const go = () => askPlayer(i, 30000, ans => { f.said[i] = ans; f.right[i] = judge2(ans); nextAnswer(false); }, true);
     if (solo()) return go();
     // pass the device: the next writer gets a ready screen so nobody sees another player's response
     showOverlay(`${clueHtml}<div class="msg" id="msg">${esc(G.players[i].name)}'s turn to write. Everyone else, look away!</div>
@@ -983,7 +1005,7 @@ function finalClue(){
     $("#readyBtn").onclick = () => { showOverlay(`${clueHtml}<div class="msg" id="msg"></div>`); go(); };
   };
   if (f.hum.length) afterRead(f.text, () => nextAnswer(true), 0);
-  else afterRead(f.text, () => { const wrap = document.createElement("div"); wrap.className="timer"; wrap.innerHTML='<b id="timerBar"></b>'; $("#ov").appendChild(wrap); runTimer(12000, finishAll); }, 0);
+  else afterRead(f.text, () => { const wrap = document.createElement("div"); wrap.innerHTML=TIMER_HTML; wrap.style.cssText="display:flex;flex-direction:column;align-items:center;gap:8px;width:100%"; $("#ov").appendChild(wrap); runTimer(30000, finishAll); }, 0);
 }
 function judge2(ans){ if (settings.qform && !settings.mc && !QFORM.test(ans||"")) return false; return isCorrect(ans||"", G.fin.resp); }
 function finalReveal(){
