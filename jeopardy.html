@@ -49,7 +49,7 @@ input[type=text],input[type=number],select{background:#020628;color:#fff;border:
 .topbar .ep{font-size:12px;color:var(--muted)}
 
 /* ---------- board ---------- */
-.board{display:grid;grid-template-columns:repeat(6,1fr);gap:clamp(3px,.6vw,6px);background:#000;padding:clamp(3px,.6vw,6px);
+.board{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:clamp(3px,.6vw,6px);background:#000;padding:clamp(3px,.6vw,6px);
   border-radius:6px;flex:1}
 .cat,.cell{background:var(--cell);display:flex;align-items:center;justify-content:center;text-align:center;
   box-shadow:inset 0 0 0 2px rgba(255,255,255,.06),inset 0 -8px 18px rgba(0,0,0,.35)}
@@ -65,7 +65,7 @@ input[type=text],input[type=number],select{background:#020628;color:#fff;border:
 .status{text-align:center;font-size:14px;color:#dfe3ff;min-height:20px}
 
 /* ---------- podiums ---------- */
-.podiums{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.podiums{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .pod{background:linear-gradient(180deg,#22327e,#121c55);border:3px solid #000;border-radius:8px;text-align:center;
   padding:6px 4px;position:relative;transition:box-shadow .15s}
 .pod .score{font-family:Impact,"Arial Black",Arial,sans-serif;font-size:clamp(18px,3.2vw,30px);background:var(--cell);
@@ -101,10 +101,13 @@ input[type=text],input[type=number],select{background:#020628;color:#fff;border:
 .reveal .lbl{font-size:12px;letter-spacing:.14em;color:var(--muted);text-transform:uppercase}
 .reveal .resp{font-size:clamp(20px,3.4vw,32px);font-weight:800;color:var(--gold2);margin:4px 0}
 .btns{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
-#buzzBtn{width:min(420px,92%);padding:18px;font-size:22px;font-weight:900;border-radius:999px;border:3px solid #000;
-  background:#c62828;color:#fff;box-shadow:0 5px 0 #000;letter-spacing:.1em}
-#buzzBtn.armed{background:#ff3b30;box-shadow:0 5px 0 #000,0 0 26px rgba(255,59,48,.8)}
-#buzzBtn:active{transform:translateY(3px);box-shadow:0 2px 0 #000}
+#buzzRow{display:flex;gap:10px;width:min(760px,100%);justify-content:center}
+.buzz{flex:1;max-width:420px;padding:18px 8px;font-size:22px;font-weight:900;border-radius:999px;border:3px solid #000;
+  background:#c62828;color:#fff;box-shadow:0 5px 0 #000;letter-spacing:.1em;touch-action:none;user-select:none;-webkit-user-select:none}
+.buzz span{display:block;font-size:clamp(15px,2.4vw,20px);letter-spacing:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.buzz small{display:block;font-size:11px;letter-spacing:.12em;opacity:.85;margin-top:2px}
+.buzz.armed{background:#ff3b30;box-shadow:0 5px 0 #000,0 0 26px rgba(255,59,48,.8)}
+.buzz:active{transform:translateY(3px);box-shadow:0 2px 0 #000}
 .hint{font-size:12px;color:var(--muted)}
 .cats-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;width:100%}
 .cats-list div{background:var(--cell);border:2px solid #000;padding:10px;border-radius:6px;text-align:center;font-weight:800;text-transform:uppercase;text-shadow:2px 2px 0 #000}
@@ -127,7 +130,8 @@ input[type=text],input[type=number],select{background:#020628;color:#fff;border:
   #app{padding:6px}
   .topbar .btn.ghost{padding:5px 7px;font-size:12px}
   .cat{font-size:clamp(7.5px,2.3vw,11px);padding:2px;min-height:58px}
-  .cell{font-size:clamp(13px,4.6vw,22px);min-height:48px}
+  .cell{font-size:clamp(11px,3.9vw,20px);min-height:48px;padding:0;letter-spacing:-.02em}
+  .cat{overflow-wrap:anywhere;hyphens:auto}
 }
 </style>
 </head>
@@ -140,8 +144,12 @@ input[type=text],input[type=number],select{background:#020628;color:#fff;border:
 
     <div class="panel">
       <h2>Contestants</h2>
-      <div class="row"><label for="pName">Your name</label><input id="pName" type="text" maxlength="14" value="You"></div>
-      <div class="row"><label>Opponents</label>
+      <div class="row"><label>Players</label>
+        <div class="seg" id="humSeg"><button data-n="1">1 player</button><button data-n="2">2 players</button><button data-n="3">3 players</button></div>
+      </div>
+      <div id="nameRows"></div>
+      <label class="check" id="cpuFillRow"><input type="checkbox" id="optCpuFill" checked> Fill empty seats with CPU opponents</label>
+      <div class="row" id="diffRow"><label>Opponents</label>
         <div class="seg" id="diffSeg">
           <button data-d="easy">Easy</button><button data-d="normal" class="on">Normal</button><button data-d="hard">Hard</button>
         </div>
@@ -174,7 +182,7 @@ input[type=text],input[type=number],select{background:#020628;color:#fff;border:
       </div>
       <div id="loadMsg" style="margin-top:10px"></div>
       <p class="note" style="margin-bottom:0">Boards appear exactly as they aired. Blank squares are clues the contestants never reached.<br>
-      Buzz with the button or the <b>Space</b> bar. Answers are judged leniently; if the game marks you wrong unfairly, use <b>"I was right"</b>.</p>
+      Buzz with the button or the <b>Space</b> bar (with 2–3 players, each player gets a key). Answers are judged leniently; if the game marks you wrong unfairly, use <b>"I was right"</b>.</p>
     </div>
 
     <div class="panel">
@@ -375,7 +383,7 @@ const QFORM = /^\s*(what|who|where|when|which|why|how)(\s|'|’)/i;
 
 /* =================== settings & state =================== */
 const settings = {
-  name: store.get("name","You"), diff: store.get("diff","normal"),
+  humans: store.get("humans",1), names: store.get("names",[store.get("name","You"),"Player 2","Player 3"]), cpuFill: store.get("cpuFill",true), diff: store.get("diff","normal"),
   hideMedia: store.get("hideMedia",true), mc: store.get("mc",false),
   tts: store.get("tts",true), voice: store.get("voice",""), rate: store.get("rate",1), qform: store.get("qform",false), sound: store.get("sound",true)
 };
@@ -397,7 +405,21 @@ function fillEpisodes(){
   sel.innerHTML = entry.g.map(([d,n],i) => `<option value="${i}">${fmtDate(d)}${n ? " — " + esc(n.replace(/\.$/,"")) : ""}</option>`).join("");
 }
 async function initMenu(){
-  $("#pName").value = settings.name;
+  const drawPlayers = () => {
+    const n = settings.humans, keys = BUZZ_KEYS[n];
+    document.querySelectorAll("#humSeg button").forEach(b => b.classList.toggle("on", +b.dataset.n === n));
+    $("#nameRows").innerHTML = Array.from({length:n}, (_,i) => {
+      let v = settings.names[i] || ""; if (n > 1 && i === 0 && v === "You") v = "Player 1"; if (n === 1 && v === "Player 1") v = "You";
+      return `<div class="row"><label for="pName${i}">${n === 1 ? "Your name" : "Player " + (i+1)}</label><input id="pName${i}" type="text" maxlength="14" value="${esc(v)}">${n > 1 ? `<span class="note" style="min-width:64px">Buzz: <b>${keys[i]}</b></span>` : ""}</div>`;
+    }).join("");
+    document.querySelectorAll("#nameRows input").forEach((inp,i) => inp.onchange = () => { settings.names[i] = inp.value.trim().slice(0,14); store.set("names", settings.names); });
+    $("#cpuFillRow").classList.toggle("hidden", n === 3);
+    $("#diffRow").classList.toggle("hidden", n === 3 || !settings.cpuFill);
+  };
+  document.querySelectorAll("#humSeg button").forEach(b => b.onclick = () => { settings.humans = +b.dataset.n; store.set("humans", settings.humans); drawPlayers(); });
+  $("#optCpuFill").checked = settings.cpuFill;
+  $("#optCpuFill").onchange = e => { store.set("cpuFill", settings.cpuFill = e.target.checked); drawPlayers(); };
+  drawPlayers();
   document.querySelectorAll("#diffSeg button").forEach(b => {
     b.classList.toggle("on", b.dataset.d === settings.diff);
     b.onclick = () => { settings.diff = b.dataset.d; store.set("diff", settings.diff);
@@ -421,7 +443,6 @@ async function initMenu(){
     $("#rateSel").onchange = e => store.set("rate", settings.rate = +e.target.value);
     $("#testVoice").onclick = () => { const t = settings.tts; settings.tts = true; speak("This Colombian city served as inspiration for Gabriel García Márquez, who is buried there."); settings.tts = t; };
   }
-  $("#pName").onchange = e => store.set("name", settings.name = (e.target.value.trim() || "You").slice(0,14));
   $("#loadMsg").textContent = "Loading episode list…";
   try{ INDEX = await fetchJSONMaybeGz(BASE + "index.json"); }
   catch(e){ $("#loadMsg").textContent = "Couldn't load the episode list (" + e.message + ")."; return; }
@@ -447,8 +468,29 @@ async function initMenu(){
 }
 
 /* =================== game setup =================== */
+const BUZZ_KEYS = {1: ["Space"], 2: ["A","L"], 3: ["A","G","L"]};
+function collectPlayers(){
+  const n = settings.humans;
+  const names = [];
+  for (let i = 0; i < n; i++){
+    const el = $("#pName" + i);
+    let v = ((el && el.value) || "").trim().slice(0,14) || (n === 1 ? "You" : "Player " + (i+1));
+    if (names.some(x => x.toLowerCase() === v.toLowerCase())) v = (v + " " + (i+1)).slice(0,14);
+    names.push(v);
+  }
+  settings.names = names.concat(settings.names.slice(n)); store.set("names", settings.names);
+  const keys = BUZZ_KEYS[n];
+  const players = names.map((name,i) => ({name, score: 0, cpu: false, right: 0, wrong: 0, key: keys[i]}));
+  if (settings.cpuFill){
+    const taken = new Set(names.map(x => x.toLowerCase()));
+    const cpuNames = [...CPU_NAMES].sort(() => Math.random() - .5).filter(x => !taken.has(x.toLowerCase()));
+    for (let k = 0; players.length < 3; k++) players.push({name: cpuNames[k], score: 0, cpu: true, right: 0, wrong: 0});
+  }
+  return players;
+}
+const humans = () => G.players.map((p,i) => i).filter(i => !G.players[i].cpu);
+const solo = () => humans().length === 1;
 async function startEpisode(season, idx){
-  settings.name = ($("#pName").value.trim() || "You").slice(0,14); store.set("name", settings.name);
   $("#loadMsg").textContent = "Loading season " + season + "…";
   let games;
   try{ games = await loadSeason(season); }catch(e){ $("#loadMsg").textContent = "Couldn't load that season (" + e.message + ")."; return; }
@@ -458,24 +500,16 @@ async function startEpisode(season, idx){
             () => { const all = INDEX.flatMap(e => e.g.map((_,i)=>[e.s,i])); const [s,i] = pick(all); startEpisode(s,i); });
 }
 function beginGame(ep, mixed, info, again){
-  const names = [...CPU_NAMES].sort(()=>Math.random()-.5).filter(n => n.toLowerCase() !== settings.name.toLowerCase()).slice(0,2);
+  const players = collectPlayers();
   const respPool = [];
   ep.r.forEach(rd => rd.forEach(c => c[2].forEach(cl => cl && respPool.push(cl[1]))));
-  G = {
-    ep, mixed, again, round: 0, control: 0, respPool,
-    players: [
-      {name: settings.name, score: 0, cpu: false, right: 0, wrong: 0},
-      {name: names[0], score: 0, cpu: true, right: 0, wrong: 0},
-      {name: names[1], score: 0, cpu: true, right: 0, wrong: 0}
-    ],
-    used: [new Set(), new Set()], busy: false
-  };
+  G = { ep, mixed, again, round: 0, control: 0, respPool, players, used: [new Set(), new Set()], busy: false, lock: {} };
+  $("#podiums").style.gridTemplateColumns = `repeat(${players.length},minmax(0,1fr))`;
   $("#menu").classList.add("hidden"); $("#game").classList.remove("hidden");
   $("#epInfo").textContent = info;
   startRound(0);
 }
 async function startMixed(from, to){
-  settings.name = ($("#pName").value.trim() || "You").slice(0,14); store.set("name", settings.name);
   const range = INDEX.filter(e => e.s >= from && e.s <= to).map(e => e.s);
   const chosen = [...range].sort(() => Math.random() - .5).slice(0, 4);
   $("#mixMsg").textContent = "Shuffling categories…";
@@ -519,6 +553,14 @@ function available(ci,row){
 }
 function remaining(){ const out=[]; for(let c=0;c<6;c++) for(let r=0;r<5;r++) if(available(c,r)) out.push([c,r]); return out; }
 
+/* "What is …?" phrasing */
+const cleanResp = r => String(r).replace(/^\((?:1|one|2|two|3|three|any) of\)\s*/i,"").replace(/\s*\((?:or )?[^)]*\)\s*$/i,"").replace(/[()]/g,"").replace(/\s+/g," ").trim();
+const asQ = s => { s = String(s || "").trim().replace(/\?+$/,""); return /^(what|who|where|when|which)\b/i.test(s) ? s + "?" : `What is ${s}?`; };
+function respBlock(resp){
+  const listed = /[()]/.test(resp) ? `<div class="hint">Listed as: ${esc(resp)}</div>` : "";
+  return `<div class="lbl">Correct response</div><div class="resp">${esc(asQ(cleanResp(resp)))}</div>${listed}`;
+}
+
 /* =================== rendering =================== */
 function render(){
   $("#roundName").textContent = ["First Round","Double Round","Final Round"][G.round];
@@ -541,7 +583,7 @@ function renderPodiums(lit=-1){
   $("#podiums").innerHTML = G.players.map((p,i) =>
     `<div class="pod${i===G.control && G.round<2 ? " ctrl":""}${i===lit?" lit":""}">
        <div class="score${p.score<0?" neg":""}">${money(p.score)}</div>
-       <div class="name">${esc(p.name)}</div><div class="tag">${p.cpu ? "CPU · "+settings.diff : "Player"}</div></div>`).join("");
+       <div class="name">${esc(p.name)}</div><div class="tag">${p.cpu ? "CPU · "+settings.diff : solo() ? "Player" : "Player · key " + p.key}</div></div>`).join("");
 }
 function setStatus(t){ $("#status").textContent = t; }
 function showOverlay(html){ $("#ov").innerHTML = html; $("#overlay").classList.remove("hidden"); $("#overlay").scrollTop = 0; }
@@ -564,10 +606,11 @@ function startRound(r){
   render();
   if (!remaining().length) return startRound(r+1);
   const cats = G.ep.r[r];
+  const ctl = G.players[G.control];
   showOverlay(`<div class="clue big" style="font-size:clamp(30px,7vw,70px)">${r===0?"FIRST ROUND":"DOUBLE ROUND"}</div>
     ${r===1?'<div class="meta">Dollar values double</div>':""}
     <div class="cats-list">${cats.map(c=>`<div>${esc(c[0])}${c[1]?`<span>${esc(c[1])}</span>`:""}</div>`).join("")}</div>
-    <div class="hint">${esc(G.players[G.control].name)} ${G.players[G.control].cpu?"picks":"pick"} first.</div>
+    <div class="hint">${!ctl.cpu && solo() ? "You pick" : esc(ctl.name) + " picks"} first.${!solo() && r===0 ? " Buzz keys: " + humans().map(i => `${esc(G.players[i].name)} = ${G.players[i].key}`).join(" · ") : ""}</div>
     <button class="btn" id="goBtn">Let's play</button>`);
   $("#goBtn").onclick = () => { hideOverlay(); nextTurn(); };
 }
@@ -581,7 +624,7 @@ function nextTurn(){
     G.busy = true; render();
     setStatus(`${p.name} is choosing…`);
     T(() => { const [c,r] = cpuPick(rem); chooseClue(c,r); }, rand(900,1600));
-  } else setStatus("You have control. Pick a clue.");
+  } else setStatus(solo() ? "You have control. Pick a clue." : `${p.name}, you have control. Pick a clue.`);
 }
 function cpuPick(rem){
   const hard = settings.diff === "hard";
@@ -613,7 +656,7 @@ function openClue(c,r){
   const cat = G.ep.r[G.round][c], cl = cat[2][r];
   G.used[G.round].add(c*5+r);
   G.cur = {c, r, cat: cat[0], cmt: cat[1], aired: cat[3] || null, text: cl[0], resp: cl[1], dd: !!cl[2], media: !!cl[3],
-           value: (r+1)*step(), attempted: new Set(), playerWrongAmt: 0, anyRight: false};
+           value: (r+1)*step(), attempted: new Set(), wrongs: {}, anyRight: false};
   if (G.cur.dd) startDD(); else startBuzzing(true);
 }
 function clueHeader(){
@@ -627,14 +670,16 @@ function readDelay(text){ return Math.min(6500, 1200 + text.split(/\s+/).length 
 function startBuzzing(first){
   clearTimers();
   const cu = G.cur;
-  G.phase = "reading"; G.lockUntil = 0;
-  const canPlayerBuzz = !cu.attempted.has(0);
+  G.phase = "reading"; G.lock = {};
+  const can = humans().filter(i => !cu.attempted.has(i));
+  const keyHint = solo() ? "Space bar also buzzes" : "Keys: " + can.map(i => `${esc(G.players[i].name)} = ${G.players[i].key}`).join(" · ");
   showOverlay(`${clueHeader()}
     <div class="lights" id="lights">${"<i></i>".repeat(9)}</div>
     <div class="msg" id="msg">${first ? "" : "Anyone else?"}</div>
-    ${canPlayerBuzz ? `<button id="buzzBtn">BUZZ</button><div class="hint">Space bar also buzzes · buzzing before the lights come on locks you out briefly</div>` : ""}`);
+    ${can.length ? `<div id="buzzRow">${can.map(i => `<button class="buzz" data-p="${i}">${solo() ? "BUZZ" : `<span>${esc(G.players[i].name)}</span><small>BUZZ · ${G.players[i].key}</small>`}</button>`).join("")}</div>
+      <div class="hint">${keyHint} · buzzing before the lights come on locks you out briefly</div>` : ""}`);
   renderPodiums();
-  if (canPlayerBuzz) $("#buzzBtn").onpointerdown = e => { e.preventDefault(); playerBuzz(); };
+  document.querySelectorAll("#buzzRow .buzz").forEach(b => b.onpointerdown = e => { e.preventDefault(); playerBuzz(+b.dataset.p); });
   if (first) afterRead(cu.text, arm, readDelay(cu.text));
   else T(arm, 600);
 }
@@ -642,7 +687,7 @@ function arm(){
   if (G.phase !== "reading") return;
   const cu = G.cur; G.phase = "armed";
   $("#lights") && $("#lights").classList.add("on");
-  $("#buzzBtn") && $("#buzzBtn").classList.add("armed");
+  document.querySelectorAll("#buzzRow .buzz").forEach(b => b.classList.add("armed"));
   const sk = SKILL[settings.diff];
   G.players.forEach((p,i) => {
     if (!p.cpu || cu.attempted.has(i)) return;
@@ -652,27 +697,30 @@ function arm(){
   });
   T(() => { if (G.phase==="armed") timeUp(); }, 5000);
 }
-function playerBuzz(){
-  if (!G || G.cur == null || G.cur.attempted.has(0)) return;
-  if (G.phase === "reading"){ G.lockUntil = performance.now() + 250; const m=$("#msg"); if (m){ m.textContent="Too early!"; m.className="msg bad"; } return; }
-  if (G.phase !== "armed" || performance.now() < G.lockUntil) return;
-  buzzIn(0);
+function playerBuzz(i){
+  if (!G || G.cur == null || i == null || !G.players[i] || G.players[i].cpu || G.cur.attempted.has(i)) return;
+  if (G.phase === "reading"){
+    G.lock[i] = performance.now() + 250;
+    const m = $("#msg"); if (m){ m.textContent = solo() ? "Too early!" : `Too early, ${G.players[i].name}!`; m.className = "msg bad"; }
+    return;
+  }
+  if (G.phase !== "armed" || performance.now() < (G.lock[i] || 0)) return;
+  buzzIn(i);
 }
 function buzzIn(i){
   clearTimers(); stopSpeech(); sfx.buzz();
   const cu = G.cur; G.phase = "answering"; cu.attempted.add(i);
   renderPodiums(i);
   $("#lights") && $("#lights").classList.remove("on");
-  const bb = $("#buzzBtn"); if (bb) bb.remove();
+  const br = $("#buzzRow"); if (br) br.remove();
   document.querySelectorAll("#ov .hint").forEach(h => h.remove());
-  if (i === 0) askPlayer(15000, ans => resolveNormal(0, ans, judge(ans)));
+  if (!G.players[i].cpu) askPlayer(i, 15000, ans => resolveNormal(i, ans, judge(ans)));
   else cpuRespond(i, SKILL[settings.diff].right * (1 - cu.r*.03), right => resolveNormal(i, null, right));
 }
 function judge(ans){
   if (settings.qform && !settings.mc && !QFORM.test(ans)) return false;
   return isCorrect(ans, G.cur.resp);
 }
-const cleanResp = r => String(r).replace(/^\((?:1|one|2|two|3|three|any) of\)\s*/i,"").replace(/\s*\((?:or )?[^)]*\)\s*$/i,"").replace(/[()]/g,"").replace(/\s+/g," ").trim();
 function mcChoices(resp, catResps){
   const right = cleanResp(resp), out = [right], keys = new Set([norm(right)]);
   const tryAdd = r => {
@@ -685,9 +733,10 @@ function mcChoices(resp, catResps){
   for (let k = 0; out.length < 4 && k < 60; k++) tryAdd(pick(G.respPool));
   return out.sort(() => Math.random() - .5);
 }
-function askPlayer(ms, done){
-  if (settings.mc) return askPlayerMC(ms, done);
-  const msg = $("#msg"); if (msg){ msg.textContent = "Your response:"; msg.className = "msg"; }
+const promptFor = (i, mc) => solo() ? (mc ? "Choose your response:" : "Your response:") : `${G.players[i].name}, ${mc ? "choose your" : "your"} response:`;
+function askPlayer(i, ms, done){
+  if (settings.mc) return askPlayerMC(i, ms, done);
+  const msg = $("#msg"); if (msg){ msg.textContent = promptFor(i, false); msg.className = "msg"; }
   const wrap = document.createElement("div");
   wrap.id = "ansWrap";
   wrap.style.cssText = "display:flex;flex-direction:column;align-items:center;gap:8px;width:100%";
@@ -701,17 +750,18 @@ function askPlayer(ms, done){
   $("#ansForm").onsubmit = e => { e.preventDefault(); if (performance.now() - shownAt < 400 && !inp.value.trim()) return; finish(inp.value); };
   runTimer(ms, () => finish(inp.value));
 }
-function askPlayerMC(ms, done){
-  const msg = $("#msg"); if (msg){ msg.textContent = "Choose your response:"; msg.className = "msg"; }
+function askPlayerMC(i, ms, done){
+  const msg = $("#msg"); if (msg){ msg.textContent = promptFor(i, true); msg.className = "msg"; }
   let catResps = [], resp;
   if (G.round < 2 && G.cur){ resp = G.cur.resp; catResps = G.ep.r[G.round][G.cur.c][2].filter(Boolean).map(cl => cl[1]); }
   else resp = G.fin.resp;
-  const choices = mcChoices(resp, catResps);
+  const choices = (G.round === 2 && G.fin.choices) ? G.fin.choices : mcChoices(resp, catResps);
+  if (G.round === 2) G.fin.choices = choices;          // every player sees the same Final options
   const wrap = document.createElement("div");
   wrap.id = "ansWrap";
   wrap.style.cssText = "display:flex;flex-direction:column;align-items:center;gap:10px;width:100%";
-  wrap.innerHTML = `<div class="timer"><b id="timerBar"></b></div><div class="mc-grid">${choices.map((c,i) =>
-    `<button data-i="${i}"><b>${"ABCD"[i]}</b>${esc(c)}</button>`).join("")}</div><div class="hint">Tap a choice or press 1–4</div>`;
+  wrap.innerHTML = `<div class="timer"><b id="timerBar"></b></div><div class="mc-grid">${choices.map((c,k) =>
+    `<button data-i="${k}"><b>${"ABCD"[k]}</b>${esc(asQ(c))}</button>`).join("")}</div><div class="hint">Tap a choice or press 1–4</div>`;
   $("#ov").appendChild(wrap);
   let fired = false;
   const finish = v => { if (fired) return; fired = true; G.mcKeys = null; clearTimers(); done(v); };
@@ -736,29 +786,34 @@ function cpuRespond(i, pRight, done){
   const msg = $("#msg"); if (msg){ msg.textContent = `${p.name}…`; msg.className = "msg"; }
   T(() => {
     const right = Math.random() < pRight;
-    let said = cu.resp.replace(/\s*\((?:or|1 of|one of)[^)]*\)/gi,"").replace(/[()]/g,"");
+    let said = cleanResp(cu.resp);
     if (!right){
-      for (let k=0;k<10;k++){ said = pick(G.respPool).replace(/[()]/g,""); if (!isCorrect(said, cu.resp)) break; }
+      for (let k=0;k<10;k++){ said = cleanResp(pick(G.respPool)); if (!isCorrect(said, cu.resp)) break; }
     }
-    const m = $("#msg"); if (m){ m.textContent = `${p.name}: "What is ${said}?"`; }
+    const m = $("#msg"); if (m){ m.textContent = `${p.name}: "${asQ(said)}"`; }
     T(() => done(right), 1200);
   }, rand(900,1600));
 }
 function resolveNormal(i, said, right){
   const cu = G.cur, p = G.players[i], m = $("#msg");
   removeAns();
+  const meSolo = !p.cpu && solo();
   if (right){
     p.score += cu.value; p.right++; G.control = i; cu.anyRight = true; sfx.right();
-    if (m){ m.textContent = i===0 ? `Correct! +${money(cu.value)}` : `${p.name} is right. +${money(cu.value)}`; m.className="msg good"; }
+    if (m){ m.textContent = meSolo ? `Correct! +${money(cu.value)}` : `${p.name} is right. +${money(cu.value)}`; m.className="msg good"; }
     renderPodiums(i);
     T(() => reveal(), 900);
     return;
   }
   p.score -= cu.value; p.wrong++; sfx.wrong();
-  if (i === 0){ cu.playerWrongAmt = cu.value; cu.playerSaid = said; }
-  if (m){ m.textContent = (i===0 ? (said.trim() ? `"${said.trim()}" — no. ` : "Time's up. ") : `${p.name} is wrong. `) + `−${money(cu.value)}`; m.className="msg bad"; }
+  if (!p.cpu) cu.wrongs[i] = {amt: cu.value, said};
+  let text;
+  if (p.cpu) text = `${p.name} is wrong. `;
+  else if (!said || !said.trim()) text = meSolo ? "Time's up. " : `${p.name}: time's up. `;
+  else text = `${meSolo ? "" : p.name + ": "}"${said.trim()}" — no. `;
+  if (m){ m.textContent = text + `−${money(cu.value)}`; m.className="msg bad"; }
   renderPodiums();
-  if (cu.attempted.size < 3) T(() => startBuzzing(false), 1300);
+  if (cu.attempted.size < G.players.length) T(() => startBuzzing(false), 1300);
   else T(() => reveal(), 1100);
 }
 function timeUp(){
@@ -770,23 +825,23 @@ function reveal(){
   clearTimers();
   const cu = G.cur; G.phase = "reveal";
   const lastMsg = $("#msg") ? $("#msg").outerHTML : "";
-  const canOverride = cu.playerWrongAmt > 0 && !settings.mc;
+  const ovr = settings.mc ? [] : Object.keys(cu.wrongs).map(Number);
   showOverlay(`${clueHeader()}${lastMsg}
-    <div class="reveal"><div class="lbl">Correct response</div><div class="resp">${esc(cu.resp)}</div>
-      ${canOverride ? `<div class="hint">You said: "${esc(cu.playerSaid || "")}"</div>` : ""}</div>
-    <div class="btns">${canOverride ? `<button class="btn secondary" id="ovrBtn">I was right</button>` : ""}
+    <div class="reveal">${respBlock(cu.resp)}
+      ${ovr.map(i => `<div class="hint">${solo() ? "You" : esc(G.players[i].name)} said: "${esc(cu.wrongs[i].said || "")}"</div>`).join("")}</div>
+    <div class="btns">${ovr.map(i => `<button class="btn secondary ovrBtn" data-p="${i}">${solo() ? "I was right" : esc(G.players[i].name) + " was right"}</button>`).join("")}
       <button class="btn" id="contBtn">Continue</button></div>
     <div class="hint">Enter / Space to continue</div>`);
   sfx.reveal();
-  if (!cu.anyRight && ttsOn()) speak(cleanResp(cu.resp));   // like the host reading the response nobody got
-  if (canOverride) $("#ovrBtn").onclick = () => {
-    const pl = G.players[0], amt = cu.playerWrongAmt;
+  if (!cu.anyRight && ttsOn()) speak(asQ(cleanResp(cu.resp)));   // like the host reading the response nobody got
+  document.querySelectorAll(".ovrBtn").forEach(btn => btn.onclick = () => {
+    const i = +btn.dataset.p, pl = G.players[i], amt = cu.wrongs[i].amt;
     pl.score += amt * 2; pl.wrong--; pl.right++;
-    if (cu.dd || !cu.anyRight) G.control = 0;
-    cu.playerWrongAmt = 0; sfx.right();
-    $("#ovrBtn").remove(); const m = $("#msg"); if (m){ m.textContent = `Ruled correct. +${money(amt)}`; m.className="msg good"; }
+    if (cu.dd || !cu.anyRight) G.control = i;
+    cu.anyRight = true; delete cu.wrongs[i]; sfx.right();
+    btn.remove(); const m = $("#msg"); if (m){ m.textContent = `${solo() ? "Ruled correct" : pl.name + " ruled correct"}. +${money(amt)}`; m.className="msg good"; }
     renderPodiums();
-  };
+  });
   $("#contBtn").onclick = closeClue;
   setTimeout(() => $("#contBtn") && $("#contBtn").focus(), 50);
 }
@@ -810,7 +865,7 @@ function startDD(){
     $("#ddArea").innerHTML = `<form class="answer-row" id="wForm" style="max-width:380px">
       <input id="wInput" type="number" inputmode="numeric" min="5" max="${cu.maxWager}" placeholder="Wager $5 – $${cu.maxWager.toLocaleString()}">
       <button class="btn">Wager</button></form>`;
-    $("#msg").textContent = `You can wager up to ${money(cu.maxWager)}.`;
+    $("#msg").textContent = `${solo() ? "You" : p.name + ", you"} can wager up to ${money(cu.maxWager)}.`;
     const inp = $("#wInput"); setTimeout(()=>{ if (inp.isConnected) inp.focus(); }, 50);
     $("#wForm").onsubmit = e => {
       e.preventDefault();
@@ -829,19 +884,20 @@ function startDD(){
 }
 function showDDClue(){
   clearTimers();
-  const cu = G.cur, i = G.control;
+  const cu = G.cur, i = G.control, p = G.players[i];
   G.phase = "answering"; cu.attempted.add(i);
-  showOverlay(`${clueHeader().replace(`$${cu.value.toLocaleString()}`, `Daily Double · wager ${money(cu.wager)}`)}<div class="msg" id="msg"></div>`);
+  showOverlay(`${clueHeader().replace(`$${cu.value.toLocaleString()}`, `Daily Double · ${solo() || p.cpu ? "" : esc(p.name) + " · "}wager ${money(cu.wager)}`)}<div class="msg" id="msg"></div>`);
   renderPodiums(i);
+  let said = "";
   const finish = right => {
-    const p = G.players[i]; removeAns();
+    removeAns();
     if (right){ p.score += cu.wager; p.right++; cu.anyRight = true; sfx.right(); }
-    else { p.score -= cu.wager; p.wrong++; sfx.wrong(); if (i===0) cu.playerWrongAmt = cu.wager; }
+    else { p.score -= cu.wager; p.wrong++; sfx.wrong(); if (!p.cpu) cu.wrongs[i] = {amt: cu.wager, said}; }
     const m = $("#msg"); if (m){ m.textContent = (right ? "Correct! +" : "Incorrect. −") + money(cu.wager); m.className = "msg " + (right?"good":"bad"); }
     renderPodiums(i);
     T(reveal, 1100);
   };
-  if (i === 0) afterRead(cu.text, () => askPlayer(20000, ans => { cu.playerSaid = ans; finish(judge(ans)); }), 400);
+  if (!p.cpu) afterRead(cu.text, () => askPlayer(i, 20000, ans => { said = ans; finish(judge(ans)); }), 400);
   else afterRead(cu.text, () => cpuRespond(i, SKILL[settings.diff].right * (1 - cu.r*.03) * .95, finish), 0);
 }
 
@@ -853,30 +909,42 @@ function startFinal(){
   G.fin = {cat, cmt, text, resp, wagers: {}, said: {}, right: {}};
   const elig = G.players.map((p,i)=>i).filter(i => G.players[i].score > 0);
   G.fin.elig = elig;
+  G.fin.hum = elig.filter(i => !G.players[i].cpu);
   if (!elig.length){
     showOverlay(`<div class="clue big" style="font-size:clamp(28px,6vw,60px)">FINAL ROUND</div>
       <div class="msg bad">Nobody finished with money, so there's no Final round.</div>
-      <div class="reveal"><div class="lbl">The Final clue would have been · ${esc(cat)}</div><div class="clue" style="font-size:20px">${esc(text)}</div><div class="resp">${esc(resp)}</div></div>
+      <div class="reveal"><div class="lbl">The Final clue would have been · ${esc(cat)}</div><div class="clue" style="font-size:20px">${esc(text)}</div><div class="resp">${esc(asQ(cleanResp(resp)))}</div></div>
       <button class="btn" id="contBtn">See results</button>`);
     $("#contBtn").onclick = gameOver; return;
   }
-  // CPU wagers
   elig.forEach(i => { if (G.players[i].cpu) G.fin.wagers[i] = cpuFinalWager(i, elig); });
-  const youIn = elig.includes(0);
-  showOverlay(`<div class="clue big" style="font-size:clamp(28px,6vw,60px)">FINAL ROUND</div>
-    <div class="meta">Category</div><div class="clue">${esc(cat)}</div>${cmt?`<div class="meta"><span class="cmt">${esc(cmt)}</span></div>`:""}${G.ep.fd?`<div class="meta"><span class="cmt">Aired ${fmtDate(G.ep.fd)}</span></div>`:""}
-    <div class="msg" id="msg">${youIn ? `You have ${money(G.players[0].score)}. How much will you wager?` : `You finished with ${money(G.players[0].score)}, so you sit this one out.`}</div>
-    ${youIn ? `<form class="answer-row" id="wForm" style="max-width:380px"><input id="wInput" type="number" inputmode="numeric" min="0" max="${G.players[0].score}" placeholder="$0 – $${G.players[0].score.toLocaleString()}"><button class="btn">Lock in</button></form>`
-            : `<button class="btn" id="contBtn">Watch the Final</button>`}`);
+  const out = humans().filter(i => !elig.includes(i));
+  const outNote = out.length ? `<div class="hint">${out.map(i => `${solo() ? "You" : esc(G.players[i].name)} finished with ${money(G.players[i].score)} and sit${solo() ? "" : "s"} this one out.`).join(" ")}</div>` : "";
+  const catHtml = `<div class="clue big" style="font-size:clamp(28px,6vw,60px)">FINAL ROUND</div>
+    <div class="meta">Category</div><div class="clue">${esc(cat)}</div>${cmt?`<div class="meta"><span class="cmt">${esc(cmt)}</span></div>`:""}${G.ep.fd?`<div class="meta"><span class="cmt">Aired ${fmtDate(G.ep.fd)}</span></div>`:""}`;
   renderPodiums();
-  if (youIn){
+  const queue = [...G.fin.hum];
+  const nextWager = () => {
+    if (!queue.length){
+      if (!G.fin.hum.length){
+        showOverlay(`${catHtml}${outNote}<button class="btn" id="contBtn">Watch the Final</button>`);
+        $("#contBtn").onclick = finalClue;
+      } else finalClue();
+      return;
+    }
+    const i = queue.shift(), p = G.players[i], secret = !solo();
+    showOverlay(`${catHtml}${outNote}
+      <div class="msg" id="msg">${solo() ? `You have ${money(p.score)}. How much will you wager?` : `${esc(p.name)}, you have ${money(p.score)}. Enter your wager privately.`}</div>
+      <form class="answer-row" id="wForm" style="max-width:380px"><input id="wInput" type="${secret ? "password" : "number"}" inputmode="numeric" autocomplete="off" placeholder="$0 – $${p.score.toLocaleString()}"><button class="btn">Lock in</button></form>`);
+    renderPodiums(i);
     setTimeout(()=>{ const w=$("#wInput"); if (w) w.focus(); },50);
     $("#wForm").onsubmit = e => {
-      e.preventDefault(); const w = Math.round(+$("#wInput").value);
-      if (!(w >= 0 && w <= G.players[0].score) || $("#wInput").value === ""){ $("#msg").textContent = `Wager $0 to ${money(G.players[0].score)}.`; $("#msg").className="msg bad"; return; }
-      G.fin.wagers[0] = w; finalClue();
+      e.preventDefault(); const raw = $("#wInput").value.replace(/[$,\s]/g,""), w = Math.round(+raw);
+      if (raw === "" || !(w >= 0 && w <= p.score)){ $("#msg").textContent = `Wager $0 to ${money(p.score)}.`; $("#msg").className="msg bad"; return; }
+      G.fin.wagers[i] = w; nextWager();
     };
-  } else $("#contBtn").onclick = finalClue;
+  };
+  nextWager();
 }
 function cpuFinalWager(i, elig){
   const s = G.players[i].score;
@@ -888,22 +956,34 @@ function cpuFinalWager(i, elig){
   return Math.min(s, Math.max(0, Math.round(rand(top - s + 1, s))));                       // trailing: aim to pass
 }
 function finalClue(){
-  clearTimers(); const f = G.fin, youIn = f.elig.includes(0);
+  clearTimers(); const f = G.fin;
   sfx.reveal();
-  showOverlay(`<div class="meta">${esc(f.cat)}</div><div class="clue">${esc(f.text)}</div><div class="msg" id="msg">${youIn?"":"The contestants are writing…"}</div>`);
-  const done = ans => {
-    if (youIn){ f.said[0] = ans; f.right[0] = judge2(ans); }
+  const clueHtml = `<div class="meta">${esc(f.cat)}</div><div class="clue">${esc(f.text)}</div>`;
+  showOverlay(`${clueHtml}<div class="msg" id="msg">${f.hum.length ? "" : "The contestants are writing…"}</div>`);
+  const finishAll = () => {
     f.elig.forEach(i => {
       if (!G.players[i].cpu) return;
       const ok = Math.random() < SKILL[settings.diff].final;
       f.right[i] = ok;
-      if (ok) f.said[i] = f.resp.replace(/\s*\((?:or|1 of|one of)[^)]*\)/gi,"").replace(/[()]/g,"");
-      else { let s=""; for (let k=0;k<10;k++){ s = pick(G.respPool).replace(/[()]/g,""); if (!isCorrect(s,f.resp)) break; } f.said[i] = Math.random()<.15 ? "" : s; }
+      if (ok) f.said[i] = cleanResp(f.resp);
+      else { let s=""; for (let k=0;k<10;k++){ s = cleanResp(pick(G.respPool)); if (!isCorrect(s,f.resp)) break; } f.said[i] = Math.random()<.15 ? "" : s; }
     });
     sfx.timeUp(); T(finalReveal, 900);
   };
-  if (youIn) afterRead(f.text, () => askPlayer(30000, done), 0);
-  else afterRead(f.text, () => { const wrap = document.createElement("div"); wrap.className="timer"; wrap.innerHTML='<b id="timerBar"></b>'; $("#ov").appendChild(wrap); runTimer(12000, () => done(null)); }, 0);
+  const queue = [...f.hum];
+  const nextAnswer = first => {
+    if (!queue.length) return finishAll();
+    const i = queue.shift();
+    const go = () => askPlayer(i, 30000, ans => { f.said[i] = ans; f.right[i] = judge2(ans); nextAnswer(false); });
+    if (solo()) return go();
+    // pass the device: the next writer gets a ready screen so nobody sees another player's response
+    showOverlay(`${clueHtml}<div class="msg" id="msg">${esc(G.players[i].name)}'s turn to write. Everyone else, look away!</div>
+      <button class="btn" id="readyBtn">${esc(G.players[i].name)} is ready</button>`);
+    renderPodiums(i);
+    $("#readyBtn").onclick = () => { showOverlay(`${clueHtml}<div class="msg" id="msg"></div>`); go(); };
+  };
+  if (f.hum.length) afterRead(f.text, () => nextAnswer(true), 0);
+  else afterRead(f.text, () => { const wrap = document.createElement("div"); wrap.className="timer"; wrap.innerHTML='<b id="timerBar"></b>'; $("#ov").appendChild(wrap); runTimer(12000, finishAll); }, 0);
 }
 function judge2(ans){ if (settings.qform && !settings.mc && !QFORM.test(ans||"")) return false; return isCorrect(ans||"", G.fin.resp); }
 function finalReveal(){
@@ -914,18 +994,18 @@ function finalReveal(){
   let k = 0;
   const showNext = () => {
     if (k >= order.length){
-      $("#fl").insertAdjacentHTML("beforeend", `<div class="reveal"><div class="lbl">Correct response</div><div class="resp">${esc(f.resp)}</div></div>`);
+      $("#fl").insertAdjacentHTML("beforeend", `<div class="reveal">${respBlock(f.resp)}</div>`);
       $("#fBtns").innerHTML = `<button class="btn" id="contBtn">Final results</button>`; $("#contBtn").onclick = gameOver; return;
     }
     const i = order[k++], p = G.players[i], ok = f.right[i], w = f.wagers[i];
     const before = p.score; p.score += ok ? w : -w;
     ok ? sfx.right() : sfx.wrong();
-    const id = "fi"+i;
+    const id = "fi"+i, canOvr = !p.cpu && !ok && !settings.mc;
     $("#fl").insertAdjacentHTML("beforeend", `<div class="final-item" id="${id}"><div class="who">${esc(p.name)} · ${money(before)}</div>
-      <div class="said">${f.said[i] ? `"What is ${esc(f.said[i])}?"` : "(no response)"}</div>
+      <div class="said">${f.said[i] && f.said[i].trim() ? `"${esc(asQ(f.said[i]))}"` : "(no response)"}</div>
       <div class="res" style="color:${ok?"var(--green)":"var(--red)"}">${ok?"Correct":"Incorrect"} · wagered ${money(w)} → <b>${money(p.score)}</b></div>
-      ${(i===0 && !ok && !settings.mc) ? `<button class="btn ghost" id="fOvr" style="margin-top:6px">I was right</button>`:""}</div>`);
-    if (i===0 && !ok && !settings.mc) $("#fOvr").onclick = () => { p.score += 2*w; f.right[0] = true; $("#"+id+" .res").innerHTML = `Ruled correct · wagered ${money(w)} → <b>${money(p.score)}</b>`; $("#"+id+" .res").style.color="var(--green)"; $("#fOvr").remove(); renderPodiums(); };
+      ${canOvr ? `<button class="btn ghost" id="fOvr${i}" style="margin-top:6px">${solo() ? "I was right" : esc(p.name) + " was right"}</button>`:""}</div>`);
+    if (canOvr) $("#fOvr"+i).onclick = () => { p.score += 2*w; f.right[i] = true; $("#"+id+" .res").innerHTML = `Ruled correct · wagered ${money(w)} → <b>${money(p.score)}</b>`; $("#"+id+" .res").style.color="var(--green)"; $("#fOvr"+i).remove(); renderPodiums(); };
     renderPodiums(i);
     T(showNext, 2200);
   };
@@ -936,11 +1016,12 @@ function gameOver(){
   const ranked = G.players.map((p,i)=>({...p,i})).sort((a,b)=>b.score-a.score);
   const best = ranked[0].score;
   const winners = ranked.filter(p => p.score === best && best > 0);
-  const you = G.players[0];
-  const headline = !winners.length ? "No winner today" : winners.length > 1 ? "It's a tie!" : winners[0].i === 0 ? "You win!" : `${winners[0].name} wins`;
+  const headline = !winners.length ? "No winner today" : winners.length > 1 ? "It's a tie!"
+    : (!winners[0].cpu && solo()) ? "You win!" : `${winners[0].name} wins!`;
+  const stats = humans().map(i => `${solo() ? "You" : esc(G.players[i].name)}: ${G.players[i].right} right, ${G.players[i].wrong} wrong`).join(" · ");
   showOverlay(`<div class="clue big" style="font-size:clamp(32px,8vw,80px)">${esc(headline)}</div>
     <div class="results">${ranked.map(p => `<div class="${p.score===best&&best>0?"win":""}"><span>${esc(p.name)}</span><span>${money(p.score)}</span></div>`).join("")}</div>
-    <div class="hint">You: ${you.right} right, ${you.wrong} wrong · ${G.mixed ? "Mixed board" : "Episode from " + fmtDateLong(G.ep.d)}</div>
+    <div class="hint">${stats}<br>${G.mixed ? "Mixed board" : "Episode from " + fmtDateLong(G.ep.d)}</div>
     <div class="btns"><button class="btn" id="againBtn">${G.mixed ? "Deal another mixed board" : "Random episode"}</button><button class="btn secondary" id="menuBtn">Main menu</button></div>`);
   renderPodiums();
   $("#againBtn").onclick = () => { hideOverlay(); G.again(); };
@@ -968,9 +1049,14 @@ document.addEventListener("keydown", e => {
   if (!G) return;
   const typing = document.activeElement && document.activeElement.tagName === "INPUT";
   if (G.mcKeys && /^[1-4]$/.test(e.key) && !typing){ e.preventDefault(); G.mcKeys(+e.key - 1); return; }
-  if (e.code === "Space" && !typing && (G.phase === "reading" || G.phase === "armed")){ e.preventDefault(); playerBuzz(); return; }
+  if (!typing && (G.phase === "reading" || G.phase === "armed")){
+    const label = e.code === "Space" ? "Space" : (e.key || "").toUpperCase();
+    const who = G.players.findIndex(p => !p.cpu && p.key === label);
+    if (who >= 0){ e.preventDefault(); playerBuzz(who); return; }
+    if (e.code === "Space" && solo()){ e.preventDefault(); playerBuzz(humans()[0]); return; }
+  }
   if ((e.code === "Space" || e.key === "Enter") && G.phase === "reveal" && !typing){
-    if (document.activeElement && document.activeElement.id === "ovrBtn") return;
+    if (document.activeElement && document.activeElement.classList.contains("ovrBtn")) return;
     e.preventDefault(); closeClue();
   }
 });
