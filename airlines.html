@@ -331,6 +331,11 @@ input[type=time]{background:var(--raised);border:1px solid var(--line);border-ra
 .nlist .notams{margin-top:8px}
 .autofare{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;font-size:13px}
 .closelist{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+.tbadge{display:inline-block;min-width:17px;padding:0 5px;margin-left:4px;border-radius:9px;background:var(--accent);color:var(--bg);font-size:11px;line-height:17px;text-align:center;font-weight:700}
+.csoffer{flex-direction:column;align-items:stretch;display:flex;gap:8px}
+.tt-h.csr,.tt-r.csr{grid-template-columns:70px minmax(90px,1fr) minmax(110px,1.3fr) 44px auto;min-width:420px}.tt-r.csr{border-bottom:1px solid var(--line)}.tt-r.csr:last-child{border-bottom:0}
+.rangebox{border:1px dashed var(--accent);border-radius:6px;padding:8px 10px;display:flex;flex-direction:column;gap:6px;font-size:13px}
+.rangebox select{width:auto;display:inline-block;padding:2px 6px}
 </style>
 </head>
 <body>
@@ -370,7 +375,7 @@ input[type=time]{background:var(--raised);border:1px solid var(--line);border-ra
    <button class="tab" role="tab" data-tab="finance" type="button">Finance</button>
    <button class="tab" role="tab" data-tab="rivals" type="button">Rivals</button>
    <button class="tab" role="tab" data-tab="company" type="button">Company</button>
-   <button class="tab" role="tab" data-tab="saves" type="button">Save</button>
+   <button class="tab" role="tab" data-tab="saves" type="button">Save · Settings</button>
    <button class="tscroll r" type="button" data-tscroll="1" aria-label="More tabs">›</button>
    <button class="tscroll l" type="button" data-tscroll="-1" aria-label="Earlier tabs">‹</button>
   </nav>
@@ -704,12 +709,13 @@ function rivalOpen(S,i,announce=true){const R=S.rivals[i],D=DIFF[S.diff];if(R.ro
  let a,b;const has=(x,y)=>R.routes.some(q=>pairKey(q.a,q.b)===pairKey(x,y));
  // go after the player's best routes, but only where that makes sense for this airline's network
  const PR=PERS[R.pers||'hub'];const partner=S.alliance!=null&&S.alliance===R.alliance;
- const playerRoutes=partner?[]:S.routes.filter(r=>r.last&&r.last.profit>0&&!has(r.a,r.b)&&rivalLogical(R,r)&&(!PR.maxD||dist(r.a,r.b)<=PR.maxD));
+ const playerRoutes=partner?[]:S.routes.filter(r=>r.last&&r.last.profit>0&&!has(r.a,r.b)&&!csWith(S,R.code,r.a,r.b)&&!(S.csOffers||[]).some(o=>o.pair===pairKey(r.a,r.b))&&rivalLogical(R,r)&&(!PR.maxD||dist(r.a,r.b)<=PR.maxD));
  if(announce&&playerRoutes.length&&rng()<D.target){const r=playerRoutes.sort((x,y)=>y.last.profit-x.last.profit)[Math.floor(rng()*Math.min(3,playerRoutes.length))];
   a=R.hubs.includes(r.b)?r.b:r.a;b=a===r.a?r.b:r.a;}
  else{for(let tries=0;tries<6&&!b;tries++){a=pick(R.hubs);const c=rivalCands(a).filter(x=>!has(a,x.code)&&(!PR.maxD||dist(a,x.code)<=PR.maxD));if(!c.length)continue;b=weightedPick(c).code;}}
  if(!b)return;
  const competing=S.routes.find(r=>pairKey(r.a,r.b)===pairKey(a,b));
+ if(competing&&announce){const g=csDecide(S,R,a,b);if(g==='skip'||g==='offered')return;}
  let mult=D.mult*PR.mult*(0.92+rng()*0.16);if(competing&&S.diff==='hard'&&R.pers!=='premium')mult=Math.max(0.75,Math.min(mult,competing.mult-0.08));
  const cap=Math.round(D.cap*(0.55+rng()*0.7)*Math.sqrt(AP[a].size*AP[b].size)/7);
  R.routes.push({a,b,cap,mult:+mult.toFixed(2),weak:0,since:S.week});
@@ -1216,11 +1222,12 @@ function advance(S){
   r._premF=list.length?list.reduce((s,o)=>s+(PRODUCT[o.p.product||'std'].prem),0)/list.length:1;
   r.last={pax:0,local:0,conn:0,seats:cap*2,lf:0,rev:0,paxRev:0,connRev:0,cargo:{t:0,rev:0},cost,profit:-cost,flights,comp:0,fare:baseFare(d)*r.mult,byClass:{},q:r._q,cx,delay:r._delay,idle:!flights};
   if(cap>0)add(r.a,r.b,{who:'P',r,cap,capC,mult:r.mult,a:repA*r._q*r._prod*brandF(S,r.a,r.b)*loyalA*(S.alliance!=null?1.02:1)});}
- S.rivals.forEach((R,i)=>R.routes.forEach(rr=>{const im=legImpact(S,rr.a,rr.b,null);const cap=rr.cap*(1-im.cancel);const PR=PERS[R.pers||'hub'];if(cap>0)add(rr.a,rr.b,{who:i,rr,cap,mult:rr.mult,a:D.q*PR.q*(1-Math.min(0.35,im.delay/200))});else{rr.lf=0;rr._p=-40000;}}));
+ const pMult={};S.routes.forEach(r=>pMult[pairKey(r.a,r.b)]=r.mult);
+ S.rivals.forEach((R,i)=>R.routes.forEach(rr=>{const im=legImpact(S,rr.a,rr.b,null);const cap=rr.cap*(1-im.cancel);const PR=PERS[R.pers||'hub'];const csJ=csWith(S,R.code,rr.a,rr.b)&&pMult[pairKey(rr.a,rr.b)]!=null;if(cap>0)add(rr.a,rr.b,{who:i,rr,cap,mult:csJ?pMult[pairKey(rr.a,rr.b)]:rr.mult,a:D.q*PR.q*(1-Math.min(0.35,im.delay/200))});else{rr.lf=0;rr._p=-40000;}}));
  // --- passenger markets
  for(const k in markets){const m=markets[k];const d=dist(m.a,m.b);const cs=m.carriers;const sh=classShare(d);
   const totCap=cs.reduce((s,c)=>s+c.cap,0);const mAvg=cs.reduce((s,c)=>s+c.cap*c.mult,0)/totCap;
-  const Dm=baseDemand(m.a,m.b)*season*fxMult(S,m.a)*fxMult(S,m.b)*Math.pow(mAvg,-1.3);
+  const csk=csOnPair(S,k);const Dm=baseDemand(m.a,m.b)*season*fxMult(S,m.a)*fxMult(S,m.b)*Math.pow(mAvg,-1.3)*(csk?(csk.op?1.08:1.15):1);
   let jBoost=1;cs.forEach(c=>{if(!c.capC)c.capC={f:c.cap*sh.f,j:c.cap*sh.j,w:c.cap*sh.w,y:c.cap*sh.y};else if(c.r._conc)jBoost=Math.max(jBoost,1+0.8*c.r._conc);c.paxC={f:0,j:0,w:0,y:0};});
   let carry=0;
   for(const cl of CLASSES){const Dc=Dm*sh[cl]*(cl==='j'?jBoost:1)+carry;const list=cs.filter(c=>c.capC[cl]>0);
@@ -1233,8 +1240,8 @@ function advance(S){
   const fare=baseFare(d);const ff=CLASSES.reduce((s,c)=>s+sh[c]*CLASS_FARE[c],0);
   for(const c of cs){const pax=Math.round(seatsOf(c.paxC)*2);
    let rev=CLASSES.reduce((s,cl)=>s+c.paxC[cl]*2*fare*c.mult*CLASS_FARE[cl]*(cl==='j'&&c.who==='P'?1+0.5*c.r._conc:1),0);
-   if(c.who==='P'){const r=c.r;if(r.pricing==='auto')rev*=1.05;const byClass={};for(const cl of CLASSES)if(c.capC[cl]>0)byClass[cl]={pax:Math.round(c.paxC[cl]*2),seats:Math.round(c.capC[cl]*2)};
-    r._spare=Math.max(0,c.cap-seatsOf(c.paxC));Object.assign(r.last,{pax,local:pax,paxRev:rev,comp:cs.length-1,byClass});}
+   if(c.who==='P'){const r=c.r;if(r.pricing==='auto')rev*=1.05;let csFee=0;if(csk&&!csk.op){csFee=rev*0.05;rev-=csFee;}const byClass={};for(const cl of CLASSES)if(c.capC[cl]>0)byClass[cl]={pax:Math.round(c.paxC[cl]*2),seats:Math.round(c.capC[cl]*2)};
+    r._spare=Math.max(0,c.cap-seatsOf(c.paxC));Object.assign(r.last,{pax,local:pax,paxRev:rev,comp:cs.length-1-(csk&&csk.op?1:0),byClass,csFee,cs:csk?csk.code:null});}
    else{const cost=(c.cap*2*(25+0.058*d)/D.q)*ff+40000;c.rr.lf=pax/(c.cap*2);c.rr._p=rev-cost;}}}
  // --- connecting passengers through your hubs (and alliance partners' feed)
  S.bankQ={};const priceF=r=>Math.pow(r.mult,-1.3);
@@ -1244,9 +1251,9 @@ function advance(S){
    const cd=baseDemand(X,Y)*season*0.3*q*priceF({mult:(A.mult+Bq.mult)/2});const served=Math.min(cd,A._spare||0,Bq._spare||0);if(served<1)continue;A._spare-=served;Bq._spare-=served;
    const fareXY=baseFare(dXY)*(A.mult+Bq.mult)/2;for(const [r,dd] of [[A,dA],[Bq,dB]]){const rv=served*2*fareXY*dd/(dA+dB);r.last.conn+=Math.round(served*2);r.last.connRev+=rv;}}
   S.bankQ[H]=qn?qs/qn:0;
-  if(S.alliance!=null){for(const R of S.rivals){if(R.alliance!==S.alliance)continue;for(const rr of R.routes){if(rr.a!==H&&rr.b!==H)continue;const Z=rr.a===H?rr.b:rr.a;
+  {for(const R of S.rivals){const fk=S.alliance!=null&&R.alliance===S.alliance?0.08:(S.codeshares||[]).some(c=>c.code===R.code)?0.05:0;if(!fk)continue;for(const rr of R.routes){if(rr.a!==H&&rr.b!==H)continue;const Z=rr.a===H?rr.b:rr.a;
    for(const Bq of rs){const Y=Bq.a===H?Bq.b:Bq.a;if(Y===Z||!(Bq._spare>=1))continue;const dZY=dist(Z,Y),dZ=dist(H,Z),dB=dist(H,Y);if(dZ+dB>1.35*dZY)continue;
-    const served=Math.min(baseDemand(Z,Y)*season*0.08,Bq._spare);if(served<1)continue;Bq._spare-=served;Bq.last.conn+=Math.round(served*2);Bq.last.connRev+=served*2*baseFare(dZY)*Bq.mult*dB/(dZ+dB);}}}}}
+    const served=Math.min(baseDemand(Z,Y)*season*fk,Bq._spare);if(served<1)continue;Bq._spare-=served;Bq.last.conn+=Math.round(served*2);Bq.last.connRev+=served*2*baseFare(dZY)*Bq.mult*dB/(dZ+dB);}}}}}
  // --- cargo
  for(const r of S.routes){const cap=(r._belly||0)+(r._freight||0);if(!cap)continue;const d=dist(r.a,r.b);const cdf=d<500?0.3:Math.min(1,0.3+0.7*(d-500)/2500);
   const Dc=30*Math.sqrt(sizeW(AP[r.a].size)*sizeW(AP[r.b].size))*cdf*season;let rcap=0;S.rivals.forEach(R=>R.routes.forEach(rr=>{if(pairKey(rr.a,rr.b)===pairKey(r.a,r.b))rcap+=rr.cap*0.06;}));
@@ -1278,11 +1285,12 @@ function advance(S){
  S.rivals.forEach((R,i)=>{let p=-300000;R.routes.forEach(rr=>{p+=(rr._p||0);rr.weak=(rr.lf<0.45)?rr.weak+1:0;});R.lastProfit=p;R.value+=p;
   const before=R.routes.length;R.routes=R.routes.filter(rr=>rr.weak<5);if(R.routes.length<before&&rng()<0.5)addLog(S,`${R.name} dropped a loss-making route.`,'info');
   const partner=S.alliance!=null&&S.alliance===R.alliance;
-  R.routes.forEach(rr=>{const pr=S.routes.find(r=>pairKey(r.a,r.b)===pairKey(rr.a,rr.b));if(!pr||partner||S.diff==='easy')return;
+  R.routes.forEach(rr=>{const pr=S.routes.find(r=>pairKey(r.a,r.b)===pairKey(rr.a,rr.b));if(!pr||partner||S.diff==='easy'||csWith(S,R.code,rr.a,rr.b))return;
    if(R.pers==='premium'){if(pr.mult<rr.mult-0.1&&rng()<0.3)rr.cap=Math.round(rr.cap*1.1);return;}
    const k=R.pers==='lcc'?0.04:0.1;if(pr.mult<rr.mult-k&&rng()<(S.diff==='hard'?0.5:0.2))rr.mult=+Math.max(R.pers==='lcc'?0.6:0.7,rr.mult-0.06).toFixed(2);});
   if(rng()<D.open*PERS[R.pers||'hub'].open)rivalOpen(S,i,true);
   const hubAt=R.pers==='hub'?1.25:1.4;if(R.hubs.length<3&&R.value>RIVAL_BASE+D.start*hubAt&&rng()<(R.pers==='hub'?0.05:0.03)){const hc=BIG3.filter(a=>a.size>=7&&!R.hubs.includes(a.code));if(hc.length){const h=pick(hc).code;R.hubs.push(h);addLog(S,`${R.name} opened a new hub in ${AP[h].city}.`,'info');}}});
+ codeshareWeek(S);
  // --- brand
  for(const k in S.brand){S.brand[k]+=(30-S.brand[k])*0.015;}
  const flownRegions=new Set(S.routes.filter(r=>r.last.flights).flatMap(r=>[AP[r.a].region,AP[r.b].region]));for(const k of flownRegions)if(S.brand[k]!=null)S.brand[k]+=0.2*(B.mkt-1)+0.05;
@@ -1326,6 +1334,43 @@ function advance(S){
 function respondOffer(S,accept){if(!S.offer)return;if(accept){S.over={reason:'sold',week:S.week,amount:S.offer.amount,buyer:S.offer.rival};addLog(S,`${S.name} was sold to ${S.offer.rival} for ${money(S.offer.amount)}.`,'info');}
  else{addLog(S,`You turned down ${S.offer.rival}'s offer.`,'info');S.offerCool=S.week+8;}S.offer=null;}
 
+/* ---------- codeshares ---------- */
+// Two kinds, decided live each week:
+//  marketing: the partner doesn't fly the route and sells seats on your flights: demand +15%, the partner keeps 5% of your passenger revenue
+//  joint: you both fly it: fares are coordinated (no fare war), demand +8%
+// Either way the partner's network feeds connecting passengers through your hubs.
+const CS_ACCEPT={hub:0.6,premium:0.45,lcc:0.15};
+function csWith(S,code,a,b){const k=pairKey(a,b);return (S.codeshares||[]).some(c=>c.code===code&&c.pair===k);}
+function csOnPair(S,k){const c=(S.codeshares||[]).find(x=>x.pair===k);if(!c)return null;const R=S.rivals.find(x=>x.code===c.code);if(!R)return null;
+ return {code:c.code,name:R.name,op:R.routes.some(rr=>pairKey(rr.a,rr.b)===k)};}
+function rivalLaunch(S,R,a,b){const D=DIFF[S.diff],PR=PERS[R.pers||'hub'];const k=pairKey(a,b);if(R.routes.some(q=>pairKey(q.a,q.b)===k))return;
+ const competing=S.routes.find(r=>pairKey(r.a,r.b)===k);let mult=D.mult*PR.mult*(0.92+rng()*0.16);if(competing&&S.diff==='hard'&&R.pers!=='premium')mult=Math.max(0.75,Math.min(mult,competing.mult-0.08));
+ const cap=Math.round(D.cap*(0.55+rng()*0.7)*Math.sqrt(AP[a].size*AP[b].size)/7);R.routes.push({a,b,cap,mult:+mult.toFixed(2),weak:0,since:S.week});}
+// a rival about to attack one of your routes offers a codeshare first, unless you turned one down recently
+function csDecide(S,R,a,b){const k=pairKey(a,b);if(csWith(S,R.code,a,b))return 'skip';S.csOffers=S.csOffers||[];if(S.csOffers.some(o=>o.pair===k))return 'skip';
+ if((S.codeshares||[]).some(c=>c.pair===k))return 'attack';
+ if(((S.csCool||{})[R.code+'|'+k]||0)>S.week)return 'attack';
+ S.csOffers.push({id:S.nextId++,code:R.code,a,b,pair:k,week:S.week,expires:S.week+4});
+ addLog(S,`${R.name} proposes a codeshare on ${a}–${b} instead of flying against you. Answer in Rivals within 4 weeks.`,'good');return 'offered';}
+function respondCodeshare(S,id,accept){S.csOffers=S.csOffers||[];const o=S.csOffers.find(x=>x.id===id);if(!o)return 'That offer has gone.';
+ S.csOffers=S.csOffers.filter(x=>x.id!==id);const R=S.rivals.find(x=>x.code===o.code);if(!R)return 'That airline no longer exists.';
+ if(!S.routes.some(r=>pairKey(r.a,r.b)===o.pair))return 'You no longer fly that route.';
+ if(accept){S.codeshares=S.codeshares||[];S.codeshares.push({id:S.nextId++,code:R.code,pair:o.pair,a:o.a,b:o.b,since:S.week});addLog(S,`Codeshare agreed with ${R.name} on ${o.a}–${o.b}: they sell seats on your flights.`,'good');return true;}
+ S.csCool=S.csCool||{};S.csCool[R.code+'|'+o.pair]=S.week+26;rivalLaunch(S,R,o.a,o.b);
+ addLog(S,`You turned down ${R.name}'s codeshare, so they launched ${o.a}–${o.b} against you.`,'bad');return true;}
+// you ask a rival already flying one of your routes
+function csChance(S,R){if(S.alliance!=null&&R.alliance===S.alliance)return 1;return clamp((CS_ACCEPT[R.pers||'hub']||0.5)+(S.rep-50)/100,0.05,0.95);}
+function requestCodeshare(S,code,routeId){const R=S.rivals.find(x=>x.code===code);const r=S.routes.find(x=>x.id===routeId);if(!R||!r)return 'Not found.';
+ const k=pairKey(r.a,r.b);if(csWith(S,code,r.a,r.b))return 'You already codeshare on this route.';if((S.codeshares||[]).some(c=>c.pair===k))return 'You already have a codeshare partner on this route.';
+ S.csCool=S.csCool||{};if((S.csCool[code+'|'+k]||0)>S.week)return `${R.name} won't discuss ${r.a}–${r.b} again until week ${S.csCool[code+'|'+k]}.`;
+ if(rng()<csChance(S,R)){S.codeshares=S.codeshares||[];S.codeshares.push({id:S.nextId++,code,pair:k,a:r.a,b:r.b,since:S.week});S.csOffers=(S.csOffers||[]).filter(o=>o.pair!==k);addLog(S,`${R.name} agreed a codeshare on ${r.a}–${r.b}.`,'good');return true;}
+ S.csCool[code+'|'+k]=S.week+13;addLog(S,`${R.name} turned down a codeshare on ${r.a}–${r.b}.`,'info');return 'refused';}
+function endCodeshare(S,id){const c=(S.codeshares||[]).find(x=>x.id===id);if(!c)return 'Not found.';S.codeshares=S.codeshares.filter(x=>x.id!==id);
+ const R=S.rivals.find(x=>x.code===c.code);S.csCool=S.csCool||{};S.csCool[c.code+'|'+c.pair]=S.week+13;addLog(S,`Codeshare with ${R?R.name:c.code} on ${c.a}–${c.b} ended.`,'info');return true;}
+function codeshareWeek(S){S.codeshares=(S.codeshares||[]).filter(c=>S.rivals.some(R=>R.code===c.code)&&S.routes.some(r=>pairKey(r.a,r.b)===c.pair));
+ S.csOffers=(S.csOffers||[]).filter(o=>{const R=S.rivals.find(x=>x.code===o.code);if(!R||!S.routes.some(r=>pairKey(r.a,r.b)===o.pair))return false;
+  if(o.expires<=S.week){S.csCool=S.csCool||{};S.csCool[o.code+'|'+o.pair]=S.week+26;rivalLaunch(S,R,o.a,o.b);addLog(S,`${R.name}'s codeshare offer on ${o.a}–${o.b} lapsed, so they launched it against you.`,'bad');return false;}return true;});}
+
 /* ---------- closing a hub ---------- */
 // What closing a hub would do: routes from it close unless the far end is another of your hubs.
 function closeHubPreview(S,code){if(!S.hubs.includes(code))return null;const others=S.hubs.filter(h=>h!==code);
@@ -1345,7 +1390,7 @@ function closeHub(S,code){const pv=closeHubPreview(S,code);if(!pv)return 'Not on
  addLog(S,`Hub at ${AP[code].city} (${code}) closed: ${pv.routes.length} route${pv.routes.length===1?'':'s'} ended, ${money(pv.refund)} recovered.`,'info');return true;}
 
 if(typeof module!=='undefined')
-module.exports={closeHub,closeHubPreview,openHub,ensureExpansion,placeOrder,cancelOrder,buyUsed,refreshUsed,setProduct,bookCheck,hireCrews,crewNeed,crewRatios,expandTerminal,issueBond,issueShares,buyHedge,joinAlliance,leaveAlliance,acquireRival,rivalPrice,startCampaign,applyRights,rightsState,sellSlots,setupScenario,scenarioProgress,creditRating,balanceSheet,marketShare,respondOffer,slotNeed,seasonOf,famOf,SCENARIOS,PERS,rivalRouteOK,rivalLogical,tidyRivalRoutes,legImpact,disrupt,genConditions,hashN,flightDelay,addFlight,removeFlight,editFlight,autoFill,clearSchedule,rot,tzOff,hhmm,nextFn,weeklyRotations,busyMinutes,ensureSchedules,WEEK,refit,defaultLayout,layoutFromFractions,unitsOf,maxUnits,seatsOf,AP,canServe,BIG3,AIRPORTS,AIRCRAFT,newGame,advance,openRoute,acquire,assign,borrow,companyValue,money,dist,roundTrips,ACT};
+module.exports={csWith,csOnPair,csChance,respondCodeshare,requestCodeshare,endCodeshare,csDecide,closeHub,closeHubPreview,openHub,ensureExpansion,placeOrder,cancelOrder,buyUsed,refreshUsed,setProduct,bookCheck,hireCrews,crewNeed,crewRatios,expandTerminal,issueBond,issueShares,buyHedge,joinAlliance,leaveAlliance,acquireRival,rivalPrice,startCampaign,applyRights,rightsState,sellSlots,setupScenario,scenarioProgress,creditRating,balanceSheet,marketShare,respondOffer,slotNeed,seasonOf,famOf,SCENARIOS,PERS,rivalRouteOK,rivalLogical,tidyRivalRoutes,legImpact,disrupt,genConditions,hashN,flightDelay,addFlight,removeFlight,editFlight,autoFill,clearSchedule,rot,tzOff,hhmm,nextFn,weeklyRotations,busyMinutes,ensureSchedules,WEEK,refit,defaultLayout,layoutFromFractions,unitsOf,maxUnits,seatsOf,AP,canServe,BIG3,AIRPORTS,AIRCRAFT,newGame,advance,openRoute,acquire,assign,borrow,companyValue,money,dist,roundTrips,ACT};
 
 </script>
 <script>
@@ -1395,14 +1440,17 @@ function showAway(reps,ms,startCash,firstWeek){const m=$('#modal');const t=sumRe
  ${evs.length?`<div class="feed" style="border:0;padding:0;max-height:none">${evs.map(l=>`<div><span class="w">W${l.w}</span><span class="${l.kind}">${esc(l.text)}</span></div>`).join('')}</div>`:''}
  <div class="row"><button class="btn primary" type="button" id="bAway">Back to work</button></div></div>`;
  m.hidden=false;$('#bAway').onclick=()=>{m.hidden=true;if(S.over)showOver();};}
-function resumeWithCatchUp(){const before={cash:S.cash,week:S.week,real:S.anchor.real,lastSeen:S.lastSeen||S.anchor.real};const reps=catchUp(MAX_CATCHUP);S.lastSeen=Date.now();save();render();
+function resumeWithCatchUp(){const bg=UI.bg;UI.bg=null;const before=bg?bg.before:{cash:S.cash,week:S.week,real:S.anchor.real,lastSeen:S.lastSeen||S.anchor.real};const reps=(bg?bg.reps:[]).concat(catchUp(MAX_CATCHUP));S.lastSeen=Date.now();save();render();notifyCheck();
  if(reps.length)showAway(reps,Date.now()-before.lastSeen,before.cash,before.week);}
-setInterval(()=>{if(!S||S.over||document.hidden||!$('#start').hidden)return;const wk=S.week;const reps=catchUp(3);S.lastSeen=Date.now();
- if(reps.length){save();render();const t=sumReps(reps);toast(`Week ${wk} settled: ${t.profit>=0?'+':''}${money(t.profit)} profit.`,t.profit<0);}else if(Math.random()<0.2)save();},5000);
+setInterval(()=>{if(!S||S.over||!$('#start').hidden)return;
+ // in a background tab, weeks keep settling only so proposals can raise a browser notification; the summary waits for your return
+ if(document.hidden){if(!notifyActive())return;if(!UI.bg)UI.bg={before:{cash:S.cash,week:S.week,real:S.anchor.real,lastSeen:S.lastSeen||Date.now()},reps:[]};const r=catchUp(3);if(r.length){UI.bg.reps.push(...r);save();notifyCheck();}return;}
+ const wk=S.week;const reps=catchUp(3);S.lastSeen=Date.now();
+ if(reps.length){save();render();notifyCheck();const t=sumReps(reps);toast(`Week ${wk} settled: ${t.profit>=0?'+':''}${money(t.profit)} profit.`,t.profit<0);}else if(Math.random()<0.2)save();},5000);
 document.addEventListener('visibilitychange',()=>{if(!S||S.over||!$('#start').hidden)return;if(document.hidden){S.lastSeen=Date.now();save();}else resumeWithCatchUp();});
 window.addEventListener('pagehide',()=>{if(S){S.lastSeen=Date.now();save();}});
 
-function setGame(G,keepClock){stopAuto();S=G;ensureAnchor(S,!keepClock);UI.sel=null;UI.to=null;UI.confirm=null;UI.from=S.hubs[0];setView(viewFor(S.hubs[0]));UI.tab='routes';UI.code=null;
+function setGame(G,keepClock){stopAuto();S=G;notifySeed();ensureAnchor(S,!keepClock);UI.sel=null;UI.to=null;UI.confirm=null;UI.from=S.hubs[0];setView(viewFor(S.hubs[0]));UI.tab='routes';UI.code=null;
  $('#modal').hidden=true;$('#start').hidden=true;save();render();}
 const slotLine=o=>`${esc(o.game.name)} · week ${o.game.week} · ${o.game.unlimited?'unlimited':money(o.game.cash)}${o.game.over?' · bankrupt':''}`;
 const when=t=>new Date(t).toLocaleString('en-AU',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'});
@@ -1449,7 +1497,7 @@ $('#start').addEventListener('click',e=>{const ph=e.target.closest('[data-pickhu
  if(a.dataset.act==='continue'){setGame(load(),true);resumeWithCatchUp();return;}
  if(a.dataset.act==='begin'){const saved=load();if(saved&&!saved.over&&a.dataset.armed!=='1'){a.dataset.armed='1';a.textContent='Tap again to replace your saved airline';return;}
   UI.setup.name=$('#iName').value.trim()||'Orchid Airways';
-  const cd=($('#iCode').value||'').toUpperCase().replace(/[^A-Z0-9]/g,'');if(cd&&cd.length!==2){toast('Airline codes are 2 letters or digits, like SQ or 9W.',true);return;}const scn=UI.setup.scen||'sandbox',scd=SCENARIOS[scn];if(scd.hub)UI.setup.hub=scd.hub;S=newGame(UI.setup.name,UI.setup.hub,UI.setup.diff,UI.setup.rivals,cd,scn==='sandbox'&&UI.setup.unlimited,{weather:UI.setup.weather,airspace:UI.setup.airspace});setupScenario(S,scn);S.anchor={real:Date.now(),game:420};S.lastSeen=Date.now();UI.sel=null;UI.from=UI.setup.hub;UI.to=null;UI.tab='market';setView(viewFor(UI.setup.hub));
+  const cd=($('#iCode').value||'').toUpperCase().replace(/[^A-Z0-9]/g,'');if(cd&&cd.length!==2){toast('Airline codes are 2 letters or digits, like SQ or 9W.',true);return;}const scn=UI.setup.scen||'sandbox',scd=SCENARIOS[scn];if(scd.hub)UI.setup.hub=scd.hub;S=newGame(UI.setup.name,UI.setup.hub,UI.setup.diff,UI.setup.rivals,cd,scn==='sandbox'&&UI.setup.unlimited,{weather:UI.setup.weather,airspace:UI.setup.airspace});setupScenario(S,scn);notifySeed();S.anchor={real:Date.now(),game:420};S.lastSeen=Date.now();UI.sel=null;UI.from=UI.setup.hub;UI.to=null;UI.tab='market';setView(viewFor(UI.setup.hub));
   save();$('#start').hidden=true;render();toast(scn==='rescue'?'Your ageing fleet is already flying. Check Finance and Fleet first.':'Lease your first aircraft, then open a route.');if(scn==='rescue')UI.tab='finance',render();}});
 function viewFor(code){const r=AP[code].region;return r==='EU'||r==='AF'||r==='ME'?'emea':r==='NA'||r==='SA'?'amer':r==='AN'?'world':'apac';}
 function goHome(){if(S&&S.hubs[0]&&AP[S.hubs[0]]){setView(viewFor(S.hubs[0]));}}
@@ -1465,6 +1513,7 @@ function renderTop(){$('#hName').textContent=S.name;
  const se=$('#sEnds');if(se)se.textContent=S.over?'—':weekEndsIn();
  document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('on',b.dataset.view===UI.view));
  document.querySelectorAll('[data-tab]').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===UI.tab));
+ {const rt=document.querySelector('[data-tab=rivals]');const n=(S.csOffers||[]).length;if(rt)rt.innerHTML=n?`Rivals <span class="tbadge">${n}</span>`:'Rivals';}
  {const n=document.querySelector('.tabs'),a=n&&n.querySelector('[aria-selected="true"]');if(a&&UI.lastTab!==UI.tab){UI.lastTab=UI.tab;const l=a.offsetLeft-n.offsetLeft,r=l+a.offsetWidth;if(l<n.scrollLeft+30||r>n.scrollLeft+n.clientWidth-30)n.scrollLeft=l-n.clientWidth/2+a.offsetWidth/2;}tabEdges();}
 }
 function renderFeed(){$('#feed').innerHTML='<h4>Ops feed</h4>'+S.log.slice(0,14).map(l=>`<div><span class="w">W${l.w}</span><span class="${l.kind}">${esc(l.text)}</span></div>`).join('');
@@ -1749,7 +1798,7 @@ function renderCondBase(){const o=opts(S),nx=S.optsNext||o;const pend=k=>nx[k]!=
  h+=!o.airspace?'<div class="empty">Airspace restrictions are off.</div>':!zs.length?'<div class="empty">No restrictions in force this week.</div>':`<div class="clist">${zs.map(z=>`<div class="citem"><span class="cic z ${z.k}" aria-hidden="true">${{airport:'APT',military:'MIL',political:'POL',temporary:'TMP'}[z.k]}</span><div><b>${esc(z.label)}</b><div class="mute">${ZONE_NAME[z.k]} · ${z.k==='airport'?`${z.ap} ${esc(AP[z.ap].city)} · delays ~${z.delay} min, ${Math.round(z.cancel*100)}% of flights cancelled`:`${nearTxt(z.lat,z.lon)} · ${z.r} km radius · flights detour, airports inside lose flights`}${z.left>1?` · ${z.left} more weeks`:' · ends this week'}</div></div><button class="btn sm ghost" type="button" data-cgo="${z.lat},${z.lon},${z.r?Math.max(12,z.r/35):10}">Map</button></div>`).join('')}</div>`;
  h+=`</div><div class="mute" style="font-size:12px">The jet stream also speeds up eastbound and slows westbound flights in the mid-latitudes, most strongly in winter.</div>`;
  return h;}
-function renderSaves(){let h=`<div class="sec"><h3>Autosave</h3><div class="box"><div>Your airline saves itself every week and after every change, in this browser. Last autosave: week ${S.week}.</div></div></div>`;
+function renderSaves(){let h=notifyStatusHTML()+`<div class="sec"><h3>Autosave</h3><div class="box"><div>Your airline saves itself every week and after every change, in this browser. Last autosave: week ${S.week}.</div></div></div>`;
  h+=`<div class="sec"><h3>Save slots</h3>`;
  for(let n=1;n<=SLOTS;n++){const o=slotGet(n);const c=UI.confirm;
   h+=`<div class="box"><div class="row sp"><b>Slot ${n}</b>${o?`<span class="mute" style="font-size:12px">Saved ${when(o.savedAt)}</span>`:'<span class="chip">Empty</span>'}</div>
@@ -1761,6 +1810,28 @@ function renderSaves(){let h=`<div class="sec"><h3>Autosave</h3><div class="box"
  </div><div class="box"><div class="field"><label for="sImp2">Load a save code</label><textarea id="sImp2" rows="3" placeholder="Paste a code that starts with CA1."></textarea></div>
   <div class="row"><button class="btn sm" type="button" data-act="importcode">${UI.confirm==='import'?'Confirm: replace current airline':'Load save code'}</button><label class="btn sm ghost" for="sFile">Open a save file…</label><input type="file" id="sFile" accept=".txt,.json,text/plain,application/json" hidden></div></div></div>`;
  return h;}
+/* ---------- browser notifications ---------- */
+const NOTIFY_KEY='cruising-altitude-notify';
+function notifyPrefs(){try{return Object.assign({codeshare:true},JSON.parse(localStorage.getItem(NOTIFY_KEY)||'{}'));}catch(e){return {codeshare:true};}}
+function setNotifyPref(k,v){const p=notifyPrefs();p[k]=v;try{localStorage.setItem(NOTIFY_KEY,JSON.stringify(p));}catch(e){}}
+const notifySupported=()=>typeof Notification!=='undefined';
+const notifyPerm=()=>notifySupported()?Notification.permission:'unsupported';
+const notifyActive=()=>notifyPrefs().codeshare&&notifyPerm()==='granted';
+function notifyAsk(){if(!notifySupported())return Promise.resolve('unsupported');try{const r=Notification.requestPermission();return (r&&r.then?r:Promise.resolve(Notification.permission)).then(x=>{render();return x;});}catch(e){return Promise.resolve('denied');}}
+// remember which proposals have been announced, so each one notifies once (and old ones never do after a reload)
+function notifySeed(){UI.notified=new Set((S&&S.csOffers||[]).map(o=>S.name+'#'+o.id));}
+function notifyCheck(){if(!S)return;if(!UI.notified)UI.notified=new Set();const fresh=(S.csOffers||[]).filter(o=>!UI.notified.has(S.name+'#'+o.id));fresh.forEach(o=>UI.notified.add(S.name+'#'+o.id));
+ if(!fresh.length||!notifyActive())return;
+ for(const o of fresh.slice(0,3)){const R=S.rivals.find(x=>x.code===o.code);try{const n=new Notification(`Codeshare proposal · ${S.name}`,{body:`${R?R.name:o.code} proposes a codeshare on ${o.a}–${o.b} instead of flying against you. Answer within 4 weeks.`,tag:'ca-cs-'+o.id});
+  n.onclick=()=>{try{window.focus();}catch(e){}UI.tab='rivals';render();n.close();};}catch(e){}}}
+function notifyStatusHTML(){const p=notifyPerm(),on=notifyPrefs().codeshare;const framed=(()=>{try{return window.self!==window.top;}catch(e){return true;}})();
+ const st=p==='granted'?'<span class="chip ok">Allowed in this browser</span>':p==='denied'?`<span class="chip warn">Blocked${framed?' in this preview':' by this browser'}</span>`:p==='unsupported'?'<span class="chip warn">Not supported here</span>':'<span class="chip amb">Not allowed yet</span>';
+ return `<div class="sec"><h3>Settings</h3><div class="box"><div class="row sp"><b>Browser notifications</b>${st}</div>
+  <label class="chk"><input type="checkbox" id="nCs" ${on?'checked':''} ${p==='unsupported'?'disabled':''}> Notify me when a rival proposes a codeshare</label>
+  ${on&&p==='default'?`<div class="row"><button class="btn sm primary" type="button" data-act="notifyask">Allow notifications</button><span class="mute" style="font-size:12px">Your browser will ask once.</span></div>`:''}
+  <div class="mute" style="font-size:12px">${p==='denied'?(framed?'Previews block notifications. They work once the game is on your website.':'To turn them back on, allow notifications for this site in your browser\'s site settings.'):'Notifications arrive while the game is open, even in a background tab. Weeks keep settling in the background only while this is on.'} This setting is saved on this device, not in your airline.</div>
+ </div></div>`;}
+
 function render(){if(!S)return;renderTop();renderFeed();
  const v=$('#view');const st=v.scrollTop;
  v.innerHTML={routes:renderRoutes,fleet:renderFleet,market:renderMarket,finance:renderFinance,rivals:renderRivals,company:renderCompany,saves:renderSaves,board:renderBoard,cond:renderCond}[UI.tab]();
@@ -1789,7 +1860,7 @@ function forecastHTML(from,to){const d=dist(from,to);const e=routeEstimate(S,fro
   <div class="fc-row"><div><small class="mute">Season · week 1–52</small>${spark(curve,{w:160,h:30})}</div><div><small class="mute">Day of week</small><div class="dow">${DOW.map((v,i)=>`<span style="height:${Math.round(v*22)}px" title="${DAYS[i]}"></span>`).join('')}</div><div class="dowl mono">${DAYS.map(x=>x[0]).join(' ')}</div></div></div>
   ${rs==='needed'?`<div class="row warnbox"><span>Traffic rights ${AP[from].cc}–${ap.cc} are restricted. Apply first: $2M, approved after 4 weeks.</span><button class="btn sm" type="button" data-rights="${from}|${to}">Apply for rights</button></div>`:rs==='pending'?`<div class="warnbox">Traffic rights ${AP[from].cc}–${ap.cc} under review: approved in week ${S.rights[ccKey(from,to)]}.</div>`:''}
   ${slotAps.length?`<div class="mute" style="font-size:12.5px">${slotAps.join(' and ')} ${slotAps.length>1?'are':'is'} slot-controlled: each weekly arrival or departure needs a slot (${slotAps.map(a=>money(slotPrice(a))).join(' / ')}), bought automatically when you schedule flights.</div>`:''}</div>`;}
-function routeExtras(r){const L=r.last;if(!L)return '';let h='';
+function routeExtras(r){const L=r.last;if(!L)return routeCsHTML(r);let h=routeCsHTML(r);
  const bk=L.seats?(()=>{const s=clamp(0.62-L.lf*0.45,0.1,0.6),f=clamp(0.25+L.lf*0.15,0.2,0.45);return {s,f,full:Math.max(0,1-s-f)};})():null;
  h+=`<div class="row sp"><div class="seg2 sm2" role="group" aria-label="Pricing"><button type="button" data-pricing="${r.id}|manual" aria-pressed="${r.pricing!=='auto'}">Manual fares</button><button type="button" data-pricing="${r.id}|auto" aria-pressed="${r.pricing==='auto'}">Auto pricing</button></div>
   ${r.pricing==='auto'&&bk?`<span class="buckets mono" title="Fare bucket mix last week">Saver ${pct(bk.s)} · Flex ${pct(bk.f)} · Full ${pct(bk.full)}</span>`:''}</div>`;
@@ -1825,6 +1896,13 @@ function buySummary(){const B=UI.buy,t=ACT[B.type];const L=leaseRate(t,B.term||'
  else rows=`<div><small>Price each</small><b>${money(t.price)}</b></div><div><small>Pay now</small><b class="${t.price*B.qty>S.cash&&!S.unlimited?'bad':''}">${money(t.price*B.qty)}</b></div><div><small>Typical age</small><b>${t.used} yrs</b></div><div><small>You can afford</small><b>${can(t.price)}</b></div>`;
  const over=!t.fixed&&(unitsOf(t,B.layout)>maxUnits(t)+1e-9||seatsOf(B.layout)<1);
  return `<div class="kv">${rows}</div>${over?'<div class="bad" style="font-size:12.5px">Fix the cabin layout before ordering.</div>':''}`;}
+const reachCache={};
+function reachable(H,t){const k=H+'|'+t.id;if(reachCache[k])return reachCache[k];const ms=MIN_SIZE[t.cls];let n=0,big=0;
+ for(const a of AIRPORTS){if(a.code===H||a.size<ms)continue;if(dist(H,a.code)<=t.range){n++;if(a.size>=7)big++;}}return reachCache[k]={n,big};}
+function rangeHTML(t){const H=UI.ring&&S.hubs.includes(UI.ring.hub)?UI.ring.hub:S.hubs[0];const on=UI.ring&&UI.ring.type===t.id;const R=reachable(H,t);
+ return `<div class="rangebox"><div class="row sp"><span><b>Range from ${S.hubs.length>1?`<select id="ringHub" aria-label="Hub for the range ring">${S.hubs.map(h=>`<option ${h===H?'selected':''}>${h}</option>`).join('')}</select>`:H}</b> · ${km(t.range)} non-stop</span>
+  <button class="btn sm ${on?'on':''}" type="button" data-ring="${t.id}">${on?'Hide ring on map':'Show ring on map'}</button></div>
+  <div class="mute" style="font-size:12px">Reaches ${R.n.toLocaleString()} airports it can land at, ${R.big} of them major hubs. Beyond about 95% of the range, flights into headwinds or around weather may need a fuel stop.</div></div>`;}
 function buyPanel(t){const B=UI.buy;const routes=S.routes.filter(r=>dist(r.a,r.b)<=t.range&&canServe(t,r.a)&&canServe(t,r.b));
  const modes=t.used?[['used','Buy used · '+money(t.price)],['lease','Lease']]:[['order','Order new · '+money(t.price)],['lease','Lease']];
  return `<div class="buyp"><div class="seg2" role="group" aria-label="How to get it">${modes.map(([k,l])=>`<button type="button" data-xmode="${k}" aria-pressed="${B.mode===k}">${l}</button>`).join('')}</div>
@@ -1833,6 +1911,7 @@ function buyPanel(t){const B=UI.buy;const routes=S.routes.filter(r=>dist(r.a,r.b
  <div class="cabinedit" style="border-top:0;padding-top:0">${t.fixed?`<div class="mute" style="font-size:12.5px">${t.cls==='Freighter'?`Freighter: ${t.cargo} tonnes of cargo, no passengers.`:`The ${esc(t.name)} comes with a fixed ${t.seats}-seat cabin.`}</div>`:`<div class="mute" style="font-size:12.5px">Cabin for every aircraft in this order</div>${cabinFields(t,B.layout,'buy')}<div id="cabmeter-buy">${meterHTML(t,B.layout,'')}</div>`}</div>
  <div class="row sp"><span class="field" style="flex:0 0 auto"><label for="buyQty">Quantity</label><span class="step"><button class="btn sm" type="button" data-qty="-1" aria-label="One fewer">−</button><input type="number" id="buyQty" min="1" max="50" value="${B.qty}"><button class="btn sm" type="button" data-qty="1" aria-label="One more">+</button></span></span>
  <span class="field" style="flex:1 1 180px"><label for="buyRoute">${B.mode==='order'?'On delivery, schedule on':'Then schedule on'}</label><select id="buyRoute"><option value="">Nothing yet</option>${routes.map(r=>`<option value="${r.id}" ${B.route===r.id?'selected':''}>${r.a}–${r.b} · ${km(dist(r.a,r.b))}</option>`).join('')}</select></span></div>
+ ${rangeHTML(t)}
  <div id="buySum">${buySummary()}</div>
  <div class="row"><button class="btn sm primary" type="button" data-xbuy="1">${B.mode==='order'?'Order':B.mode==='lease'?'Lease':'Buy'} ${B.qty} × ${esc(t.name)}</button><button class="btn sm ghost" type="button" data-act="cancelbuy">Cancel</button></div></div>`;}
 function renderMarket(){let h='';
@@ -1851,7 +1930,7 @@ function renderMarket(){let h='';
  list.forEach(t=>{const fr=t.cls==='Freighter';h+=`<div class="box ac"><div><div class="maker">${t.maker} · ${t.cls}</div><h4>${t.name}</h4></div>
   <div class="row">${t.used?`<span class="chip">Used only · around ${t.used} yrs old</span>`:`<span class="chip ok">New build · ${orderWeeks(S,t,false)} wk delivery</span>`}${t.prem?`<span class="chip amb">Supersonic: business fares ×${t.prem}, max 7 round trips/wk</span>`:''}${t.mm&&t.mm>=2.5?'<span class="chip warn">High maintenance</span>':''}<span class="chip">Family: ${famOf(t)}</span><span class="chip">Lands at: ${SIZE_LABEL[MIN_SIZE[t.cls]].toLowerCase()}s and up</span></div>
   <div class="kv">${fr?`<div><small>Cargo</small><b>${t.cargo} t</b></div>`:`<div><small>Seats</small><b>${t.fixed?t.seats:seatsOf(defaultLayout(t))}</b></div><div><small>Max seats</small><b>${maxUnits(t)}</b></div>`}<div><small>Range</small><b>${km(t.range)}</b></div><div><small>Cruise</small><b>${t.spd.toLocaleString('en-AU')} km/h</b></div><div><small>Fuel burn</small><b>${t.burn} kg/km</b></div><div><small>Crews needed</small><b>${crewsPer(t)}</b></div></div>
-  ${UI.buy&&UI.buy.type===t.id?buyPanel(t):`<div class="row"><button class="btn sm primary" type="button" data-xopen="${t.id}|${t.used?'used':'order'}">${t.used?'Buy used':'Order'} · ${money(t.price)}</button><button class="btn sm" type="button" data-xopen="${t.id}|lease">Lease · from ${money(leaseRate(t,'long'))}/wk</button></div>`}</div>`;});
+  ${UI.buy&&UI.buy.type===t.id?buyPanel(t):`<div class="row"><button class="btn sm primary" type="button" data-xopen="${t.id}|${t.used?'used':'order'}">${t.used?'Buy used':'Order'} · ${money(t.price)}</button><button class="btn sm" type="button" data-xopen="${t.id}|lease">Lease · from ${money(leaseRate(t,'long'))}/wk</button><button class="btn sm ghost ${UI.ring&&UI.ring.type===t.id?'on':''}" type="button" data-ring="${t.id}" aria-pressed="${!!(UI.ring&&UI.ring.type===t.id)}">Range ring</button></div>`}</div>`;});
  return h+'</div></div>';}
 
 /* ---------- Departures: hub operations ---------- */
@@ -1874,6 +1953,22 @@ function hubOpsHTML(H){if(!S.hubs.includes(H))return '';const L=gateLoad(S)[H];c
 function policyHTML(){return `<div class="sec"><h3>Disruption recovery</h3><div class="box"><div class="seg3" role="group" aria-label="Recovery policy">${Object.keys(POLICY).map(k=>`<button type="button" data-policy="${k}" aria-pressed="${S.policy===k}">${POLICY[k].label}</button>`).join('')}</div>
  <div class="mute" style="font-size:12.5px">${S.policy==='rebook'?'Cancelled passengers move to later flights: $40 each, reputation −0.4 per cancellation.':S.policy==='standby'?`Idle aircraft fly cancelled flights instead (${S.fleet.filter(p=>!(p.sched||[]).length&&!p.grounded).length} idle now). Weather and airspace cancellations still rebook.`:'Passengers are refunded and compensated: $250 each, reputation −0.1 per cancellation.'}${S.opsStats?` Last week: ${S.opsStats.cx} cancelled, ${S.opsStats.recovered} recovered by standby aircraft.`:''}</div></div></div>`;}
 function renderBoard(){const B=UI.board;if(!B.ap||!AP[B.ap])B.ap=S.hubs[0];return hubOpsHTML(B.ap)+(S.hubs.includes(B.ap)?policyHTML():'')+renderBoardBase();}
+
+/* ---------- codeshares ---------- */
+const rivalByCode=c=>S.rivals.find(R=>R.code===c);
+function codeshareHTML(){const offers=S.csOffers||[],cs=S.codeshares||[];let h=`<div class="sec"><h3>Codeshares <span class="mono" style="letter-spacing:0">${cs.length}</span></h3>`;
+ h+=`<div class="mute" style="font-size:12.5px">When a rival wants one of your routes it may offer a codeshare instead of flying against you. If they only sell seats on your flights, the route gets 15% more demand and they keep 5% of its ticket revenue. If you both fly it, fares are matched (no fare war) and demand rises 8%. Partners also feed connecting passengers through your hubs.</div>`;
+ if(offers.length)h+=`<div class="clist">${offers.map(o=>{const R=rivalByCode(o.code);if(!R)return '';return `<div class="warnbox csoffer"><div><b><span class="dot" style="background:${R.color}"></span>${esc(R.name)} proposes a codeshare on ${o.a}–${o.b}</b><div class="mute" style="font-size:12px">They'll sell seats on your flights instead of launching the route. Decline, or let it lapse in ${Math.max(0,o.expires-S.week)} week${o.expires-S.week===1?'':'s'}, and they fly it against you.</div></div>
+  <div class="row"><button class="btn sm primary" type="button" data-csyes="${o.id}">Accept</button><button class="btn sm ghost" type="button" data-csno="${o.id}">Decline</button></div></div>`;}).join('')}</div>${notifyPrefs().codeshare&&notifyPerm()==='default'?`<div class="row"><button class="btn sm" type="button" data-act="notifyask">Get a browser notification for future proposals</button></div>`:''}`;
+ if(cs.length)h+=`<div class="box"><div class="tt"><div class="tt-h csr"><span>Route</span><span>Partner</span><span>Type</span><span>Since</span><span></span></div>${cs.map(c=>{const R=rivalByCode(c.code);const k=csOnPair(S,c.pair);const r=S.routes.find(x=>pairKey(x.a,x.b)===c.pair);
+  return `<div class="tt-r csr"><span class="mono"><b>${c.a}–${c.b}</b></span><span><span class="dot" style="background:${R?R.color:'var(--mute)'}"></span>${esc(R?R.name:c.code)}</span><span>${k&&k.op?'Both fly · fares matched':`They sell your seats${r&&r.last&&r.last.csFee?` · ${money(r.last.csFee)}/wk fee`:''}`}</span><span class="mono">wk ${c.since}</span><span><button class="btn sm ghost danger" type="button" data-csend="${c.id}">${UI.confirm==='cse'+c.id?'Confirm: end':'End'}</button></span></div>`;}).join('')}</div></div>`;
+ else if(!offers.length)h+=`<div class="empty">No codeshares yet. You can ask a rival that already flies one of your routes from that route's card in Routes.</div>`;
+ return h+'</div>';}
+function routeCsHTML(r){if(!S.rivals.length)return '';const k=pairKey(r.a,r.b);const cs=csOnPair(S,k);
+ if(cs)return `<div class="row"><span class="chip ok">Codeshare with ${esc(cs.name)} · ${cs.op?'both fly, fares matched':'they sell seats on your flights'}</span></div>`;
+ const off=(S.csOffers||[]).find(o=>o.pair===k);if(off){const R=rivalByCode(off.code);return `<div class="row"><span class="chip amb">${esc(R?R.name:off.code)} offers a codeshare · answer in Rivals</span></div>`;}
+ const flyers=S.rivals.filter(R=>R.routes.some(x=>pairKey(x.a,x.b)===k));if(!flyers.length)return '';
+ return `<div class="row">${flyers.map(R=>{const cool=(S.csCool||{})[R.code+'|'+k]||0;return cool>S.week?`<span class="chip">${esc(R.name)} won't discuss a codeshare until week ${cool}</span>`:`<button class="btn sm" type="button" data-csask="${R.code}|${r.id}">Propose codeshare to ${esc(R.name)} · ~${Math.round(csChance(S,R)*100)}% chance</button>`;}).join('')}</div>`;}
 
 /* ---------- closing a hub ---------- */
 function closeHubHTML(H){const pv=closeHubPreview(S,H);if(!pv)return '';
@@ -1954,6 +2049,7 @@ function renderRivals(){if(!S.rivals.length)return `<div class="sec"><h3>Rivals<
  const rows=standings();let h=`<div class="sec"><h3>Standings · company value</h3><div class="box" style="overflow-x:auto"><table><thead><tr><th>#</th><th>Airline</th><th class="n">Value</th><th class="n">Routes</th><th class="n">Last wk</th></tr></thead><tbody>
  ${rows.map((r,i)=>`<tr class="${r.me?'me':''}"><td class="mono">${i+1}</td><td><span class="dot" style="background:${r.color}"></span>${esc(r.name)}<div class="mute" style="font-size:11.5px">${r.me?`Your ${pct(S.stake||1)} stake`:`${PERS[r.pers||'hub'].label} · ${ALLIANCES[r.al]}`} · hubs ${r.hubs.join(', ')}</div></td><td class="n">${money(r.value)}</td><td class="n">${r.routes}</td><td class="n ${r.profit>=0?'good':'bad'}">${money(r.profit)}</td></tr>`).join('')}
  </tbody></table></div></div>`;
+ h+=codeshareHTML();
  // alliances
  h+=`<div class="sec"><h3>Alliances</h3><div class="mute" style="font-size:12.5px">Join with reputation 55+ and 10+ aircraft: $20M, then $250,000 a week. Partners feed connecting passengers at your hubs and stop undercutting you.</div><div class="clist">${ALLIANCES.map((n,i)=>{const mem=S.rivals.filter(R=>R.alliance===i);const me=S.alliance===i;
   return `<div class="citem al"><span class="cic" style="color:var(--accent)">${n.split(' ')[0].slice(0,3).toUpperCase()}</span><div><b>${n}</b><div class="mute">${mem.map(R=>esc(R.name)).join(', ')||'No airlines yet'}${me?' · and you':''}</div></div><span></span>${me?`<button class="btn sm ghost danger" type="button" data-leaveal="1">Leave</button>`:S.alliance==null?`<button class="btn sm" type="button" data-joinal="${i}">Join</button>`:'<span></span>'}</div>`;}).join('')}</div></div>`;
@@ -1962,7 +2058,7 @@ function renderRivals(){if(!S.rivals.length)return `<div class="sec"><h3>Rivals<
  S.rivals.forEach((r,i)=>{const clash=r.routes.filter(x=>k.has(pairKey(x.a,x.b)));const price=rivalPrice(S,i);
   h+=`<div class="sec"><h3><span><span class="dot" style="background:${r.color}"></span>${esc(r.name)} <span class="mono" style="letter-spacing:0">${r.code}</span></span><span class="mono" style="letter-spacing:0">${r.routes.length} routes</span></h3><div class="box">
   <div class="row"><span class="chip">${PERS[r.pers||'hub'].label}</span><span class="chip">${ALLIANCES[r.alliance]}${S.alliance===r.alliance?' · partner':''}</span><span class="chip">Hubs ${r.hubs.join(', ')}</span></div>
-  ${clash.length?`<div class="row">${clash.map(x=>`<span class="chip warn">${x.a}–${x.b} · fare ${x.mult<1?'':'+'}${Math.round((x.mult-1)*100)}%</span>`).join('')}</div>`:'<div class="mute">Not competing on any of your routes.</div>'}
+  ${clash.length?`<div class="row">${clash.map(x=>csWith(S,r.code,x.a,x.b)?`<span class="chip ok">${x.a}–${x.b} · codeshare</span>`:`<span class="chip warn">${x.a}–${x.b} · fare ${x.mult<1?'':'+'}${Math.round((x.mult-1)*100)}%</span>`).join('')}</div>`:'<div class="mute">Not competing on any of your routes.</div>'}
   <div class="mute mono" style="font-size:12px">${r.routes.slice(0,14).map(x=>x.a+'–'+x.b).join('  ')}${r.routes.length>14?'  …':''}</div>
   <div class="row"><button class="btn sm ${UI.confirm==='buyr'+i?'danger':''}" type="button" data-buyrival="${i}">${UI.confirm==='buyr'+i?`Confirm: buy for ${money(price)}`:`Buy this airline · ${money(price)}`}</button><span class="mute" style="font-size:12px">You get its hubs, routes and one aircraft per route.</span></div></div></div>`;});
  return h;}
@@ -2015,15 +2111,21 @@ function showOffer(){const m=$('#modal');if(!S.offer||!m.hidden)return;
 /* ---------- events for the expansion ---------- */
 $('#view').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||!S)return;const d=b.dataset;
  const done=(r,ok)=>{if(typeof r==='string'){toast(r,true);return;}if(ok)toast(ok);save();render();};
+ if(d.csyes||d.csno){const r=respondCodeshare(S,+(d.csyes||d.csno),!!d.csyes);if(typeof r==='string'){toast(r,true);return;}save();render();toast(d.csyes?'Codeshare agreed.':'Offer declined. They will fly against you.',!d.csyes);return;}
+ if(d.csend){if(UI.confirm!=='cse'+d.csend){UI.confirm='cse'+d.csend;render();return;}UI.confirm=null;endCodeshare(S,+d.csend);save();render();return;}
+ if(d.csask){const [c,id]=d.csask.split('|');const r=requestCodeshare(S,c,+id);save();render();const R=rivalByCode(c);if(r===true)toast(`${R.name} agreed a codeshare.`);else toast(r==='refused'?`${R.name} said no. You can ask again in 13 weeks.`:r,true);return;}
  if(d.closehub){const H=d.closehub;if(UI.confirm!=='closehub'+H){UI.confirm='closehub'+H;render();return;}UI.confirm=null;const r=closeHub(S,H);if(typeof r==='string'){toast(r,true);return;}
   if(UI.from===H)UI.from=S.hubs[0];if(UI.board.ap===H)UI.board.ap=S.hubs[0];if(UI.sel===H)UI.sel=null;save();render();toast(`${H} is no longer a hub.`);return;}
+ if(d.act==='notifyask'){notifyAsk().then(x=>toast(x==='granted'?'Browser notifications on.':'Notifications were not allowed.',x!=='granted'));return;}
  if(d.act==='cancelclosehub'){UI.confirm=null;render();return;}
  if(d.rights){const [a,c]=d.rights.split('|');done(applyRights(S,a,c),'Application sent.');return;}
  if(d.pricing){const [id,m]=d.pricing.split('|');const r=routeById(S,+id);r.pricing=m;done(true,m==='auto'?'Auto pricing on: fares follow demand each week.':'Manual fares.');return;}
  if(d.check){const [id,c]=d.check.split('|');done(bookCheck(S,+id,c),`${c}-check booked.`);return;}
  if(d.product){const [id,l]=d.product.split('|');done(setProduct(S,+id,l));return;}
  if(d.mview){UI.mview=d.mview;UI.buy=null;render();return;}
- if(d.xopen){const [id,m]=d.xopen.split('|');UI.buy={type:id,mode:m,qty:1,layout:defaultLayout(ACT[id]),route:null,term:'long',priority:false};render();return;}
+ if(d.xopen){const [id,m]=d.xopen.split('|');UI.buy={type:id,mode:m,qty:1,layout:defaultLayout(ACT[id]),route:null,term:'long',priority:false};UI.ring={type:id,hub:(UI.ring&&S.hubs.includes(UI.ring.hub))?UI.ring.hub:S.hubs[0]};render();fitRange();return;}
+ if(d.ring){if(UI.ring&&UI.ring.type===d.ring){UI.ring=null;dirty=true;render();return;}UI.ring={type:d.ring,hub:(UI.ring&&S.hubs.includes(UI.ring.hub))?UI.ring.hub:S.hubs[0]};render();fitRange();
+  if(window.innerWidth<820){const m=document.getElementById('map');if(m)m.scrollIntoView({behavior:'smooth',block:'center'});}return;}
  if(d.xmode){UI.buy.mode=d.xmode;render();return;}
  if(d.xterm){UI.buy.term=d.xterm;render();return;}
  if(d.xbuy){const B=UI.buy,t=ACT[B.type];if(!t.fixed&&(unitsOf(t,B.layout)>maxUnits(t)+1e-9||seatsOf(B.layout)<1)){toast('Fix the cabin layout before ordering.',true);return;}
@@ -2046,6 +2148,8 @@ $('#view').addEventListener('click',e=>{const b=e.target.closest('button');if(!b
  if(d.campaign){done(startCampaign(S,$('#cReg').value,+$('#cLvl').value,+$('#cWk').value),'Campaign launched.');return;}
 });
 $('#view').addEventListener('change',e=>{const t=e.target;if(!S)return;
+ if(t.id==='ringHub'){UI.ring={type:(UI.ring&&UI.ring.type)||UI.buy.type,hub:t.value};render();fitRange();return;}
+ if(t.id==='nCs'){setNotifyPref('codeshare',t.checked);if(t.checked&&notifyPerm()==='default')notifyAsk();render();return;}
  if(t.id==='autoChecks'){S.autoChecks=t.checked;save();return;}
  if(t.id==='autoHire'){S.autoHire=t.checked;if(t.checked)autoHireNow(S);save();render();return;}
  if(t.id==='loyalty'){S.loyalty=t.checked;save();render();toast(t.checked?'Loyalty programme launched.':'Loyalty programme closed.');return;}
@@ -2272,6 +2376,7 @@ function drawMap(t){if(!S)return;sizeMap();const {w,h,dpr}=MAP;const v=UI.v;
   if(im.pts){cx.lineWidth=1;cx.setLineDash([2,4]);cx.globalAlpha=.4;drawPath(cx,arc(r.a,r.b));cx.setLineDash([]);cx.globalAlpha=live?.95:.6;cx.lineWidth=live?2:1.2;drawPath(cx,im.pts);return;}
   cx.lineWidth=live?2:1.2;cx.setLineDash(live?[]:[4,4]);cx.globalAlpha=live?.95:.6;drawPath(cx,arc(r.a,r.b));});
  cx.setLineDash([]);cx.globalAlpha=1;
+ drawRange(cx);
  const clock=S.anchor?wmod(gameNow()):420;const cl=$('#mapClock');if(cl){const txt=`${DAYS[Math.floor(clock/1440)]} ${hhmm(clock)} UTC · week ends in ${S.anchor?weekEndsIn():'—'}`;if(cl.textContent!==txt)cl.textContent=txt;}
  cx.fillStyle=css('--fg');
  // planes: same position model as the flight details popup, so a followed flight and its dot always coincide
@@ -2322,6 +2427,36 @@ function searchAirports(q,limit,okFn){q=norm(q).trim();if(!q)return [];if(!SEARC
   out.push([sc+a.size*25,a]);}
  return out.sort((x,y)=>y[0]-x[0]).slice(0,limit||20).map(x=>x[1]);}
 const apLine=a=>`<b class="mono">${a.code}</b> ${esc(a.city)}${a.state&&a.state!==a.city?', '+esc(a.state):''} · <span class="mute">${esc(a.name)} · ${a.cc}</span>`;
+
+/* range ring: every point a given great-circle distance from a hub */
+function rangeRing(code,km){const A=AP[code];const f=toRad(A.lat),l=toRad(A.lon),d=Math.min(km,20000)/6371;const out=[];let prev=null;
+ for(let b=0;b<=360;b+=2){const th=toRad(b);const f2=Math.asin(Math.sin(f)*Math.cos(d)+Math.cos(f)*Math.sin(d)*Math.cos(th));
+  let l2=(l+Math.atan2(Math.sin(th)*Math.sin(d)*Math.cos(f),Math.cos(d)-Math.sin(f)*Math.sin(f2)))*180/Math.PI;
+  if(prev!==null){while(l2-prev>180)l2-=360;while(l2-prev<-180)l2+=360;}prev=l2;out.push([l2,f2*180/Math.PI]);}
+ // the ring wraps the globe when it passes over a pole: close it along that pole so the fill covers the right side
+ const span=out[out.length-1][0]-out[0][0];let pole=0;if(Math.abs(span)>300){const npole=d>Math.PI/2-f;pole=npole?90:-90;}
+ return {pts:out,pole};}
+function rangeOn(){return UI.ring&&UI.tab==='market'&&ACT[UI.ring.type]&&AP[UI.ring.hub]&&S.hubs.includes(UI.ring.hub);}
+function drawRange(g){if(!rangeOn())return;const t=ACT[UI.ring.type],H=UI.ring.hub;const key=H+'|'+t.range;if(MAP.ringKey!==key){MAP.ring=rangeRing(H,t.range);MAP.ringKey=key;}
+ const {pts,pole}=MAP.ring;const acc=css('--accent');const base=near(pts[0][0])-pts[0][0];const offs=[-360,0,360].map(o=>o+base);
+ const A=AP[H];const {w:W0,h:H0}=MAP;
+ const polys=offs.map(o=>{const poly=pts.map(p=>proj(p[0]+o,p[1]));if(pole){const last=pts[pts.length-1],first=pts[0];poly.push(proj(last[0]+o,pole),proj(first[0]+o,pole));}return poly;});
+ // a ring longer than a quarter of the globe can loop round the far side instead: if the hub isn't inside the loop, shade everything except it
+ const [hx,hy]=proj(A.lon+offs[1],A.lat);const P=polys[1];let inside=false;for(let i=0,j=P.length-1;i<P.length;j=i++){const [xi,yi]=P[i],[xj,yj]=P[j];if(((yi>hy)!==(yj>hy))&&(hx<(xj-xi)*(hy-yi)/(yj-yi)+xi))inside=!inside;}
+ g.save();g.beginPath();if(!inside)g.rect(-W0,-H0,W0*3,H0*3);for(const poly of polys){poly.forEach(([x,y],i)=>i?g.lineTo(x,y):g.moveTo(x,y));g.closePath();}
+ g.globalAlpha=0.09;g.fillStyle=acc;g.fill('evenodd');
+ g.globalAlpha=0.9;g.strokeStyle=acc;g.lineWidth=1.6;g.setLineDash([6,4]);
+ for(const o of offs){g.beginPath();pts.forEach((p,i)=>{const [x,y]=proj(p[0]+o,p[1]);i?g.lineTo(x,y):g.moveTo(x,y);});g.stroke();}
+ g.setLineDash([]);g.globalAlpha=1;
+ // label on the ring, at whichever point is highest on screen and inside the view
+ const {w,h}=MAP;let best=null;for(const o of offs)for(const p of pts){const [x,y]=proj(p[0]+o,p[1]);if(x>20&&x<w-200&&y>52&&y<h-30&&(!best||y<best[1]))best=[x,y];}
+ const txt=`${t.name} · ${km(t.range)} from ${H}`;g.font=`600 11px ${css('--f-mono')}`;g.textBaseline='middle';
+ if(!best){const [hx,hy]=proj(near(AP[H].lon),AP[H].lat);best=[Math.max(40,Math.min(w-180,hx-60)),Math.max(30,hy-24)];}
+ if(best){const tw=g.measureText(txt).width;g.fillStyle=css('--bg');g.globalAlpha=0.85;g.fillRect(best[0]-4,best[1]-17,tw+8,16);g.globalAlpha=1;g.fillStyle=acc;g.fillText(txt,best[0],best[1]-9);}
+ g.restore();}
+function fitRange(){if(!rangeOn())return;const A=AP[UI.ring.hub],r=ACT[UI.ring.type].range;const degLat=r/111.2;
+ const spanW=Math.min(360,2*Math.min(180,degLat/Math.max(0.25,Math.cos(toRad(Math.min(80,Math.abs(A.lat)+degLat*0.5)))))*1.12);
+ const aspect=(MAP.w||600)/(MAP.h||300);UI.view=null;UI.v={cx:A.lon,cy:Math.max(-60,Math.min(70,A.lat)),span:Math.max(spanW,2*degLat*1.15*aspect)};clampView();renderTop();dirty=true;}
 
 
 /* ---------- chart ---------- */
