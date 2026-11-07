@@ -119,10 +119,23 @@
         <div class="book-bar"><div class="book-bar-fill" id="bookBarFill"></div></div>
         <div class="book-stats" id="bookStats"></div>
       </div>
+      <div class="book-filters" id="bookFilters">
+        <select class="book-select" id="bookMember" aria-label="Filter by member"></select>
+        <select class="book-select" id="bookGroup" aria-label="Filter by card group"></select>
+        <div class="book-seg" id="bookOwned" role="group" aria-label="Filter by collected">
+          <button type="button" data-owned="all">All</button>
+          <button type="button" data-owned="collected">Collected</button>
+          <button type="button" data-owned="missing">Missing</button>
+        </div>
+        <div class="book-filter-meta">
+          <span id="bookFilterCount"></span>
+          <button type="button" class="book-reset" id="bookFilterReset" hidden>Clear filters</button>
+        </div>
+      </div>
       <div class="book-scroll" id="bookScroll"></div>
     </section>
   </main>
 
-  <script src="js/spin.js"></script>
+  <script src="js/spinv2.js"></script>
 </body>
 </html>
