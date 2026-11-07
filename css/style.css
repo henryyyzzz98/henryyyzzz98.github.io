@@ -168,38 +168,102 @@ button {
   pointer-events: none;
 }
 
-.carousel {
+/* ---------- 4x4 pick grid ---------- */
+.pick-grid {
+  --gap: clamp(6px, 1.8vw, 12px);
   position: relative;
-  width: 100%;
-  height: min(66vw, 410px);
-  min-height: 300px;
-  transform-style: preserve-3d;
-  user-select: none;
-  touch-action: pan-y;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--gap);
+  /* fit 4 columns, and 4 rows of 2:3 cards between the topbar and the buttons */
+  width: min(
+    92vw,
+    460px,
+    calc((100svh - 300px - 3 * var(--gap)) / 1.5 + 3 * var(--gap))
+  );
+  margin-top: 20px;
 }
 
-.card {
-  --x: 0px;
-  --z: 0px;
-  --rot: 0deg;
-  --scale: 1;
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: min(42vw, 245px);
+.pick-card {
+  position: relative;
   aspect-ratio: 2 / 3;
-  transform: translate(-50%, -50%) translateX(var(--x)) translateZ(var(--z))
-    rotateY(var(--rot)) scale(var(--scale));
-  transform-style: preserve-3d;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
   transition:
-    transform 0.55s cubic-bezier(0.2, 0.75, 0.2, 1),
-    opacity 0.4s ease,
-    filter 0.4s ease;
-  cursor: grab;
+    transform 0.25s cubic-bezier(0.2, 0.75, 0.2, 1),
+    opacity 0.35s ease,
+    filter 0.35s ease;
+  animation: dealIn 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  animation-delay: calc(var(--i) * 35ms);
 }
 
-.card:active {
-  cursor: grabbing;
+.pick-card .card-shell {
+  border-radius: 10px;
+}
+
+/* stagger the sheen so all 16 cards don't flash in sync */
+.pick-card .card-shell::before {
+  animation-delay: calc(var(--i) * -0.3s);
+}
+
+.pick-card:focus-visible {
+  outline: 2px solid #d9a8ff;
+  outline-offset: 3px;
+  border-radius: 12px;
+}
+
+@media (hover: hover) {
+  .pick-grid:not(.is-locked) .pick-card:hover {
+    transform: translateY(-6px) scale(1.04);
+  }
+}
+
+.pick-grid:not(.is-locked) .pick-card:active {
+  transform: scale(0.96);
+}
+
+.pick-grid.is-locked .pick-card {
+  cursor: default;
+}
+
+.pick-card.is-hover,
+.pick-card.is-picked {
+  z-index: 3;
+  transform: translateY(-6px) scale(1.08);
+}
+
+.pick-card.is-hover .card-shell,
+.pick-card.is-picked .card-shell {
+  border-color: rgba(255, 255, 255, 0.95);
+  box-shadow:
+    0 0 26px rgba(218, 135, 255, 0.9),
+    0 0 70px rgba(76, 127, 255, 0.35),
+    inset 0 0 30px rgba(255, 255, 255, 0.15);
+}
+
+.pick-grid.has-pick .pick-card:not(.is-picked) {
+  opacity: 0.25;
+  filter: saturate(0.5);
+  transform: scale(0.94);
+}
+
+.pick-card.is-picked {
+  transform: translateY(-10px) scale(1.14);
+}
+
+@keyframes dealIn {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .card-shell {
@@ -257,28 +321,11 @@ button {
   text-shadow: 0 0 25px rgba(255, 255, 255, 0.9);
 }
 
-.card.is-center .card-shell {
-  box-shadow:
-    0 0 28px rgba(218, 135, 255, 0.75),
-    0 0 85px rgba(76, 127, 255, 0.27),
-    inset 0 0 40px rgba(255, 255, 255, 0.11);
-}
-
-.card.is-center::after {
-  content: "";
-  position: absolute;
-  inset: -9px;
-  border-radius: 23px;
-  border: 1px solid rgba(210, 170, 255, 0.7);
-  box-shadow: 0 0 25px rgba(182, 108, 255, 0.45);
-  pointer-events: none;
-}
-
 .hint {
   position: absolute;
-  bottom: calc(94px + env(safe-area-inset-bottom));
+  bottom: calc(80px + env(safe-area-inset-bottom));
   color: #ddd8ee;
-  font-size: 15px;
+  font-size: 13px;
   letter-spacing: 0.02em;
   text-align: center;
   text-shadow: 0 0 15px rgba(147, 110, 255, 0.5);
@@ -647,14 +694,6 @@ button {
 }
 
 @media (max-width: 600px) {
-  .carousel {
-    height: 58vh;
-    min-height: 360px;
-  }
-  .card {
-    width: 42vw;
-    max-width: 230px;
-  }
   .controls {
     width: calc(100% - 32px);
     justify-content: center;
@@ -663,12 +702,6 @@ button {
   .secondary-btn {
     flex: 1;
     font-size: 11px;
-  }
-}
-
-@media (min-width: 800px) {
-  .card {
-    width: 220px;
   }
 }
 
