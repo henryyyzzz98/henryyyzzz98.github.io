@@ -818,9 +818,9 @@ function renderBook() {
   const col = Collection.season(bookSeason);
 
   // --- filter options for this season ---
-  const members = [
-    ...new Set(sections.flatMap((sec) => sec.cards.map(memberOf))),
-  ].sort((a, b) => a.localeCompare(b));
+  const present = new Set(sections.flatMap((sec) => sec.cards.map(memberOf)));
+  const members = MEMBERS.filter((m) => present.has(m));
+  if (present.has(OTHER_MEMBER)) members.push(OTHER_MEMBER);
   if (!members.includes(bookFilter.member)) bookFilter.member = "all";
   if (!sections.some((s) => s.group === bookFilter.group)) bookFilter.group = "all";
 
@@ -880,8 +880,13 @@ function renderBook() {
       const label = document.createElement("span");
       label.className = "book-label";
       // with a member filter on, the number alone is enough; otherwise show member + number
+      const short = shortName(card);
+      const mem = memberOf(card);
       label.textContent =
-        bookFilter.member === "all" ? card.name : shortName(card);
+        bookFilter.member !== "all" || mem === OTHER_MEMBER ||
+        short.toLowerCase().includes(mem.toLowerCase())
+          ? short
+          : `${mem} ${short}`;
       cell.appendChild(label);
 
       if (n > 1) {
@@ -916,10 +921,32 @@ function renderBook() {
   }
 }
 
-// Member name: use card.member if the JSON has it, else the first word of the name ("SeoYeon 101Z" → "SeoYeon").
+// tripleS members, in the order they should appear in the filter.
+const MEMBERS = [
+  "SeoYeon", "HyeRin", "JiWoo", "ChaeYeon", "YooYeon", "SooMin",
+  "NaKyoung", "YuBin", "Kaede", "DaHyun", "Kotone", "YeonJi",
+  "Nien", "SoHyun", "Xinyu", "Mayu", "Lynn", "JooBin",
+  "HaYeon", "ShiOn", "ChaeWon", "Sullin", "SeoAh", "JiYeon",
+];
+const MEMBER_KEYS = new Map(MEMBERS.map((m) => [m.toLowerCase(), m]));
+const OTHER_MEMBER = "Other";
+
+// Find which member a card belongs to: card.member if the JSON has it, otherwise
+// any word in the card name (or image path) that is exactly a member's name.
 function memberOf(card) {
-  if (card.member) return String(card.member);
-  return String(card.name || "").trim().split(/\s+/)[0] || "Unknown";
+  if (card._member) return card._member;
+  let found = null;
+  for (const src of [card.member, card.name, card.image]) {
+    if (!src) continue;
+    const words = String(src).toLowerCase().split(/[^a-z0-9]+/);
+    const hit = words.find((w) => MEMBER_KEYS.has(w));
+    if (hit) {
+      found = MEMBER_KEYS.get(hit);
+      break;
+    }
+  }
+  card._member = found || OTHER_MEMBER;
+  return card._member;
 }
 
 function fillSelect(select, allLabel, options, value) {
