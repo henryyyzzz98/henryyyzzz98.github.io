@@ -322,9 +322,8 @@ function generateBonusSet(pool, seasonId) {
   return numberSlots(set);
 }
 
-const carousel = document.getElementById("carousel");
-const spinBtn = document.getElementById("spinBtn");
-const chooseBtn = document.getElementById("chooseBtn");
+const pickGrid = document.getElementById("pickGrid");
+const randomBtn = document.getElementById("randomBtn");
 const againBtn = document.getElementById("againBtn");
 const hint = document.getElementById("hint");
 const resultPanel = document.getElementById("resultPanel");
@@ -347,6 +346,12 @@ const bookPercent = document.getElementById("bookPercent");
 const bookBarFill = document.getElementById("bookBarFill");
 const bookStats = document.getElementById("bookStats");
 const bookScroll = document.getElementById("bookScroll");
+const bookFilters = document.getElementById("bookFilters");
+const bookMember = document.getElementById("bookMember");
+const bookGroup = document.getElementById("bookGroup");
+const bookOwned = document.getElementById("bookOwned");
+const bookFilterCount = document.getElementById("bookFilterCount");
+const bookFilterReset = document.getElementById("bookFilterReset");
 const seasonTag = document.getElementById("seasonTag");
 const seasonPanel = document.getElementById("seasonPanel");
 const packCarousel = document.getElementById("packCarousel");
@@ -362,11 +367,8 @@ const viewAllBtn = document.getElementById("viewAllBtn");
 const gridCloseBtn = document.getElementById("gridCloseBtn");
 const HINT_DEFAULT = hint.innerHTML;
 
-let centerIndex = 0;
-let spinning = false;
+let spinning = false; // true while a pick is animating (blocks further taps)
 let cards = [];
-let pointerStartX = null;
-let pointerMoved = false;
 let resetTimer = null;
 let activeSpin = false;
 let round = { mode: "main", season: null };
@@ -383,103 +385,80 @@ const seasonPools = {};
 const seasonStatus = {};
 
 function buildCards() {
-  carousel.innerHTML = "";
+  pickGrid.innerHTML = "";
+  pickGrid.classList.remove("is-locked", "has-pick");
   cards = OBJEKTS.map((objekt, index) => {
-    const card = document.createElement("article");
-    card.className = "card";
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = "pick-card";
     card.dataset.index = index;
-    card.innerHTML = `<div class="card-shell" aria-label="Mystery Objekt"></div>`;
-    carousel.appendChild(card);
+    card.style.setProperty("--i", index);
+    card.setAttribute("aria-label", `Mystery Objekt ${index + 1}`);
+    card.innerHTML = `<div class="card-shell"></div>`;
+    pickGrid.appendChild(card);
     return card;
   });
   render();
 }
 
-function shortestOffset(index) {
-  let d = index - centerIndex;
-  const n = cards.length;
-  if (d > n / 2) d -= n;
-  if (d < -n / 2) d += n;
-  return d;
-}
-
 function render() {
-  cards.forEach((card, index) => {
-    const d = shortestOffset(index);
-    const abs = Math.abs(d);
-
-    const x = d * 185;
-    const z = -abs * 125;
-    const rot = d * -24;
-    const scale = d === 0 ? 1 : Math.max(0.62, 1 - abs * 0.12);
-
-    card.style.setProperty("--x", `${x}px`);
-    card.style.setProperty("--z", `${z}px`);
-    card.style.setProperty("--rot", `${rot}deg`);
-    card.style.setProperty("--scale", scale);
-    card.style.opacity = abs > 2 ? "0" : String(Math.max(0.28, 1 - abs * 0.25));
-    card.style.zIndex = String(20 - abs);
-    card.classList.toggle("is-center", d === 0);
-  });
-
-  chooseBtn.disabled = spinning || !activeSpin;
+  randomBtn.disabled = spinning || !activeSpin;
+  pickGrid.classList.toggle("is-locked", spinning || !activeSpin);
 }
 
-function move(step) {
-  if (spinning || cards.length === 0) return;
-  centerIndex = (centerIndex + step + cards.length) % cards.length;
-  render();
-}
-
-function spin() {
-  if (spinning || !activeSpin) return;
-
+// Lift the tapped card, dim the rest, then go to the reveal.
+function pick(index) {
+  if (spinning || !activeSpin || !cards[index]) return;
   spinning = true;
-  chooseBtn.disabled = true;
-  spinBtn.disabled = true;
+  cards.forEach((c, i) => c.classList.toggle("is-picked", i === index));
+  pickGrid.classList.add("has-pick");
+  render();
+  hint.textContent = "Opening your Objekt...";
+  setTimeout(() => {
+    spinning = false;
+    choose(index);
+  }, 650);
+}
+
+// Random Pick: a highlight hops around the grid, slows down, then lands.
+function randomPick() {
+  if (spinning || !activeSpin || !cards.length) return;
+  spinning = true;
+  render();
   hint.textContent = "Choosing at random...";
 
-  const destination =
-    (Math.floor(Math.random() * cards.length) + 1) % cards.length;
-  const loops = 3 + Math.floor(Math.random() * 2);
-  const totalSteps = loops * cards.length + destination;
+  const target = Math.floor(Math.random() * cards.length);
+  const order = shuffle(cards.map((_, i) => i).filter((i) => i !== target));
+  const hops = [...order.slice(0, 10 + Math.floor(Math.random() * 4)), target];
 
   let step = 0;
-  let delay = 45;
-
   const tick = () => {
-    centerIndex = (centerIndex + 1) % cards.length;
-    render();
+    cards.forEach((c, i) => c.classList.toggle("is-hover", i === hops[step]));
     step++;
-
-    if (step >= totalSteps) {
+    if (step >= hops.length) {
       setTimeout(() => {
+        cards[target].classList.remove("is-hover");
         spinning = false;
-        spinBtn.disabled = false;
-        chooseBtn.disabled = false;
-        hint.textContent = "Choose the Objekt you want by swiping it left or right.";
-      }, 450);
+        pick(target);
+      }, 380);
       return;
     }
-
-    const progress = step / totalSteps;
-    delay = 35 + Math.pow(progress, 3.2) * 430;
-    setTimeout(tick, delay);
+    const progress = step / hops.length;
+    setTimeout(tick, 70 + Math.pow(progress, 2.6) * 380);
   };
-
   tick();
 }
 
-function choose() {
+function choose(index) {
   if (spinning || !activeSpin || !OBJEKTS.length) return;
 
-  const chosen = OBJEKTS[centerIndex];
+  const chosen = OBJEKTS[index];
   const isFail = chosen.group === "Fail";
   const reward = rewardFor(chosen);
   const points = pointsFor(chosen);
 
   activeSpin = false;
-  chooseBtn.disabled = true;
+  render();
   Tickets.add(reward);
   Score.add(points);
 
@@ -493,7 +472,7 @@ function choose() {
     collectBadge.hidden = true;
   }
   bonusReady = round.mode === "main";
-  lastRound = { set: OBJEKTS.slice(), chosenIndex: centerIndex };
+  lastRound = { set: OBJEKTS.slice(), chosenIndex: index };
 
   if (chosen.image) {
     resultImage.src = chosen.image;
@@ -570,11 +549,9 @@ function startBonus() {
   hideResult();
 
   OBJEKTS = set;
-  centerIndex = Math.floor(Math.random() * set.length);
   spinning = false;
   activeSpin = true;
   round = { mode: "bonus", season: round.season };
-  spinBtn.disabled = false;
   hint.innerHTML = HINT_DEFAULT;
   seasonTag.textContent =
     SEASONS.find((s) => s.id === round.season).label.toUpperCase() + " · BONUS";
@@ -663,7 +640,8 @@ function renderPacks() {
     el.style.setProperty("--abs", abs);
     el.style.opacity = abs > 2 ? "0" : String(Math.max(0.35, 1 - abs * 0.28));
     el.style.zIndex = String(20 - abs);
-    el.style.pointerEvents = abs > 2 ? "none" : "auto";
+    // "" (not "auto") so packs inherit pointer-events:none while the season panel is hidden
+    el.style.pointerEvents = abs > 2 ? "none" : "";
     el.classList.toggle("is-center", d === 0);
     el.classList.toggle(
       "is-missing",
@@ -719,9 +697,8 @@ function showSeasonPanel() {
   spinning = false;
   OBJEKTS = [];
   cards = [];
-  carousel.innerHTML = "";
-  spinBtn.disabled = true;
-  chooseBtn.disabled = true;
+  pickGrid.innerHTML = "";
+  render();
   seasonTag.textContent = "";
   seasonPanel.classList.add("show");
   renderPacks();
@@ -736,12 +713,10 @@ async function enterSpin() {
     if (!Tickets.spend(1)) return;
 
     OBJEKTS = set;
-    centerIndex = Math.floor(Math.random() * set.length);
     spinning = false;
     activeSpin = true;
     round = { mode: "main", season: selectedSeason };
     bonusReady = false;
-    spinBtn.disabled = false;
     hint.innerHTML = HINT_DEFAULT;
     seasonTag.textContent = SEASONS.find(
       (s) => s.id === selectedSeason,
@@ -758,6 +733,7 @@ async function enterSpin() {
 
 const GROUP_ORDER = ["first", "double", "motion", "unit", "special", "premier"];
 let bookSeason = null;
+const bookFilter = { member: "all", group: "all", owned: "all" };
 
 function bookSections(id) {
   const pool = seasonPools[id];
@@ -837,19 +813,57 @@ function renderBook() {
 
   bookScroll.innerHTML = "";
   const sections = bookSections(bookSeason);
+  bookFilters.hidden = !sections;
   if (!sections) return;
   const col = Collection.season(bookSeason);
 
+  // --- filter options for this season ---
+  const members = [
+    ...new Set(sections.flatMap((sec) => sec.cards.map(memberOf))),
+  ].sort((a, b) => a.localeCompare(b));
+  if (!members.includes(bookFilter.member)) bookFilter.member = "all";
+  if (!sections.some((s) => s.group === bookFilter.group)) bookFilter.group = "all";
+
+  fillSelect(bookMember, "All members", members.map((m) => [m, m]), bookFilter.member);
+  fillSelect(
+    bookGroup,
+    "All groups",
+    sections.map((s) => [s.group, s.group[0].toUpperCase() + s.group.slice(1)]),
+    bookFilter.group,
+  );
+  bookOwned.querySelectorAll("button").forEach((b) =>
+    b.classList.toggle("is-selected", b.dataset.owned === bookFilter.owned),
+  );
+
+  const matchMember = (c) =>
+    bookFilter.member === "all" || memberOf(c) === bookFilter.member;
+  const matchOwned = (c) => {
+    const n = col[c.name] || 0;
+    if (bookFilter.owned === "collected") return n > 0;
+    if (bookFilter.owned === "missing") return n === 0;
+    return true;
+  };
+
+  let shown = 0;
+  let matched = 0; // cards matching member + group, ignoring the collected filter
   sections.forEach((sec) => {
-    const owned = sec.cards.filter((c) => col[c.name] > 0).length;
+    if (bookFilter.group !== "all" && sec.group !== bookFilter.group) return;
+    // header count reflects the member filter, not the collected filter
+    const pool = sec.cards.filter(matchMember);
+    matched += pool.length;
+    const visible = pool.filter(matchOwned);
+    if (!visible.length) return;
+    shown += visible.length;
+
+    const owned = pool.filter((c) => col[c.name] > 0).length;
     const head = document.createElement("div");
     head.className = "book-section-head";
-    head.innerHTML = `<span>${sec.group.toUpperCase()}</span><span>${owned} / ${sec.cards.length}</span>`;
+    head.innerHTML = `<span>${sec.group.toUpperCase()}</span><span>${owned} / ${pool.length}</span>`;
     bookScroll.appendChild(head);
 
     const grid = document.createElement("div");
     grid.className = "book-grid";
-    sec.cards.forEach((card) => {
+    visible.forEach((card) => {
       const n = col[card.name] || 0;
       const cell = document.createElement("div");
       cell.className =
@@ -865,7 +879,9 @@ function renderBook() {
       }
       const label = document.createElement("span");
       label.className = "book-label";
-      label.textContent = shortName(card);
+      // with a member filter on, the number alone is enough; otherwise show member + number
+      label.textContent =
+        bookFilter.member === "all" ? card.name : shortName(card);
       cell.appendChild(label);
 
       if (n > 1) {
@@ -878,6 +894,43 @@ function renderBook() {
     });
     bookScroll.appendChild(grid);
   });
+
+  const filtering =
+    bookFilter.member !== "all" ||
+    bookFilter.group !== "all" ||
+    bookFilter.owned !== "all";
+  bookFilterCount.textContent = filtering ? `${shown} shown` : "";
+  bookFilterReset.hidden = !filtering;
+
+  if (!shown) {
+    const empty = document.createElement("div");
+    empty.className = "book-empty";
+    empty.textContent = !matched
+      ? "No Objekts match this filter."
+      : bookFilter.owned === "missing"
+        ? "Nothing missing here — all collected! 🎉"
+        : bookFilter.owned === "collected"
+          ? "None collected yet for this filter."
+          : "No Objekts match this filter.";
+    bookScroll.appendChild(empty);
+  }
+}
+
+// Member name: use card.member if the JSON has it, else the first word of the name ("SeoYeon 101Z" → "SeoYeon").
+function memberOf(card) {
+  if (card.member) return String(card.member);
+  return String(card.name || "").trim().split(/\s+/)[0] || "Unknown";
+}
+
+function fillSelect(select, allLabel, options, value) {
+  select.innerHTML = "";
+  [["all", allLabel], ...options].forEach(([v, text]) => {
+    const o = document.createElement("option");
+    o.value = v;
+    o.textContent = text;
+    select.appendChild(o);
+  });
+  select.value = value;
 }
 
 function openBook() {
@@ -1189,44 +1242,13 @@ const Reveal = (() => {
   return { play, stop };
 })();
 
-carousel.addEventListener("pointerdown", (event) => {
-  if (spinning) return;
-  pointerStartX = event.clientX;
-  pointerMoved = false;
-  carousel.setPointerCapture?.(event.pointerId);
+pickGrid.addEventListener("click", (event) => {
+  const card = event.target.closest(".pick-card");
+  if (!card) return;
+  pick(Number(card.dataset.index));
 });
 
-carousel.addEventListener("pointermove", (event) => {
-  if (pointerStartX === null || spinning) return;
-  if (Math.abs(event.clientX - pointerStartX) > 10) pointerMoved = true;
-});
-
-carousel.addEventListener("pointerup", (event) => {
-  if (pointerStartX === null || spinning) return;
-
-  const delta = event.clientX - pointerStartX;
-  pointerStartX = null;
-
-  if (!pointerMoved || Math.abs(delta) < 35) return;
-
-  move(delta < 0 ? 1 : -1);
-});
-
-carousel.addEventListener("click", (event) => {
-  const card = event.target.closest(".card");
-  if (!card || spinning) return;
-
-  const index = Number(card.dataset.index);
-  const d = shortestOffset(index);
-
-  if (d !== 0) {
-    centerIndex = index;
-    render();
-  }
-});
-
-spinBtn.addEventListener("click", spin);
-chooseBtn.addEventListener("click", choose);
+randomBtn.addEventListener("click", randomPick);
 enterBtn.addEventListener("click", enterSpin);
 viewAllBtn.addEventListener("click", openGrid);
 gridCloseBtn.addEventListener("click", closeGrid);
@@ -1235,6 +1257,28 @@ bonusBtn.addEventListener("click", startBonus);
 bookBtn.addEventListener("click", openBook);
 bookBtn2.addEventListener("click", openBook);
 bookClose.addEventListener("click", closeBook);
+bookMember.addEventListener("change", () => {
+  bookFilter.member = bookMember.value;
+  renderBook();
+  bookScroll.scrollTop = 0;
+});
+bookGroup.addEventListener("change", () => {
+  bookFilter.group = bookGroup.value;
+  renderBook();
+  bookScroll.scrollTop = 0;
+});
+bookOwned.addEventListener("click", (event) => {
+  const btn = event.target.closest("button[data-owned]");
+  if (!btn) return;
+  bookFilter.owned = btn.dataset.owned;
+  renderBook();
+  bookScroll.scrollTop = 0;
+});
+bookFilterReset.addEventListener("click", () => {
+  bookFilter.member = bookFilter.group = bookFilter.owned = "all";
+  renderBook();
+  bookScroll.scrollTop = 0;
+});
 bookTabs.addEventListener("click", (event) => {
   const tab = event.target.closest(".book-tab");
   if (!tab) return;
