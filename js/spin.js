@@ -380,7 +380,7 @@ const seasonStatus = {};
 
 function buildCards() {
   pickGrid.innerHTML = "";
-  pickGrid.classList.remove("is-locked");
+  pickGrid.classList.remove("is-locked", "has-pick");
   cards = OBJEKTS.map((objekt, index) => {
     const card = document.createElement("button");
     card.type = "button";
