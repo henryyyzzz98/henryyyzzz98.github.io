@@ -980,3 +980,16 @@
     grid-column: auto;
   }
 }
+
+/* ---------- bonus button: hidden until reveal, clearly locked when short on tickets ---------- */
+.result-panel:not(.revealed) .bonus-btn {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.result-panel.revealed .bonus-btn:disabled {
+  opacity: 0.55;
+  filter: grayscale(0.7);
+  box-shadow: none;
+  cursor: not-allowed;
+}
