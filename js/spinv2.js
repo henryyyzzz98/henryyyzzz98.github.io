@@ -511,7 +511,7 @@ function choose(index) {
   resultText.appendChild(pointsEl);
 
   bonusBtn.hidden = !bonusReady;
-  bonusBtn.disabled = Tickets.get() < BONUS_COST;
+  updateBonusBtn();
 
   clearTimeout(resetTimer);
   resultPanel.classList.add("show");
@@ -559,6 +559,17 @@ function startBonus() {
   renderHud();
 }
 
+// Bonus button: enabled with the normal label, or locked with how many tickets are missing.
+function updateBonusBtn() {
+  const have = Tickets.get();
+  const short = have < BONUS_COST;
+  bonusBtn.disabled = short;
+  const text = short
+    ? `Bonus Pack · Need ${BONUS_COST} 🎟 (you have ${have})`
+    : `Bonus Pack Cost ${BONUS_COST} Tickets`;
+  if (bonusBtn.textContent !== text) bonusBtn.textContent = text;
+}
+
 function fmtTime(ms) {
   const s = Math.max(0, Math.ceil(ms / 1000));
   return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
@@ -567,7 +578,7 @@ function fmtTime(ms) {
 function renderHud() {
   ticketCount.textContent = Tickets.get();
   scoreCount.textContent = Score.get();
-  if (bonusReady) bonusBtn.disabled = Tickets.get() < BONUS_COST;
+  if (bonusReady) updateBonusBtn();
   const ms = Tickets.msToNext();
   ticketTimer.textContent = ms === null ? "FULL" : "+1 in " + fmtTime(ms);
   updateEnterBtn();
