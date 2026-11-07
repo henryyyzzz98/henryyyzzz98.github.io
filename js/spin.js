@@ -1,10 +1,11 @@
 const SET_SIZE = 16;
 
 const SEASONS = [
-  { id: "atom01", 
-    label: "Atom01", 
-    file: "json/a1triples.json", 
-    accent: "#ffdd00" 
+  {
+    id: "atom01",
+    label: "Atom01",
+    file: "json/a1triples.json",
+    accent: "#ffdd00",
   },
   {
     id: "binary01",
@@ -24,15 +25,17 @@ const SEASONS = [
     file: "json/d1triples.json",
     accent: "#b400ff",
   },
-  { id: "ever01", 
-    label: "Ever01", 
-    file: "json/e1triples.json", 
-    accent: "#33ecfd" 
+  {
+    id: "ever01",
+    label: "Ever01",
+    file: "json/e1triples.json",
+    accent: "#33ecfd",
   },
-  { id: "atom02", 
-    label: "Atom02", 
-    file: "json/a2triples.json", 
-    accent: "#ffdd00" 
+  {
+    id: "atom02",
+    label: "Atom02",
+    file: "json/a2triples.json",
+    accent: "#ffdd00",
   },
   {
     id: "binary02",
@@ -84,7 +87,6 @@ const REWARDS = {
   premier: 10,
   fail: 0,
 };
-
 function rewardFor(card) {
   return REWARDS[String(card.group || "").toLowerCase()] ?? 0;
 }
@@ -98,7 +100,6 @@ const POINTS = {
   premier: 10,
   fail: 0,
 };
-
 function pointsFor(card) {
   return POINTS[String(card.group || "").toLowerCase()] ?? 0;
 }
@@ -119,6 +120,33 @@ const Score = (() => {
       try {
         localStorage.setItem(KEY, String(total));
       } catch (_) {}
+    },
+  };
+})();
+
+const Collection = (() => {
+  const KEY = "spinSim.collection";
+  let data = {};
+  try {
+    data = JSON.parse(localStorage.getItem(KEY)) || {};
+  } catch (_) {}
+  const save = () => {
+    try {
+      localStorage.setItem(KEY, JSON.stringify(data));
+    } catch (_) {}
+  };
+  return {
+    count(season, name) {
+      return (data[season] && data[season][name]) || 0;
+    },
+    add(season, name) {
+      if (!data[season]) data[season] = {};
+      data[season][name] = (data[season][name] || 0) + 1;
+      save();
+      return data[season][name];
+    },
+    season(season) {
+      return data[season] || {};
     },
   };
 })();
@@ -294,9 +322,8 @@ function generateBonusSet(pool, seasonId) {
   return numberSlots(set);
 }
 
-const carousel = document.getElementById("carousel");
-const spinBtn = document.getElementById("spinBtn");
-const chooseBtn = document.getElementById("chooseBtn");
+const pickGrid = document.getElementById("pickGrid");
+const randomBtn = document.getElementById("randomBtn");
 const againBtn = document.getElementById("againBtn");
 const hint = document.getElementById("hint");
 const resultPanel = document.getElementById("resultPanel");
@@ -308,6 +335,17 @@ const ticketCount = document.getElementById("ticketCount");
 const ticketTimer = document.getElementById("ticketTimer");
 const scoreCount = document.getElementById("scoreCount");
 const bonusBtn = document.getElementById("bonusBtn");
+const collectBadge = document.getElementById("collectBadge");
+const bookBtn = document.getElementById("bookBtn");
+const bookBtn2 = document.getElementById("bookBtn2");
+const bookPanel = document.getElementById("bookPanel");
+const bookClose = document.getElementById("bookClose");
+const bookTabs = document.getElementById("bookTabs");
+const bookSeasonName = document.getElementById("bookSeasonName");
+const bookPercent = document.getElementById("bookPercent");
+const bookBarFill = document.getElementById("bookBarFill");
+const bookStats = document.getElementById("bookStats");
+const bookScroll = document.getElementById("bookScroll");
 const seasonTag = document.getElementById("seasonTag");
 const seasonPanel = document.getElementById("seasonPanel");
 const packCarousel = document.getElementById("packCarousel");
@@ -323,11 +361,8 @@ const viewAllBtn = document.getElementById("viewAllBtn");
 const gridCloseBtn = document.getElementById("gridCloseBtn");
 const HINT_DEFAULT = hint.innerHTML;
 
-let centerIndex = 0;
-let spinning = false;
+let spinning = false; // true while a pick is animating (blocks further taps)
 let cards = [];
-let pointerStartX = null;
-let pointerMoved = false;
 let resetTimer = null;
 let activeSpin = false;
 let round = { mode: "main", season: null };
@@ -344,108 +379,94 @@ const seasonPools = {};
 const seasonStatus = {};
 
 function buildCards() {
-  carousel.innerHTML = "";
+  pickGrid.innerHTML = "";
+  pickGrid.classList.remove("is-locked");
   cards = OBJEKTS.map((objekt, index) => {
-    const card = document.createElement("article");
-    card.className = "card";
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = "pick-card";
     card.dataset.index = index;
-    card.innerHTML = `<div class="card-shell" aria-label="Mystery Objekt"></div>`;
-    carousel.appendChild(card);
+    card.style.setProperty("--i", index);
+    card.setAttribute("aria-label", `Mystery Objekt ${index + 1}`);
+    card.innerHTML = `<div class="card-shell"></div>`;
+    pickGrid.appendChild(card);
     return card;
   });
   render();
 }
 
-function shortestOffset(index) {
-  let d = index - centerIndex;
-  const n = cards.length;
-  if (d > n / 2) d -= n;
-  if (d < -n / 2) d += n;
-  return d;
-}
-
 function render() {
-  cards.forEach((card, index) => {
-    const d = shortestOffset(index);
-    const abs = Math.abs(d);
-
-    const x = d * 185;
-    const z = -abs * 125;
-    const rot = d * -24;
-    const scale = d === 0 ? 1 : Math.max(0.62, 1 - abs * 0.12);
-
-    card.style.setProperty("--x", `${x}px`);
-    card.style.setProperty("--z", `${z}px`);
-    card.style.setProperty("--rot", `${rot}deg`);
-    card.style.setProperty("--scale", scale);
-    card.style.opacity = abs > 2 ? "0" : String(Math.max(0.28, 1 - abs * 0.25));
-    card.style.zIndex = String(20 - abs);
-    card.classList.toggle("is-center", d === 0);
-  });
-
-  chooseBtn.disabled = spinning || !activeSpin;
+  randomBtn.disabled = spinning || !activeSpin;
+  pickGrid.classList.toggle("is-locked", spinning || !activeSpin);
 }
 
-function move(step) {
-  if (spinning || cards.length === 0) return;
-  centerIndex = (centerIndex + step + cards.length) % cards.length;
-  render();
-}
-
-function spin() {
-  if (spinning || !activeSpin) return;
-
+// Lift the tapped card, dim the rest, then go to the reveal.
+function pick(index) {
+  if (spinning || !activeSpin || !cards[index]) return;
   spinning = true;
-  chooseBtn.disabled = true;
-  spinBtn.disabled = true;
+  cards.forEach((c, i) => c.classList.toggle("is-picked", i === index));
+  pickGrid.classList.add("has-pick");
+  render();
+  hint.textContent = "Opening your Objekt...";
+  setTimeout(() => {
+    spinning = false;
+    choose(index);
+  }, 650);
+}
+
+// Random Pick: a highlight hops around the grid, slows down, then lands.
+function randomPick() {
+  if (spinning || !activeSpin || !cards.length) return;
+  spinning = true;
+  render();
   hint.textContent = "Choosing at random...";
 
-  const destination =
-    (Math.floor(Math.random() * cards.length) + 1) % cards.length;
-  const loops = 3 + Math.floor(Math.random() * 2);
-  const totalSteps = loops * cards.length + destination;
+  const target = Math.floor(Math.random() * cards.length);
+  const order = shuffle(cards.map((_, i) => i).filter((i) => i !== target));
+  const hops = [...order.slice(0, 10 + Math.floor(Math.random() * 4)), target];
 
   let step = 0;
-  let delay = 45;
-
   const tick = () => {
-    centerIndex = (centerIndex + 1) % cards.length;
-    render();
+    cards.forEach((c, i) => c.classList.toggle("is-hover", i === hops[step]));
     step++;
-
-    if (step >= totalSteps) {
+    if (step >= hops.length) {
       setTimeout(() => {
+        cards[target].classList.remove("is-hover");
         spinning = false;
-        spinBtn.disabled = false;
-        chooseBtn.disabled = false;
-        hint.textContent =
-          "Choose the Objekt you want by swiping it left or right.";
-      }, 450);
+        pick(target);
+      }, 380);
       return;
     }
-
-    const progress = step / totalSteps;
-    delay = 35 + Math.pow(progress, 3.2) * 430;
-    setTimeout(tick, delay);
+    const progress = step / hops.length;
+    setTimeout(tick, 70 + Math.pow(progress, 2.6) * 380);
   };
-
   tick();
 }
 
-function choose() {
+function choose(index) {
   if (spinning || !activeSpin || !OBJEKTS.length) return;
 
-  const chosen = OBJEKTS[centerIndex];
+  const chosen = OBJEKTS[index];
   const isFail = chosen.group === "Fail";
   const reward = rewardFor(chosen);
   const points = pointsFor(chosen);
 
   activeSpin = false;
-  chooseBtn.disabled = true;
+  render();
   Tickets.add(reward);
   Score.add(points);
+
+  if (!isFail) {
+    const before = Collection.count(round.season, chosen.name);
+    const now = Collection.add(round.season, chosen.name);
+    collectBadge.textContent = before === 0 ? "NEW!" : `×${now}`;
+    collectBadge.classList.toggle("is-new", before === 0);
+    collectBadge.hidden = false;
+  } else {
+    collectBadge.hidden = true;
+  }
   bonusReady = round.mode === "main";
-  lastRound = { set: OBJEKTS.slice(), chosenIndex: centerIndex };
+  lastRound = { set: OBJEKTS.slice(), chosenIndex: index };
 
   if (chosen.image) {
     resultImage.src = chosen.image;
@@ -522,11 +543,9 @@ function startBonus() {
   hideResult();
 
   OBJEKTS = set;
-  centerIndex = Math.floor(Math.random() * set.length);
   spinning = false;
   activeSpin = true;
   round = { mode: "bonus", season: round.season };
-  spinBtn.disabled = false;
   hint.innerHTML = HINT_DEFAULT;
   seasonTag.textContent =
     SEASONS.find((s) => s.id === round.season).label.toUpperCase() + " · BONUS";
@@ -615,7 +634,8 @@ function renderPacks() {
     el.style.setProperty("--abs", abs);
     el.style.opacity = abs > 2 ? "0" : String(Math.max(0.35, 1 - abs * 0.28));
     el.style.zIndex = String(20 - abs);
-    el.style.pointerEvents = abs > 2 ? "none" : "auto";
+    // "" (not "auto") so packs inherit pointer-events:none while the season panel is hidden
+    el.style.pointerEvents = abs > 2 ? "none" : "";
     el.classList.toggle("is-center", d === 0);
     el.classList.toggle(
       "is-missing",
@@ -671,9 +691,8 @@ function showSeasonPanel() {
   spinning = false;
   OBJEKTS = [];
   cards = [];
-  carousel.innerHTML = "";
-  spinBtn.disabled = true;
-  chooseBtn.disabled = true;
+  pickGrid.innerHTML = "";
+  render();
   seasonTag.textContent = "";
   seasonPanel.classList.add("show");
   renderPacks();
@@ -688,12 +707,10 @@ async function enterSpin() {
     if (!Tickets.spend(1)) return;
 
     OBJEKTS = set;
-    centerIndex = Math.floor(Math.random() * set.length);
     spinning = false;
     activeSpin = true;
     round = { mode: "main", season: selectedSeason };
     bonusReady = false;
-    spinBtn.disabled = false;
     hint.innerHTML = HINT_DEFAULT;
     seasonTag.textContent = SEASONS.find(
       (s) => s.id === selectedSeason,
@@ -706,6 +723,141 @@ async function enterSpin() {
   } finally {
     renderHud();
   }
+}
+
+const GROUP_ORDER = ["first", "double", "motion", "unit", "special", "premier"];
+let bookSeason = null;
+
+function bookSections(id) {
+  const pool = seasonPools[id];
+  if (!pool) return null;
+  const rank = (g) => {
+    const i = GROUP_ORDER.indexOf(g);
+    return i < 0 ? 99 : i;
+  };
+  return Object.keys(pool)
+    .sort((a, b) => rank(a) - rank(b) || a.localeCompare(b))
+    .map((group) => ({
+      group,
+      cards: pool[group]
+        .slice()
+        .sort(
+          (a, b) =>
+            cardNumber(a) - cardNumber(b) ||
+            String(a.name).localeCompare(String(b.name)),
+        ),
+    }));
+}
+
+function bookProgress(id) {
+  const sections = bookSections(id);
+  const out = { total: 0, owned: 0, pulls: 0, pct: 0, ready: !!sections };
+  if (!sections) return out;
+  const col = Collection.season(id);
+  sections.forEach((sec) =>
+    sec.cards.forEach((c) => {
+      const n = col[c.name] || 0;
+      out.total++;
+      if (n > 0) out.owned++;
+      out.pulls += n;
+    }),
+  );
+  out.pct = out.total ? (out.owned / out.total) * 100 : 0;
+  return out;
+}
+
+const fmtPct = (p) => p.toFixed(1).replace(/\.0$/, "") + "%";
+
+const shortName = (card) => {
+  const parts = String(card.name).split(" ");
+  return parts.length > 1 ? parts.slice(1).join(" ") : card.name;
+};
+
+function renderBook() {
+
+  bookTabs.innerHTML = "";
+  SEASONS.forEach((s) => {
+    const pr = bookProgress(s.id);
+    const tab = document.createElement("button");
+    tab.type = "button";
+    tab.dataset.id = s.id;
+    tab.className =
+      "book-tab" +
+      (s.id === bookSeason ? " is-selected" : "") +
+      (pr.ready ? "" : " is-missing");
+    tab.innerHTML = `<span class="tab-name">${s.label}</span><span class="tab-pct">${pr.ready ? fmtPct(pr.pct) : "—"}</span>`;
+    bookTabs.appendChild(tab);
+  });
+
+  const selTab = bookTabs.querySelector(".is-selected");
+  if (selTab && selTab.scrollIntoView)
+    selTab.scrollIntoView({ inline: "center", block: "nearest" });
+
+
+  const season = SEASONS.find((s) => s.id === bookSeason);
+  const pr = bookProgress(bookSeason);
+  bookSeasonName.textContent = season.label.toUpperCase();
+  bookPercent.textContent = pr.ready ? fmtPct(pr.pct) : "—";
+  bookBarFill.style.width = (pr.ready ? pr.pct : 0) + "%";
+  bookStats.textContent = pr.ready
+    ? `${pr.owned} / ${pr.total} collected · ${pr.pulls} pull${pr.pulls === 1 ? "" : "s"} · ${pr.pulls - pr.owned} duplicate${pr.pulls - pr.owned === 1 ? "" : "s"}`
+    : "This season isn't available yet.";
+
+
+  bookScroll.innerHTML = "";
+  const sections = bookSections(bookSeason);
+  if (!sections) return;
+  const col = Collection.season(bookSeason);
+
+  sections.forEach((sec) => {
+    const owned = sec.cards.filter((c) => col[c.name] > 0).length;
+    const head = document.createElement("div");
+    head.className = "book-section-head";
+    head.innerHTML = `<span>${sec.group.toUpperCase()}</span><span>${owned} / ${sec.cards.length}</span>`;
+    bookScroll.appendChild(head);
+
+    const grid = document.createElement("div");
+    grid.className = "book-grid";
+    sec.cards.forEach((card) => {
+      const n = col[card.name] || 0;
+      const cell = document.createElement("div");
+      cell.className =
+        `book-cell group-${sec.group}` + (n > 0 ? " is-collected" : "");
+      cell.title = card.name;
+
+      if (card.image) {
+        const img = document.createElement("img");
+        img.src = card.image;
+        img.alt = card.name;
+        img.loading = "lazy";
+        cell.appendChild(img);
+      }
+      const label = document.createElement("span");
+      label.className = "book-label";
+      label.textContent = shortName(card);
+      cell.appendChild(label);
+
+      if (n > 1) {
+        const mult = document.createElement("span");
+        mult.className = "book-mult";
+        mult.textContent = "×" + n;
+        cell.appendChild(mult);
+      }
+      grid.appendChild(cell);
+    });
+    bookScroll.appendChild(grid);
+  });
+}
+
+function openBook() {
+  bookSeason = bookSeason || selectedSeason;
+  renderBook();
+  bookScroll.scrollTop = 0;
+  bookPanel.classList.add("show");
+}
+
+function closeBook() {
+  bookPanel.classList.remove("show");
 }
 
 function openGrid() {
@@ -1006,72 +1158,47 @@ const Reveal = (() => {
   return { play, stop };
 })();
 
-carousel.addEventListener("pointerdown", (event) => {
-  if (spinning) return;
-  pointerStartX = event.clientX;
-  pointerMoved = false;
-  carousel.setPointerCapture?.(event.pointerId);
+pickGrid.addEventListener("click", (event) => {
+  const card = event.target.closest(".pick-card");
+  if (!card) return;
+  pick(Number(card.dataset.index));
 });
 
-carousel.addEventListener("pointermove", (event) => {
-  if (pointerStartX === null || spinning) return;
-  if (Math.abs(event.clientX - pointerStartX) > 10) pointerMoved = true;
-});
-
-carousel.addEventListener("pointerup", (event) => {
-  if (pointerStartX === null || spinning) return;
-
-  const delta = event.clientX - pointerStartX;
-  pointerStartX = null;
-
-  if (!pointerMoved || Math.abs(delta) < 35) return;
-
-  move(delta < 0 ? 1 : -1);
-});
-
-carousel.addEventListener("click", (event) => {
-  const card = event.target.closest(".card");
-  if (!card || spinning) return;
-
-  const index = Number(card.dataset.index);
-  const d = shortestOffset(index);
-
-  if (d !== 0) {
-    centerIndex = index;
-    render();
-  }
-});
-
-spinBtn.addEventListener("click", spin);
-chooseBtn.addEventListener("click", choose);
+randomBtn.addEventListener("click", randomPick);
 enterBtn.addEventListener("click", enterSpin);
 viewAllBtn.addEventListener("click", openGrid);
 gridCloseBtn.addEventListener("click", closeGrid);
 againBtn.addEventListener("click", closeResult);
 bonusBtn.addEventListener("click", startBonus);
+bookBtn.addEventListener("click", openBook);
+bookBtn2.addEventListener("click", openBook);
+bookClose.addEventListener("click", closeBook);
+bookTabs.addEventListener("click", (event) => {
+  const tab = event.target.closest(".book-tab");
+  if (!tab) return;
+  bookSeason = tab.dataset.id;
+  renderBook();
+  bookScroll.scrollTop = 0;
+});
 packPrev.addEventListener("click", () => stepSeason(-1));
 packNext.addEventListener("click", () => stepSeason(1));
 
 let packStartX = null;
 let packDragged = false;
-
 packCarousel.addEventListener("pointerdown", (event) => {
   packStartX = event.clientX;
   packDragged = false;
 });
-
 packCarousel.addEventListener("pointermove", (event) => {
   if (packStartX !== null && Math.abs(event.clientX - packStartX) > 10)
     packDragged = true;
 });
-
 window.addEventListener("pointerup", (event) => {
   if (packStartX === null) return;
   const dx = event.clientX - packStartX;
   packStartX = null;
   if (packDragged && Math.abs(dx) > 35) stepSeason(dx < 0 ? 1 : -1);
 });
-
 packCarousel.addEventListener("click", (event) => {
   if (packDragged) {
     packDragged = false;
@@ -1080,8 +1207,12 @@ packCarousel.addEventListener("click", (event) => {
   const pack = event.target.closest(".pack");
   if (pack) selectSeasonIndex(Number(pack.dataset.index));
 });
-
 document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    closeBook();
+    return;
+  }
+  if (bookPanel.classList.contains("show")) return;
   if (!seasonPanel.classList.contains("show")) return;
   if (event.key === "ArrowLeft") stepSeason(-1);
   if (event.key === "ArrowRight") stepSeason(1);
