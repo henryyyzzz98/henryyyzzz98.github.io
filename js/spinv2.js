@@ -148,6 +148,14 @@ const Collection = (() => {
     season(season) {
       return data[season] || {};
     },
+    remove(season, name, n) {
+      const have = (data[season] && data[season][name]) || 0;
+      if (have < n) return false;
+      data[season][name] = have - n;
+      if (!data[season][name]) delete data[season][name];
+      save();
+      return true;
+    },
   };
 })();
 
@@ -352,6 +360,12 @@ const bookGroup = document.getElementById("bookGroup");
 const bookOwned = document.getElementById("bookOwned");
 const bookFilterCount = document.getElementById("bookFilterCount");
 const bookFilterReset = document.getElementById("bookFilterReset");
+const tradeConfirm = document.getElementById("tradeConfirm");
+const tradeImg = document.getElementById("tradeImg");
+const tradeName = document.getElementById("tradeName");
+const tradeText = document.getElementById("tradeText");
+const tradeGo = document.getElementById("tradeGo");
+const tradeCancel = document.getElementById("tradeCancel");
 const seasonTag = document.getElementById("seasonTag");
 const seasonPanel = document.getElementById("seasonPanel");
 const packCarousel = document.getElementById("packCarousel");
@@ -820,6 +834,13 @@ function renderBook() {
   bookStats.textContent = pr.ready
     ? `${pr.owned} / ${pr.total} collected · ${pr.pulls} pull${pr.pulls === 1 ? "" : "s"} · ${pr.pulls - pr.owned} duplicate${pr.pulls - pr.owned === 1 ? "" : "s"}`
     : "This season isn't available yet.";
+  if (pr.ready) {
+    const col0 = Collection.season(bookSeason);
+    const tradeable = Object.values(col0).filter((n) => n >= TRADE_NEED).length;
+    bookStats.textContent += tradeable
+      ? ` · ${tradeable} tradeable`
+      : ` · collect ×${TRADE_NEED} of a card to trade for an Exchange Spin`;
+  }
 
 
   bookScroll.innerHTML = "";
@@ -900,6 +921,17 @@ function renderBook() {
           : `${mem} ${short}`;
       cell.appendChild(label);
 
+      if (n >= TRADE_NEED) {
+        cell.classList.add("is-tradeable");
+        const trade = document.createElement("button");
+        trade.type = "button";
+        trade.className = "book-trade";
+        trade.dataset.name = card.name;
+        trade.textContent = "⇄ Trade";
+        trade.setAttribute("aria-label", `Trade ${TRADE_COST} duplicates of ${card.name}`);
+        cell.appendChild(trade);
+      }
+
       if (n > 1) {
         const mult = document.createElement("span");
         mult.className = "book-mult";
@@ -971,6 +1003,91 @@ function fillSelect(select, allLabel, options, value) {
   select.value = value;
 }
 
+// ---------- Exchange Spin: trade 4 duplicates of a ×5 card ----------
+const TRADE_NEED = 5; // must own at least this many
+const TRADE_COST = 4; // copies removed (1 always stays)
+let pendingTrade = null;
+
+function missingCards(seasonId) {
+  const sections = bookSections(seasonId);
+  if (!sections) return [];
+  const col = Collection.season(seasonId);
+  return sections.flatMap((sec) => sec.cards).filter((c) => !(col[c.name] > 0));
+}
+
+function generateExchangeSet(seasonId) {
+  const picks = shuffle(missingCards(seasonId)).slice(0, SET_SIZE);
+  const fails = Array.from({ length: SET_SIZE - picks.length }, () => ({ ...FAIL_CARD }));
+  return numberSlots([...picks, ...fails]);
+}
+
+function openTrade(seasonId, name) {
+  const card = bookSections(seasonId)
+    ?.flatMap((sec) => sec.cards)
+    .find((c) => c.name === name);
+  if (!card) return;
+  const have = Collection.count(seasonId, name);
+  const missing = Math.min(missingCards(seasonId).length, SET_SIZE);
+  const fails = SET_SIZE - missing;
+
+  pendingTrade = null;
+  tradeName.textContent = `${card.name} ×${have} → ×${have - TRADE_COST}`;
+  if (card.image) {
+    tradeImg.src = card.image;
+    tradeImg.alt = card.name;
+    tradeImg.hidden = false;
+  } else {
+    tradeImg.hidden = true;
+  }
+
+  if (have < TRADE_NEED) {
+    tradeText.textContent = `You need ×${TRADE_NEED} of this card to trade.`;
+  } else if (activeSpin || spinning) {
+    tradeText.textContent = "Finish your current spin first, then come back to trade.";
+  } else if (missing === 0) {
+    tradeText.textContent = "You've collected every card in this season — nothing left to win!";
+  } else {
+    pendingTrade = { season: seasonId, name };
+    tradeText.innerHTML =
+      `Give up <b>${TRADE_COST} duplicates</b> for an Exchange Spin:<br>` +
+      `<b>${missing}</b> card${missing === 1 ? "" : "s"} you're missing` +
+      (fails ? ` + <b>${fails}</b> Fail${fails === 1 ? "" : "s"}` : "") +
+      `.<br><span class="trade-note">No ticket needed.</span>`;
+  }
+  tradeGo.hidden = !pendingTrade;
+  tradeCancel.textContent = pendingTrade ? "Cancel" : "OK";
+  tradeConfirm.hidden = false;
+}
+
+function closeTrade() {
+  tradeConfirm.hidden = true;
+  pendingTrade = null;
+}
+
+function startExchange() {
+  if (!pendingTrade || activeSpin || spinning) return;
+  const { season, name } = pendingTrade;
+  const set = generateExchangeSet(season);
+  if (!set.some((c) => c.group !== "Fail")) return;
+  if (!Collection.remove(season, name, TRADE_COST)) return;
+
+  closeTrade();
+  closeBook();
+  if (resultPanel.classList.contains("show")) hideResult();
+  seasonPanel.classList.remove("show");
+
+  OBJEKTS = set;
+  spinning = false;
+  activeSpin = true;
+  bonusReady = false;
+  round = { mode: "exchange", season };
+  hint.innerHTML = HINT_DEFAULT;
+  seasonTag.textContent =
+    SEASONS.find((s) => s.id === season).label.toUpperCase() + " · EXCHANGE";
+  buildCards();
+  renderHud();
+}
+
 function openBook() {
   bookSeason = bookSeason || selectedSeason;
   renderBook();
@@ -979,6 +1096,7 @@ function openBook() {
 }
 
 function closeBook() {
+  closeTrade();
   bookPanel.classList.remove("show");
 }
 
@@ -1295,6 +1413,16 @@ bonusBtn.addEventListener("click", startBonus);
 bookBtn.addEventListener("click", openBook);
 bookBtn2.addEventListener("click", openBook);
 bookClose.addEventListener("click", closeBook);
+bookScroll.addEventListener("click", (event) => {
+  const btn = event.target.closest(".book-trade");
+  if (btn) openTrade(bookSeason, btn.dataset.name);
+});
+tradeCancel.addEventListener("click", closeTrade);
+tradeGo.addEventListener("click", startExchange);
+tradeConfirm.addEventListener("click", (event) => {
+  if (event.target === tradeConfirm) closeTrade();
+});
+
 bookMember.addEventListener("change", () => {
   bookFilter.member = bookMember.value;
   renderBook();
@@ -1353,6 +1481,10 @@ packCarousel.addEventListener("click", (event) => {
 });
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") {
+    if (!tradeConfirm.hidden) {
+      closeTrade();
+      return;
+    }
     closeBook();
     return;
   }
