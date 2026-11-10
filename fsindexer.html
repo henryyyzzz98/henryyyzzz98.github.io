@@ -284,12 +284,42 @@
         border-color: #6ba8e8;
         background: #eef5ff;
       }
-      .poster-box img {
-        max-height: 90px;
-        max-width: 90px;
+      .poster-thumbs {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .poster-thumbs:empty {
+        display: none;
+      }
+      .poster-thumb {
+        position: relative;
+      }
+      .poster-thumb img {
+        height: 90px;
+        width: 90px;
         border-radius: 6px;
         border: 1px solid #ddd;
         object-fit: cover;
+        display: block;
+      }
+      .poster-thumb button {
+        position: absolute;
+        top: -7px;
+        right: -7px;
+        width: 22px;
+        height: 22px;
+        padding: 0;
+        border-radius: 50%;
+        background: #222;
+        color: #fff;
+        font-size: 13px;
+        line-height: 22px;
+      }
+      .poster-buttons {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
       }
       .poster-text {
         flex: 1;
@@ -345,17 +375,27 @@
         </div>
 
         <div class="poster-box" id="posterBox">
-          <img id="posterPreview" alt="" hidden />
+          <div class="poster-thumbs" id="posterThumbs"></div>
           <div class="poster-text">
             <b>Auto-fill from poster</b> — upload, drag in, or paste (Ctrl+V)
-            the organizer's event poster. AI reads it and fills the form below;
-            check the highlighted fields before adding.
+            the organizer's event poster. If the details are spread over
+            several images, add them all, then click <b>Read Posters</b>. AI
+            reads them together and fills the form below; check the
+            highlighted fields before adding.
             <div class="poster-choices" id="posterChoices"></div>
           </div>
-          <input id="posterFile" type="file" accept="image/*" hidden />
-          <button class="secondary" id="posterPick" type="button">
-            📷 Upload Poster
-          </button>
+          <input id="posterFile" type="file" accept="image/*" multiple hidden />
+          <div class="poster-buttons">
+            <button class="secondary" id="posterPick" type="button">
+              📷 Add Images
+            </button>
+            <button class="primary" id="posterRead" type="button" disabled>
+              Read Posters
+            </button>
+            <button class="secondary" id="posterClear" type="button" hidden>
+              Clear Images
+            </button>
+          </div>
         </div>
 
         <div class="grid">
@@ -988,32 +1028,96 @@
           );
         }
 
-        async function handlePoster(file) {
-          if (!file || !file.type.startsWith("image/")) {
-            showStatus("Please choose an image file (JPG, PNG, WEBP).", true);
+        const MAX_POSTER_IMAGES = 10;
+        let posterImages = []; // { data, preview }
+        let posterBusy = false;
+
+        function renderPosterThumbs() {
+          const box = $("posterThumbs");
+          box.innerHTML = "";
+          posterImages.forEach((img, i) => {
+            const wrap = document.createElement("div");
+            wrap.className = "poster-thumb";
+            const el = document.createElement("img");
+            el.src = img.preview;
+            el.alt = `Poster image ${i + 1}`;
+            const rm = document.createElement("button");
+            rm.type = "button";
+            rm.textContent = "×";
+            rm.title = "Remove this image";
+            rm.disabled = posterBusy;
+            rm.addEventListener("click", () => {
+              posterImages.splice(i, 1);
+              renderPosterThumbs();
+            });
+            wrap.append(el, rm);
+            box.appendChild(wrap);
+          });
+          const n = posterImages.length;
+          $("posterRead").disabled = posterBusy || !n;
+          $("posterRead").textContent =
+            n > 1 ? `Read ${n} Posters` : "Read Poster";
+          $("posterClear").hidden = !n;
+          $("posterClear").disabled = posterBusy;
+          $("posterPick").disabled = posterBusy;
+        }
+
+        async function addPosterFiles(files) {
+          const images = [...(files || [])].filter((f) =>
+            f.type.startsWith("image/"),
+          );
+          if (!images.length) {
+            showStatus("Please choose image files (JPG, PNG, WEBP).", true);
             return;
           }
+          const room = MAX_POSTER_IMAGES - posterImages.length;
+          if (room <= 0) {
+            showStatus(`You can add up to ${MAX_POSTER_IMAGES} images.`, true);
+            return;
+          }
+          try {
+            for (const f of images.slice(0, room)) {
+              posterImages.push(await imageToBase64(f));
+            }
+          } catch (err) {
+            showStatus(err.message, true);
+          }
+          renderPosterThumbs();
+          const n = posterImages.length;
+          showStatus(
+            images.length > room
+              ? `Only the first ${MAX_POSTER_IMAGES} images were added.`
+              : `${n} image${n === 1 ? "" : "s"} ready — add more if needed, then click Read.`,
+            images.length > room,
+          );
+        }
+
+        async function readPosters() {
+          if (!posterImages.length || posterBusy) return;
           if ($("addEvent").disabled && !state.members.length) {
             showStatus("Still connecting to the database — try again.", true);
             return;
           }
-          $("posterPick").disabled = true;
+          posterBusy = true;
+          renderPosterThumbs();
           $("posterChoices").innerHTML = "";
-          showStatus("Reading poster… (this can take 10–30 seconds)");
+          const n = posterImages.length;
+          showStatus(
+            `Reading ${n} image${n === 1 ? "" : "s"}… (this can take 10–40 seconds)`,
+          );
           try {
-            const { data, preview } = await imageToBase64(file);
-            $("posterPreview").src = preview;
-            $("posterPreview").hidden = false;
             const result = await api("extractPoster", {
-              image: data,
-              mediaType: "image/jpeg",
+              images: posterImages.map((img) => ({
+                data: img.data,
+                mediaType: "image/jpeg",
+              })),
               members: state.members,
               organizers: state.organizers,
             });
             const events = result.events || [];
             if (!events.length) {
               showStatus(
-                "No event details were found on that poster. Please fill in manually.",
+                "No event details were found in those images. Please fill in manually.",
                 true,
               );
               return;
@@ -1035,15 +1139,27 @@
           } catch (err) {
             showStatus("Poster auto-fill failed: " + err.message, true);
           } finally {
-            $("posterPick").disabled = false;
-            $("posterFile").value = "";
+            posterBusy = false;
+            renderPosterThumbs();
           }
         }
 
+        function clearPosters() {
+          posterImages = [];
+          $("posterChoices").innerHTML = "";
+          renderPosterThumbs();
+        }
+
         $("posterPick").addEventListener("click", () => $("posterFile").click());
-        $("posterFile").addEventListener("change", (e) =>
-          handlePoster(e.target.files[0]),
-        );
+        $("posterFile").addEventListener("change", async (e) => {
+          await addPosterFiles(e.target.files);
+          e.target.value = "";
+        });
+        $("posterRead").addEventListener("click", readPosters);
+        $("posterClear").addEventListener("click", () => {
+          clearPosters();
+          showStatus("Poster images cleared.");
+        });
         const posterBox = $("posterBox");
         posterBox.addEventListener("dragover", (e) => {
           e.preventDefault();
@@ -1055,13 +1171,13 @@
         posterBox.addEventListener("drop", (e) => {
           e.preventDefault();
           posterBox.classList.remove("dragover");
-          handlePoster(e.dataTransfer.files[0]);
+          if (!posterBusy) addPosterFiles(e.dataTransfer.files);
         });
         document.addEventListener("paste", (e) => {
-          const item = [...(e.clipboardData?.items || [])].find((x) =>
-            x.type.startsWith("image/"),
-          );
-          if (item) handlePoster(item.getAsFile());
+          const files = [...(e.clipboardData?.items || [])]
+            .filter((x) => x.type.startsWith("image/"))
+            .map((x) => x.getAsFile());
+          if (files.length && !posterBusy) addPosterFiles(files);
         });
 
         function resetForm() {
@@ -1208,8 +1324,7 @@
         );
         $("resetForm").addEventListener("click", () => {
           resetForm();
-          $("posterChoices").innerHTML = "";
-          $("posterPreview").hidden = true;
+          clearPosters();
         });
         $("cancelEdit").addEventListener("click", resetForm);
         $("clearAll").addEventListener("click", clearAll);

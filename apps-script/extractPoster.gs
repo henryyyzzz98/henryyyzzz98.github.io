@@ -24,6 +24,9 @@ var CLAUDE_MODEL = "claude-opus-5-5";
 
 var EVENT_TYPES = ["대면팬싸", "단체영통", "개인영통"];
 
+var MAX_IMAGES = 10;
+var ALLOWED_MEDIA_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+
 var POSTER_SCHEMA = {
   type: "object",
   additionalProperties: false,
@@ -90,26 +93,46 @@ var POSTER_SCHEMA = {
 };
 
 /**
- * @param {{image: string, mediaType: string, members?: string[], organizers?: string[]}} body
- *   image: base64 (no data: prefix), mediaType: "image/jpeg" | "image/png" | "image/webp" | "image/gif"
+ * @param {{images?: Array<{data: string, mediaType: string}>, image?: string, mediaType?: string,
+ *          members?: string[], organizers?: string[]}} body
+ *   images: one or more posters/pages of the SAME announcement; data is base64 (no data: prefix),
+ *   mediaType is "image/jpeg" | "image/png" | "image/webp" | "image/gif".
+ *   (A single `image` + `mediaType` is still accepted.)
  * @return {Array<Object>} extracted events
  */
 function extractPoster(body) {
   var apiKey = PropertiesService.getScriptProperties().getProperty("ANTHROPIC_API_KEY");
   if (!apiKey) throw new Error("ANTHROPIC_API_KEY is not set in Script Properties.");
-  if (!body || !body.image) throw new Error("No poster image was received.");
-
-  var mediaType = body.mediaType || "image/jpeg";
-  if (["image/jpeg", "image/png", "image/webp", "image/gif"].indexOf(mediaType) === -1) {
-    throw new Error("Unsupported image type: " + mediaType);
+  var images = (body && body.images) || [];
+  if (!images.length && body && body.image) {
+    images = [{ data: body.image, mediaType: body.mediaType }];
   }
+  if (!images.length) throw new Error("No poster image was received.");
+  if (images.length > MAX_IMAGES) throw new Error("Please send at most " + MAX_IMAGES + " images.");
+
+  var content = [];
+  images.forEach(function (img, i) {
+    var mediaType = img.mediaType || "image/jpeg";
+    if (ALLOWED_MEDIA_TYPES.indexOf(mediaType) === -1) {
+      throw new Error("Unsupported image type: " + mediaType);
+    }
+    if (!img.data) throw new Error("Image " + (i + 1) + " is empty.");
+    if (images.length > 1) content.push({ type: "text", text: "Image " + (i + 1) + ":" });
+    content.push({ type: "image", source: { type: "base64", media_type: mediaType, data: img.data } });
+  });
 
   var members = (body.members || []).join(", ") || "(none provided)";
   var organizers = (body.organizers || []).join(", ") || "(none yet)";
   var today = Utilities.formatDate(new Date(), "Asia/Seoul", "yyyy-MM-dd");
 
+  var intro =
+    images.length > 1
+      ? "These " + images.length + " images are parts of ONE K-pop fansign event announcement " +
+        "from an organizer or K-pop store (e.g. a poster plus detail/notice pages). Details may be " +
+        "split across images: combine them, and do not list the same session twice.\n"
+      : "This is a K-pop fansign event announcement poster from an organizer or K-pop store.\n";
   var prompt =
-    "This is a K-pop fansign event announcement poster from an organizer or K-pop store. " +
+    intro +
     "Extract every fansign session it announces.\n\n" +
     "Today's date (KST) is " + today + ". If the poster omits the year, use the year that " +
     "puts the event on or after today and mention it in notes.\n" +
@@ -131,10 +154,7 @@ function extractPoster(body) {
     messages: [
       {
         role: "user",
-        content: [
-          { type: "image", source: { type: "base64", media_type: mediaType, data: body.image } },
-          { type: "text", text: prompt },
-        ],
+        content: content.concat([{ type: "text", text: prompt }]),
       },
     ],
   };
