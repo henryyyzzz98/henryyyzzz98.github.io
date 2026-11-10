@@ -269,6 +269,47 @@
         font-size: 12px;
         color: #777;
       }
+      .poster-box {
+        display: flex;
+        gap: 14px;
+        align-items: center;
+        flex-wrap: wrap;
+        border: 2px dashed #c9d3df;
+        border-radius: 10px;
+        padding: 14px;
+        margin-bottom: 18px;
+        background: #fafcff;
+      }
+      .poster-box.dragover {
+        border-color: #6ba8e8;
+        background: #eef5ff;
+      }
+      .poster-box img {
+        max-height: 90px;
+        max-width: 90px;
+        border-radius: 6px;
+        border: 1px solid #ddd;
+        object-fit: cover;
+      }
+      .poster-text {
+        flex: 1;
+        min-width: 200px;
+        font-size: 13px;
+        color: #4b5d70;
+      }
+      .poster-choices {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        margin-top: 8px;
+      }
+      .poster-choices button {
+        font-size: 12px;
+        padding: 6px 10px;
+      }
+      .autofilled {
+        background: #fffbe6 !important;
+      }
       @media (max-width: 950px) {
         .grid {
           grid-template-columns: repeat(2, minmax(180px, 1fr));
@@ -301,6 +342,20 @@
       <div class="card">
         <div class="api-box" style="display: none">
           <input id="apiUrl" type="hidden" />
+        </div>
+
+        <div class="poster-box" id="posterBox">
+          <img id="posterPreview" alt="" hidden />
+          <div class="poster-text">
+            <b>Auto-fill from poster</b> — upload, drag in, or paste (Ctrl+V)
+            the organizer's event poster. AI reads it and fills the form below;
+            check the highlighted fields before adding.
+            <div class="poster-choices" id="posterChoices"></div>
+          </div>
+          <input id="posterFile" type="file" accept="image/*" hidden />
+          <button class="secondary" id="posterPick" type="button">
+            📷 Upload Poster
+          </button>
         </div>
 
         <div class="grid">
@@ -844,8 +899,174 @@
           }
         }
 
+        // ---------- Poster auto-fill ----------
+        const AUTOFILL_IDS = [
+          "date",
+          "time",
+          "event",
+          "organizer",
+          "winners",
+          "polaroid",
+        ];
+
+        function clearAutofillMarks() {
+          AUTOFILL_IDS.forEach((id) => $(id).classList.remove("autofilled"));
+          $("members")
+            .querySelectorAll(".member")
+            .forEach((x) => x.classList.remove("autofilled"));
+        }
+
+        // Shrink large posters before upload (keeps requests small and fast).
+        function imageToBase64(file, maxSide = 1568) {
+          return new Promise((resolve, reject) => {
+            const img = new Image();
+            const url = URL.createObjectURL(file);
+            img.onload = () => {
+              const scale = Math.min(
+                1,
+                maxSide / Math.max(img.width, img.height),
+              );
+              const canvas = document.createElement("canvas");
+              canvas.width = Math.round(img.width * scale);
+              canvas.height = Math.round(img.height * scale);
+              const ctx = canvas.getContext("2d");
+              ctx.fillStyle = "#fff";
+              ctx.fillRect(0, 0, canvas.width, canvas.height);
+              ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+              URL.revokeObjectURL(url);
+              const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
+              resolve({ data: dataUrl.split(",")[1], preview: dataUrl });
+            };
+            img.onerror = () => {
+              URL.revokeObjectURL(url);
+              reject(new Error("Could not read that image file."));
+            };
+            img.src = url;
+          });
+        }
+
+        function matchMember(name) {
+          const n = String(name || "").trim().toLowerCase();
+          return state.members.find((m) => m.toLowerCase() === n);
+        }
+
+        function applyPosterEvent(ev) {
+          clearAutofillMarks();
+          const set = (id, value) => {
+            if (value === "" || value === null || value === undefined) return;
+            $(id).value = value;
+            $(id).classList.add("autofilled");
+          };
+          if (/^\d{4}-\d{2}-\d{2}$/.test(ev.date || "")) set("date", ev.date);
+          if (/^\d{1,2}:\d{2}$/.test(ev.time || ""))
+            set("time", ev.time.padStart(5, "0"));
+          if (["대면팬싸", "단체영통", "개인영통"].includes(ev.event))
+            set("event", ev.event);
+          if (ev.organizer) {
+            const known = state.organizers.find(
+              (o) => o.toLowerCase() === ev.organizer.trim().toLowerCase(),
+            );
+            set("organizer", known || ev.organizer.trim());
+          }
+          if (Number(ev.winners) > 0) set("winners", Number(ev.winners));
+          if (Number(ev.polaroid) > 0) set("polaroid", Number(ev.polaroid));
+
+          const picked = (ev.members || []).map(matchMember).filter(Boolean);
+          if (picked.length) {
+            $("members")
+              .querySelectorAll("input")
+              .forEach((cb) => {
+                cb.checked = picked.includes(cb.value);
+                if (cb.checked) cb.parentElement.classList.add("autofilled");
+              });
+          }
+          updatePreview();
+          showStatus(
+            "Filled from poster — please check the highlighted fields" +
+              (ev.notes ? ` (note: ${ev.notes})` : "") +
+              ", add the X link, then click Add Event.",
+          );
+        }
+
+        async function handlePoster(file) {
+          if (!file || !file.type.startsWith("image/")) {
+            showStatus("Please choose an image file (JPG, PNG, WEBP).", true);
+            return;
+          }
+          if ($("addEvent").disabled && !state.members.length) {
+            showStatus("Still connecting to the database — try again.", true);
+            return;
+          }
+          $("posterPick").disabled = true;
+          $("posterChoices").innerHTML = "";
+          showStatus("Reading poster… (this can take 10–30 seconds)");
+          try {
+            const { data, preview } = await imageToBase64(file);
+            $("posterPreview").src = preview;
+            $("posterPreview").hidden = false;
+            const result = await api("extractPoster", {
+              image: data,
+              mediaType: "image/jpeg",
+              members: state.members,
+              organizers: state.organizers,
+            });
+            const events = result.events || [];
+            if (!events.length) {
+              showStatus(
+                "No event details were found on that poster. Please fill in manually.",
+                true,
+              );
+              return;
+            }
+            applyPosterEvent(events[0]);
+            if (events.length > 1) {
+              events.forEach((ev, i) => {
+                const b = document.createElement("button");
+                b.type = "button";
+                b.className = "secondary";
+                b.textContent = `${i + 1}. ${ev.event || "Event"} ${ev.date || ""} ${ev.time || ""}`;
+                b.addEventListener("click", () => applyPosterEvent(ev));
+                $("posterChoices").appendChild(b);
+              });
+              showStatus(
+                `Poster lists ${events.length} sessions — filled #1. Add it, then click the next session button above.`,
+              );
+            }
+          } catch (err) {
+            showStatus("Poster auto-fill failed: " + err.message, true);
+          } finally {
+            $("posterPick").disabled = false;
+            $("posterFile").value = "";
+          }
+        }
+
+        $("posterPick").addEventListener("click", () => $("posterFile").click());
+        $("posterFile").addEventListener("change", (e) =>
+          handlePoster(e.target.files[0]),
+        );
+        const posterBox = $("posterBox");
+        posterBox.addEventListener("dragover", (e) => {
+          e.preventDefault();
+          posterBox.classList.add("dragover");
+        });
+        posterBox.addEventListener("dragleave", () =>
+          posterBox.classList.remove("dragover"),
+        );
+        posterBox.addEventListener("drop", (e) => {
+          e.preventDefault();
+          posterBox.classList.remove("dragover");
+          handlePoster(e.dataTransfer.files[0]);
+        });
+        document.addEventListener("paste", (e) => {
+          const item = [...(e.clipboardData?.items || [])].find((x) =>
+            x.type.startsWith("image/"),
+          );
+          if (item) handlePoster(item.getAsFile());
+        });
+
         function resetForm() {
           state.editingId = null;
+          clearAutofillMarks();
           state.sameMembersRound = null;
           $("addEvent").textContent = "Add Event";
           $("cancelEdit").hidden = true;
@@ -985,7 +1206,11 @@
             "noopener,noreferrer",
           ),
         );
-        $("resetForm").addEventListener("click", resetForm);
+        $("resetForm").addEventListener("click", () => {
+          resetForm();
+          $("posterChoices").innerHTML = "";
+          $("posterPreview").hidden = true;
+        });
         $("cancelEdit").addEventListener("click", resetForm);
         $("clearAll").addEventListener("click", clearAll);
         $("copySheets").addEventListener("click", copySheets);
