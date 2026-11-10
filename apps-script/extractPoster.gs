@@ -9,13 +9,21 @@
  *   2. In Apps Script: Project Settings (gear) → Script Properties →
  *      Add property  ANTHROPIC_API_KEY = sk-ant-...
  *      (The key stays on Google's server; it is never sent to visitors.)
- *   3. In your existing doPost(e) router, add a branch for the new action:
+ *   3. In your existing doPost(e), add ONE line near the top, right after the
+ *      request is parsed and BEFORE the existing action checks:
  *
- *        case "extractPoster":
- *          return json({ ok: true, events: extractPoster(body) });
+ *        if (body.action === "extractPoster") return extractPosterResponse(body);
  *
- *      (use whatever helper your script already uses to return
- *       ContentService JSON — the frontend expects { ok: true, events: [...] })
+ *      Replace `body` with whatever name your doPost uses for the parsed request
+ *      (often `body`, `data`, `req` or `payload` — the line that does
+ *      JSON.parse(e.postData.contents)). If your doPost doesn't keep it in a
+ *      variable, use this instead:
+ *
+ *        var posterReq = JSON.parse(e.postData.contents);
+ *        if (posterReq.action === "extractPoster") return extractPosterResponse(posterReq);
+ *
+ *      extractPosterResponse() is defined at the bottom of this file and builds
+ *      the JSON reply itself, so no other helper is needed.
  *   4. Deploy → Manage deployments → Edit → New version → Deploy.
  *      The /exec URL stays the same, so fsindexer.html needs no change.
  */
@@ -190,4 +198,20 @@ function extractPoster(body) {
     .join("");
   var parsed = JSON.parse(text);
   return parsed.events || [];
+}
+
+/**
+ * Wraps extractPoster() as a ready-to-return web app reply:
+ * { ok: true, events: [...] } on success, { ok: false, error: "..." } on failure.
+ */
+function extractPosterResponse(body) {
+  var out;
+  try {
+    out = { ok: true, events: extractPoster(body) };
+  } catch (err) {
+    out = { ok: false, error: String((err && err.message) || err) };
+  }
+  return ContentService.createTextOutput(JSON.stringify(out)).setMimeType(
+    ContentService.MimeType.JSON
+  );
 }
