@@ -239,10 +239,11 @@ input[type=time]{background:var(--raised);border:1px solid var(--line);border-ra
 .brow.done .fl:not(.st){opacity:.55}
 @media (prefers-reduced-motion:no-preference){.brow .st.blink{animation:bblink 1.1s steps(2,jump-none) infinite}}
 @keyframes bblink{0%{opacity:1}100%{opacity:.35}}
-.brow .fl.place{text-overflow:clip}
+.brow .fl.place,.brow .fl.st{text-overflow:clip}
+.brow .fl.st .mq{display:inline-block;white-space:nowrap;will-change:transform}
 .brow .fl.place .mq{display:inline-block;white-space:nowrap;will-change:transform}
-@media (prefers-reduced-motion:no-preference){.brow .fl.place.scroll .mq{animation:mq var(--t) ease-in-out var(--dl) infinite alternate}}
-@media (prefers-reduced-motion:reduce){.brow .fl.place.scroll{text-overflow:ellipsis}.brow .fl.place .mq{display:inline}}
+@media (prefers-reduced-motion:no-preference){.brow .fl.place.scroll .mq,.brow .fl.st.scroll .mq{animation:mq var(--t) ease-in-out var(--dl) infinite alternate}}
+@media (prefers-reduced-motion:reduce){.brow .fl.place.scroll,.brow .fl.st.scroll{text-overflow:ellipsis}.brow .fl.place .mq,.brow .fl.st .mq{display:inline}}
 @keyframes mq{0%,18%{transform:translateX(0)}82%,100%{transform:translateX(calc(-1 * var(--d)))}}
 .bempty{color:var(--mute);padding:14px 4px;font-size:13px}
 .bfoot{font-size:11.5px;color:var(--mute)}
@@ -2011,7 +2012,7 @@ function renderBoardBase(){const B=UI.board;if(!B.ap||!AP[B.ap])B.ap=S.hubs[0];c
  const anim=UI.boardAnim;UI.boardAnim=false;let lastDay=null,i=0;
  const body=rows.map((r,idx)=>{const st=boardStatus(r,B.mode);const dl=Math.floor(r.m/1440);let sep='';if(dl!==lastDay){lastDay=dl;sep=`<div class="bday">${dayLbl(r.m)}</div>`;}
   const landed=B.mode==='arr'&&G>=r.est&&r.st!=='cancel';
-  return sep+`<div class="brow ${r.mine?'mine':''} ${st[0].startsWith('DEPARTED')||st[0].startsWith('BAGGAGE')?'done':''}" style="--i:${Math.min(i++,30)}" role="button" tabindex="0" data-frow="${idx}" aria-label="Flight details for ${r.fn}"><span class="fl">${hhmm(r.m)}</span><span class="fl"><i style="background:${r.mine?'var(--accent)':r.color}"></i>${r.fn}</span><span class="fl place"><span class="mq">${esc(AP[r.place].city.toUpperCase())} <em>${r.place}</em></span></span><span class="fl gt">${B.mode==='dep'?r.gate:landed?r.belt:''}</span><span class="fl st ${st[1]}">${st[0]}</span></div>`;}).join('');
+  return sep+`<div class="brow ${r.mine?'mine':''} ${st[0].startsWith('DEPARTED')||st[0].startsWith('BAGGAGE')?'done':''}" style="--i:${Math.min(i++,30)}" role="button" tabindex="0" data-frow="${idx}" aria-label="Flight details for ${r.fn}"><span class="fl">${hhmm(r.m)}</span><span class="fl"><i style="background:${r.mine?'var(--accent)':r.color}"></i>${r.fn}</span><span class="fl place"><span class="mq">${esc(AP[r.place].city.toUpperCase())} <em>${r.place}</em></span></span><span class="fl gt">${B.mode==='dep'?r.gate:landed?r.belt:''}</span><span class="fl st ${st[1]}"><span class="mq">${st[0]}</span></span></div>`;}).join('');
  return `<div class="sec"><h3>Airport boards</h3><div class="field"><label for="bQ">Airport</label><input type="text" id="bQ" autocomplete="off" placeholder="Search by city, airport or code"></div><div class="results" id="bRes"></div></div>
  <div class="board2${anim?' anim':''}"><div class="bhead"><div><div class="bcode">${a.code}</div><div class="bcity">${esc(a.city)} · ${esc(a.name)}</div></div><div class="bmode" role="group" aria-label="Board"><button type="button" data-bmd="dep" aria-pressed="${B.mode==='dep'}">Departures</button><button type="button" data-bmd="arr" aria-pressed="${B.mode==='arr'}">Arrivals</button></div></div>
   <div class="bdays"><span class="bnow mono">${DAYS[Math.floor(wmod(G+off)/1440)]} ${hhmm(G+off)}</span><span class="btz">Next ${BOARD_DAYS} days · local time ${offTxt}</span></div>
@@ -2019,7 +2020,7 @@ function renderBoardBase(){const B=UI.board;if(!B.ap||!AP[B.ap])B.ap=S.hubs[0];c
   ${rows.length?body:`<div class="bempty">No ${B.mode==='dep'?'departures':'arrivals'} in the next ${BOARD_DAYS} days. Open routes here and schedule aircraft to fill the board.</div>`}</div>
   <div class="bfoot">Tap a flight for live position, altitude and speed · ${rows.length} ${B.mode==='dep'?'departures':'arrivals'} · your flights in amber${S.rivals.length?' · rival flights marked with their colour':''}</div></div>`;}
 // long destination names slide left and right inside their cell, like a real board; the phase follows the clock so live refreshes don't restart it
-function applyMarquee(){document.querySelectorAll('.brow .fl.place').forEach(c=>{const m=c.firstElementChild;if(!m)return;const over=m.scrollWidth-c.clientWidth+12;
+function applyMarquee(){document.querySelectorAll('.brow .fl.place,.brow:not(.bhd) .fl.st').forEach(c=>{const m=c.firstElementChild;if(!m)return;const over=m.scrollWidth-c.clientWidth+12;
  if(over>2){const t=Math.max(5,3+over/22);c.classList.add('scroll');c.style.setProperty('--d',over+'px');c.style.setProperty('--t',t+'s');c.style.setProperty('--dl',(-(performance.now()/1000)%(t*2))+'s');}else c.classList.remove('scroll');});}
 // keep the board live while it is on screen
 setInterval(()=>{if(!S||UI.tab!=='board'||document.hidden||!$('#start').hidden||!$('#sched').hidden)return;const q=$('#bQ');if(q&&(document.activeElement===q||q.value))return;
