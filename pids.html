@@ -55,6 +55,13 @@
 
   .stop-lamp{display:flex;align-items:center;justify-content:center;gap:10px;margin:18px auto 0;width:max-content;padding:8px 16px;border-radius:8px;
     background:#1c1c1c;font:700 14px "Roboto Condensed",sans-serif;letter-spacing:.12em;color:#4a2222;border:1px solid #333;transition:all .2s}
+  .plate-row{display:flex;justify-content:center;align-items:center;gap:8px;margin-top:12px}
+  .plate-row .plate{margin:0}
+  .stop-sign{display:none;font:700 19px "Roboto Condensed",sans-serif;letter-spacing:.04em;padding:2px 12px;border-radius:14px;
+    background:#151515;color:#4a1a18;border:2px solid #2a2a2a;transition:all .2s}
+  .stop-sign.on{color:#ff3b30;text-shadow:0 0 8px rgba(255,59,48,.8);border-color:#5a1d1a}
+  body.s2 .stop-sign{display:inline-block}
+  body.s2 .stop-lamp{display:none}
   .stop-lamp .dot{width:12px;height:12px;border-radius:50%;background:#4a2222}
   .stop-lamp.on{color:#ff4a3d;box-shadow:0 0 18px rgba(255,60,40,.45);border-color:#6b2520}
   .stop-lamp.on .dot{background:#ff4a3d;box-shadow:0 0 10px #ff4a3d}
@@ -102,6 +109,7 @@
         <defs>
           <linearGradient id="band" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#5dbb34"/><stop offset="1" stop-color="#8fd650"/></linearGradient>
           <radialGradient id="curDot" cx=".4" cy=".35" r=".7"><stop offset="0" stop-color="#f4ff6a"/><stop offset="1" stop-color="#cbd81a"/></radialGradient>
+          <radialGradient id="nextDot" cx=".4" cy=".35" r=".7"><stop offset="0" stop-color="#b8f08a"/><stop offset="1" stop-color="#5cbf34"/></radialGradient>
         </defs>
         <rect width="860" height="236" fill="#000"/>
         <rect x="6" y="6" width="150" height="46" fill="#151515"/>
@@ -157,7 +165,7 @@
     <div class="led-housing">
       <span class="screw l"></span><span class="screw m"></span><span class="screw r"></span>
       <div class="led-frame"><canvas id="led"></canvas></div>
-      <div class="plate" id="plate"></div>
+      <div class="plate-row"><span class="stop-sign" id="stopSign">STOP</span><div class="plate" id="plate"></div></div>
     </div>
   </div>
 
@@ -183,6 +191,7 @@
             <option value="">Load a sample route…</option>
             <option value="944">944 · Bukit Batok Rd</option>
             <option value="3">3 · Punggol Temp Int</option>
+            <option value="162">162 · Yio Chu Kang Int</option>
           </select>
         </div>
         <div class="three">
@@ -215,11 +224,18 @@
     NSL:"#d42e12", EWL:"#009645", CGL:"#009645", NEL:"#9900aa", CCL:"#fa9e0d", CEL:"#fa9e0d",
     DTL:"#005ec4", TEL:"#9d5b25", JRL:"#0099aa", BPLRT:"#748477", SKLRT:"#5f9e9b", PGLRT:"#5f9e9b"
   };
+  // Style 1 screens use brighter, more saturated badge colours
+  const LINES_A = {
+    NSL:"#f05a24", EWL:"#1fae4b", CGL:"#1fae4b", NEL:"#e449e6", CCL:"#f5c518", CEL:"#f5c518",
+    DTL:"#2f7fe6", TEL:"#b5703a", JRL:"#19b3c4", BPLRT:"#8e9a93", SKLRT:"#79b7b3", PGLRT:"#79b7b3"
+  };
   const SAMPLES = {
     "944": { route:"944", dest:"BUKIT BATOK RD", plate:"SG 3097 P",
       text:"Bt Batok Int | NSL\nBlk 289E\nBlk 445C\nBlk 451A\nBlk 461C\nBlk 438A\nBlk 436A\nBlk 431\nOpp Blk 412\nBt Batok Stn | NSL\nBt Batok Int | NSL" },
     "3": { route:"3", dest:"PUNGGOL TEMP INT", plate:"SG 4010 H",
-      text:"Tampines Int | EWL DTL\nBlk 497F\nOpp Blk 445\nPasir Ris Dr 10\nAft Pasir Ris Farmway\nOpp Punggol Sec/Blk 195E\nBlk 298\nPunggol Temp Int | NEL PGLRT" }
+      text:"Tampines Int | EWL DTL\nBlk 497F\nOpp Blk 445\nPasir Ris Dr 10\nAft Pasir Ris Farmway\nOpp Punggol Sec/Blk 195E\nBlk 298\nPunggol Temp Int | NEL PGLRT" },
+    "162": { route:"162", dest:"YIO CHU KANG INT", plate:"SG 3061 S",
+      text:"Bt Merah Int\nOutram Pk Stn | EWL NEL TEL\nClarke Quay Stn | NEL\nDhoby Ghaut Stn Exit B | NSL NEL CCL\nWinsland Hse\nSomerset Stn | NSL\nOpp Ngee Ann City\nOrchard Stn | NSL TEL\nNewton Stn | NSL DTL\nYio Chu Kang Int" }
   };
   const parseStops = text => text.split("\n").map(l => l.trim()).filter(Boolean).map(l => {
     const [name, tags = ""] = l.split("|");
@@ -240,7 +256,7 @@
   function save(){ try{ localStorage.setItem("pids-route-v2", JSON.stringify(route)) }catch(e){} }
 
   let route = load() || fromSample("944");
-  let idx = 1, phase = "next", bell = false, autoTimer = null;
+  let idx = 1, phase = "next", bell = false, bellAt = 0, autoTimer = null;
   let style = /style-2/.test(location.hash) ? 2 : (() => { try{ return +localStorage.getItem("pids-style") === 2 ? 2 : 1 }catch(e){ return 1 } })();
 
   // ---------------- svg helpers ----------------
@@ -255,13 +271,13 @@
     try{ if (t.getComputedTextLength() > max){ t.setAttribute("textLength", max); t.setAttribute("lengthAdjust", "spacingAndGlyphs"); } }catch(e){}
   }
   // draws right-aligned line badges ending at xRight; returns left edge x
-  function pills(g, tags, xRight, cy, h, fs){
+  function pills(g, tags, xRight, cy, h, fs, pal = LINES, font = "Roboto, sans-serif"){
     let x = xRight;
     for (let i = tags.length - 1; i >= 0; i--){
       const tag = tags[i], w = Math.round(tag.length * fs * 0.66 + h * 0.9);
       x -= w;
-      g.append(el("rect", { x, y: cy - h / 2, width: w, height: h, rx: h / 2, fill: LINES[tag] || "#6b7380" }));
-      g.append(el("text", { x: x + w / 2, y: cy + fs * 0.36, "text-anchor": "middle", "font-size": fs, "font-weight": 700, fill: "#fff", "font-family": "Roboto, sans-serif" }, tag));
+      g.append(el("rect", { x, y: cy - h / 2, width: w, height: h, rx: h / 2, fill: pal[tag] || "#6b7380" }));
+      g.append(el("text", { x: x + w / 2, y: cy + fs * 0.36, "text-anchor": "middle", "font-size": fs, "font-weight": 700, fill: "#fff", "font-family": font }, tag));
       x -= 5;
     }
     return x;
@@ -281,17 +297,17 @@
     const nAhead = Math.min(3, stops.length - 1 - idx);
     for (let k = 1; k <= nAhead; k++){
       const s = stops[idx + k];
-      const left = s.tags.length ? pills(g, s.tags, 850, ROW_BASE[k] - 6, 19, 12) : 850;
+      const left = s.tags.length ? pills(g, s.tags, 850, ROW_BASE[k] - 7, [0, 22, 21, 19][k], [0, 13, 12.5, 11.5][k], LINES_A, "Open Sans, sans-serif") : 850;
       const t = el("text", { x: 80, y: ROW_BASE[k], "font-size": [0, 20, 19, 18][k], fill: "#d2d2d2" }, s.name.toUpperCase());
       g.append(t); fit(t, left - 90);
     }
     const terminus = idx === stops.length - 1, cur = stops[idx];
-    g.append(el("text", { x: 78, y: 182, "font-size": 15, "font-weight": 600, fill: "#d8e41f" }, phase === "arr" ? "Arr" : "Next"));
+    g.append(el("text", { x: 78, y: 182, "font-size": 15, "font-weight": 600, fill: phase === "arr" ? "#d8e41f" : "#f2f2f2" }, phase === "arr" ? "Arr" : "Next"));
     let right = 850;
     if (terminus) {
       const note = el("text", { x: 850, y: 206, "text-anchor": "end", "font-size": 16, fill: "#d8e41f" }, phase === "arr" ? "END OF TRIP · PLEASE ALIGHT" : "LAST STOP");
       g.append(note); right = 600;
-    } else if (cur.tags.length) right = pills(g, cur.tags, 850, 197, 22, 13);
+    } else if (cur.tags.length) right = pills(g, cur.tags, 850, 198, 26, 15, LINES_A, "Open Sans, sans-serif");
     const ct = el("text", { x: 80, y: 206, "font-size": 27, fill: "#fff" }, cur.name.toUpperCase());
     g.append(ct); fit(ct, right - 92);
 
@@ -305,8 +321,8 @@
       tr.append(el("line", { x1: center(y), y1: ROW_LINE[k], x2: 854, y2: ROW_LINE[k], stroke: "#3d3d3d" }));
       tr.append(el("circle", { cx: center(y), cy: y, r: [0, 7, 5.5, 4][k], fill: "#7cc94a", stroke: "#e7f2df", "stroke-width": 1.4 }));
     }
-    tr.append(el("line", { x1: 8, y1: Y_BOT + 2, x2: 854, y2: Y_BOT + 2, stroke: "#c8dc1e", "stroke-width": 4.5 }));
-    const dot = el("circle", { cx: center(Y_BOT - 1), cy: Y_BOT - 1, r: 12, fill: "url(#curDot)", stroke: "#2a2a10", "stroke-width": 2 });
+    tr.append(el("line", { x1: 8, y1: Y_BOT + 2, x2: 854, y2: Y_BOT + 2, stroke: phase === "arr" ? "#c8dc1e" : "#5ccf3a", "stroke-width": 4.5 }));
+    const dot = el("circle", { cx: center(Y_BOT - 1), cy: Y_BOT - 1, r: 12, fill: phase === "arr" ? "url(#curDot)" : "url(#nextDot)", stroke: "#2a2a10", "stroke-width": 2 });
     if (phase === "arr") dot.append(el("animate", { attributeName: "r", values: "12;14;12", dur: "1.2s", repeatCount: "indefinite" }));
     tr.append(dot);
   }
@@ -346,10 +362,20 @@
     if (idx === stops.length - 1 && phase === "arr")
       g.append(el("text", { x: 552, y: top(2) + 40, "text-anchor": "middle", "font-size": 30, "font-weight": 500, fill: "#e3ef2f" }, "END OF TRIP · PLEASE ALIGHT"));
 
-    // ARR / NEXT roundel
-    const arr = phase === "arr";
-    g.append(el("circle", { cx: 56, cy: cy(0), r: 30, fill: arr ? "#e3ef2f" : "#22262b", stroke: "#e3ef2f", "stroke-width": arr ? 0 : 3 }));
-    g.append(el("text", { x: 56, y: cy(0) + 6, "text-anchor": "middle", "font-size": arr ? 17 : 15, "font-weight": 500, fill: arr ? "#7d8452" : "#e3ef2f" }, arr ? "ARR" : "NEXT"));
+    // ARR / NEXT roundel — replaced by a red STOP roundel once the bell has been pressed
+    if (bell && phase === "next"){
+      const r = el("circle", { cx: 56, cy: cy(0), r: 31, fill: "#d8241f", stroke: "#4a1412", "stroke-width": 2.5 });
+      g.append(r);
+      const pulse = el("circle", { cx: 56, cy: cy(0), r: 31, fill: "none", stroke: "#ff4a3d", "stroke-width": 2, opacity: .6 });
+      pulse.append(el("animate", { attributeName: "r", values: "31;38;31", dur: "1.4s", repeatCount: "indefinite" }));
+      pulse.append(el("animate", { attributeName: "opacity", values: ".6;0;.6", dur: "1.4s", repeatCount: "indefinite" }));
+      g.append(pulse);
+      g.append(el("text", { x: 56, y: cy(0) + 6, "text-anchor": "middle", "font-size": 17, "font-weight": 500, fill: "#fff" }, "STOP"));
+    } else {
+      const arr = phase === "arr";
+      g.append(el("circle", { cx: 56, cy: cy(0), r: 30, fill: arr ? "#e3ef2f" : "#3fcf34" }));
+      g.append(el("text", { x: 56, y: cy(0) + 6, "text-anchor": "middle", "font-size": arr ? 17 : 15, "font-weight": 500, fill: arr ? "#7d8452" : "#d4f7c8" }, arr ? "ARR" : "NEXT"));
+    }
   }
 
   // ---------------- header / clock ----------------
@@ -370,6 +396,7 @@
   let renderTimer = null;
   function render(animate = true){
     $("lamp").classList.toggle("on", bell);
+    $("stopSign").classList.toggle("on", bell);
     $("status").textContent = `Stop ${idx} of ${route.stops.length - 1} · ${phase === "arr" ? "Arriving" : "En route"}`;
     const g = style === 1 ? A.rows : $("bRows");
     const draw = style === 1 ? drawA : drawB;
@@ -388,10 +415,18 @@
   function scrolled(text, x0, w, base, top, h){
     const tw = octx.measureText(text).width;
     octx.save(); octx.beginPath(); octx.rect(x0, top, w, h); octx.clip();
-    if (tw <= w) octx.fillText(text, x0, base);
-    else { const span = tw + 30, x = x0 - (scrollX % span); octx.fillText(text, x, base); octx.fillText(text, x + span, base); }
+    if (tw <= w * 1.3) octx.fillText(text, x0, base, w);   // fits, or nearly fits: condense instead of scrolling
+    else octx.fillText(text, x0 + w - (scrollX % (tw + w + 12)), base);   // marquee: enters from the right edge, exits left
     octx.restore();
   }
+
+  // While the bell is active and the bus is still en route:
+  //  · line 2 label shows STOP for the first 5 s, then goes back to NEXT
+  //  · line 1 alternates between "BUS STOPPING" and the destination every 3 s
+  const STOP_LABEL_MS = 5000, ALT_MS = 3000;
+  const bellActive = () => bell && phase === "next";
+  const ledTop = () => bellActive() && Math.floor((performance.now() - bellAt) / ALT_MS) % 2 === 0 ? "BUS STOPPING" : route.dest.toUpperCase();
+  const ledMode = () => phase === "arr" ? "arr" : (bellActive() && performance.now() - bellAt < STOP_LABEL_MS ? "stop" : "next");
 
   const LED = {
     1: { cols: 168, rows: 32, pitch: 6,
@@ -400,9 +435,9 @@
         const rw = Math.ceil(octx.measureText(route.route).width);
         octx.strokeStyle = "#00ff40"; octx.lineWidth = 1; octx.strokeRect(0.5, 0.5, rw + 5, 14);
         octx.fillStyle = "#fff"; octx.fillText(route.route, 3, 13);
-        scrolled(route.dest.toUpperCase(), rw + 8, 168 - rw - 8, 13, 0, 16);
-        const lab = (phase === "arr" ? "Arr" : "Next") + "»";
-        octx.fillStyle = "#ffff00"; octx.fillText(lab, 1, 30);
+        scrolled(ledTop(), rw + 8, 168 - rw - 8, 13, 0, 16);
+        const m = ledMode(), lab = { arr: "Arr»", stop: "STOP»", next: "NEXT»" }[m];
+        octx.fillStyle = m === "next" ? "#fff" : "#ffff00"; octx.fillText(lab, 1, 30);
         const lw = Math.ceil(octx.measureText(lab).width) + 3;
         octx.fillStyle = "#fff"; scrolled(route.stops[idx].name.toUpperCase(), lw, 168 - lw, 30, 16, 16);
       },
@@ -418,8 +453,8 @@
         octx.strokeStyle = octx.fillStyle = "#fff"; octx.lineWidth = 1;
         octx.strokeRect(0.5, 0.5, 52, 14);
         octx.textAlign = "center"; octx.fillText(route.route, 27, 13); octx.textAlign = "left";
-        scrolled(route.dest.toUpperCase(), 57, 200 - 57, 13, 0, 16);
-        const lab = phase === "arr" ? "ARR>>" : "NEXT>>";
+        scrolled(ledTop(), 57, 200 - 57, 13, 0, 16);
+        const lab = { arr: "ARR>>", stop: "STOP>>", next: "NEXT>>" }[ledMode()];
         octx.fillText(lab, 2, 30);
         const lw = Math.ceil(octx.measureText(lab).width) + 6;
         scrolled(route.stops[idx].name.toUpperCase(), lw, 200 - lw, 30, 16, 16);
@@ -487,7 +522,7 @@
     else return;
     scrollX = 0; render();
     if (fromAuto && phase === "next" && Math.random() < 0.45)
-      setTimeout(() => { if (autoTimer && phase === "next" && !bell){ bell = true; ding(); render(false); } }, 900);
+      setTimeout(() => { if (autoTimer && phase === "next") ringBell(); }, 900);
   }
   function back(){
     if (phase === "arr") phase = "next";
@@ -495,7 +530,8 @@
     else return;
     bell = false; scrollX = 0; render();
   }
-  function pressBell(){ if (!bell){ bell = true; ding(); render(false); } }
+  function ringBell(){ if (!bell){ bell = true; bellAt = performance.now(); scrollX = 0; ding(); render(false); } }
+  const pressBell = ringBell;
   function toggleAuto(){
     const b = $("btnAuto");
     if (autoTimer){ clearInterval(autoTimer); autoTimer = null; b.textContent = "▶ Auto-run"; return; }
@@ -520,8 +556,8 @@
   ed.stops.placeholder = "Bt Batok Int | NSL\nBlk 451A\n…";
   function fillEditor(){ ed.route.value = route.route; ed.dest.value = route.dest; ed.plate.value = route.plate || ""; ed.stops.value = stopsToText(route.stops); }
   function startAt(){
-    const i = route.stops.findIndex(s => /451A|195E/i.test(s.name));
-    idx = i > 0 ? i : 1; phase = i > 0 ? "arr" : "next"; bell = false; scrollX = 0;
+    const i = route.stops.findIndex(s => /451A|195E|Dhoby Ghaut/i.test(s.name));
+    idx = i > 0 ? i : 1; phase = i > 0 && !/Dhoby Ghaut/i.test(route.stops[i].name) ? "arr" : "next"; bell = false; scrollX = 0;
   }
   function applyRoute(r, fromSample){
     route = r; save(); fillEditor();
