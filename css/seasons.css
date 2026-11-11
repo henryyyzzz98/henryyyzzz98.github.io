@@ -1096,3 +1096,66 @@
 .trade-actions button {
   flex: 1;
 }
+
+/* ---------- top-bar pills: one line each, equal height, no jitter ---------- */
+.top-right {
+  flex: none;
+  gap: 8px;
+}
+
+.ticket-pill {
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 4px 14px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ticket pill keeps a steady width whether it says "FULL" or "+1 in 4:48" */
+.ticket-pill:not(.score-pill) {
+  min-width: 92px;
+}
+
+.ticket-count {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  line-height: 1.1;
+}
+
+.ticket-timer {
+  line-height: 1.2;
+  letter-spacing: 0.06em;
+}
+
+.brand {
+  min-width: 0;
+  line-height: 1.35;
+}
+
+@media (max-width: 380px) {
+  .topbar {
+    left: 12px;
+    right: 12px;
+  }
+  .brand {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+  }
+  .top-right {
+    gap: 6px;
+  }
+  .ticket-pill {
+    padding: 4px 10px;
+  }
+  .ticket-pill:not(.score-pill) {
+    min-width: 84px;
+  }
+}
+
+.top-right .icon-btn {
+  width: 42px;
+  height: 42px;
+  flex: none;
+}
