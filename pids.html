@@ -87,6 +87,15 @@
   .three{display:grid;grid-template-columns:110px 1fr 140px;gap:10px}
   @media (max-width:560px){.three{grid-template-columns:1fr 1fr}.three label:nth-child(2){grid-column:1/-1;grid-row:1}}
   .hint{font-size:12px;color:var(--muted);margin:0;line-height:1.5}
+  .editor input{width:100%;min-width:0}
+  .editor label.filebtn{display:inline-flex;font-size:inherit;color:var(--text);gap:0}
+  .filebtn{display:inline-flex;align-items:center;background:#50555d;border-radius:9px;padding:10px 14px;font-weight:600;cursor:pointer;min-height:42px}
+  .filebtn:hover{background:#5c626b}
+  .filebtn input{display:none}
+  .msg{font-size:13px;margin:0;min-height:1.2em}
+  .msg.ok{color:#9be37a}.msg.err{color:#ff8a80}
+  .editor.drag{outline:2px dashed var(--accent);outline-offset:6px;border-radius:8px}
+  pre.fmt{background:#24272b;border-radius:8px;padding:10px 12px;margin:8px 0 0;font-size:12.5px;line-height:1.5;overflow:auto;color:#cfd3d8}
   .pills{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}
   .pill{font:700 11px "Roboto",sans-serif;color:#fff;padding:2px 8px;border-radius:9px}
   kbd{background:#24272b;border:1px solid #555;border-radius:4px;padding:0 5px;font-size:11px}
@@ -193,7 +202,11 @@
             <option value="3">3 · Punggol Temp Int</option>
             <option value="162">162 · Yio Chu Kang Int</option>
           </select>
+          <label class="filebtn">📂 Load from file<input type="file" id="fileIn" accept=".txt,.json,.csv,.tsv,text/plain,application/json"></label>
+          <button id="btnCopy">Copy as text</button>
+          <button id="btnSave">Save .txt</button>
         </div>
+        <p class="msg" id="fileMsg" role="status"></p>
         <div class="three">
           <label>Service no.<input id="edRoute" maxlength="5"></label>
           <label>Destination<input id="edDest" maxlength="32"></label>
@@ -209,6 +222,21 @@
           <button id="btnReset">Restore sample 944</button>
         </div>
         <p class="hint">The sample stop lists are illustrative — paste in the real stop sequence for any service.</p>
+        <details>
+          <summary>Route file format</summary>
+          <p class="hint" style="margin-top:8px">A plain .txt file — you can also drag it onto this panel. Header lines are optional; everything else is a stop, in order. Lines starting with # are ignored. Badges go after <b>|</b> (a tab also works, so you can paste two columns from a spreadsheet).</p>
+<pre class="fmt"># Bus PIDS route file
+route: 162
+dest: Yio Chu Kang Int
+plate: SG 3061 S
+
+Bt Merah Int
+Dhoby Ghaut Stn Exit B | NSL NEL CCL
+Winsland Hse
+Somerset Stn | NSL
+Yio Chu Kang Int</pre>
+          <p class="hint" style="margin-top:8px">A .json file with <code>route</code>, <code>dest</code>, <code>plate</code> and a <code>stops</code> list also works.</p>
+        </details>
       </div>
     </details>
   </section>
@@ -572,6 +600,96 @@
   };
   $("btnReset").onclick = () => applyRoute(fromSample("944"), true);
   $("sample").onchange = e => { if (e.target.value) applyRoute(fromSample(e.target.value), true); e.target.value = ""; };
+  // ---------------- route files ----------------
+  const msg = (text, ok) => { const m = $("fileMsg"); m.textContent = text; m.className = "msg " + (ok ? "ok" : "err"); };
+  const HEADER = /^(route|service|svc|bus|dest|destination|to|plate|reg|registration)\s*[:=]\s*(.*)$/i;
+
+  function parseRouteFile(raw){
+    const text = raw.replace(/^\uFEFF/, "").replace(/\r\n?/g, "\n");
+    const out = { route: ed.route.value.trim() || route.route, dest: ed.dest.value.trim() || route.dest, plate: ed.plate.value.trim(), stops: [] };
+    if (/^\s*[\[{]/.test(text)){
+      const j = JSON.parse(text), list = Array.isArray(j) ? j : j.stops;
+      if (!Array.isArray(list)) throw new Error("JSON file needs a \"stops\" list.");
+      if (!Array.isArray(j)){
+        if (j.route ?? j.service) out.route = String(j.route ?? j.service);
+        if (j.dest ?? j.destination) out.dest = String(j.dest ?? j.destination);
+        if (j.plate != null) out.plate = String(j.plate); else if (j.route ?? j.service) out.plate = "";
+      }
+      out.stops = list.map(x => typeof x === "string" ? parseStops(x)[0]
+        : { name: String(x.name || "").trim(), tags: (Array.isArray(x.tags) ? x.tags : String(x.tags || "").split(/[\s,]+/)).map(t => String(t).toUpperCase()).filter(Boolean) })
+        .filter(x => x && x.name);
+    } else {
+      const lines = []; let gotRoute = false, gotPlate = false;
+      for (let line of text.split("\n")){
+        line = line.trim();
+        if (!line || line.startsWith("#")) continue;
+        const h = line.match(HEADER);
+        if (h){
+          const k = h[1].toLowerCase(), v = h[2].trim();
+          if (/^(route|service|svc|bus)$/.test(k)){ out.route = v; gotRoute = true; }
+          else if (/^(dest|destination|to)$/.test(k)) out.dest = v;
+          else { out.plate = v; gotPlate = true; }
+          continue;
+        }
+        lines.push(line.includes("|") ? line : line.replace(/\t+/, " | ").replace(/\t/g, " "));
+      }
+      out.stops = parseStops(lines.join("\n"));
+      if (gotRoute && !gotPlate) out.plate = "";
+    }
+    if (out.stops.length < 2) throw new Error("The file needs at least 2 stops.");
+    out.route = out.route.slice(0, 5); out.dest = out.dest.slice(0, 32); out.plate = out.plate.slice(0, 12);
+    return out;
+  }
+  function routeToFile(){
+    return ["# Bus PIDS route file", "route: " + ed.route.value.trim(), "dest: " + ed.dest.value.trim(), "plate: " + ed.plate.value.trim(), "",
+      "# stops in order (first = starting point); rail badges after |", ed.stops.value.trim(), ""].join("\n");
+  }
+  function readFile(file){
+    if (!file) return;
+    if (file.size > 1e6){ msg("That file is too large for a route file (over 1 MB).", false); return; }
+    const fr = new FileReader();
+    fr.onload = () => {
+      try{
+        const r = parseRouteFile(String(fr.result));
+        applyRoute(r, false);
+        const unknown = [...new Set(r.stops.flatMap(s => s.tags).filter(t => !LINES[t]))];
+        msg(`Loaded ${file.name}: service ${r.route}, ${r.stops.length} stops.` + (unknown.length ? ` Unrecognised badge codes shown in grey: ${unknown.join(", ")}.` : ""), true);
+      }catch(e){ msg(`Couldn't read ${file.name}: ${e.message}`, false); }
+    };
+    fr.onerror = () => msg(`Couldn't open ${file.name}.`, false);
+    fr.readAsText(file);
+  }
+  $("fileIn").onchange = e => { readFile(e.target.files[0]); e.target.value = ""; };
+  const edBox = document.querySelector(".editor");
+  edBox.addEventListener("dragover", e => { e.preventDefault(); edBox.classList.add("drag"); });
+  edBox.addEventListener("dragleave", e => { if (!edBox.contains(e.relatedTarget)) edBox.classList.remove("drag"); });
+  edBox.addEventListener("drop", e => { e.preventDefault(); edBox.classList.remove("drag"); readFile(e.dataTransfer.files[0]); });
+  $("btnCopy").onclick = async () => {
+    try{ await navigator.clipboard.writeText(routeToFile()); msg("Copied — paste into a text editor and save as .txt.", true); }
+    catch(e){ msg("Your browser blocked copying. Select the stops box and copy it manually.", false); }
+  };
+  // Saving: inside the Claude artifact viewer use its downloads capability; on a normal website use a plain download link.
+  let dl = null;
+  const inViewer = typeof window.claude === "object" && window.claude && typeof window.claude.use === "function";
+  if (inViewer) window.claude.use("downloads").then(d => { dl = d; if (!d) $("btnSave").hidden = true; }, () => { $("btnSave").hidden = true; });
+  $("btnSave").onclick = async () => {
+    const filename = `route-${(ed.route.value.trim() || "bus").replace(/[^\w-]/g, "")}.txt`, data = routeToFile();
+    if (inViewer){
+      if (!dl){ msg("Saving isn't available here — use Copy as text instead.", false); return; }
+      try{ await dl.save({ filename, data }); msg(`Saved ${filename}.`, true); }
+      catch(e){ msg(e && e.code === "declined" ? "Save cancelled." : "Couldn't save here — use Copy as text instead.", false); }
+      return;
+    }
+    try{
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([data], { type: "text/plain" }));
+      a.download = filename;
+      document.body.append(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+      msg(`Saved ${filename}.`, true);
+    }catch(e){ msg("Download blocked — use Copy as text instead.", false); }
+  };
+
   $("legend").append(...Object.entries(LINES).map(([k, c]) => { const s = document.createElement("span"); s.className = "pill"; s.style.background = c; s.textContent = k; return s; }));
 
   // ---------------- boot ----------------
