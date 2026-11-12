@@ -562,3 +562,86 @@ function save(G) { try { G.trackLib = LIB; localStorage.setItem('f1mgr_save', JS
 function loadSave() { try { const s = localStorage.getItem('f1mgr_save'); return s ? JSON.parse(s) : null; } catch (e) { return null; } }
 function exportCode(G) { G.trackLib = LIB; return btoa(unescape(encodeURIComponent(JSON.stringify(G)))); }
 function importCode(s) { return JSON.parse(decodeURIComponent(escape(atob(s.trim())))); }
+
+// ---------- Live qualifying session ----------
+class QualiLive {
+  constructor(G, wk, list, opts) {
+    this.G = G; this.track = wk.track; this.L = wk.track.km * 1000; this.dur = opts.dur; this.label = opts.label;
+    this.cut = opts.cut || 0; this.t = 0; this.wet = wk.weather.quali; this.log = []; this.events = []; this.done = false;
+    this.best = null; this.chequered = false; this.red = 0;
+    const base = (() => { const e = list[0]; const c = { d: e.d, t: e.t, tyre: 'S', wear: 0, mode: 'push', setup: e.setup }; return lapTimeFor(G, c, this.track, { lap: 0, wet: this.wet, quali: true }); })();
+    this.base = base;
+    const OL = base * 1.4, IL = base * 1.45;
+    const nRuns = opts.runs || 2;
+    const windows = nRuns === 3 ? [[0.03, 0.22], [0.36, 0.55], [0.7, 0.84]] : [[0.04, 0.3], [0.66, 0.84]];
+    this.cars = list.map(e => {
+      const risk = (opts.risks && opts.risks[e.d.id]) || (G.player === e.t.id ? 'normal' : pick(['normal', 'normal', 'safe', 'all']));
+      const runs = [];
+      windows.forEach(([a, b], k) => {
+        let start = rnd(a, b) * this.dur;
+        start = Math.min(start, this.dur - OL - rnd(2, 15));
+        const q = qualiLap(G, e, this.track, this.wet, risk);
+        const evo = k * 0.12 + (start / this.dur) * 0.2; // track rubbering in
+        runs.push({ start, OL: OL * rnd(0.97, 1.05), IL: IL * rnd(0.97, 1.05), fly: q.crash ? base * rnd(1, 1.02) : q.t - evo, crash: q.crash, crashAt: rnd(0.2, 0.9), done: false, aborted: false });
+      });
+      if (Math.random() < 0.08 && runs.length > 1) runs.shift(); // some skip a run
+      return { e, d: e.d, t: e.t, runs, phase: 'garage', frac: 0, best: null, last: null, out: false, pbT: -999, laps: 0, risk, fav: G.follow === e.d.id, player: !!G.player && e.t.id === G.player };
+    });
+    this.msg(`🟢 ${this.label} is under way — ${Math.round(this.dur / 60)} minutes on the clock`);
+  }
+  msg(s, imp) { this.log.unshift({ t: this.t, s }); if (this.log.length > 60) this.log.pop(); if (imp) this.events.push(s); }
+  clock() { return Math.max(0, this.dur - this.t); }
+  step(dt) {
+    if (this.done) return;
+    this.t += dt;
+    if (!this.chequered && this.t >= this.dur) { this.chequered = true; this.msg('🏁 Chequered flag — drivers on a flying lap can finish it', true); }
+    let anyOnTrack = false;
+    for (const c of this.cars) {
+      if (c.out) continue;
+      c.phase = 'garage';
+      for (const r of c.runs) {
+        if (r.done || this.t < r.start) continue;
+        const t1 = r.start + r.OL, t2 = t1 + r.fly, t3 = t2 + r.IL;
+        if (this.t < t1) { c.phase = 'out'; c.frac = (this.t - r.start) / r.OL; anyOnTrack = true; break; }
+        if (!r.aborted && this.t < t2) {
+          if (r.crash && (this.t - t1) / r.fly >= r.crashAt) { this.crash(c, r); break; }
+          c.phase = 'flying'; c.frac = (this.t - t1) / r.fly; anyOnTrack = true; break;
+        }
+        if (!r.aborted && !r.timed) { r.timed = true; this.lapDone(c, r.fly); }
+        if (this.t < t3) { c.phase = 'in'; c.frac = (this.t - (r.aborted ? r.abortT : t2)) / r.IL; anyOnTrack = true; if (c.frac >= 1) { r.done = true; c.phase = 'garage'; } break; }
+        r.done = true;
+      }
+    }
+    if (this.chequered && !anyOnTrack) this.finish();
+    if (this.t > this.dur * 1.6) this.finish();
+  }
+  lapDone(c, lt) {
+    c.last = lt; c.laps++;
+    const pb = !c.best || lt < c.best;
+    if (pb) { c.best = lt; c.pbT = this.t; }
+    if (!this.best || lt < this.best.t) {
+      const was = this.best; this.best = { t: lt, c };
+      this.msg(`🟣 ${c.d.code} goes fastest: ${fmtTime(lt)}${was ? ` (${(lt - was.t).toFixed(3)})` : ''}`, c.fav || c.player);
+    } else if (pb && (c.fav || c.player)) this.msg(`🟢 ${c.d.code} improves to ${fmtTime(lt)} — P${this.order().indexOf(c) + 1}`, false);
+  }
+  crash(c, r) {
+    c.out = true; c.phase = 'crashed';
+    this.msg(`🟥 RED FLAG — ${c.d.name} crashes${c.best ? '' : ' without setting a time'}!`, true);
+    // everyone on a flying lap has it aborted
+    this.cars.forEach(o => { if (o === c || o.out) return; o.runs.forEach(rr => { const t1 = rr.start + rr.OL; if (!rr.done && !rr.aborted && this.t >= t1 && this.t < t1 + rr.fly) { rr.aborted = true; rr.abortT = this.t; } }); });
+    // session restarts after a pause: push back all future runs a little
+    const pause = 90; this.dur += pause * 0.5;
+    this.cars.forEach(o => o.runs.forEach(rr => { if (this.t < rr.start) rr.start += pause * 0.5; }));
+  }
+  order() {
+    return this.cars.slice().sort((a, b) => {
+      if (a.best != null && b.best != null) return a.best - b.best;
+      if (a.best != null) return -1; if (b.best != null) return 1;
+      return (a.out ? 1 : 0) - (b.out ? 1 : 0);
+    });
+  }
+  finish() {
+    if (this.done) return; this.done = true;
+    this.result = this.order().map(c => ({ e: c.e, t: c.best, crash: c.out && c.best == null, risk: c.risk }));
+  }
+}

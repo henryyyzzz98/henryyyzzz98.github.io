@@ -26,7 +26,7 @@ function render() {
   else if (VIEW === 'setup') { app.innerHTML = viewSetup(); const yr = document.getElementById('yr'); if (yr) yr.addEventListener('change', () => { SETUP.year = +yr.value; SETUP.team = null; SETUP.follow = null; render(); }); }
   else if (VIEW === 'caled') app.innerHTML = viewCalEditor();
   else if (VIEW === 'hq') app.innerHTML = topBar() + `<div class="wrap">${viewHQ()}</div>`;
-  else if (VIEW === 'weekend') { app.innerHTML = topBar(true) + `<div class="wrap">${viewWeekend()}</div>`; const on = document.querySelector('.steps .on'); if (on && on.scrollIntoView) on.parentElement.scrollLeft = on.offsetLeft - 40; if (WK.stage === 'race' || WK.stage === 'sprint') startRaceLoop(); }
+  else if (VIEW === 'weekend') { app.innerHTML = topBar(true) + `<div class="wrap">${viewWeekend()}</div>`; const on = document.querySelector('.steps .on'); if (on && on.scrollIntoView) on.parentElement.scrollLeft = on.offsetLeft - 40; if (WK.stage === 'race' || WK.stage === 'sprint') startRaceLoop(); else if ((WK.stage === 'quali' || WK.stage === 'squali') && curQS().live && !curQS().live.done) startQualiLoop(); }
   else if (VIEW === 'studio') app.innerHTML = viewStudio();
   else if (VIEW === 'tracer') { app.innerHTML = viewTracer(); initTracer(); }
   else if (VIEW === 'season') app.innerHTML = topBar(true) + `<div class="wrap">${viewSeasonEnd()}</div>`;
@@ -354,7 +354,7 @@ function doOffer(id, mode, buyout) {
 function startWeekend() {
   const track = roundTrack(G, G.round);
   const sprint = isSprintRound(G, G.round);
-  WK = { track, sprint, stage: 'fp', session: 1, sessions: sprint ? 1 : 3, entries: weekendEntries(G), weather: makeWeather(track, G.weatherOn !== false), programs: {}, fp: [], risks: {},
+  WK = { round: G.round, track, sprint, stage: 'fp', session: 1, sessions: sprint ? 1 : 3, entries: weekendEntries(G), weather: makeWeather(track, G.weatherOn !== false), programs: {}, fp: [], risks: {},
     SQ: { stage: 1, rounds: [] }, Q: { stage: 1, rounds: [] } };
   WK.stages = sprint ? [['fp', 'Practice'], ['squali', 'Sprint Quali'], ['sgrid', 'Sprint Grid'], ['sprint', 'Sprint'], ['sresults', 'Sprint Result'], ['quali', 'Qualifying'], ['grid', 'Grid'], ['race', 'Race'], ['results', 'Results']]
     : [['fp', 'Practice'], ['quali', 'Qualifying'], ['grid', 'Grid'], ['race', 'Race'], ['results', 'Results']];
@@ -368,49 +368,169 @@ function startWeekend() {
 }
 function myEntries() { return G.player ? WK.entries.filter(e => e.t.id === G.player) : []; }
 function isMine(e) { return G.player ? e.t.id === G.player : e.d.id === G.follow; }
+function weekendSchedule() {
+  // [label, day, stages it covers]
+  return WK.sprint
+    ? [['Practice', 'FRI', ['fp']], ['Sprint Qualifying', 'FRI', ['squali']], ['Sprint', 'SAT', ['sgrid', 'sprint', 'sresults']], ['Qualifying', 'SAT', ['quali']], ['Grand Prix', 'SUN', ['grid', 'race', 'results']]]
+    : [['Practice', 'FRI', ['fp']], ['Qualifying', 'SAT', ['quali']], ['Grand Prix', 'SUN', ['grid', 'race', 'results']]];
+}
 function viewWeekend() {
   const t = WK.track;
-  const idx = WK.stages.findIndex(s => s[0] === WK.stage);
-  const live = WK.stage === 'race' || WK.stage === 'sprint';
-  const head = `<div class="row"><div class="sp"><h2 style="margin:0">${flag(t.cc)} ${esc(t.short)} Grand Prix ${G.year}${WK.sprint ? ' <span class="pill" style="background:#f5c518;color:#000">⚡ SPRINT</span>' : ''}</h2><div class="mut small">${esc(t.name)} · Round ${G.round + 1} · ${t.laps} laps${WK.sprint ? ` · Sprint ${sprintLaps(t)} laps` : ''}</div></div>${live ? '' : trackSVG(t, 60)}</div>
-  <div class="steps">${WK.stages.map((s, i) => `<span class="${i === idx ? 'on' : i < idx ? 'done' : ''}">${i < idx ? '✓ ' : ''}${s[1]}</span>`).join('')}</div>
-  ${!live && !['results', 'sresults'].includes(WK.stage) ? `<div class="row" style="margin:-4px 0 10px"><span class="sp"></span><button class="sm" data-a="autorace">⏩ Skip to the ${WK.sprint && !WK.sprintRows ? 'Sprint' : 'race'}</button></div>` : ''}`;
+  const live = WK.stage === 'race' || WK.stage === 'sprint' || ((WK.stage === 'quali' || WK.stage === 'squali') && curQS().live && !curQS().live.done);
+  const sched = weekendSchedule();
+  const curIdx = sched.findIndex(s => s[2].includes(WK.stage));
+  const wtxt = WK.weather.start > 0.6 || WK.weather.quali > 0.6 ? '🌧️ Wet' : (WK.weather.start > 0 || WK.weather.plan.length || WK.weather.quali > 0.25) ? '🌦️ Changeable' : '☀️ Dry';
+  const head = `<div class="wkhead">
+    <div class="sp"><div class="wk-round">ROUND ${WK.round + 1} · ${G.year}${WK.sprint ? ' · <span class="sprint-tag">⚡ SPRINT WEEKEND</span>' : ''}</div>
+    <div class="wk-title">${flag(t.cc)} ${esc(t.short)} Grand Prix</div>
+    <div class="wk-sub">${esc(t.name)} · ${t.km.toFixed(3)} km · ${t.laps} laps · ${(t.km * t.laps).toFixed(1)} km${WK.sprint ? ` · Sprint ${sprintLaps(t)} laps` : ''}</div>
+    <div class="row" style="margin-top:6px;gap:5px"><span class="chip">${wtxt}</span><span class="chip">Overtaking ${lvl(t.ot)}</span><span class="chip">Tyre wear ${lvl(t.wear)}</span></div></div>
+    ${live ? '' : `<div class="wk-map">${trackSVG(t, 92)}</div>`}</div>
+  <div class="sched">${sched.map(([lab, day, st], i) => `<div class="sess ${i === curIdx ? 'live' : i < curIdx ? 'done' : ''}"><span class="day">${day}</span><b>${lab}</b><span class="st">${i < curIdx ? '✓ Done' : i === curIdx ? (live ? '● LIVE' : 'Now') : ''}</span></div>`).join('')}</div>
+  ${!live && !['results', 'sresults'].includes(WK.stage) ? `<div class="row" style="margin:-2px 0 10px"><span class="sp"></span><button class="sm" data-a="autorace">⏩ Skip to the ${WK.sprint && !WK.sprintRows ? 'Sprint' : 'race'}</button></div>` : ''}`;
   return head + ({ fp: wkPractice, squali: () => wkQuali('SQ'), sgrid: () => wkGrid(true), sprint: wkRace, sresults: wkSprintResults, quali: () => wkQuali('Q'), grid: () => wkGrid(false), race: wkRace, results: wkResults })[WK.stage]();
+}
+function timingTable(rows, opts = {}) {
+  // rows: [{e, t, extra}]
+  const lead = rows.find(r => r.t != null);
+  return `<div class="tt">${rows.map((r, i) => `<div class="ttr ${isMine(r.e) ? 'me' : ''} ${opts.cutAt === i ? 'cut' : ''} ${opts.cutAt != null && i >= opts.cutAt ? 'elim' : ''}">
+    <span class="p">${i + 1}</span><span class="tc" style="background:${r.e.t.color}"></span><span class="cd">${esc(r.e.d.code)}</span><span class="nm">${esc(r.e.d.name)}<small>${esc(r.e.t.name)}</small></span>
+    <span class="tm">${r.crash ? '<span class="bad">NO TIME</span>' : r.t != null ? fmtTime(r.t) : '—'}</span><span class="gp">${r.t != null && lead && r !== lead ? '+' + (r.t - lead.t).toFixed(3) : r.extra || ''}</span></div>`).join('')}</div>`;
 }
 function wkPractice() {
   const mine = myEntries();
   const last = WK.fp[WK.fp.length - 1];
   const progBtns = e => Object.entries(PROGRAMS).map(([k, p]) => `<button class="sm ${(WK.programs[e.d.id] || 'setup') === k ? 'on' : ''}" data-a="prog" data-d="${e.d.id}" data-v="${k}">${p.name}</button>`).join('');
   const done = WK.session > WK.sessions;
-  const nextLabel = WK.sprint ? 'Go to Sprint Qualifying →' : 'Go to qualifying →';
-  return `<div class="grid g2"><div class="card hl"><h3>${done ? 'Practice complete' : (WK.sprint ? 'Free Practice (only session this weekend)' : 'Free Practice ' + WK.session)}</h3>
-  <div class="small" style="margin-bottom:8px">🌦️ Forecast: ${esc(WK.forecast)}${WK.weather.quali > 0.25 ? ' · Qualifying looks wet' : ''}</div>
+  const nextLabel = WK.sprint ? 'Go to Sprint Qualifying →' : 'Go to Qualifying →';
+  return `<div class="grid g2"><div class="card hl"><h3>${done ? 'Practice complete' : (WK.sprint ? 'Free Practice — the only practice session this weekend' : 'Free Practice ' + WK.session + ' of 3')}</h3>
+  <div class="small" style="margin-bottom:8px">🌦️ ${esc(WK.forecast)}${WK.weather.quali > 0.25 ? ' · Qualifying looks wet' : ''}</div>
   ${mine.map(e => `<div style="margin:10px 0"><b>${esc(e.d.name)}</b>${done ? '' : `<div class="row" style="margin:4px 0">${progBtns(e)}</div>`}
   ${statBar('Setup', e.setup * 100, 100, 0)}${statBar('Tyre know.', e.tyreKnow * 100, 100, 0, '#f5c518')}${statBar('Quali prep', e.qualiPrep * 100, 100, 0, '#4aa3ff')}</div>`).join('')}
-  ${G.spectator ? '<div class="small mut">Teams are fine-tuning their cars. Run the session to see the timesheet.</div>' : ''}
+  ${G.spectator ? '<div class="small mut">Teams are dialling in their set-ups. Run the session to see who looks quick.</div>' : ''}
   <div class="row" style="margin-top:8px">${done ? `<button class="pri" data-a="toquali">${nextLabel}</button>` : `<button class="pri" data-a="runfp">Run FP${WK.sprint ? '' : WK.session}</button>${WK.sessions > 1 ? '<button data-a="skipfp">Skip practice</button>' : ''}`}</div></div>
-  <div class="card"><h3>${last ? 'FP' + WK.fp.length + ' times' : 'Timesheet'}</h3>${last ? `<table>${last.map((r, i) => `<tr class="${isMine(r.e) ? 'me' : ''}"><td>${i + 1}</td><td>${tbar(r.e.t.id)}${r.e.d.code}</td><td>${fmtTime(r.t)}</td><td class="small mut">${i ? '+' + (r.t - last[0].t).toFixed(3) : ''}</td><td class="small mut">${r.laps} laps</td></tr>`).join('')}</table>` : `<div class="mut">${G.spectator ? 'Waiting for the session to start.' : 'Pick a run plan for each driver, then run the session.'}</div>`}</div></div>`;
+  <div class="card"><h3>${last ? 'FP' + WK.fp.length + ' classification' : 'Timesheet'}</h3>${last ? timingTable(last.map(r => ({ e: r.e, t: r.t, extra: r.laps + ' laps' }))) : `<div class="mut">${G.spectator ? 'Waiting for the session to start.' : 'Pick a run plan for each driver, then run the session.'}</div>`}</div></div>`;
 }
 function qCut(n) { return Math.round(n * 0.27); }
+function curQS() { return WK.stage === 'squali' ? WK.SQ : WK.Q; }
+function qualiInfo(key) {
+  const QS = WK[key], sprint = key === 'SQ';
+  const single = !sprint && G.rules && G.rules.quali === 'single';
+  const n = (QS.alive || WK.entries).length;
+  const stage = QS.stage;
+  const dur = single ? 3600 : sprint ? [720, 600, 480][stage - 1] : [1080, 900, 720][stage - 1];
+  const label = single ? 'Qualifying' : (sprint ? 'SQ' : 'Q') + stage;
+  const cut = single || stage >= 3 ? 0 : qCut(WK.entries.length);
+  return { QS, sprint, single, n, stage, dur, label, cut, runs: single ? 3 : stage === 3 ? 2 : 2 };
+}
 function wkQuali(key) {
-  const QS = WK[key], sprint = key === 'SQ', P = sprint ? 'SQ' : 'Q';
+  const I = qualiInfo(key), QS = I.QS;
+  if (QS.live && !QS.live.done) return wkQualiLive(I);
   const mine = myEntries();
   const last = QS.rounds[QS.rounds.length - 1];
   const alive = QS.alive || WK.entries;
   const myAlive = mine.filter(e => alive.includes(e));
   const riskBtns = e => [['safe', 'Safe'], ['normal', 'Normal'], ['all', 'All-out']].map(([k, v]) => `<button class="sm ${(WK.risks[e.d.id] || 'normal') === k ? 'on' : ''}" data-a="risk" data-d="${e.d.id}" data-v="${k}">${v}</button>`).join('');
   const done = QS.stage > 3;
-  const single = !sprint && G.rules && G.rules.quali === 'single';
-  let table = `<div class="mut">${G.spectator ? 'Three knockout sessions decide the grid.' : 'Choose how hard each driver pushes. All-out is faster on average but riskier.'}</div>`;
+  let card;
+  if (done) card = `<div class="card hl"><h3>${I.sprint ? 'Sprint Qualifying' : 'Qualifying'} complete</h3>
+    ${(() => { const p = (I.sprint ? WK.sgrid : WK.grid)[0]; return `<div class="big">🏁 Pole: ${esc(p.d.name)}</div><div class="mut">${esc(p.t.name)}</div>`; })()}
+    ${G.follow && !G.player ? (() => { const g = I.sprint ? WK.sgrid : WK.grid; const e = g.find(x => x.d.id === G.follow); return e ? `<div style="margin-top:6px">⭐ ${esc(e.d.name)} starts P${g.indexOf(e) + 1}</div>` : ''; })() : ''}
+    ${mine.map(e => { const g = I.sprint ? WK.sgrid : WK.grid; return `<div style="margin-top:4px"><b>P${g.indexOf(e) + 1}</b> ${esc(e.d.name)}</div>`; }).join('')}
+    <button class="pri" style="margin-top:10px" data-a="togrid">See the ${I.sprint ? 'Sprint ' : ''}starting grid →</button></div>`;
+  else card = `<div class="card hl"><h3>${I.single ? 'Qualifying · one session (' + G.year + ' format)' : I.label + ' · ' + Math.round(I.dur / 60) + ' minutes'}</h3>
+    <div class="small">${I.n} cars${I.cut ? ` · the slowest ${I.cut} are knocked out` : I.single ? ' · fastest lap takes pole' : ' · the top 10 shoot-out for pole'}</div>
+    ${WK.weather.quali > 0.25 ? '<div class="small warn" style="margin-top:4px">🌧️ Wet session</div>' : ''}
+    ${G.spectator ? '' : myAlive.length ? myAlive.map(e => `<div style="margin:8px 0"><b>${esc(e.d.name)}</b><div class="row" style="margin-top:4px">${riskBtns(e)}</div></div>`).join('') : '<div class="mut" style="margin-top:6px">Both your drivers are out — watch the rest or skip it.</div>'}
+    <div class="row" style="margin-top:10px"><button class="pri" data-a="qlive">▶ Watch ${I.label} live</button><button data-a="runq">⏭ Skip to the result</button></div></div>`;
+  let table = `<div class="mut">${G.spectator ? 'Knockout qualifying decides the grid. Watch every flying lap live.' : 'Choose how hard each driver pushes. All-out is faster on average but riskier.'}</div>`;
   if (last) {
-    const cutAt = !single && last.stage < 3 ? last.res.length - qCut(WK.entries.length) : 99;
-    table = `<table>${last.res.map((r, i) => `<tr class="${isMine(r.e) ? 'me' : ''}" ${i === cutAt ? 'style="border-top:2px solid #e10600"' : ''}><td>${i + 1}</td><td>${tbar(r.e.t.id)}${esc(r.e.d.name)}</td><td>${r.crash ? '<span class="bad">CRASH</span>' : fmtTime(r.t)}</td><td class="small mut">${i && r.t ? '+' + (r.t - last.res[0].t).toFixed(3) : ''}</td></tr>`).join('')}</table>`;
+    const cutAt = !I.single && last.stage < 3 && !(I.sprint && false) ? last.res.length - qCut(WK.entries.length) : null;
+    table = timingTable(last.res, { cutAt });
   }
-  return `<div class="grid g2"><div class="card hl"><h3>${done ? (sprint ? 'Sprint Qualifying complete' : 'Qualifying complete') : single ? 'Qualifying (single session, ' + G.year + ' format)' : P + QS.stage}</h3>
-  ${WK.weather.quali > 0.25 ? '<div class="small warn">🌧️ Wet session</div>' : ''}
-  ${done || G.spectator ? '' : myAlive.length ? myAlive.map(e => `<div style="margin:8px 0"><b>${esc(e.d.name)}</b><div class="row" style="margin-top:4px">${riskBtns(e)}</div></div>`).join('') : '<div class="mut">Both your drivers are out — simulate the rest.</div>'}
-  <div class="row" style="margin-top:8px">${done ? `<button class="pri" data-a="togrid">See the ${sprint ? 'Sprint ' : ''}grid →</button>` : `<button class="pri" data-a="runq">Run ${single ? 'qualifying' : P + QS.stage}</button>`}</div></div>
-  <div class="card"><h3>${last ? (single ? 'Qualifying classification' : P + last.stage + ' classification') : 'Timesheet'}</h3>${table}</div></div>`;
+  return `<div class="grid g2">${card}<div class="card"><h3>${last ? (I.single ? 'Qualifying classification' : (I.sprint ? 'SQ' : 'Q') + last.stage + ' classification') : 'Timesheet'}</h3>${table}</div></div>`;
+}
+function wkQualiLive(I) {
+  return `<div id="rbanner"></div>
+  <div class="racewrap"><div><div class="cvbox"><canvas id="cv"></canvas><div class="hud" id="hud"></div></div>
+  <div class="row" style="margin:8px 0">${speedButtons()}<span class="sp"></span><button class="sm" data-a="qskip">Skip to end ⏭</button></div>
+  <div class="card"><h3>Session feed</h3><div class="feed" id="feed"></div></div>
+  <div class="small mut" style="margin-top:6px">Tap a driver in the timing tower to follow them; tap again to stop.</div></div>
+  <div class="tower" id="tower"></div></div>`;
+}
+function speedButtons() { return [['pause', '❚❚ Pause'], [4, '4×'], [16, '16×'], [64, '64×'], [256, '256×']].map(([v, l]) => `<button class="sm spd ${(v === 'pause' ? PAUSED : (!PAUSED && SPEED === v)) ? 'on' : ''}" data-a="spd" data-v="${v}">${l}</button>`).join(''); }
+function startQualiLoop() {
+  const QS = curQS(), Q = QS.live; if (!Q) return;
+  lastTs = performance.now(); lastUi = 0; sizeCanvas(); updateQualiUI();
+  const loop = ts => {
+    const dtReal = Math.min(0.1, (ts - lastTs) / 1000); lastTs = ts;
+    if (!PAUSED && !Q.done) { let simT = dtReal * SPEED; while (simT > 0 && !Q.done) { Q.step(Math.min(0.25, simT)); simT -= 0.25; } }
+    drawQuali(Q);
+    if (ts - lastUi > 200) { updateQualiUI(); lastUi = ts; }
+    if (Q.done) { finishQualiLive(); return; }
+    raf = requestAnimationFrame(loop);
+  };
+  raf = requestAnimationFrame(loop);
+}
+function finishQualiLive() {
+  cancelAnimationFrame(raf);
+  const QS = curQS(); const res = QS.live.result; QS.live = null; PAUSED = false;
+  applyQualiStage(QS, res); autosave(); render(); window.scrollTo(0, 0);
+}
+function applyQualiStage(QS, res) {
+  QS.rounds.push({ stage: QS.stage, res });
+  const sq = WK.stage === 'squali';
+  if (!sq && G.rules && G.rules.quali === 'single') { QS.top = res; QS.stage = 4; WK.grid = res.map(r => r.e); return; }
+  const cut = qCut(WK.entries.length);
+  if (QS.stage === 1) { QS.out1 = res.slice(-cut); QS.alive = res.slice(0, res.length - cut).map(r => r.e); }
+  else if (QS.stage === 2) { QS.out2 = res.slice(-cut); QS.alive = res.slice(0, res.length - cut).map(r => r.e); }
+  else QS.top = res;
+  QS.stage++;
+  if (QS.stage > 3) { const grid = QS.top.map(r => r.e).concat(QS.out2.map(r => r.e), QS.out1.map(r => r.e)); if (sq) WK.sgrid = grid; else WK.grid = grid; }
+}
+function fmtClock(s) { s = Math.max(0, Math.ceil(s)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
+function updateQualiUI() {
+  const QS = curQS(), Q = QS.live; if (!Q) return;
+  const hud = document.getElementById('hud');
+  if (hud) hud.innerHTML = `<span class="chip"><b>${esc(Q.label)}</b></span><span class="chip">⏱ ${fmtClock(Q.clock())}</span>${Q.chequered ? '<span class="flag chq">🏁 CHEQUERED</span>' : '<span class="flag green">GREEN</span>'}${Q.wet > 0.25 ? '<span class="chip">🌧️ Wet</span>' : ''}`;
+  const ord = Q.order(); const lead = ord[0] && ord[0].best != null ? ord[0] : null;
+  const cutAt = Q.cut ? ord.length - Q.cut : null;
+  const st = c => c.out ? '<span class="bad">OUT</span>' : c.phase === 'flying' ? '<span class="qfly">FLYING LAP</span>' : c.phase === 'out' ? 'OUT LAP' : c.phase === 'in' ? 'IN LAP' : 'PIT';
+  renderQualiTower(Q, ord, cutAt, lead);
+  const feed = document.getElementById('feed');
+  if (feed) feed.innerHTML = Q.log.slice(0, 25).map(l => `<div><span class="mut">${fmtClock(Q.dur - l.t)}</span> ${esc(l.s)}</div>`).join('');
+}
+function drawTrackBase(ctx, w, h, track, opts = {}) {
+  const g = trackGeometry(track); const pad = 30; const s = Math.min(w, h) - pad * 2; const ox = (w - s) / 2, oy = (h - s) / 2 + 8;
+  const X = p => ox + p[0] * s, Y = p => oy + p[1] * s;
+  if (opts.wet > 0.05) { ctx.fillStyle = `rgba(40,90,160,${opts.wet * 0.18})`; ctx.fillRect(0, 0, w, h); }
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  ctx.beginPath(); g.P.forEach((p, i) => i ? ctx.lineTo(X(p), Y(p)) : ctx.moveTo(X(p), Y(p))); ctx.closePath();
+  ctx.strokeStyle = '#2b3242'; ctx.lineWidth = 14; ctx.stroke();
+  ctx.strokeStyle = opts.yellow ? '#6b5a12' : opts.red ? '#7a1d1d' : '#4a5468'; ctx.lineWidth = 2; ctx.stroke();
+  const s0 = pointAt(g, 0); ctx.save(); ctx.translate(X(s0), Y(s0)); ctx.rotate(s0[2] + Math.PI / 2);
+  for (let k = -4; k < 4; k++) { ctx.fillStyle = k % 2 ? '#fff' : '#111'; ctx.fillRect(k * 2.5, -2.5, 2.5, 2.5); ctx.fillStyle = k % 2 ? '#111' : '#fff'; ctx.fillRect(k * 2.5, 0, 2.5, 2.5); }
+  ctx.restore();
+  return { g, X, Y };
+}
+function drawCar(ctx, x, y, c, label, dim) {
+  const hi = c.player || c.fav; const r = hi ? 7 : 5;
+  ctx.globalAlpha = dim ? 0.5 : 1;
+  ctx.beginPath(); ctx.arc(x, y, r, 0, 6.283); ctx.fillStyle = c.t.color; ctx.fill();
+  if (hi) { ctx.lineWidth = 2; ctx.strokeStyle = c.fav && !c.player ? '#ffd400' : '#fff'; ctx.stroke(); ctx.font = 'bold 11px Titillium Web, sans-serif'; ctx.fillStyle = '#fff'; ctx.fillText(c.d.code, x + 9, y - 7); }
+  else if (label) { ctx.font = '10px Titillium Web, sans-serif'; ctx.fillStyle = '#bbb'; ctx.fillText(c.d.code, x + 7, y - 5); }
+  ctx.globalAlpha = 1;
+}
+function drawQuali(Q) {
+  const cv = document.getElementById('cv'); if (!cv) return;
+  const ctx = cv.getContext('2d'); const { _w: w, _h: h, _dpr: dpr } = cv;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, w, h);
+  const { g, X, Y } = drawTrackBase(ctx, w, h, Q.track, { wet: Q.wet });
+  Q.cars.forEach(c => {
+    if (c.out || c.phase === 'garage' || c.phase === 'crashed') return;
+    const p = pointAt(g, c.frac); let x = X(p), y = Y(p);
+    drawCar(ctx, x, y, c, c.phase === 'flying', c.phase !== 'flying');
+  });
 }
 function wkGrid(sprint) {
   const grid = sprint ? WK.sgrid : WK.grid;
@@ -418,23 +538,31 @@ function wkGrid(sprint) {
   const mine = myEntries(); const dry = W.start <= 0.22;
   const left = G.spectator ? `<div class="card hl"><h3>${sprint ? 'Sprint' : 'Race'} preview</h3><div class="small" style="margin-bottom:6px">🌦️ ${esc(sprint ? forecastText(W, { rain: 0 }) : WK.forecast)}</div>
     ${G.follow ? (() => { const e = grid.find(x => x.d.id === G.follow); return e ? `<div>⭐ ${esc(e.d.name)} starts <b>P${grid.indexOf(e) + 1}</b></div>` : ''; })() : ''}
-    <div class="small mut" style="margin-top:6px">${sprint ? `${sprintLaps(WK.track)} laps, no mandatory pit stop. Points for the top 8.` : 'Each car must use two different dry compounds in a dry race.'}</div>
-    <button class="pri" style="margin-top:10px" data-a="startrace">Lights out →</button></div>`
+    <div class="small mut" style="margin-top:6px">${sprint ? `${sprintLaps(WK.track)} laps, no mandatory pit stop. Points for the top 8.` : `${WK.track.laps} laps.${G.rules && !G.rules.twoCompound ? '' : ' Each car must use two different dry compounds in a dry race.'}`}</div>
+    <button class="pri" style="margin-top:10px" data-a="startrace">Cars to the grid →</button></div>`
     : `<div class="card hl"><h3>${sprint ? 'Sprint' : 'Race'} strategy</h3><div class="small" style="margin-bottom:6px">🌦️ ${esc(sprint ? forecastText(W, { rain: 0 }) : WK.forecast)}</div>
   ${mine.map(e => `<div style="margin:8px 0"><b>P${grid.indexOf(e) + 1} ${esc(e.d.name)}</b>
-  ${dry ? `<div class="row" style="margin-top:4px">Start on ${['S', 'M', 'H'].map(c => `<button class="sm ${((sprint ? e.sStartTyre : e.startTyre) || 'M') === c ? 'on' : ''}" data-a="stt" data-d="${e.d.id}" data-v="${c}">${TYRES[c].name}</button>`).join('')}</div>` : '<div class="small mut">Wet start — the team will fit wet-weather tyres.</div>'}
+  ${dry ? `<div class="row" style="margin-top:4px">Start on ${['S', 'M', 'H'].map(c => `<button class="sm ${((sprint ? e.sStartTyre : e.startTyre) || 'M') === c ? 'on' : ''}" data-a="stt" data-d="${e.d.id}" data-v="${c}">${tyreB(c)} ${TYRES[c].name}</button>`).join('')}</div>` : '<div class="small mut">Wet start — the team will fit wet-weather tyres.</div>'}
   <label class="row small" style="margin-top:4px"><input type="checkbox" data-a="autostrat" data-d="${e.d.id}" ${e.auto !== false ? 'checked' : ''}> Auto pit strategy (you can still call stops)</label></div>`).join('')}
-  <div class="small mut">${sprint ? `Sprint: ${sprintLaps(WK.track)} laps, no mandatory stop, points for the top 8 (8-7-6-5-4-3-2-1).` : 'Dry races: each car must use two different dry compounds (or get +30s).'}</div>
-  <button class="pri" style="margin-top:10px" data-a="startrace">Lights out →</button></div>`;
-  return `<div class="grid g2">${left}
-  <div class="card"><h3>${sprint ? 'Sprint grid' : 'Starting grid'}</h3><table>${grid.map((e, i) => `<tr class="${isMine(e) ? 'me' : ''}"><td>${i + 1}</td><td>${tbar(e.t.id)}${esc(e.d.name)}</td><td class="small mut">${esc(e.t.name)}</td></tr>`).join('')}</table></div></div>`;
+  <div class="small mut">${sprint ? `Sprint: ${sprintLaps(WK.track)} laps, no mandatory stop, points for the top 8.` : G.rules && !G.rules.twoCompound ? `${WK.track.laps} laps.` : 'Dry races: each car must use two different dry compounds (or get +30s).'}</div>
+  <button class="pri" style="margin-top:10px" data-a="startrace">Cars to the grid →</button></div>`;
+  return `<div class="grid g2">${left}<div class="card" style="padding:10px">${gridGraphic(grid, sprint)}</div></div>`;
 }
+function gridGraphic(grid, sprint) {
+  const t = WK.track;
+  const tyreOf = e => { const W = sprint ? WK.sweather : WK.weather; if (W.start > 0.62) return 'W'; if (W.start > 0.22) return 'I'; return (sprint ? e.sStartTyre : e.startTyre) || (isMine(e) && G.player ? 'M' : null); };
+  const slot = (e, i) => { if (!e) return '<div class="gslot empty"></div>'; const ty = tyreOf(e);
+    return `<div class="gslot ${isMine(e) ? 'me' : ''}" style="--tc:${e.t.color}"><div class="gpos">${i + 1}</div><div class="gcar"><span class="gstripe"></span><div class="gtxt"><b>${esc(e.d.code)}</b><span>${esc(e.d.name.split(' ').slice(-1)[0])}</span><small>${esc(e.t.name)}</small></div>${ty ? tyreB(ty) : ''}</div></div>`; };
+  const rows = []; for (let i = 0; i < grid.length; i += 2) rows.push(`<div class="grow">${slot(grid[i], i)}${slot(grid[i + 1], i + 1)}</div>`);
+  return `<div class="ggfx"><div class="ghead"><span>${sprint ? 'SPRINT' : 'STARTING'} GRID</span><small>${flag(t.cc)} ${esc(t.short)} ${G.year}</small></div><div class="gline"></div>${rows.join('')}</div>`;
+}
+
 function wkSprintResults() {
   const rows = WK.sprintRows; const lead = rows[0];
-  return `<div class="grid g2"><div class="card hl"><h3>Sprint result</h3><div class="big">🏆 ${esc(lead.name)}</div><div class="mut">${esc(G.teams[lead.team].name)}</div>
+  return `${classificationView(rows, { event: `${WK.track.short} Grand Prix ${G.year} · Sprint`.toUpperCase(), title: 'SPRINT CLASSIFICATION', page: WK.clsPage })}<div class="grid g2" style="margin-top:12px"><div class="card hl"><h3>Sprint result</h3><div class="big">🏆 ${esc(lead.name)}</div><div class="mut">${esc(G.teams[lead.team].name)}</div>
   ${rows.filter(r => G.player ? r.team === G.player : r.id === G.follow).map(r => `<div style="margin-top:6px"><b>${r.out ? 'DNF' : 'P' + r.pos}</b> ${esc(r.name)} · from P${r.grid}${r.pts ? ' · +' + r.pts + ' pts' : ''}</div>`).join('')}
   <button class="pri" style="margin-top:12px" data-a="toquali">On to Grand Prix qualifying →</button></div>
-  <div class="card"><h3>Sprint classification</h3>${resultTable(rows)}</div></div>`;
+  </div>`;
 }
 function resultTable(rows) {
   const lead = rows[0];
@@ -442,23 +570,117 @@ function resultTable(rows) {
   <td class="small">${r.out ? esc(r.out) : r.pos === 1 ? fmtTime(r.time) : r.laps < lead.laps ? '+' + (lead.laps - r.laps) + ' lap' + (lead.laps - r.laps > 1 ? 's' : '') : '+' + (r.time - lead.time).toFixed(3)}</td><td class="small mut">${r.grid}</td><td class="small mut">${r.stops}</td><td style="text-align:right">${r.pts || ''}</td></tr>`).join('')}</table>`;
 }
 
+// ---------- Broadcast-style timing tower ----------
+const TW = { prev: 'green', greenUntil: 0, fl: null, flKey: null };
+const TYRE_LETTER = { S: ['S', '#ff3b3b'], M: ['M', '#ffd400'], H: ['H', '#f2f2f2'], I: ['I', '#39d353'], W: ['W', '#3b8cff'] };
+function twTyre(t) { const [l, c] = TYRE_LETTER[t] || ['', '#888']; return `<span class="tw-ty" style="color:${c}">${l}</span>`; }
+function twHead(title, sub) { return `<div class="tw-head"><span class="tw-mark"><i></i><i></i></span><span class="tw-title">${title}</span></div><div class="tw-lap">${sub}</div>`; }
+function twRow(i, c, right, extra = {}) {
+  return `<div class="tw-row ${c.player || c.fav ? 'me' : ''} ${extra.cls || ''}" data-a="follow" data-v="${c.d.id}"><span class="tw-pos">${i + 1}</span><span class="tw-team" style="background:${c.t.color}"></span><span class="tw-code">${c.fav ? '★' : ''}${esc(c.d.code)}</span><span class="tw-gap ${extra.gapCls || ''}">${right}</span>${extra.tyre || '<span class="tw-ty"></span>'}</div>`;
+}
+function surnameUpper(name) { const p = name.split(' '); return { first: p.slice(0, -1).join(' '), last: p[p.length - 1].toUpperCase() }; }
+function renderRaceTower(ord, leader) {
+  const tower = document.getElementById('tower'); if (!tower) return;
+  const now = performance.now();
+  const flagNow = !RACE.started ? 'formation' : RACE.chequered ? 'chq' : RACE.sc ? 'sc' : RACE.vsc ? 'vsc' : 'green';
+  if ((TW.prev === 'sc' || TW.prev === 'vsc') && flagNow === 'green') TW.greenUntil = now + 6000;
+  TW.prev = flagNow;
+  if (RACE.fastest && RACE.started) { const key = RACE.fastest.c.d.id + RACE.fastest.t.toFixed(3); if (key !== TW.flKey) { TW.flKey = key; if (leader.laps >= 3) TW.fl = { c: RACE.fastest.c, t: RACE.fastest.t, lap: RACE.fastest.c.laps, until: now + 7000 }; } }
+  let state = 'normal', banner = '';
+  if (flagNow === 'formation') { banner = '<div class="tw-ban grey">FORMATION LAP</div>'; }
+  else if (flagNow === 'sc') { state = 'sc'; banner = `<div class="tw-ban yellow"><span class="tw-badge">SC</span>SAFETY CAR</div>${RACE.scLapsLeft <= 1 ? '<div class="tw-sub yellowtxt">ENDING</div>' : ''}`; }
+  else if (flagNow === 'vsc') { state = 'sc'; banner = `<div class="tw-ban yellow"><span class="tw-badge">VSC</span>VIRTUAL SAFETY CAR</div>${RACE.vsc < 20 ? '<div class="tw-sub yellowtxt">ENDING</div>' : ''}`; }
+  else if (flagNow === 'chq') { state = 'win'; }
+  else if (now < TW.greenUntil) { state = 'green'; banner = '<div class="tw-ban green">GREEN FLAG</div><div class="tw-sub greentxt">TRACK CLEAR</div>'; }
+  const gaps = ord.map(c => c.out ? null : gapSeconds(c, leader));
+  const lapNo = Math.min(RACE.laps, leader.laps + (leader.finished ? 0 : 1));
+  let html = twHead(RACE.sprint ? 'SPRINT' : 'RACE', `LAP <b>${lapNo}</b>/${RACE.laps}`) + banner;
+  const fl = TW.fl && now < TW.fl.until && !RACE.chequered ? TW.fl : null;
+  ord.forEach((c, i) => {
+    let gap, gcls = '';
+    if (c.out) { gap = 'OUT'; gcls = 'dim'; }
+    else if (i === 0) { gap = 'LEADER'; gcls = 'it'; }
+    else if (c.pitT > 0) { gap = 'PIT'; gcls = 'pit'; }
+    else {
+      const lapped = leader.dist - c.dist > RACE.L && leader.laps - c.laps >= 1;
+      if (GAPMODE === 'leader') gap = lapped ? '+' + Math.floor((leader.dist - c.dist) / RACE.L) + ' LAP' : '+' + gaps[i].toFixed(3);
+      else { const p = ord[i - 1]; gap = (p.dist - c.dist > RACE.L) ? '+1 LAP' : p.finished ? '+' + Math.max(0, gaps[i] - (gaps[i - 1] || 0)).toFixed(3) : '+' + Math.max(0.1, (p.dist - c.dist) / (RACE.L / c.curLT)).toFixed(3); }
+    }
+    html += twRow(i, c, gap, { cls: c.out ? 'out' : '', gapCls: gcls, tyre: c.out ? '' : twTyre(c.tyre) });
+    if (state === 'win' && i === 0 && c.finished) {
+      const n = surnameUpper(c.d.name);
+      html += `<div class="tw-card" style="--tc:${c.t.color}"><div class="tw-cardname"><span class="tw-num">${c.d.num || ''}</span><span>${esc(n.first)}<b>${esc(n.last)}</b></span></div><div class="tw-bignum">${c.d.num || esc(c.d.code)}</div><div class="tw-winner">WINNER</div></div>`;
+    }
+    if (fl && fl.c === c && !(state === 'win')) {
+      const n = surnameUpper(c.d.name);
+      html += `<div class="tw-card fl" style="--tc:${c.t.color}"><div class="tw-cardname"><span class="tw-num">${i + 1}</span><span>${esc(n.first)}<b>${esc(n.last)}</b></span></div><div class="tw-fltitle">FASTEST LAP</div><div class="tw-fltime">${fmtTime(fl.t)}</div><div class="tw-fllap">LAP ${fl.lap}</div></div>`;
+    }
+  });
+  html += `<div class="tw-foot"><button class="${GAPMODE === 'leader' ? 'on' : ''}" data-a="gapmode" data-v="leader">LEADER</button><button class="${GAPMODE === 'int' ? 'on' : ''}" data-a="gapmode" data-v="int">INTERVAL</button></div>`;
+  tower.className = 'tower f1t st-' + state;
+  tower.innerHTML = html;
+}
+function renderQualiTower(Q, ord, cutAt, lead) {
+  const tower = document.getElementById('tower'); if (!tower) return;
+  const title = /^SQ/.test(Q.label) ? 'SPRINT QUALI' : 'QUALIFYING';
+  let html = twHead(title, `<b>${esc(Q.label)}</b> · ${fmtClock(Q.clock())}`) + (Q.chequered ? '<div class="tw-ban chq">CHEQUERED FLAG</div>' : '');
+  ord.forEach((c, i) => {
+    const purple = Q.best && Q.best.c === c, green = !purple && Q.t - c.pbT < 25;
+    const right = c.best != null ? (i === 0 ? fmtTime(c.best) : '+' + (c.best - lead.best).toFixed(3)) : c.out ? 'OUT' : c.phase === 'flying' ? 'FLYING' : c.phase === 'out' ? 'OUT LAP' : c.phase === 'in' ? 'IN LAP' : 'PIT';
+    const status = c.out ? '' : c.phase === 'flying' ? '<span class="tw-ty" style="color:#b46bff">●</span>' : '<span class="tw-ty"></span>';
+    html += twRow(i, c, right, { cls: (cutAt != null && i >= cutAt ? 'elim ' : '') + (cutAt === i ? 'cut ' : '') + (c.out ? 'out' : ''), gapCls: purple ? 'purple' : green ? 'greentxt' : c.best == null ? 'dim' : '', tyre: status });
+  });
+  tower.className = 'tower f1t st-normal';
+  tower.innerHTML = html;
+}
+
+// ---------- Classification screen ----------
+function teamDisplayName(tid) {
+  const t = G.teams[tid]; if (!t) return '';
+  const e = G.engines[t.engine] ? G.engines[t.engine].name : '';
+  if (!e || e === t.name) return t.name.toUpperCase();
+  if (e.toLowerCase().startsWith(t.name.toLowerCase())) return e.toUpperCase();
+  return (t.name + ' ' + e).toUpperCase();
+}
+function classificationView(rows, opts) {
+  const per = 10, pages = Math.ceil(rows.length / per), page = clamp(opts.page || 0, 0, pages - 1);
+  const lead = rows[0];
+  const slice = rows.slice(page * per, page * per + per);
+  const timeOf = r => r.out ? 'DNF' : r.pos === 1 ? fmtTime(r.time) : r.laps < lead.laps ? '+' + (lead.laps - r.laps) + ' LAP' + (lead.laps - r.laps > 1 ? 'S' : '') : '+' + (r.time - lead.time).toFixed(3);
+  return `<div class="cls">
+    <div class="cls-event">${esc(opts.event)}</div>
+    <div class="cls-title">${opts.title || 'CLASSIFICATION'}</div>
+    <div class="cls-row cls-cols"><span></span><span></span><span></span><span class="cls-team"></span><span class="cls-time">TIME</span><span class="cls-pts">POINTS</span></div>
+    ${slice.map(r => { const d = G.drivers[r.id]; const n = surnameUpper(r.name); const mine = G.player ? r.team === G.player : r.id === G.follow;
+      return `<div class="cls-row ${r.pos === 1 ? 'first' : ''} ${mine ? 'me' : ''} ${r.out ? 'dnf' : ''}"><span class="cls-pos">${r.pos}</span><span class="cls-flag">${d ? flag(d.nat) : ''}</span>
+      <span class="cls-name">${esc(n.first)} <b>${esc(n.last)}</b><small class="cls-tm"><i style="background:${teamCol(r.team)}"></i>${esc(teamDisplayName(r.team))}</small></span><span class="cls-team"><i style="background:${teamCol(r.team)}"></i>${esc(teamDisplayName(r.team))}</span>
+      <span class="cls-time">${timeOf(r)}</span><span class="cls-pts">${r.pts ? '+' + r.pts : ''}</span></div>`; }).join('')}
+    ${pages > 1 ? `<div class="cls-pages">${Array.from({ length: pages }, (_, k) => `<button class="${k === page ? 'on' : ''}" data-a="clspage" data-v="${k}">${k * per + 1}–${Math.min(rows.length, k * per + per)}</button>`).join('')}</div>` : ''}
+    ${opts.footer ? `<div class="cls-foot">${opts.footer}</div>` : ''}
+  </div>`;
+}
+
 // ---------- Race view ----------
-let SPEED = 16, PAUSED = false, lastTs = 0, lastUi = 0, raceBanner = '';
+let SPEED = 16, PAUSED = false, lastTs = 0, lastUi = 0, raceBanner = '', LIGHTS = null, GAPMODE = 'leader';
 function wkRace() {
+  const started = RACE && RACE.started;
   return `${raceBanner ? `<div class="banner" id="rbanner">${esc(raceBanner)}</div>` : '<div id="rbanner"></div>'}
-  <div class="racewrap"><div><div class="cvbox"><canvas id="cv"></canvas><div class="hud" id="hud"></div></div>
-  <div class="row" style="margin:8px 0">${[['pause', '❚❚ Pause'], [4, '4×'], [16, '16×'], [64, '64×'], [256, '256×']].map(([v, l]) => `<button class="sm spd ${(v === 'pause' ? PAUSED : (!PAUSED && SPEED === v)) ? 'on' : ''}" data-a="spd" data-v="${v}">${l}</button>`).join('')}
-  <span class="sp"></span><button class="sm" data-a="simend">Sim to finish ⏭</button></div>
+  <div class="racewrap"><div><div class="cvbox"><canvas id="cv"></canvas><div class="hud" id="hud"></div>
+  <div class="gantry ${started && !(LIGHTS && LIGHTS.phase === 'out') ? 'gone' : ''}" id="gantry">${[0, 1, 2, 3, 4].map(i => `<div class="glamp"><i></i><i></i></div>`).join('')}</div>
+  <div class="lomsg" id="lomsg"></div></div>
+  <div class="row" style="margin:8px 0" id="rctl">${started ? speedButtons() + '<span class="sp"></span><button class="sm" data-a="simend">Sim to finish ⏭</button>'
+    : `<button class="pri" style="flex:1;padding:12px" data-a="lights" id="lightsbtn">🔴 Start the lights</button>`}</div>
   <div id="ctrls" class="grid g2"></div>
   <div class="card" style="margin-top:10px"><h3>Race control</h3><div class="feed" id="feed"></div></div></div>
   <div class="tower" id="tower"></div></div>`;
 }
 function startRaceLoop() {
   lastTs = performance.now(); lastUi = 0;
-  sizeCanvas(); buildCtrls(); updateRaceUI(true);
+  sizeCanvas(); buildCtrls(); updateRaceUI(true); updateGantry();
   const loop = ts => {
     const dtReal = Math.min(0.1, (ts - lastTs) / 1000); lastTs = ts;
-    if (!PAUSED && !RACE.done) {
+    if (LIGHTS && LIGHTS.phase !== 'done') stepLights(ts);
+    if (RACE.started && !PAUSED && !RACE.done) {
       let simT = dtReal * SPEED; const step = 0.25;
       while (simT > 0 && !RACE.done) { RACE.step(Math.min(step, simT)); simT -= step; if (checkAutoPause()) break; }
     }
@@ -469,13 +691,31 @@ function startRaceLoop() {
   };
   raf = requestAnimationFrame(loop);
 }
+function stepLights(ts) {
+  const L = LIGHTS;
+  if (L.phase === 'on') {
+    const n = Math.min(5, Math.floor((ts - L.t0) / 1000) + 1);
+    if (n !== L.n) { L.n = n; updateGantry(); }
+    if (ts - L.t0 >= 4000 + L.hold) { L.phase = 'out'; L.tOut = ts; L.n = 0; updateGantry(); RACE.started = true; RACE.msg(`🟢 Lights out${RACE.sprint ? ' for the Sprint' : ''} at ${RACE.track.name}!`); RACE.events = [];
+      const m = document.getElementById('lomsg'); if (m) { m.textContent = 'LIGHTS OUT AND AWAY WE GO!'; m.classList.add('show'); }
+      const rc = document.getElementById('rctl'); if (rc) rc.innerHTML = speedButtons() + '<span class="sp"></span><button class="sm" data-a="simend">Sim to finish ⏭</button>';
+    }
+  } else if (L.phase === 'out' && ts - L.tOut > 2200) {
+    L.phase = 'done'; const gy = document.getElementById('gantry'); if (gy) gy.classList.add('gone'); const m = document.getElementById('lomsg'); if (m) m.classList.remove('show');
+  }
+}
+function updateGantry() {
+  const gy = document.getElementById('gantry'); if (!gy) return;
+  const n = LIGHTS ? LIGHTS.n : 0;
+  gy.querySelectorAll('.glamp').forEach((el, i) => el.classList.toggle('on', i < n));
+}
 function checkAutoPause() {
   if (!RACE.events.length) return false;
   const ev = RACE.events.splice(0);
   if (!G.autoPause) return false;
   const mine = myEntries().map(e => e.d.code); if (G.follow && G.drivers[G.follow]) mine.push(G.drivers[G.follow].code);
   const hit = ev.find(s => /SAFETY CAR|VIRTUAL|Rain is starting|stopped/.test(s) || mine.some(c => s.includes(c) && /❌|Puncture/.test(s)));
-  if (hit) { PAUSED = true; raceBanner = hit + ' — paused. Make your calls, then pick a speed.'; const b = document.getElementById('rbanner'); if (b) { b.className = 'banner'; b.textContent = raceBanner; } document.querySelectorAll('.spd').forEach(x => x.classList.toggle('on', x.dataset.v === 'pause')); return true; }
+  if (hit) { PAUSED = true; raceBanner = hit + ' — paused. Pick a speed to continue.'; const b = document.getElementById('rbanner'); if (b) { b.className = 'banner'; b.textContent = raceBanner; } document.querySelectorAll('.spd').forEach(x => x.classList.toggle('on', x.dataset.v === 'pause')); return true; }
   return false;
 }
 function sizeCanvas() {
@@ -483,57 +723,43 @@ function sizeCanvas() {
   const w = cv.parentElement.clientWidth; const h = Math.min(Math.round(w * 0.72), 560);
   const dpr = window.devicePixelRatio || 1; cv.width = w * dpr; cv.height = h * dpr; cv.style.height = h + 'px'; cv._w = w; cv._h = h; cv._dpr = dpr;
 }
-window.addEventListener('resize', () => { if (VIEW === 'weekend' && WK && WK.stage === 'race') sizeCanvas(); });
+window.addEventListener('resize', () => { if (VIEW === 'weekend' && WK && ['race', 'sprint', 'quali', 'squali'].includes(WK.stage)) sizeCanvas(); });
 function drawRace() {
   const cv = document.getElementById('cv'); if (!cv || !RACE) return;
   const ctx = cv.getContext('2d'); const { _w: w, _h: h, _dpr: dpr } = cv;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, w, h);
-  const g = trackGeometry(RACE.track); const pad = 30; const s = Math.min(w, h) - pad * 2; const ox = (w - s) / 2, oy = (h - s) / 2 + 8;
-  const X = p => ox + p[0] * s, Y = p => oy + p[1] * s;
-  // wet tint
-  if (RACE.wet > 0.05) { ctx.fillStyle = `rgba(40,90,160,${RACE.wet * 0.18})`; ctx.fillRect(0, 0, w, h); }
-  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
-  ctx.beginPath(); g.P.forEach((p, i) => i ? ctx.lineTo(X(p), Y(p)) : ctx.moveTo(X(p), Y(p))); ctx.closePath();
-  ctx.strokeStyle = '#2b3242'; ctx.lineWidth = 14; ctx.stroke();
-  ctx.strokeStyle = RACE.sc || RACE.vsc ? '#6b5a12' : '#4a5468'; ctx.lineWidth = 2; ctx.stroke();
-  // start line
-  const s0 = pointAt(g, 0); ctx.save(); ctx.translate(X(s0), Y(s0)); ctx.rotate(s0[2] + Math.PI / 2); ctx.fillStyle = '#fff'; ctx.fillRect(-9, -2, 18, 4); ctx.restore();
-  // cars (back to front)
-  const ord = RACE.order();
-  const L = RACE.L;
+  const { g, X, Y } = drawTrackBase(ctx, w, h, RACE.track, { wet: RACE.wet, yellow: RACE.sc || RACE.vsc });
+  const ord = RACE.order(); const L = RACE.L;
   for (let i = ord.length - 1; i >= 0; i--) {
     const c = ord[i]; if (c.out) continue;
-    let frac = c.finished ? 0.002 * i : (c.dist / L);
-    const p = pointAt(g, frac);
-    let x = X(p), y = Y(p);
+    let frac = c.finished ? 0.002 * i : (RACE.started ? c.dist : c.dist * 2.6) / L;
+    const p = pointAt(g, frac); let x = X(p), y = Y(p);
+    if (!RACE.started) { const n = p[2] + Math.PI / 2, side = (c.grid % 2 ? -1 : 1) * 5; x += Math.cos(n) * side; y += Math.sin(n) * side; }
     if (c.pitT > 0) { const n = p[2] + Math.PI / 2; x += Math.cos(n) * 16; y += Math.sin(n) * 16; }
-    const hi = c.player || c.fav; const r = hi ? 7 : 5;
-    ctx.beginPath(); ctx.arc(x, y, r, 0, 6.283); ctx.fillStyle = c.t.color; ctx.fill();
-    if (hi) { ctx.lineWidth = 2; ctx.strokeStyle = c.fav && !c.player ? '#ffd400' : '#fff'; ctx.stroke(); ctx.font = 'bold 11px Titillium Web, sans-serif'; ctx.fillStyle = '#fff'; ctx.fillText(c.d.code, x + 9, y - 7); }
-    else if (i < 3) { ctx.font = '10px Titillium Web, sans-serif'; ctx.fillStyle = '#bbb'; ctx.fillText(c.d.code, x + 7, y - 5); }
+    drawCar(ctx, x, y, c, RACE.started && i < 3, false);
   }
 }
 function buildCtrls() {
   const el = document.getElementById('ctrls'); if (!el) return;
   el.innerHTML = RACE.cars.filter(c => c.player || (G.spectator && c.fav)).map(c => `<div class="ctrl" id="ctl_${c.d.id}"></div>`).join('')
-    + (G.spectator ? `<div class="ctrl"><b>🎬 Race director</b><div class="small mut" style="margin:2px 0 6px">Spice it up.</div><div class="row">
-    <button class="sm" data-a="chaos" data-v="rain">🌧️ Make it rain</button><button class="sm" data-a="chaos" data-v="dry">☀️ Stop the rain</button>
-    <button class="sm" data-a="chaos" data-v="sc">🟨 Safety car</button><button class="sm" data-a="chaos" data-v="vsc">VSC</button><button class="sm" data-a="chaos" data-v="crash">💥 Incident</button></div>
-    <div class="small mut" style="margin-top:6px">Tap a driver in the timing tower to follow them.</div></div>` : '');
+    + (G.spectator && !G.follow ? `<div class="ctrl small mut">Tap a driver in the timing tower to follow them — tap again to stop.</div>` : '');
+}
+function gapSeconds(c, leader) {
+  if (c === leader) return 0;
+  const n = c.laps; const lt = leader.cross[n], ct = c.cross[n];
+  if (n === 0 || lt == null || ct == null) return (leader.dist - c.dist) / (RACE.L / leader.curLT);
+  const g = ct - lt; return g < 0 ? (leader.dist - c.dist) / (RACE.L / leader.curLT) : g;
 }
 function updateRaceUI(force) {
   if (!RACE) return;
   const ord = RACE.order(); const leader = ord[0];
   const hud = document.getElementById('hud');
   if (hud) {
-    const fl = RACE.chequered ? '<span class="flag chq">🏁 CHEQUERED</span>' : RACE.sc ? '<span class="flag sc">SAFETY CAR</span>' : RACE.vsc ? '<span class="flag vsc">VSC</span>' : '<span class="flag green">GREEN</span>';
+    const fl = !RACE.started ? '<span class="flag" style="background:#333">FORMATION</span>' : RACE.chequered ? '<span class="flag chq">🏁 CHEQUERED</span>' : RACE.sc ? '<span class="flag sc">SAFETY CAR</span>' : RACE.vsc ? '<span class="flag vsc">VSC</span>' : '<span class="flag green">GREEN</span>';
     const wtxt = RACE.wet > 0.6 ? '🌧️ Heavy rain' : RACE.wet > 0.22 ? '🌦️ Wet' : RACE.wet > 0.05 ? '🌥️ Damp' : '☀️ Dry';
-    hud.innerHTML = `<span class="chip">Lap ${Math.min(RACE.laps, leader.laps + 1)}/${RACE.laps}</span>${fl}<span class="chip">${wtxt} ${Math.round(RACE.wet * 100)}%</span>${RACE.fastest ? `<span class="chip">⏱ ${RACE.fastest.c.d.code} ${fmtTime(RACE.fastest.t)}</span>` : ''}`;
+    hud.innerHTML = `<span class="chip"><b>LAP ${Math.min(RACE.laps, leader.laps + 1)}/${RACE.laps}</b></span>${fl}<span class="chip">${wtxt}</span>${RACE.fastest ? `<span class="chip">⏱ ${RACE.fastest.c.d.code} ${fmtTime(RACE.fastest.t)}</span>` : ''}`;
   }
-  const tower = document.getElementById('tower');
-  if (tower) tower.innerHTML = ord.map((c, i) => { const nb = ord[i - 1]; const battle = !RACE.sc && !RACE.vsc && nb && !c.out && !nb.out && !c.finished && c.pitT <= 0 && nb.pitT <= 0 && (nb.dist - c.dist) < (RACE.L / c.curLT) * 1.0 && nb.dist > c.dist;
-    return `<div class="tr ${c.player || c.fav ? 'me' : ''} ${c.out ? 'out' : ''}" data-a="follow" data-v="${c.d.id}" style="cursor:pointer"><b>${i + 1}</b><span style="background:${c.t.color};height:14px;border-radius:2px"></span><b style="white-space:nowrap">${c.fav ? '⭐' : ''}${c.d.code}</b>
-    <span class="small mut" style="white-space:nowrap;overflow:hidden">${battle ? '⚔️ ' : ''}${c.out ? esc(c.out) : c.finished ? '🏁' : c.lastLap ? fmtTime(c.lastLap) : ''}</span>${c.out ? '<span></span>' : tyreB(c.tyre)}<span style="text-align:right">${RACE.gapStr(c, leader)}</span></div>`; }).join('');
+  renderRaceTower(ord, leader);
   const feed = document.getElementById('feed');
   if (feed) feed.innerHTML = RACE.log.slice(0, 25).map(l => `<div><span class="mut">L${l.lap}</span> ${esc(l.s)}</div>`).join('');
   RACE.cars.filter(c => c.player || (G.spectator && c.fav)).forEach(c => {
@@ -562,7 +788,7 @@ function finishRace() {
   cancelAnimationFrame(raf);
   if (RACE.sprint) { WK.sprintRows = applySprintResult(G, RACE); WK.stage = 'sresults'; }
   else { WK.applied = applyRaceResult(G, RACE, WK); WK.stage = 'results'; }
-  autosave(); raceBanner = ''; PAUSED = false;
+  autosave(); raceBanner = ''; PAUSED = false; LIGHTS = null; WK.clsPage = 0; TW.fl = null; TW.flKey = null; TW.greenUntil = 0; TW.prev = 'green';
   render(); window.scrollTo(0, 0);
 }
 function wkResults() {
@@ -570,7 +796,9 @@ function wkResults() {
   const m = moneyLog.player;
   const last = G.round >= G.cal.length;
   const mineRows = summary.rows.filter(r => G.player ? r.team === G.player : r.id === G.follow);
-  return `<div class="grid g2"><div class="card hl"><h3>${G.spectator ? 'Race result' : 'Your weekend'}</h3>
+  const cls = classificationView(summary.rows, { event: `${WK.track.short} Grand Prix ${G.year}`.toUpperCase(), page: WK.clsPage,
+    footer: `${summary.fastest ? `<span>⏱ Fastest lap: <b>${esc(summary.fastest.code)}</b> ${fmtTime(summary.fastest.t)}</span>` : ''}${G.timeline && WK.track.realWin >= 0 ? `<span>📜 Real-life winner: <b>${esc(histDriverName(WK.track.realWin))}</b></span>` : ''}` });
+  return `${cls}<div class="grid g2" style="margin-top:12px"><div class="card hl"><h3>${G.spectator ? 'Race result' : 'Your weekend'}</h3>
   ${G.spectator ? `<div class="big">🏆 ${esc(summary.rows[0].name)}</div><div class="mut">${esc(G.teams[summary.rows[0].team].name)} · podium: ${summary.rows.slice(1, 3).map(r => esc(r.code)).join(', ')}</div>` : ''}
   ${mineRows.map(r => `<div class="${G.spectator ? '' : 'big'}" style="${G.spectator ? 'margin-top:8px' : ''}">${G.spectator ? '⭐ ' : ''}${r.out ? 'DNF' : 'P' + r.pos} <span class="mut" style="font-size:16px">${esc(r.name)} · from P${r.grid}${r.pts ? ' · +' + r.pts + ' pts' : ''}</span></div>`).join('')}
   ${m ? `<table style="margin-top:8px"><tr><td>Sponsor & points income</td><td class="good" style="text-align:right">+${fmtM(m.income)}</td></tr><tr><td>Operations</td><td class="bad" style="text-align:right">-${fmtM(m.ops)}</td></tr><tr><td>Salaries</td><td class="bad" style="text-align:right">-${fmtM(m.salaries)}</td></tr>${m.crash ? `<tr><td>Crash damage</td><td class="bad" style="text-align:right">-${fmtM(m.crash)}</td></tr>` : ''}</table>` : ''}
@@ -579,7 +807,7 @@ function wkResults() {
   ${G.timeline && WK.track.realWin >= 0 ? `<div class="small" style="margin-top:6px">📜 In real life, <b>${esc(histDriverName(WK.track.realWin))}</b> won this race.</div>` : ''}
   <div class="small" style="margin-top:8px">Championship: ${standingsDrivers(G).slice(0, 3).map((d, i) => `${i + 1}. ${esc(d.code)} ${d.pts}`).join(' · ')}</div>
   <button class="pri" style="margin-top:12px" data-a="${last ? 'endseason' : 'tohq'}">${last ? 'Season review →' : 'Back to HQ →'}</button></div>
-  <div class="card"><h3>Classification</h3>${resultTable(summary.rows)}</div></div>`;
+  <div class="card"><h3>Championship top 10</h3>${standingsDrivers(G).slice(0, 10).map((d, i) => `<div class="row news"><b style="width:22px">${i + 1}</b>${tbar(d.team)}<span class="sp">${esc(d.name)}</span><b>${d.pts}</b></div>`).join('')}</div></div>`;
 }
 
 // ---------- Season end ----------
@@ -658,18 +886,22 @@ const A = {
   toquali(q) { if (WK.stage === 'fp' && WK.sprint) { WK.stage = 'squali'; WK.SQ.alive = WK.entries.slice(); } else { WK.stage = 'quali'; WK.Q.alive = WK.entries.slice(); } if (q !== true) { render(); window.scrollTo(0, 0); } },
   risk(el) { WK.risks[el.dataset.d] = el.dataset.v; render(); },
   runq(q) {
-    const QS = WK[WK.stage === 'squali' ? 'SQ' : 'Q'];
-    const res = runQualiSession(G, WK, QS.alive, QS.stage, WK.risks);
-    QS.rounds.push({ stage: QS.stage, res });
-    if (G.rules && G.rules.quali === 'single' && WK.stage === 'quali') { QS.top = res; QS.stage = 4; WK.grid = res.map(r => r.e); if (q !== true) render(); return; }
-    const cut = qCut(WK.entries.length);
-    if (QS.stage === 1) { QS.out1 = res.slice(-cut); QS.alive = res.slice(0, res.length - cut).map(r => r.e); }
-    else if (QS.stage === 2) { QS.out2 = res.slice(-cut); QS.alive = res.slice(0, res.length - cut).map(r => r.e); }
-    else QS.top = res;
-    QS.stage++;
-    if (QS.stage > 3) { const grid = QS.top.map(r => r.e).concat(QS.out2.map(r => r.e), QS.out1.map(r => r.e)); if (WK.stage === 'squali') WK.sgrid = grid; else WK.grid = grid; }
-    if (q !== true) render();
+    const QS = curQS(); const res = runQualiSession(G, WK, QS.alive || WK.entries, QS.stage, WK.risks);
+    applyQualiStage(QS, res); if (q !== true) render();
   },
+  qlive() {
+    const I = qualiInfo(WK.stage === 'squali' ? 'SQ' : 'Q');
+    I.QS.live = new QualiLive(G, WK, I.QS.alive || WK.entries, { dur: I.dur, label: I.label, cut: I.cut, runs: I.runs, risks: WK.risks });
+    PAUSED = false; SPEED = 16; render(); window.scrollTo(0, 0);
+  },
+  qskip() { const Q = curQS().live; if (!Q) return; let n = 0; while (!Q.done && n++ < 200000) Q.step(0.5); },
+  lights() {
+    if (!RACE || RACE.started || (LIGHTS && LIGHTS.phase !== 'idle')) return;
+    LIGHTS = { phase: 'on', t0: performance.now(), n: 0, hold: rnd(200, 3000) };
+    const b = document.getElementById('lightsbtn'); if (b) { b.disabled = true; b.textContent = 'Lights coming on…'; }
+  },
+  clspage(el) { WK.clsPage = +el.dataset.v; const y = window.scrollY; render(); window.scrollTo(0, y); },
+  gapmode(el) { GAPMODE = el.dataset.v; updateRaceUI(); },
   togrid(q) { WK.stage = WK.stage === 'squali' ? 'sgrid' : 'grid'; if (q !== true) render(); },
   stt(el) { const e = WK.entries.find(e => e.d.id === el.dataset.d); if (WK.stage === 'sgrid') e.sStartTyre = el.dataset.v; else e.startTyre = el.dataset.v; render(); },
   autostrat(el) { WK.entries.find(e => e.d.id === el.dataset.d).auto = el.checked; },
@@ -682,13 +914,18 @@ const A = {
       e.startTyre = sprint ? (e.sStartTyre || (mine ? 'M' : pick(['M', 'M', 'S', 'S', 'H']))) : (e.startTyre || (mine ? 'M' : pickAI()));
     });
     RACE = sprint ? new Race(G, WK, grid, { sprint: true, laps: sprintLaps(WK.track), weather: WK.sweather }) : new Race(G, WK, grid);
+    RACE.started = false; LIGHTS = null; RACE.log = []; RACE.msg(`🏎️ The cars line up on the grid${RACE.wet > 0.22 ? ' — on a wet track' : ''}. ${G.spectator ? 'Start the lights when ready.' : 'Start the lights when your strategy is set.'}`); RACE.events = [];
     WK.stage = sprint ? 'sprint' : 'race'; PAUSED = false; SPEED = 16; raceBanner = '';
     if (q !== true) { render(); window.scrollTo(0, 0); }
   },
-  follow(el) { if (!RACE) return; const id = el.dataset.v; G.follow = G.follow === id && !G.spectator ? null : id; RACE.cars.forEach(c => c.fav = c.d.id === G.follow); buildCtrls(); updateRaceUI(); },
-  chaos(el) { if (!RACE || RACE.done) return; const v = el.dataset.v; if (v === 'rain') RACE.makeRain(); if (v === 'dry') RACE.stopRain(); if (v === 'sc') RACE.startSC(); if (v === 'vsc') RACE.startVSC(); if (v === 'crash') RACE.randomIncident(); RACE.events = []; updateRaceUI(); },
+  follow(el) {
+    const id = el.dataset.v; G.follow = G.follow === id ? null : id;
+    if (RACE && WK && (WK.stage === 'race' || WK.stage === 'sprint')) { RACE.cars.forEach(c => c.fav = c.d.id === G.follow); buildCtrls(); updateRaceUI(); }
+    const Q = WK && (WK.stage === 'quali' || WK.stage === 'squali') && curQS().live; if (Q) { Q.cars.forEach(c => c.fav = c.d.id === G.follow); updateQualiUI(); }
+    autosave();
+  },
   spd(el) { if (el.dataset.v === 'pause') PAUSED = true; else { PAUSED = false; SPEED = +el.dataset.v; raceBanner = ''; const b = document.getElementById('rbanner'); if (b) { b.className = ''; b.textContent = ''; } } document.querySelectorAll('.spd').forEach(x => x.classList.toggle('on', el.dataset.v === 'pause' ? x.dataset.v === 'pause' : (!PAUSED && +x.dataset.v === SPEED))); },
-  simend() { let n = 0; while (!RACE.done && n < 400000) { RACE.step(0.25); n++; } RACE.events = []; },
+  simend() { if (RACE && !RACE.started) return; let n = 0; while (!RACE.done && n < 400000) { RACE.step(0.25); n++; } RACE.events = []; },
   mode(el) { const c = RACE.cars.find(c => c.d.id === el.dataset.d); c.mode = el.dataset.v; c.curLT = RACE.lapTime(c, c.laps) - (c.laps === 0 ? 0 : 0); updateRaceUI(); },
   pit(el) { const c = RACE.cars.find(c => c.d.id === el.dataset.d); c.pitReq = el.dataset.v || null; updateRaceUI(); },
   rauto(el) { const c = RACE.cars.find(c => c.d.id === el.dataset.d); c.auto = el.checked; },
