@@ -7,7 +7,7 @@ function viewStudio() {
   <div class="row" style="margin-top:8px"><button class="pri" data-a="newcircuit" data-back="studio">+ New circuit</button><button data-a="tracksexport">📤 Export tracks</button><button data-a="tracksimport">📥 Import tracks</button></div>
   <div class="small mut" style="margin-top:6px">Track Studio changes are saved in this browser only. Export them to move them to another device, back them up, or share them.</div></div>
   <div class="card" style="margin-top:12px"><div class="row" style="margin-bottom:8px">${[['all', 'All'], ['cur', '2026'], ['hist', 'Historic'], ['custom', 'Custom'], ['traced', 'Traced']].map(([k, v]) => `<button class="sm ${STUDIO_FILT === k ? 'on' : ''}" data-a="studiofilt" data-v="${k}">${v}</button>`).join('')}</div>
-  ${list.map(t => `<div class="cal-item">${trackSVG(t, 44)} <span class="sp">${flag(t.cc)} <b>${esc(t.short)}</b><div class="mut small">${esc(t.name)} · ${t.km.toFixed(3)} km · <b class="${LIB.laps && LIB.laps[t.id] ? 'warn' : ''}">${t.laps} laps</b> · ${t.era === 'current' ? '2026' : t.era}${LIB.layouts[t.id] ? ' · <span class="good">traced</span>' : t.origPts ? '' : ' · <span class="warn">placeholder shape</span>'}${layoutVersions(t.id).length ? ` · <span class="good">${layoutVersions(t.id).length} dated version${layoutVersions(t.id).length > 1 ? 's' : ''}</span>` : ''}</div></span>
+  ${list.map(t => `<div class="cal-item">${trackSVG(t, 44)} <span class="sp">${flag(t.cc)} <b>${esc(t.short)}</b><div class="mut small">${esc(t.name)} · ${t.km.toFixed(3)} km · <b class="${LIB.laps && LIB.laps[t.id] ? 'warn' : ''}">${t.laps} laps</b> · ${t.era === 'current' ? '2026' : t.era}${LIB.layouts[t.id] ? ' · <span class="good">traced</span>' : t.origPts ? '' : ' · <span class="warn">placeholder shape</span>'}${layoutVersions(t.id).length ? ` · <span class="good">${layoutVersions(t.id).length} dated version${layoutVersions(t.id).length > 1 ? 's' : ''}${defaultLink(t.id) ? ' (⭐ ' + defaultLink(t.id).from + '–' + defaultLink(t.id).to + ' is default)' : ''}</span>` : ''}</div></span>
   <button class="sm" data-a="laps" data-v="${t.id}">🔁 Laps</button><button class="sm" data-a="trace" data-v="${t.id}" data-back="studio">✏️ Trace</button>${t.era === 'custom' ? `<button class="sm" data-a="delcircuit" data-v="${t.id}">🗑</button>` : ''}</div>`).join('') || '<div class="mut">Nothing here yet.</div>'}</div></div>`;
 }
 function editorPts(t) {
@@ -29,13 +29,15 @@ function openTracer(id, back, ver) {
 function versionSection(t) {
   const vs = layoutVersions(t.id);
   const real = (typeof HIST !== 'undefined' && HIST.layouts && HIST.layouts[t.id]) || [];
-  const chips = [`<button class="sm ${TR.ver === -1 ? 'on' : ''}" data-a="trver" data-v="-1">Default</button>`]
-    .concat(vs.map((v, k) => `<button class="sm ${TR.ver === k ? 'on' : ''}" data-a="trver" data-v="${k}">${v.from}–${v.to}</button>`))
+  const link = defaultLink(t.id);
+  const chips = [`<button class="sm ${TR.ver === -1 ? 'on' : ''}" data-a="trver" data-v="-1">Default${link ? ' = ' + link.from + '–' + link.to : ''}</button>`]
+    .concat(vs.map((v, k) => `<button class="sm ${TR.ver === k ? 'on' : ''}" data-a="trver" data-v="${k}">${link === v ? '⭐ ' : ''}${v.from}–${v.to}</button>`))
     .concat([`<button class="sm ${TR.ver === 'new' ? 'on' : ''}" data-a="trver" data-v="new">+ New version</button>`]).join('');
   const editingVersion = TR.ver !== -1;
   return `<h3>Layout version</h3><div class="small mut" style="margin-bottom:6px">Circuits change over the years. Give a layout a year range and races in those years use it; any other year uses the default.</div>
   <div class="row">${chips}</div>
-  ${editingVersion ? `<div class="row" style="margin-top:8px"><span class="small">Used from</span><input id="tfrom" type="number" min="1900" max="2200" value="${TR.from ?? ''}" style="width:84px"><span class="small">to</span><input id="tto" type="number" min="1900" max="2200" value="${TR.to ?? ''}" style="width:84px">${TR.ver !== 'new' ? '<button class="sm" data-a="trdelver">🗑 Delete version</button>' : ''}</div>` : `<div class="small mut" style="margin-top:6px">Editing the default layout${vs.length ? ` (used outside ${vs.map(v => v.from + '–' + v.to).join(', ')})` : ' (used for every year)'}.</div>`}
+  ${editingVersion ? `<div class="row" style="margin-top:8px"><span class="small">Used from</span><input id="tfrom" type="number" min="1900" max="2200" value="${TR.from ?? ''}" style="width:84px"><span class="small">to</span><input id="tto" type="number" min="1900" max="2200" value="${TR.to ?? ''}" style="width:84px">${TR.ver !== 'new' ? '<button class="sm" data-a="trdelver">🗑 Delete version</button>' : ''}</div>
+  ${TR.ver !== 'new' ? (link === vs[TR.ver] ? `<div class="row" style="margin-top:6px"><span class="small good">⭐ This is also the default layout (used for every year without its own version).</span><button class="sm" data-a="trunlink">Stop using as default</button></div>` : `<div class="row" style="margin-top:6px"><button class="sm" data-a="trmakedef">⭐ Use as default for all other years</button></div>`) : '<div class="small mut" style="margin-top:6px">After saving, you can make this version the default too.</div>'}` : link ? `<div class="row" style="margin-top:6px"><span class="small good">The default follows the ⭐ ${link.from}–${link.to} version, so it updates whenever you edit that version.</span><button class="sm" data-a="trunlink">Unlink</button></div>` : `<div class="small mut" style="margin-top:6px">Editing the default layout${vs.length ? ` (used outside ${vs.map(v => v.from + '–' + v.to).join(', ')})` : ' (used for every year)'}.</div>`}
   ${real.length ? `<div class="small mut" style="margin-top:8px">Real layouts at this circuit${editingVersion ? ' — tap one to use its years' : ''}:</div><div class="row" style="margin-top:4px">${real.map(r => `<button class="sm" ${editingVersion ? `data-a="trrealyrs" data-from="${r[1]}" data-to="${r[2]}"` : 'disabled'}>${r[1] === r[2] ? r[1] : r[1] + '–' + r[2]} · ${(+r[3]).toFixed(3)} km</button>`).join('')}</div>` : ''}`;
 }
 function viewTracer() {
@@ -199,17 +201,22 @@ Object.assign(A, {
     if (TR.pts.length < 4) return;
     const pts = TR.pts.map(p => [+(p[0] / 10).toFixed(2), +(p[1] / 10).toFixed(2)]);
     const name = TRACK_BY_ID[TR.id].short;
-    if (TR.ver === -1) LIB.layouts[TR.id] = pts;
+    let autoDefault = false;
+    if (TR.ver === -1) { LIB.layouts[TR.id] = pts; if (LIB.defVer) delete LIB.defVer[TR.id]; }
     else {
       const f = parseInt((document.getElementById('tfrom') || {}).value), t = parseInt((document.getElementById('tto') || {}).value);
       if (!f || !t || f > t) return trMsg('Set a valid year range first (from ≤ to).', true);
       LIB.sets = LIB.sets || {}; const vs = LIB.sets[TR.id] = LIB.sets[TR.id] || [];
       const v = { from: f, to: t, pts };
+      LIB.defVer = LIB.defVer || {};
+      const wasLinked = TR.ver !== 'new' && defaultLink(TR.id) === vs[TR.ver];
       if (TR.ver === 'new') vs.push(v); else vs[TR.ver] = v;
+      if (wasLinked) LIB.defVer[TR.id] = { from: f, to: t };
+      else if (TR.ver === 'new' && !LIB.layouts[TR.id] && !LIB.defVer[TR.id] && vs.length === 1) { LIB.defVer[TR.id] = { from: f, to: t }; autoDefault = true; }
       vs.sort((a, b) => a.from - b.from);
     }
     saveLib(); applyLib(); clearGeo(); if (G) autosave();
-    toast(TR.ver === -1 ? 'Default layout saved for ' + name : `${name} layout saved for ${(document.getElementById('tfrom') || {}).value}–${(document.getElementById('tto') || {}).value}`); VIEW = TR.back; TR = null; render();
+    if (autoDefault) toast(`Saved — and used as the default layout too, since ${name} had no traced default`); else toast(TR.ver === -1 ? 'Default layout saved for ' + name : `${name} layout saved for ${(document.getElementById('tfrom') || {}).value}–${(document.getElementById('tto') || {}).value}`); VIEW = TR.back; TR = null; render();
   },
   trver(el) { const v = el.dataset.v; const ver = v === 'new' ? 'new' : +v;
     if (ver === 'new') { const keep = TR.pts.slice(); const real = (HIST.layouts && HIST.layouts[TR.id]) || []; const used = layoutVersions(TR.id);
@@ -219,7 +226,9 @@ Object.assign(A, {
       TR.msg = 'New version: set its years, then trace or adjust the shape. It starts as a copy of the layout you were viewing.'; render(); }
     else openTracer(TR.id, TR.back, ver); },
   trrealyrs(el) { const f = document.getElementById('tfrom'), t = document.getElementById('tto'); if (f) f.value = el.dataset.from; if (t) t.value = el.dataset.to; TR.from = +el.dataset.from; TR.to = +el.dataset.to; refreshTracerSide(); },
-  trdelver() { const vs = layoutVersions(TR.id); vs.splice(TR.ver, 1); saveLib(); applyLib(); clearGeo(); if (G) autosave(); toast('Version deleted'); openTracer(TR.id, TR.back, -1); },
+  trmakedef() { const v = layoutVersions(TR.id)[TR.ver]; if (!v) return; LIB.defVer = LIB.defVer || {}; LIB.defVer[TR.id] = { from: v.from, to: v.to }; saveLib(); applyLib(); clearGeo(); if (G) autosave(); toast(`${v.from}–${v.to} layout is now the default`); refreshTracerSide(); },
+  trunlink() { const v = defaultLink(TR.id); if (!v) return; if (LIB.defVer) delete LIB.defVer[TR.id]; saveLib(); applyLib(); clearGeo(); if (G) autosave(); toast('Default unlinked — it uses ' + (LIB.layouts[TR.id] ? 'your traced default' : 'the original shape') + ' again'); if (TR.ver === -1) openTracer(TR.id, TR.back, -1); else refreshTracerSide(); },
+  trdelver() { const vs = layoutVersions(TR.id); if (defaultLink(TR.id) === vs[TR.ver] && LIB.defVer) delete LIB.defVer[TR.id]; vs.splice(TR.ver, 1); saveLib(); applyLib(); clearGeo(); if (G) autosave(); toast('Version deleted'); openTracer(TR.id, TR.back, -1); },
   newcircuit(el) {
     const back = el.dataset.back || 'studio';
     modal(`<div class="row"><h2 class="sp">New circuit</h2><button class="sm" data-a="close">✕</button></div>
@@ -263,7 +272,7 @@ Object.assign(A, {
   },
   lapreset(el) { const id = el.dataset.v; if (LIB.laps) delete LIB.laps[id]; saveLib(); applyLib(); if (G) autosave(); closeModal(); toast('Reset to standard length'); refreshAfterLaps(); },
   delcircuit(el) {
-    const id = el.dataset.v; if (LIB.sets) delete LIB.sets[id];
+    const id = el.dataset.v; if (LIB.sets) delete LIB.sets[id]; if (LIB.defVer) delete LIB.defVer[id];
     if (G && (G.cal.includes(id) || (G.calNext || []).includes(id))) return toast('Remove it from your calendar first');
     LIB.custom = LIB.custom.filter(c => c.id !== id); delete LIB.layouts[id]; if (LIB.laps) delete LIB.laps[id];
     const i = TRACKS.findIndex(t => t.id === id); if (i >= 0) TRACKS.splice(i, 1); delete TRACK_BY_ID[id];
@@ -289,7 +298,7 @@ function parseTrackPack(text) {
   else obj = JSON.parse(decodeURIComponent(escape(atob(text)))); // a full career save code also works
   const lib = obj.pitwallTracks ? obj.lib : obj.trackLib ? obj.trackLib : (obj.layouts || obj.custom) ? obj : null;
   if (!lib) throw new Error('no tracks');
-  return { layouts: lib.layouts || {}, custom: lib.custom || [], laps: lib.laps || {}, sets: lib.sets || {} };
+  return { layouts: lib.layouts || {}, custom: lib.custom || [], laps: lib.laps || {}, sets: lib.sets || {}, defVer: lib.defVer || {} };
 }
 Object.assign(A, {
   tracksexport() {
@@ -339,10 +348,10 @@ Object.assign(A, {
       const missing = LIB.custom.filter(c => keep.has(c.id) && !L.custom.some(x => x.id === c.id));
       if (missing.length) L.custom = L.custom.concat(missing); // never remove a circuit your career calendar uses
       LIB.custom.filter(c => !L.custom.some(x => x.id === c.id)).forEach(c => { const i = TRACKS.findIndex(t => t.id === c.id); if (i >= 0) TRACKS.splice(i, 1); delete TRACK_BY_ID[c.id]; });
-      LIB.layouts = L.layouts; LIB.custom = L.custom; LIB.laps = L.laps; LIB.sets = L.sets;
+      LIB.layouts = L.layouts; LIB.custom = L.custom; LIB.laps = L.laps; LIB.sets = L.sets; LIB.defVer = L.defVer;
     } else {
       L.custom.forEach(c => { const i = LIB.custom.findIndex(x => x.id === c.id); if (i >= 0) LIB.custom[i] = c; else LIB.custom.push(c); });
-      Object.assign(LIB.layouts, L.layouts); LIB.laps = Object.assign(LIB.laps || {}, L.laps); LIB.sets = Object.assign(LIB.sets || {}, L.sets);
+      Object.assign(LIB.layouts, L.layouts); LIB.laps = Object.assign(LIB.laps || {}, L.laps); LIB.sets = Object.assign(LIB.sets || {}, L.sets); LIB.defVer = Object.assign(LIB.defVer || {}, L.defVer);
     }
     saveLib(); applyLib(); clearGeo(); if (G) autosave(); closeModal();
     toast('Tracks imported'); render();
