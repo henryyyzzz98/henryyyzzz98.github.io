@@ -44,11 +44,13 @@ function viewTracer() {
   <div class="grid g2" style="margin-top:10px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">
   <div><div class="cvbox" style="background:#11141b"><canvas id="tcv" style="touch-action:none"></canvas></div>
   <div class="small ${TR.err ? 'bad' : 'mut'}" id="tmsg" style="margin-top:6px">${esc(TR.msg)}</div></div>
-  <div class="card">${versionSection(t)}<h3 style="margin-top:12px">1 · Image</h3><label class="row"><input type="file" id="timg" accept="image/*" style="max-width:100%"></label>
+  <div class="card">${versionSection(t)}<h3 style="margin-top:12px">1 · Image</h3><label class="row"><input type="file" id="timg" accept="image/*,.svg" style="max-width:100%"></label>
   ${TR.img ? `<div class="row" style="margin-top:6px"><span class="small mut">Image opacity</span><input type="range" id="topac" min="0" max="100" value="${TR.opac ?? 70}"></div>` : ''}
   <h3 style="margin-top:12px">2 · Shape</h3><div class="row">${modes.map(([k, v]) => `<button class="sm ${TR.mode === k ? 'on' : ''}" data-a="trmode" data-v="${k}" ${k === 'auto' && !TR.img ? 'disabled' : ''}>${v}</button>`).join('')}</div>
-  <div class="small mut" style="margin-top:6px">${({ auto: 'Tap right on the track line in the image. The tracer follows every pixel of that colour connected to where you tapped, then finds the centre of the line.', draw: TR.fresh ? 'Tap around the track in driving order. The loop closes itself.' : 'Tap near the line between two points to add a point there.', adjust: 'Drag any point to fine-tune the shape.', erase: 'Tap a point to remove it.' })[TR.mode]}</div>
-  ${TR.mode === 'auto' ? `<div class="row" style="margin-top:6px"><span class="small mut">Colour tolerance</span><input type="range" id="ttol" min="15" max="160" value="${TR.tol}"><b id="ttolv" class="small">${TR.tol}</b></div>` : ''}
+  <div class="small mut" style="margin-top:6px">${({ auto: 'Tap anywhere on the track in the image. Works with solid lines, outlined tracks (like a black outline with a white centre line) and coloured maps — the tracer finds both edges of the track and follows the middle.', draw: TR.fresh ? 'Tap around the track in driving order. The loop closes itself.' : 'Tap near the line between two points to add a point there.', adjust: 'Drag any point to fine-tune the shape.', erase: 'Tap a point to remove it.' })[TR.mode]}</div>
+  ${TR.mode === 'auto' ? `<div class="row" style="margin-top:6px"><span class="small mut" style="width:110px">Ink sensitivity</span><input type="range" id="ttol" min="15" max="160" value="${TR.tol}"><b id="ttolv" class="small">${TR.tol}</b></div>
+  <div class="row"><span class="small mut" style="width:110px">Gap filling</span><input type="range" id="tgap" min="0" max="10" value="${TR.gap ?? 4}"><b id="tgapv" class="small">${TR.gap ?? 4}</b></div>
+  <div class="small mut">If the line comes out wrong, tap again after nudging these: lower ink sensitivity picks up fainter lines; more gap filling joins broken or double outlines.</div>` : ''}
   <div class="row" style="margin-top:8px"><button class="sm" data-a="trundo" ${TR.undo.length ? '' : 'disabled'}>↶ Undo</button><button class="sm" data-a="trclear">Clear</button><button class="sm" data-a="trsimplify" ${TR.pts.length > 12 ? '' : 'disabled'}>Simplify</button></div>
   <h3 style="margin-top:12px">3 · Start line & direction</h3><div class="small mut">The green dot is the start/finish line; the arrow shows racing direction.</div>
   <div class="row" style="margin-top:6px"><button class="sm" data-a="trstart" data-v="-1">◀ Move start</button><button class="sm" data-a="trstart" data-v="1">Move start ▶</button><button class="sm" data-a="trrev">⇄ Reverse direction</button></div>
@@ -58,7 +60,7 @@ function viewTracer() {
 }
 function trPush() { TR.undo.push(JSON.stringify(TR.pts)); if (TR.undo.length > 40) TR.undo.shift(); }
 function trFit() {
-  if (!TR.img) return null; const iw = TR.img.naturalWidth, ih = TR.img.naturalHeight; const s = 1000 / Math.max(iw, ih);
+  if (!TR.img) return null; const iw = TR.iw || TR.img.naturalWidth, ih = TR.ih || TR.img.naturalHeight; const s = 1000 / Math.max(iw, ih);
   return { s, ox: (1000 - iw * s) / 2, oy: (1000 - ih * s) / 2, iw, ih };
 }
 function trSpline(pts, seg = 10) {
@@ -76,13 +78,15 @@ function drawTracer() {
   // grid
   ctx.strokeStyle = '#1b2030'; ctx.lineWidth = 1; for (let i = 0; i <= 10; i++) { ctx.beginPath(); ctx.moveTo(i * w / 10, 0); ctx.lineTo(i * w / 10, w); ctx.moveTo(0, i * w / 10); ctx.lineTo(w, i * w / 10); ctx.stroke(); }
   const f = trFit();
-  if (f) { ctx.globalAlpha = (TR.opac ?? 70) / 100; ctx.drawImage(TR.img, f.ox * k, f.oy * k, f.iw * f.s * k, f.ih * f.s * k); ctx.globalAlpha = 1; }
+  if (f) { ctx.globalAlpha = (TR.opac ?? 70) / 100; ctx.fillStyle = '#fff'; ctx.fillRect(f.ox * k, f.oy * k, f.iw * f.s * k, f.ih * f.s * k); ctx.drawImage(TR.img, f.ox * k, f.oy * k, f.iw * f.s * k, f.ih * f.s * k); ctx.globalAlpha = 1; }
   const P = TR.pts;
   if (P.length >= 3) {
     const sp = trSpline(P); ctx.beginPath(); sp.forEach((p, i) => i ? ctx.lineTo(p[0] * k, p[1] * k) : ctx.moveTo(p[0] * k, p[1] * k)); ctx.closePath();
     ctx.strokeStyle = 'rgba(0,0,0,.6)'; ctx.lineWidth = 7; ctx.stroke(); ctx.strokeStyle = '#ff2a2a'; ctx.lineWidth = 3.5; ctx.stroke();
   } else if (P.length === 2) { ctx.beginPath(); ctx.moveTo(P[0][0] * k, P[0][1] * k); ctx.lineTo(P[1][0] * k, P[1][1] * k); ctx.strokeStyle = '#ff2a2a'; ctx.lineWidth = 3; ctx.stroke(); }
-  P.forEach((p, i) => { ctx.beginPath(); ctx.arc(p[0] * k, p[1] * k, i === 0 ? 8 : (TR.mode === 'adjust' || TR.mode === 'erase' ? 6 : 4), 0, 6.283); ctx.fillStyle = i === 0 ? '#2ecc71' : '#fff'; ctx.fill(); ctx.lineWidth = 1.5; ctx.strokeStyle = '#000'; ctx.stroke(); });
+  const many = P.length > 90, editing = TR.mode === 'adjust' || TR.mode === 'erase' || TR.mode === 'draw';
+  P.forEach((p, i) => { if (i && (!editing && many)) return; ctx.beginPath(); ctx.arc(p[0] * k, p[1] * k, i === 0 ? 7 : many ? 2.6 : (editing ? 6 : 4), 0, 6.283); ctx.fillStyle = i === 0 ? '#2ecc71' : many ? 'rgba(255,255,255,.85)' : '#fff'; ctx.fill(); if (!many || i === 0) { ctx.lineWidth = 1.5; ctx.strokeStyle = '#000'; ctx.stroke(); } });
+  if (many && P.length >= 3) { const sp = trSpline(P); ctx.beginPath(); sp.forEach((p, i) => i ? ctx.lineTo(p[0] * k, p[1] * k) : ctx.moveTo(p[0] * k, p[1] * k)); ctx.closePath(); ctx.strokeStyle = '#ff2a2a'; ctx.lineWidth = 2; ctx.stroke(); }
   if (P.length >= 2) { // direction arrow
     const a = P[0], b = P[1]; const ang = Math.atan2(b[1] - a[1], b[0] - a[0]); const x = a[0] * k + Math.cos(ang) * 22, y = a[1] * k + Math.sin(ang) * 22;
     ctx.save(); ctx.translate(x, y); ctx.rotate(ang); ctx.beginPath(); ctx.moveTo(10, 0); ctx.lineTo(-6, -7); ctx.lineTo(-6, 7); ctx.closePath(); ctx.fillStyle = '#2ecc71'; ctx.fill(); ctx.restore();
@@ -125,17 +129,39 @@ function initTracer() {
   const fi = document.getElementById('timg');
   if (fi) fi.addEventListener('change', () => {
     const file = fi.files && fi.files[0]; if (!file) return;
-    const rd = new FileReader();
-    rd.onload = () => { const img = new Image(); img.onload = () => {
-      TR.img = img; const ps = Math.min(1, 520 / Math.max(img.naturalWidth, img.naturalHeight));
-      const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(img.naturalWidth * ps)); c.height = Math.max(1, Math.round(img.naturalHeight * ps));
+    const isSvg = /svg/i.test(file.type) || /\.svg$/i.test(file.name);
+    const useImage = (src, iw, ih) => { const img = new Image(); img.onload = () => {
+      iw = iw || img.naturalWidth; ih = ih || img.naturalHeight;
+      if (!iw || !ih) return trMsg('Could not read the size of that image.', true);
+      TR.img = img; TR.iw = iw; TR.ih = ih;
+      const ps = Math.min(isSvg ? 4 : 1, 800 / Math.max(iw, ih));
+      const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(iw * ps)); c.height = Math.max(1, Math.round(ih * ps));
       const cx = c.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, c.width, c.height); cx.drawImage(img, 0, 0, c.width, c.height);
       TR.proc = { data: cx.getImageData(0, 0, c.width, c.height).data, w: c.width, h: c.height, ps };
-      TR.mode = 'auto'; TR.msg = 'Image loaded. Now tap right on the track line.'; TR.err = false; render();
-    }; img.onerror = () => trMsg('Could not read that image.', true); img.src = rd.result; };
-    rd.readAsDataURL(file);
+      TR.mode = 'auto'; TR.msg = 'Image loaded. Now tap anywhere on the track.'; TR.err = false; render();
+    }; img.onerror = () => trMsg('Could not read that image.', true); img.src = src; };
+    const rd = new FileReader();
+    if (isSvg) {
+      rd.onload = () => {
+        try {
+          const doc = new DOMParser().parseFromString(rd.result, 'image/svg+xml'); const svg = doc.documentElement;
+          if (!svg || svg.nodeName.toLowerCase() !== 'svg') return trMsg('That SVG file could not be read.', true);
+          const vb = (svg.getAttribute('viewBox') || '').trim().split(/[\s,]+/).map(Number);
+          let w = parseFloat(svg.getAttribute('width')), h = parseFloat(svg.getAttribute('height'));
+          if (/%/.test(svg.getAttribute('width') || '')) w = NaN; if (/%/.test(svg.getAttribute('height') || '')) h = NaN;
+          if (vb.length === 4 && vb[2] > 0 && vb[3] > 0) { if (!(w > 0) || !(h > 0)) { const sc = 1600 / Math.max(vb[2], vb[3]); w = vb[2] * sc; h = vb[3] * sc; } }
+          if (!(w > 0) || !(h > 0)) { w = 1000; h = 1000; }
+          const sc = 1600 / Math.max(w, h); w *= sc; h *= sc; // render large and crisp
+          svg.setAttribute('width', w); svg.setAttribute('height', h);
+          if (!svg.getAttribute('viewBox') && vb.length !== 4) svg.setAttribute('viewBox', `0 0 ${w / sc} ${h / sc}`);
+          const blob = new Blob([new XMLSerializer().serializeToString(svg)], { type: 'image/svg+xml' });
+          const fr = new FileReader(); fr.onload = () => useImage(fr.result, Math.round(w), Math.round(h)); fr.readAsDataURL(blob);
+        } catch (e) { trMsg('That SVG file could not be read.', true); }
+      };
+      rd.readAsText(file);
+    } else { rd.onload = () => useImage(rd.result); rd.readAsDataURL(file); }
   });
-  ['tfrom', 'tto'].forEach(k => { const el = document.getElementById(k); if (el) el.addEventListener('input', () => { TR[k === 'tfrom' ? 'from' : 'to'] = parseInt(el.value) || null; }); });
+  const gp = document.getElementById('tgap'); if (gp) gp.addEventListener('input', () => { TR.gap = +gp.value; document.getElementById('tgapv').textContent = gp.value; });
   const tol = document.getElementById('ttol'); if (tol) tol.addEventListener('input', () => { TR.tol = +tol.value; document.getElementById('ttolv').textContent = tol.value; });
   const op = document.getElementById('topac'); if (op) op.addEventListener('input', () => { TR.opac = +op.value; drawTracer(); });
 }
@@ -146,12 +172,12 @@ function autoTraceAt(p) {
   if (ix < 0 || iy < 0 || ix >= f.iw || iy >= f.ih) return trMsg('Tap inside the image.', true);
   trMsg('Tracing…');
   setTimeout(() => {
-    const pr = TR.proc; const res = traceImage(pr.data, pr.w, pr.h, ix * pr.ps, iy * pr.ps, TR.tol);
+    const pr = TR.proc; const res = traceBand(pr.data, pr.w, pr.h, ix * pr.ps, iy * pr.ps, TR.tol, TR.gap ?? 4);
     if (res.err) return trMsg(res.err, true);
     trPush();
     TR.pts = res.pts.map(q => [q[0] / pr.ps * f.s + f.ox, q[1] / pr.ps * f.s + f.oy]);
     TR.fresh = false; TR.mode = 'adjust';
-    TR.msg = `Traced ${TR.pts.length} points. Check the red line follows the track, then set the start line and direction. Drag points to fix any spots (e.g. where the pit lane joins).`; TR.err = false;
+    TR.msg = `Traced ${TR.pts.length} points (${res.method || 'line'} mode). Check the red line follows the track, then set the start line and direction. Drag points to fix any spots, e.g. where a pit lane joins.`; TR.err = false;
     refreshTracerSide();
   }, 20);
 }
