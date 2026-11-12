@@ -1102,6 +1102,147 @@ function smoothLoop(pts, passes) {
   for (let p = 0; p < passes; p++) pts = pts.map((q, i) => { const a = pts[(i - 1 + pts.length) % pts.length], b = pts[(i + 1) % pts.length]; return [(a[0] + 2 * q[0] + b[0]) / 4, (a[1] + 2 * q[1] + b[1]) / 4]; });
   return pts;
 }
+
+// ---------- band tracer (outlined tracks, any colour) ----------
+// Finds the track "band" (ink + gaps closed), its outer edge and its inner (infield) edge,
+// then returns the centre line midway between the two edges.
+function bgColour(data, w, h) {
+  const counts = new Map(); const add = (x, y) => { const i = (y * w + x) * 4; const k = (data[i] >> 4) + ',' + (data[i + 1] >> 4) + ',' + (data[i + 2] >> 4); counts.set(k, (counts.get(k) || 0) + 1); };
+  for (let x = 0; x < w; x += 2) { add(x, 0); add(x, h - 1); add(x, Math.floor(h / 2)); }
+  for (let y = 0; y < h; y += 2) { add(0, y); add(w - 1, y); add(Math.floor(w / 2), y); }
+  const best = [...counts.entries()].sort((a, b) => b[1] - a[1])[0][0].split(',').map(v => +v * 16 + 8);
+  return best;
+}
+function boxMorph(src, w, h, r, dilate) {
+  // separable square dilation/erosion
+  const tmp = new Uint8Array(w * h), out = new Uint8Array(w * h);
+  for (let y = 0; y < h; y++) { let run = 0; const row = y * w;
+    for (let x = 0; x < w; x++) { let v = dilate ? 0 : 1; for (let k = -r; k <= r; k++) { const xx = x + k; const s = xx < 0 || xx >= w ? (dilate ? 0 : 1) : src[row + xx]; if (dilate ? s : !s) { v = dilate ? 1 : 0; break; } } tmp[row + x] = v; } }
+  for (let x = 0; x < w; x++) for (let y = 0; y < h; y++) { let v = dilate ? 0 : 1; for (let k = -r; k <= r; k++) { const yy = y + k; const s = yy < 0 || yy >= h ? (dilate ? 0 : 1) : tmp[yy * w + x]; if (dilate ? s : !s) { v = dilate ? 1 : 0; break; } } out[y * w + x] = v; }
+  return out;
+}
+function mooreTrace(set, w, h) {
+  let first = -1; for (let i = 0; i < w * h; i++) if (set[i]) { first = i; break; }
+  if (first < 0) return [];
+  const D = [[-1, 0], [-1, -1], [0, -1], [1, -1], [1, 0], [1, 1], [0, 1], [-1, 1]];
+  const fg = (x, y) => x >= 0 && y >= 0 && x < w && y < h && set[y * w + x] === 1;
+  const sx = first % w, sy = (first - sx) / w; const out = [[sx, sy]];
+  let cx = sx, cy = sy, back = 0, steps = 0, firstDir = -1;
+  while (steps++ < 600000) {
+    let found = -1; for (let k = 1; k <= 8; k++) { const d = (back + k) % 8; if (fg(cx + D[d][0], cy + D[d][1])) { found = d; break; } }
+    if (found < 0) break;
+    if (firstDir < 0) firstDir = found; else if (cx === sx && cy === sy && found === firstDir) break;
+    cx += D[found][0]; cy += D[found][1]; back = (found + 4) % 8; out.push([cx, cy]);
+  }
+  out.pop(); return out;
+}
+function floodLabel(mask, w, h, seed, val) { // returns Uint8Array of the 8-connected component of pixels where mask===val
+  const comp = new Uint8Array(w * h); if (mask[seed] !== val) return comp;
+  const st = [seed]; comp[seed] = 1; let n = 0;
+  while (st.length) { const i = st.pop(); n++; const x = i % w, y = (i - x) / w;
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { if (!dx && !dy) continue; const nx = x + dx, ny = y + dy; if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue; const j = ny * w + nx; if (!comp[j] && mask[j] === val) { comp[j] = 1; st.push(j); } } }
+  comp.count = n; return comp;
+}
+function traceBand(data, w, h, x, y, tol, gap) {
+  x = Math.round(x); y = Math.round(y);
+  const bg = bgColour(data, w, h), t2 = tol * tol;
+  const ink = new Uint8Array(w * h);
+  for (let i = 0; i < w * h; i++) { const r = data[i * 4] - bg[0], g = data[i * 4 + 1] - bg[1], b = data[i * 4 + 2] - bg[2]; if (r * r + g * g + b * b > t2) ink[i] = 1; }
+  // close small gaps (e.g. a thin white centre line inside a black outline)
+  const band = gap > 0 ? boxMorph(boxMorph(ink, w, h, gap, true), w, h, gap, false) : ink;
+  // pick the band component nearest the tap
+  let seed = -1, bd = 1e9;
+  for (let dy = -18; dy <= 18; dy++) for (let dx = -18; dx <= 18; dx++) { const xx = x + dx, yy = y + dy; if (xx < 0 || yy < 0 || xx >= w || yy >= h) continue; if (band[yy * w + xx] && dx * dx + dy * dy < bd) { bd = dx * dx + dy * dy; seed = yy * w + xx; } }
+  if (seed < 0) return { err: 'No track found where you tapped. Tap on the track itself.' };
+  const comp = floodLabel(band, w, h, seed, 1);
+  if (comp.count < 80) return { err: 'That shape is too small — tap on the main track.' };
+  // track drawn as two separate edge lines (outline only): find the other edge inside the infield
+  {
+    const R = loopRegions(comp, w, h);
+    if (R.hole) {
+      const insideInk = new Uint8Array(w * h); for (let i = 0; i < w * h; i++) if (R.hole[i] && band[i]) insideInk[i] = 1;
+      let bestSeed = -1, bestN = 0; const seen = new Uint8Array(w * h);
+      for (let i = 0; i < w * h; i++) { if (!insideInk[i] || seen[i]) continue; const c = floodLabel(insideInk, w, h, i, 1); for (let j = 0; j < w * h; j++) if (c[j]) seen[j] = 1; if (c.count > bestN) { bestN = c.count; bestSeed = i; } }
+      if (bestN > comp.count * 0.45) {
+        const edge2 = floodLabel(insideInk, w, h, bestSeed, 1);
+        const R2 = loopRegions(edge2, w, h);
+        const thin = (n, per) => n / Math.max(1, per);
+        if (R2.hole && R2.holeN > 30) {
+          // region between the two edge lines (incl. the lines) = not outside of edge 1, not infield of edge 2
+          const region = new Uint8Array(w * h); for (let i = 0; i < w * h; i++) if (!R.outside[i] && !R2.hole[i]) region[i] = 1;
+          // only use it if the gap between edges is narrow compared with the whole track (i.e. it really is a track outline)
+          let rn = 0; for (let i = 0; i < w * h; i++) rn += region[i];
+          if (rn < R.holeN * 0.9) { const r = centreOfLoop(region, w, h); if (r) return Object.assign(r, { method: 'outline' }); }
+        }
+      }
+    }
+  }
+  // if the track has a centre line drawn inside it (e.g. white line inside a black outline), follow that line instead
+  const inner = new Uint8Array(w * h); let ic = 0; for (let i = 0; i < w * h; i++) if (comp[i] && !ink[i]) { inner[i] = 1; ic++; }
+  if (ic > comp.count * 0.06) {
+    let bestSeed = -1, bestN = 0; const seen = new Uint8Array(w * h);
+    for (let i = 0; i < w * h; i++) { if (!inner[i] || seen[i]) continue; const c = floodLabel(inner, w, h, i, 1); let n = 0; for (let j = 0; j < w * h; j++) if (c[j]) { seen[j] = 1; n++; } if (n > bestN) { bestN = n; bestSeed = i; } if (bestN > ic * 0.5) break; }
+    if (bestN > comp.count * 0.05) {
+      const line = floodLabel(inner, w, h, bestSeed, 1);
+      const r = centreOfLoop(line, w, h);
+      if (r) return Object.assign(r, { method: 'centre line' });
+    }
+  }
+  const r = centreOfLoop(comp, w, h);
+  if (r) return Object.assign(r, { method: 'band' });
+  return traceImage(data, w, h, x, y, tol);
+}
+function loopRegions(comp, w, h) {
+  const notComp = new Uint8Array(w * h); for (let i = 0; i < w * h; i++) notComp[i] = comp[i] ? 0 : 1;
+  const outside = new Uint8Array(w * h); const st = [];
+  const push = i => { if (notComp[i] && !outside[i]) { outside[i] = 1; st.push(i); } };
+  for (let xx = 0; xx < w; xx++) { push(xx); push((h - 1) * w + xx); }
+  for (let yy = 0; yy < h; yy++) { push(yy * w); push(yy * w + w - 1); }
+  while (st.length) { const i = st.pop(); const xx = i % w, yy = (i - xx) / w; if (xx > 0) push(i - 1); if (xx < w - 1) push(i + 1); if (yy > 0) push(i - w); if (yy < h - 1) push(i + w); }
+  const lab = new Int32Array(w * h); let nextId = 0, bestId = 0, bestN = 0; const q = [];
+  for (let i = 0; i < w * h; i++) {
+    if (!notComp[i] || outside[i] || lab[i]) continue;
+    const id = ++nextId; let n = 0; lab[i] = id; q.push(i);
+    while (q.length) { const k = q.pop(); n++; const xx = k % w, yy = (k - xx) / w;
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { if (!dx && !dy) continue; const nx = xx + dx, ny = yy + dy; if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue; const j = ny * w + nx; if (notComp[j] && !outside[j] && !lab[j]) { lab[j] = id; q.push(j); } } }
+    if (n > bestN) { bestN = n; bestId = id; }
+  }
+  let hole = null; if (bestId) { hole = new Uint8Array(w * h); for (let i = 0; i < w * h; i++) if (lab[i] === bestId) hole[i] = 1; }
+  return { outside, hole, holeN: bestN };
+}
+// centre line of a closed loop-shaped pixel region: midway between its outer edge and its infield edge
+function centreOfLoop(comp, w, h) {
+  const { outside, hole: best, holeN: bestN } = loopRegions(comp, w, h);
+  if (!best || bestN < 30) return null;
+  const filled = new Uint8Array(w * h); for (let i = 0; i < w * h; i++) filled[i] = outside[i] ? 0 : 1;
+  const outer = mooreTrace(filled, w, h), inner = mooreTrace(best, w, h);
+  if (outer.length < 20 || inner.length < 10) return null;
+  const N = 900; const O = resampleLoop(outer, N), I = resampleLoop(inner, N);
+  const near = (p, C) => { let bi = 0, bd2 = 1e18; for (let k = 0; k < C.length; k++) { const dx = C[k][0] - p[0], dy = C[k][1] - p[1], dd = dx * dx + dy * dy; if (dd < bd2) { bd2 = dd; bi = k; } } return C[bi]; };
+  let mid = O.map(p => { const q2 = near(p, I); return [(p[0] + q2[0]) / 2, (p[1] + q2[1]) / 2, Math.hypot(q2[0] - p[0], q2[1] - p[1])]; });
+  const widths = mid.map(m => m[2]).sort((a, b) => a - b); const medW = widths[Math.floor(widths.length / 2)];
+  mid = mid.filter(m => m[2] < medW * 2.2).map(m => [m[0], m[1]]);
+  const clean = []; mid.forEach(p => { const q2 = clean[clean.length - 1]; if (!q2 || Math.hypot(p[0] - q2[0], p[1] - q2[1]) > 0.8) clean.push(p); });
+  let per = 0; for (let i = 0; i < clean.length; i++) { const a = clean[i], b = clean[(i + 1) % clean.length]; per += Math.hypot(b[0] - a[0], b[1] - a[1]); }
+  const n = clamp(Math.round(per / 6), 60, 220);
+  let pts = resampleLoop(smoothLoop(clean, 1), n);
+  if (medW > 3) { // refine onto the line between the two edges (only matters for thick bands)
+    const half = medW / 2;
+    const dist = (p, C) => { const q2 = near(p, C); return Math.hypot(q2[0] - p[0], q2[1] - p[1]); };
+    for (let it = 0; it < 3; it++) {
+      pts = pts.map(p => {
+        const o = near(p, outer), i2 = near(p, inner);
+        const dir = (from, to, alt) => { let dx = to[0] - from[0], dy = to[1] - from[1], l = Math.hypot(dx, dy); if (l < 0.5) { dx = from[0] - alt[0]; dy = from[1] - alt[1]; l = Math.hypot(dx, dy) || 1; } return [dx / l, dy / l]; };
+        const u1 = dir(o, p, i2), u2 = dir(i2, p, o);
+        const c1 = [o[0] + u1[0] * half, o[1] + u1[1] * half], c2 = [i2[0] + u2[0] * half, i2[1] + u2[1] * half];
+        const e1 = Math.abs(dist(c1, inner) - half), e2 = Math.abs(dist(c2, outer) - half);
+        const m = e1 <= e2 ? c1 : c2;
+        return Math.hypot(m[0] - p[0], m[1] - p[1]) < medW ? m : p; });
+      pts = resampleLoop(pts, n);
+    }
+  }
+  return { pts, width: medW, count: per };
+}
 // ===== UI =====
 let G = null, VIEW = 'title', TAB = 'home', WK = null, RACE = null, SETUP = null, CALED = null, SUB = {}, raf = null;
 const $app = () => document.getElementById('app');
@@ -1874,11 +2015,13 @@ function viewTracer() {
   <div class="grid g2" style="margin-top:10px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">
   <div><div class="cvbox" style="background:#11141b"><canvas id="tcv" style="touch-action:none"></canvas></div>
   <div class="small ${TR.err ? 'bad' : 'mut'}" id="tmsg" style="margin-top:6px">${esc(TR.msg)}</div></div>
-  <div class="card">${versionSection(t)}<h3 style="margin-top:12px">1 · Image</h3><label class="row"><input type="file" id="timg" accept="image/*" style="max-width:100%"></label>
+  <div class="card">${versionSection(t)}<h3 style="margin-top:12px">1 · Image</h3><label class="row"><input type="file" id="timg" accept="image/*,.svg" style="max-width:100%"></label>
   ${TR.img ? `<div class="row" style="margin-top:6px"><span class="small mut">Image opacity</span><input type="range" id="topac" min="0" max="100" value="${TR.opac ?? 70}"></div>` : ''}
   <h3 style="margin-top:12px">2 · Shape</h3><div class="row">${modes.map(([k, v]) => `<button class="sm ${TR.mode === k ? 'on' : ''}" data-a="trmode" data-v="${k}" ${k === 'auto' && !TR.img ? 'disabled' : ''}>${v}</button>`).join('')}</div>
-  <div class="small mut" style="margin-top:6px">${({ auto: 'Tap right on the track line in the image. The tracer follows every pixel of that colour connected to where you tapped, then finds the centre of the line.', draw: TR.fresh ? 'Tap around the track in driving order. The loop closes itself.' : 'Tap near the line between two points to add a point there.', adjust: 'Drag any point to fine-tune the shape.', erase: 'Tap a point to remove it.' })[TR.mode]}</div>
-  ${TR.mode === 'auto' ? `<div class="row" style="margin-top:6px"><span class="small mut">Colour tolerance</span><input type="range" id="ttol" min="15" max="160" value="${TR.tol}"><b id="ttolv" class="small">${TR.tol}</b></div>` : ''}
+  <div class="small mut" style="margin-top:6px">${({ auto: 'Tap anywhere on the track in the image. Works with solid lines, outlined tracks (like a black outline with a white centre line) and coloured maps — the tracer finds both edges of the track and follows the middle.', draw: TR.fresh ? 'Tap around the track in driving order. The loop closes itself.' : 'Tap near the line between two points to add a point there.', adjust: 'Drag any point to fine-tune the shape.', erase: 'Tap a point to remove it.' })[TR.mode]}</div>
+  ${TR.mode === 'auto' ? `<div class="row" style="margin-top:6px"><span class="small mut" style="width:110px">Ink sensitivity</span><input type="range" id="ttol" min="15" max="160" value="${TR.tol}"><b id="ttolv" class="small">${TR.tol}</b></div>
+  <div class="row"><span class="small mut" style="width:110px">Gap filling</span><input type="range" id="tgap" min="0" max="10" value="${TR.gap ?? 4}"><b id="tgapv" class="small">${TR.gap ?? 4}</b></div>
+  <div class="small mut">If the line comes out wrong, tap again after nudging these: lower ink sensitivity picks up fainter lines; more gap filling joins broken or double outlines.</div>` : ''}
   <div class="row" style="margin-top:8px"><button class="sm" data-a="trundo" ${TR.undo.length ? '' : 'disabled'}>↶ Undo</button><button class="sm" data-a="trclear">Clear</button><button class="sm" data-a="trsimplify" ${TR.pts.length > 12 ? '' : 'disabled'}>Simplify</button></div>
   <h3 style="margin-top:12px">3 · Start line & direction</h3><div class="small mut">The green dot is the start/finish line; the arrow shows racing direction.</div>
   <div class="row" style="margin-top:6px"><button class="sm" data-a="trstart" data-v="-1">◀ Move start</button><button class="sm" data-a="trstart" data-v="1">Move start ▶</button><button class="sm" data-a="trrev">⇄ Reverse direction</button></div>
@@ -1888,7 +2031,7 @@ function viewTracer() {
 }
 function trPush() { TR.undo.push(JSON.stringify(TR.pts)); if (TR.undo.length > 40) TR.undo.shift(); }
 function trFit() {
-  if (!TR.img) return null; const iw = TR.img.naturalWidth, ih = TR.img.naturalHeight; const s = 1000 / Math.max(iw, ih);
+  if (!TR.img) return null; const iw = TR.iw || TR.img.naturalWidth, ih = TR.ih || TR.img.naturalHeight; const s = 1000 / Math.max(iw, ih);
   return { s, ox: (1000 - iw * s) / 2, oy: (1000 - ih * s) / 2, iw, ih };
 }
 function trSpline(pts, seg = 10) {
@@ -1906,13 +2049,15 @@ function drawTracer() {
   // grid
   ctx.strokeStyle = '#1b2030'; ctx.lineWidth = 1; for (let i = 0; i <= 10; i++) { ctx.beginPath(); ctx.moveTo(i * w / 10, 0); ctx.lineTo(i * w / 10, w); ctx.moveTo(0, i * w / 10); ctx.lineTo(w, i * w / 10); ctx.stroke(); }
   const f = trFit();
-  if (f) { ctx.globalAlpha = (TR.opac ?? 70) / 100; ctx.drawImage(TR.img, f.ox * k, f.oy * k, f.iw * f.s * k, f.ih * f.s * k); ctx.globalAlpha = 1; }
+  if (f) { ctx.globalAlpha = (TR.opac ?? 70) / 100; ctx.fillStyle = '#fff'; ctx.fillRect(f.ox * k, f.oy * k, f.iw * f.s * k, f.ih * f.s * k); ctx.drawImage(TR.img, f.ox * k, f.oy * k, f.iw * f.s * k, f.ih * f.s * k); ctx.globalAlpha = 1; }
   const P = TR.pts;
   if (P.length >= 3) {
     const sp = trSpline(P); ctx.beginPath(); sp.forEach((p, i) => i ? ctx.lineTo(p[0] * k, p[1] * k) : ctx.moveTo(p[0] * k, p[1] * k)); ctx.closePath();
     ctx.strokeStyle = 'rgba(0,0,0,.6)'; ctx.lineWidth = 7; ctx.stroke(); ctx.strokeStyle = '#ff2a2a'; ctx.lineWidth = 3.5; ctx.stroke();
   } else if (P.length === 2) { ctx.beginPath(); ctx.moveTo(P[0][0] * k, P[0][1] * k); ctx.lineTo(P[1][0] * k, P[1][1] * k); ctx.strokeStyle = '#ff2a2a'; ctx.lineWidth = 3; ctx.stroke(); }
-  P.forEach((p, i) => { ctx.beginPath(); ctx.arc(p[0] * k, p[1] * k, i === 0 ? 8 : (TR.mode === 'adjust' || TR.mode === 'erase' ? 6 : 4), 0, 6.283); ctx.fillStyle = i === 0 ? '#2ecc71' : '#fff'; ctx.fill(); ctx.lineWidth = 1.5; ctx.strokeStyle = '#000'; ctx.stroke(); });
+  const many = P.length > 90, editing = TR.mode === 'adjust' || TR.mode === 'erase' || TR.mode === 'draw';
+  P.forEach((p, i) => { if (i && (!editing && many)) return; ctx.beginPath(); ctx.arc(p[0] * k, p[1] * k, i === 0 ? 7 : many ? 2.6 : (editing ? 6 : 4), 0, 6.283); ctx.fillStyle = i === 0 ? '#2ecc71' : many ? 'rgba(255,255,255,.85)' : '#fff'; ctx.fill(); if (!many || i === 0) { ctx.lineWidth = 1.5; ctx.strokeStyle = '#000'; ctx.stroke(); } });
+  if (many && P.length >= 3) { const sp = trSpline(P); ctx.beginPath(); sp.forEach((p, i) => i ? ctx.lineTo(p[0] * k, p[1] * k) : ctx.moveTo(p[0] * k, p[1] * k)); ctx.closePath(); ctx.strokeStyle = '#ff2a2a'; ctx.lineWidth = 2; ctx.stroke(); }
   if (P.length >= 2) { // direction arrow
     const a = P[0], b = P[1]; const ang = Math.atan2(b[1] - a[1], b[0] - a[0]); const x = a[0] * k + Math.cos(ang) * 22, y = a[1] * k + Math.sin(ang) * 22;
     ctx.save(); ctx.translate(x, y); ctx.rotate(ang); ctx.beginPath(); ctx.moveTo(10, 0); ctx.lineTo(-6, -7); ctx.lineTo(-6, 7); ctx.closePath(); ctx.fillStyle = '#2ecc71'; ctx.fill(); ctx.restore();
@@ -1955,17 +2100,39 @@ function initTracer() {
   const fi = document.getElementById('timg');
   if (fi) fi.addEventListener('change', () => {
     const file = fi.files && fi.files[0]; if (!file) return;
-    const rd = new FileReader();
-    rd.onload = () => { const img = new Image(); img.onload = () => {
-      TR.img = img; const ps = Math.min(1, 520 / Math.max(img.naturalWidth, img.naturalHeight));
-      const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(img.naturalWidth * ps)); c.height = Math.max(1, Math.round(img.naturalHeight * ps));
+    const isSvg = /svg/i.test(file.type) || /\.svg$/i.test(file.name);
+    const useImage = (src, iw, ih) => { const img = new Image(); img.onload = () => {
+      iw = iw || img.naturalWidth; ih = ih || img.naturalHeight;
+      if (!iw || !ih) return trMsg('Could not read the size of that image.', true);
+      TR.img = img; TR.iw = iw; TR.ih = ih;
+      const ps = Math.min(isSvg ? 4 : 1, 800 / Math.max(iw, ih));
+      const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(iw * ps)); c.height = Math.max(1, Math.round(ih * ps));
       const cx = c.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, c.width, c.height); cx.drawImage(img, 0, 0, c.width, c.height);
       TR.proc = { data: cx.getImageData(0, 0, c.width, c.height).data, w: c.width, h: c.height, ps };
-      TR.mode = 'auto'; TR.msg = 'Image loaded. Now tap right on the track line.'; TR.err = false; render();
-    }; img.onerror = () => trMsg('Could not read that image.', true); img.src = rd.result; };
-    rd.readAsDataURL(file);
+      TR.mode = 'auto'; TR.msg = 'Image loaded. Now tap anywhere on the track.'; TR.err = false; render();
+    }; img.onerror = () => trMsg('Could not read that image.', true); img.src = src; };
+    const rd = new FileReader();
+    if (isSvg) {
+      rd.onload = () => {
+        try {
+          const doc = new DOMParser().parseFromString(rd.result, 'image/svg+xml'); const svg = doc.documentElement;
+          if (!svg || svg.nodeName.toLowerCase() !== 'svg') return trMsg('That SVG file could not be read.', true);
+          const vb = (svg.getAttribute('viewBox') || '').trim().split(/[\s,]+/).map(Number);
+          let w = parseFloat(svg.getAttribute('width')), h = parseFloat(svg.getAttribute('height'));
+          if (/%/.test(svg.getAttribute('width') || '')) w = NaN; if (/%/.test(svg.getAttribute('height') || '')) h = NaN;
+          if (vb.length === 4 && vb[2] > 0 && vb[3] > 0) { if (!(w > 0) || !(h > 0)) { const sc = 1600 / Math.max(vb[2], vb[3]); w = vb[2] * sc; h = vb[3] * sc; } }
+          if (!(w > 0) || !(h > 0)) { w = 1000; h = 1000; }
+          const sc = 1600 / Math.max(w, h); w *= sc; h *= sc; // render large and crisp
+          svg.setAttribute('width', w); svg.setAttribute('height', h);
+          if (!svg.getAttribute('viewBox') && vb.length !== 4) svg.setAttribute('viewBox', `0 0 ${w / sc} ${h / sc}`);
+          const blob = new Blob([new XMLSerializer().serializeToString(svg)], { type: 'image/svg+xml' });
+          const fr = new FileReader(); fr.onload = () => useImage(fr.result, Math.round(w), Math.round(h)); fr.readAsDataURL(blob);
+        } catch (e) { trMsg('That SVG file could not be read.', true); }
+      };
+      rd.readAsText(file);
+    } else { rd.onload = () => useImage(rd.result); rd.readAsDataURL(file); }
   });
-  ['tfrom', 'tto'].forEach(k => { const el = document.getElementById(k); if (el) el.addEventListener('input', () => { TR[k === 'tfrom' ? 'from' : 'to'] = parseInt(el.value) || null; }); });
+  const gp = document.getElementById('tgap'); if (gp) gp.addEventListener('input', () => { TR.gap = +gp.value; document.getElementById('tgapv').textContent = gp.value; });
   const tol = document.getElementById('ttol'); if (tol) tol.addEventListener('input', () => { TR.tol = +tol.value; document.getElementById('ttolv').textContent = tol.value; });
   const op = document.getElementById('topac'); if (op) op.addEventListener('input', () => { TR.opac = +op.value; drawTracer(); });
 }
@@ -1976,12 +2143,12 @@ function autoTraceAt(p) {
   if (ix < 0 || iy < 0 || ix >= f.iw || iy >= f.ih) return trMsg('Tap inside the image.', true);
   trMsg('Tracing…');
   setTimeout(() => {
-    const pr = TR.proc; const res = traceImage(pr.data, pr.w, pr.h, ix * pr.ps, iy * pr.ps, TR.tol);
+    const pr = TR.proc; const res = traceBand(pr.data, pr.w, pr.h, ix * pr.ps, iy * pr.ps, TR.tol, TR.gap ?? 4);
     if (res.err) return trMsg(res.err, true);
     trPush();
     TR.pts = res.pts.map(q => [q[0] / pr.ps * f.s + f.ox, q[1] / pr.ps * f.s + f.oy]);
     TR.fresh = false; TR.mode = 'adjust';
-    TR.msg = `Traced ${TR.pts.length} points. Check the red line follows the track, then set the start line and direction. Drag points to fix any spots (e.g. where the pit lane joins).`; TR.err = false;
+    TR.msg = `Traced ${TR.pts.length} points (${res.method || 'line'} mode). Check the red line follows the track, then set the start line and direction. Drag points to fix any spots, e.g. where a pit lane joins.`; TR.err = false;
     refreshTracerSide();
   }, 20);
 }
