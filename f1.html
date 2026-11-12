@@ -1975,7 +1975,8 @@ function viewStudio() {
   const list = TRACKS.filter(t => STUDIO_FILT === 'all' || (STUDIO_FILT === 'cur' ? t.era === 'current' : STUDIO_FILT === 'custom' ? t.era === 'custom' : STUDIO_FILT === 'traced' ? !!(LIB.layouts[t.id] || layoutVersions(t.id).length) : (t.era !== 'current' && t.era !== 'custom')));
   return `<div class="wrap"><div class="row"><span class="logo">PIT<b>WALL</b></span><h2 style="margin:0 0 0 8px" class="sp">Track Studio</h2><button data-a="studioback">Back</button></div>
   <div class="card" style="margin-top:12px"><div class="small">Tap 🔁 Laps to change any circuit's race length. Pick a circuit and tap ✏️ to trace its layout from an image (a track map screenshot works best). You can also create brand-new circuits. Layouts are saved in this browser and travel with your save code.</div>
-  <div class="row" style="margin-top:8px"><button class="pri" data-a="newcircuit" data-back="studio">+ New circuit</button></div></div>
+  <div class="row" style="margin-top:8px"><button class="pri" data-a="newcircuit" data-back="studio">+ New circuit</button><button data-a="tracksexport">📤 Export tracks</button><button data-a="tracksimport">📥 Import tracks</button></div>
+  <div class="small mut" style="margin-top:6px">Track Studio changes are saved in this browser only. Export them to move them to another device, back them up, or share them.</div></div>
   <div class="card" style="margin-top:12px"><div class="row" style="margin-bottom:8px">${[['all', 'All'], ['cur', '2026'], ['hist', 'Historic'], ['custom', 'Custom'], ['traced', 'Traced']].map(([k, v]) => `<button class="sm ${STUDIO_FILT === k ? 'on' : ''}" data-a="studiofilt" data-v="${k}">${v}</button>`).join('')}</div>
   ${list.map(t => `<div class="cal-item">${trackSVG(t, 44)} <span class="sp">${flag(t.cc)} <b>${esc(t.short)}</b><div class="mut small">${esc(t.name)} · ${t.km.toFixed(3)} km · <b class="${LIB.laps && LIB.laps[t.id] ? 'warn' : ''}">${t.laps} laps</b> · ${t.era === 'current' ? '2026' : t.era}${LIB.layouts[t.id] ? ' · <span class="good">traced</span>' : t.origPts ? '' : ' · <span class="warn">placeholder shape</span>'}${layoutVersions(t.id).length ? ` · <span class="good">${layoutVersions(t.id).length} dated version${layoutVersions(t.id).length > 1 ? 's' : ''}</span>` : ''}</div></span>
   <button class="sm" data-a="laps" data-v="${t.id}">🔁 Laps</button><button class="sm" data-a="trace" data-v="${t.id}" data-back="studio">✏️ Trace</button>${t.era === 'custom' ? `<button class="sm" data-a="delcircuit" data-v="${t.id}">🗑</button>` : ''}</div>`).join('') || '<div class="mut">Nothing here yet.</div>'}</div></div>`;
@@ -2242,4 +2243,80 @@ Object.assign(A, {
 });
 
 function refreshAfterLaps() { if (VIEW === 'tracer') refreshTracerSide(); else { const y = window.scrollY; render(); window.scrollTo(0, y); } }
+
+// ---------- track pack export / import ----------
+let DL_CAP = null;
+try { if (window.claude && typeof window.claude.use === 'function') window.claude.use('downloads').then(d => { DL_CAP = d; }).catch(() => { }); } catch (e) { }
+function libSummary(L) {
+  const sets = Object.values(L.sets || {}).reduce((n, v) => n + v.length, 0);
+  return `${Object.keys(L.layouts || {}).length} traced layout${Object.keys(L.layouts || {}).length === 1 ? '' : 's'}, ${sets} dated version${sets === 1 ? '' : 's'}, ${Object.keys(L.laps || {}).length} lap change${Object.keys(L.laps || {}).length === 1 ? '' : 's'}, ${(L.custom || []).length} custom circuit${(L.custom || []).length === 1 ? '' : 's'}`;
+}
+function trackPackCode() { return 'PWTRACKS1:' + btoa(unescape(encodeURIComponent(JSON.stringify({ pitwallTracks: 1, exported: new Date().toISOString(), lib: LIB })))); }
+function parseTrackPack(text) {
+  text = (text || '').trim(); if (!text) throw new Error('empty');
+  let obj;
+  if (text.startsWith('PWTRACKS1:')) obj = JSON.parse(decodeURIComponent(escape(atob(text.slice(10)))));
+  else if (text.startsWith('{')) obj = JSON.parse(text);
+  else obj = JSON.parse(decodeURIComponent(escape(atob(text)))); // a full career save code also works
+  const lib = obj.pitwallTracks ? obj.lib : obj.trackLib ? obj.trackLib : (obj.layouts || obj.custom) ? obj : null;
+  if (!lib) throw new Error('no tracks');
+  return { layouts: lib.layouts || {}, custom: lib.custom || [], laps: lib.laps || {}, sets: lib.sets || {} };
+}
+Object.assign(A, {
+  tracksexport() {
+    const code = trackPackCode();
+    modal(`<div class="row"><h2 class="sp">📤 Export tracks</h2><button class="sm" data-a="close">✕</button></div>
+    <div class="small">${esc(libSummary(LIB))}</div>
+    <div class="small mut" style="margin-top:4px">Copy this code and paste it into Track Studio → Import tracks on any device or browser.</div>
+    <textarea id="tpcode" readonly style="width:100%;height:120px;margin:8px 0;font-size:11px">${code}</textarea>
+    <div class="row"><button class="pri" data-a="tpcopy">Copy code</button><button data-a="tpdownload">⬇️ Download file</button></div>
+    <div class="small mut" style="margin-top:6px" id="tpnote">The file can be imported later with Import tracks → choose file.</div>`);
+  },
+  tpcopy() { const t = document.getElementById('tpcode'); t.select(); const ok = () => toast('Copied'); try { (navigator.clipboard ? navigator.clipboard.writeText(t.value) : Promise.reject()).then(ok, () => { try { document.execCommand('copy'); ok(); } catch (e) { toast('Select the code and copy it manually'); } }); } catch (e) { toast('Select the code and copy it manually'); } },
+  async tpdownload() {
+    const filename = `pitwall-tracks-${new Date().toISOString().slice(0, 10)}.json`;
+    const json = JSON.stringify({ pitwallTracks: 1, exported: new Date().toISOString(), lib: LIB }, null, 1);
+    const note = t => { const n = document.getElementById('tpnote'); if (n) n.textContent = t; };
+    if (DL_CAP) {
+      try { await DL_CAP.save({ filename, data: json }); note('Saved ' + filename); } catch (e) { if (e && e.code === 'declined') note('Download cancelled.'); else note('Download isn\'t available here — use Copy code instead.'); }
+      return;
+    }
+    try {
+      const blob = new Blob([json], { type: 'application/json' });
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename;
+      document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+      note('If no file appeared, this page blocks downloads — use Copy code instead.');
+    } catch (e) { toast('Download not available here — use Copy code'); }
+  },
+  tracksimport() {
+    modal(`<div class="row"><h2 class="sp">📥 Import tracks</h2><button class="sm" data-a="close">✕</button></div>
+    <div class="small mut">Paste a tracks code (or a full career save code), or pick a downloaded tracks file.</div>
+    <textarea id="tpin" style="width:100%;height:110px;margin:8px 0;font-size:11px" placeholder="PWTRACKS1:…"></textarea>
+    <input type="file" id="tpfile" accept=".json,.txt,application/json,text/plain" style="max-width:100%">
+    <div style="margin-top:10px"><label class="row small"><input type="radio" name="tpmode" value="merge" checked> Merge — add to my tracks; imported versions win where both have the same circuit</label>
+    <label class="row small"><input type="radio" name="tpmode" value="replace"> Replace — use only the imported tracks</label></div>
+    <div id="tpprev" class="small" style="margin-top:6px"></div>
+    <button class="pri" style="margin-top:10px" data-a="tpimport">Import</button>`);
+    const fi = document.getElementById('tpfile');
+    fi.addEventListener('change', () => { const f = fi.files && fi.files[0]; if (!f) return; const r = new FileReader(); r.onload = () => { document.getElementById('tpin').value = r.result; A._tpPreview(); }; r.readAsText(f); });
+    document.getElementById('tpin').addEventListener('input', () => A._tpPreview());
+  },
+  _tpPreview() { const el = document.getElementById('tpprev'); try { const L = parseTrackPack(document.getElementById('tpin').value); el.className = 'small good'; el.textContent = 'Found: ' + libSummary(L); } catch (e) { el.className = 'small mut'; el.textContent = document.getElementById('tpin').value.trim() ? 'That doesn\'t look like a tracks code yet.' : ''; } },
+  tpimport() {
+    let L; try { L = parseTrackPack(document.getElementById('tpin').value); } catch (e) { return toast('That code didn\'t work'); }
+    const mode = (document.querySelector('input[name=tpmode]:checked') || {}).value || 'merge';
+    if (mode === 'replace') {
+      const keep = G ? new Set([...(G.cal || []), ...(G.calNext || [])]) : new Set();
+      const missing = LIB.custom.filter(c => keep.has(c.id) && !L.custom.some(x => x.id === c.id));
+      if (missing.length) L.custom = L.custom.concat(missing); // never remove a circuit your career calendar uses
+      LIB.custom.filter(c => !L.custom.some(x => x.id === c.id)).forEach(c => { const i = TRACKS.findIndex(t => t.id === c.id); if (i >= 0) TRACKS.splice(i, 1); delete TRACK_BY_ID[c.id]; });
+      LIB.layouts = L.layouts; LIB.custom = L.custom; LIB.laps = L.laps; LIB.sets = L.sets;
+    } else {
+      L.custom.forEach(c => { const i = LIB.custom.findIndex(x => x.id === c.id); if (i >= 0) LIB.custom[i] = c; else LIB.custom.push(c); });
+      Object.assign(LIB.layouts, L.layouts); LIB.laps = Object.assign(LIB.laps || {}, L.laps); LIB.sets = Object.assign(LIB.sets || {}, L.sets);
+    }
+    saveLib(); applyLib(); clearGeo(); if (G) autosave(); closeModal();
+    toast('Tracks imported'); render();
+  }
+});
 </script></body></html>
