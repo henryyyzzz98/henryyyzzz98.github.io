@@ -94,8 +94,9 @@ QualiLive.prototype.lapDone = function (c, lt) {
 };
 function dkQRun(Q, c) { return c.runs.find(r => !r.done && !r.aborted && Q.t >= r.start + r.OL && Q.t < r.start + r.OL + r.fly); }
 function dkFuel(c, R) {
-  const fpl = 0.31 * R.track.km;
-  if (c._f0 == null) { const r = seeded(c.d.id + R.laps); c._f0 = Math.min(110, R.laps * fpl * (1.01 + r() * 0.04) + 1.5); }
+  // fuel burn per lap, scaled so a full race distance always fits the 110 kg limit
+  const fpl = Math.min(0.31 * R.track.km, 104 / R.laps);
+  if (c._f0 == null) { const r = seeded(c.d.id + R.laps); c._f0 = Math.min(110, R.laps * fpl * (1.015 + r() * 0.035) + 1); }
   const used = Math.max(0, c.dist) / R.L * fpl * (c.mode === 'push' ? 1.04 : c.mode === 'save' ? 0.95 : 1);
   return Math.max(0.3, c._f0 - used);
 }
