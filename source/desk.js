@@ -4,7 +4,7 @@
 const DK = { view: 'live', tab: 'order', gap: 'leader', evf: 'all', ev: [], seen: new WeakSet(), prev: null, key: '', pace: 'median', rsig: '', vmax: {} };
 function deskOn() {
   let off = false; try { off = localStorage.getItem('pitwall_desk') === 'off'; } catch (e) { }
-  return !off && typeof matchMedia === 'function' && matchMedia('(min-width: 1200px)').matches;
+  return !off;
 }
 function dkStage() {
   if (!WK || VIEW !== 'weekend') return null;
@@ -26,6 +26,7 @@ function dkFlag(cc, cls = '') {
   return `<span class="dkfe ${cls}">${flag(cc)}</span>`;
 }
 const dkEngine = t => (G.engines[t.engine] && G.engines[t.engine].name) || '';
+const dkNm = n => { const p = String(n).split(' '); const sh = p.length > 1 ? p[0][0] + '. ' + p.slice(1).join(' ') : n; return `<span class="fn">${esc(n)}</span><span class="sn">${esc(sh)}</span>`; };
 const dkShort = d => { const p = d.name.split(' '); return (p.length > 1 ? p[0][0] + '. ' : '') + p[p.length - 1]; };
 const dkTy = t => { const [l, c] = TYRE_LETTER[t] || ['?', '#888']; return `<b class="dkty" style="color:${c}">${l}</b>`; };
 const dkT = s => s == null ? '--:--.---' : fmtTime(s);
@@ -205,9 +206,9 @@ function deskLive(kind) {
 function dkOrderTable(kind, S, ord) {
   const leader = ord[0];
   if (DK.tab === 'tyres') {
-    return `<table class="dkt"><thead><tr><th>Pos</th><th class="l">Driver</th><th class="l">Team</th><th class="l">Tyre history</th><th>Age</th></tr></thead><tbody>${ord.map((c, i) => {
+    return `<table class="dkt"><thead><tr><th>Pos</th><th class="l">Driver</th><th class="l hm">Team</th><th class="l">Tyre history</th><th>Age</th></tr></thead><tbody>${ord.map((c, i) => {
       const st = kind === 'race' ? (c.stints || [{ tyre: c.tyre }]).map(s => s.tyre) : (c.laps ? ['S'] : []);
-      return `<tr class="${c.player || c.fav ? 'me' : ''} ${c.out ? 'out' : ''}" style="--tc:${c.t.color};--ti:${dkInk(c.t.color)}" data-a="follow" data-v="${c.d.id}"><td>${i + 1}</td><td class="l">${esc(dkShort(c.d))}</td><td class="l">${esc(c.t.name)}</td><td class="l">${st.map(x => `<span class="dkchip" style="--c:${TYRES[x].col}">${x}</span>`).join('<span class="dkarr">›</span>')}</td><td>${kind === 'race' ? c.age : c.laps}</td></tr>`; }).join('')}</tbody></table>`;
+      return `<tr class="${c.player || c.fav ? 'me' : ''} ${c.out ? 'out' : ''}" style="--tc:${c.t.color};--ti:${dkInk(c.t.color)}" data-a="follow" data-v="${c.d.id}"><td>${i + 1}</td><td class="l">${esc(dkShort(c.d))}</td><td class="l hm">${esc(c.t.name)}</td><td class="l">${st.map(x => `<span class="dkchip" style="--c:${TYRES[x].col}">${x}</span>`).join('<span class="dkarr">›</span>')}</td><td>${kind === 'race' ? c.age : c.laps}</td></tr>`; }).join('')}</tbody></table>`;
   }
   if (DK.tab === 'sectors') {
     const SB = S._bs || [];
@@ -221,11 +222,11 @@ function dkOrderTable(kind, S, ord) {
   }
   if (kind === 'quali') {
     const cut = S.cut ? ord.length - S.cut : null;
-    return `<table class="dkt"><thead><tr><th>Pos</th><th>St</th><th class="l">Driver</th><th class="l">Team</th><th>Best Lap</th><th>Gap</th><th>Last Lap</th><th>Tyre</th><th>Laps</th></tr></thead><tbody>${ord.map((c, i) => {
+    return `<table class="dkt"><thead><tr><th>Pos</th><th>St</th><th class="l">Driver</th><th class="l hm">Team</th><th>Best Lap</th><th>Gap</th><th>Last Lap</th><th>Tyre</th><th>Laps</th></tr></thead><tbody>${ord.map((c, i) => {
       const purple = S.best && S.best.c === c;
       const st = c.out ? '✕' : c.phase === 'flying' ? '<span class="dkfly">●</span>' : c.phase === 'out' ? '↗' : c.phase === 'in' ? '↘' : '▪';
       return `<tr class="${c.player || c.fav ? 'me' : ''} ${c.out ? 'out' : ''} ${cut != null && i >= cut ? 'elim' : ''} ${cut === i ? 'cut' : ''}" style="--tc:${c.t.color};--ti:${dkInk(c.t.color)}" data-a="follow" data-v="${c.d.id}">
-      <td>${i + 1}</td><td>${st}</td><td class="l">${esc(dkShort(c.d))}</td><td class="l">${esc(c.t.name)}</td><td class="${purple ? 'pu' : ''}">${dkT(c.best)}</td><td>${c.best == null || i === 0 ? '—' : '+' + (c.best - leader.best).toFixed(3)}</td><td>${dkT(c.last)}</td><td>${c.laps || c.phase !== 'garage' ? dkTy(S.wet > 0.65 ? 'W' : S.wet > 0.25 ? 'I' : 'S') : '-'}</td><td>${c.laps}</td></tr>`; }).join('')}</tbody></table>`;
+      <td>${i + 1}</td><td>${st}</td><td class="l">${esc(dkShort(c.d))}</td><td class="l hm">${esc(c.t.name)}</td><td class="${purple ? 'pu' : ''}">${dkT(c.best)}</td><td>${c.best == null || i === 0 ? '—' : '+' + (c.best - leader.best).toFixed(3)}</td><td>${dkT(c.last)}</td><td>${c.laps || c.phase !== 'garage' ? dkTy(S.wet > 0.65 ? 'W' : S.wet > 0.25 ? 'I' : 'S') : '-'}</td><td>${c.laps}</td></tr>`; }).join('')}</tbody></table>`;
   }
   const gapOf = (c, i) => {
     if (c.out) return 'OUT'; if (i === 0) return 'Leader'; if (c.pitT > 0) return 'PIT';
@@ -233,10 +234,10 @@ function dkOrderTable(kind, S, ord) {
     if (DK.gap === 'leader') return lapped ? '+' + Math.floor((leader.dist - c.dist) / RACE.L) + ' Lap' : '+' + gapSeconds(c, leader).toFixed(1) + 's';
     const p = ord[i - 1]; return p.dist - c.dist > RACE.L ? '+1 Lap' : '+' + Math.max(0.1, (p.dist - c.dist) / (RACE.L / c.curLT)).toFixed(1) + 's';
   };
-  return `<table class="dkt"><thead><tr><th>Pos</th><th class="l">Driver</th><th class="l">Team</th><th><button class="dkgap" data-a="dkgap">‹ ${DK.gap === 'leader' ? 'Gap' : 'Int'} ›</button></th><th>Lap</th><th>Last</th><th>Tyre</th><th>%</th><th>Fuel</th><th>Pit</th><th>Stp</th></tr></thead><tbody>${ord.map((c, i) => {
+  return `<table class="dkt"><thead><tr><th>Pos</th><th class="l">Driver</th><th class="l hm">Team</th><th><button class="dkgap" data-a="dkgap">‹ ${DK.gap === 'leader' ? 'Gap' : 'Int'} ›</button></th><th>Lap</th><th>Last</th><th>Tyre</th><th>%</th><th>Fuel</th><th>Pit</th><th>Stp</th></tr></thead><tbody>${ord.map((c, i) => {
     const gain = c.grid - (i + 1);
     return `<tr class="${c.player || c.fav ? 'me' : ''} ${c.out ? 'out' : ''}" style="--tc:${c.t.color};--ti:${dkInk(c.t.color)}" data-a="follow" data-v="${c.d.id}">
-    <td>${i + 1}</td><td class="l"><span class="dkmv ${gain > 0 ? 'up' : gain < 0 ? 'dn' : ''}">${gain > 0 ? '▲' : gain < 0 ? '▼' : '•'}</span>${esc(dkShort(c.d))}</td><td class="l">${esc(c.t.name)}</td><td>${gapOf(c, i)}</td><td>${Math.min(RACE.laps, c.laps)}/${RACE.laps}</td><td>${dkT(c.lastLap)}</td><td>${c.out ? '' : dkTy(c.tyre)}</td><td>${c.out ? '' : Math.round(c.wear * 100) + '%'}</td><td>${c.out ? '' : dkFuel(c, RACE).toFixed(1)}</td><td>${c.pitReq ? 'BOX' : c.pitT > 0 ? 'IN' : ''}</td><td>${c.stops}</td></tr>`; }).join('')}</tbody></table>`;
+    <td>${i + 1}</td><td class="l"><span class="dkmv ${gain > 0 ? 'up' : gain < 0 ? 'dn' : ''}">${gain > 0 ? '▲' : gain < 0 ? '▼' : '•'}</span>${esc(dkShort(c.d))}</td><td class="l hm">${esc(c.t.name)}</td><td>${gapOf(c, i)}</td><td>${Math.min(RACE.laps, c.laps)}/${RACE.laps}</td><td>${dkT(c.lastLap)}</td><td>${c.out ? '' : dkTy(c.tyre)}</td><td>${c.out ? '' : Math.round(c.wear * 100) + '%'}</td><td>${c.out ? '' : dkFuel(c, RACE).toFixed(1)}</td><td>${c.pitReq ? 'BOX' : c.pitT > 0 ? 'IN' : ''}</td><td>${c.stops}</td></tr>`; }).join('')}</tbody></table>`;
 }
 function dkChars(kind, S) {
   const t = WK.track, prog = kind === 'race' ? Math.min(1, (RACE.leaderLap || 0) / RACE.laps) : Math.min(1, S.t / S.dur);
@@ -421,15 +422,15 @@ function deskPractice() {
   const sess = WK.fp.length ? (WK.sprint ? 'Practice' : 'FP' + WK.fp.length) : (WK.sprint ? 'Practice' : 'FP' + WK.session);
   const lead = last && last[0];
   const rows = last ? last.map((r, i) => { const e = r.e, ty = r.tyre || 'S';
-    return `<tr class="${isMine(e) ? 'me' : ''}" style="--tc:${e.t.color};--ti:${dkInk(e.t.color)}"><td class="pos">P${String(i + 1).padStart(2, '0')}</td><td class="l">${dkFlag(e.d.nat)} ${esc(e.d.name)}</td><td class="l">${esc(e.t.name)}</td><td class="l">${esc(dkEngine(e.t))}</td><td class="l">${TYRES[ty].name}</td><td class="ra">${fmtTime(r.t)}</td><td class="ra">${i ? '+' + (r.t - lead.t).toFixed(3) : '--'}</td><td class="ra dimc">${r.laps}</td></tr>`; }).join('') : '';
+    return `<tr class="${isMine(e) ? 'me' : ''}" style="--tc:${e.t.color};--ti:${dkInk(e.t.color)}"><td class="pos">P${String(i + 1).padStart(2, '0')}</td><td class="l">${dkFlag(e.d.nat)} ${dkNm(e.d.name)}</td><td class="l hm">${esc(e.t.name)}</td><td class="l hm">${esc(dkEngine(e.t))}</td><td class="l">${TYRES[ty].name}</td><td class="ra">${fmtTime(r.t)}</td><td class="ra">${i ? '+' + (r.t - lead.t).toFixed(3) : '--'}</td><td class="ra dimc">${r.laps}</td></tr>`; }).join('') : '';
   const progBtns = e => Object.entries(PROGRAMS).map(([k, p]) => `<button class="${(WK.programs[e.d.id] || 'setup') === k ? 'on' : ''}" data-a="prog" data-d="${e.d.id}" data-v="${k}">${p.name}</button>`).join('');
   const pct = v => Math.round(v * 100) + '%';
   return `<div class="dk dk-fp" id="dk">
   <div class="dk-fptitle">${last ? `${sess} Results` : `${WK.sprint ? 'Practice' : 'Free Practice ' + WK.session}`} - ${esc(t.short)} <span class="dk-mut">ROUND ${WK.round + 1} · ${G.year}${WK.sprint ? ' · SPRINT WEEKEND' : ''}</span></div>
   ${mine.length && !done ? `<div class="dk-fpplan">${mine.map(e => `<div class="dk-fpd" style="--tc:${e.t.color}"><b>${esc(e.d.name)}</b><span class="dk-seg">${progBtns(e)}</span><span class="dk-mut">Setup ${pct(e.setup)} · Tyres ${pct(e.tyreKnow)} · Quali ${pct(e.qualiPrep)}</span></div>`).join('')}</div>` : ''}
-  <div class="dk-fpbox">${last ? `<table class="dkfp"><thead><tr><th>Pos</th><th class="l">Driver</th><th class="l">Team</th><th class="l">Engine</th><th class="l">Tyre</th><th class="ra">Lap</th><th class="ra">Gap</th><th class="ra">Laps</th></tr></thead><tbody>${rows}</tbody></table>`
+  <div class="dk-fpbox">${last ? `<table class="dkfp"><thead><tr><th>Pos</th><th class="l">Driver</th><th class="l hm">Team</th><th class="l hm">Engine</th><th class="l">Tyre</th><th class="ra">Lap</th><th class="ra">Gap</th><th class="ra">Laps</th></tr></thead><tbody>${rows}</tbody></table>`
     : `<div class="dk-fpempty"><div>${dkFlag(t.cc, 'xl')}</div><b>${esc(t.name)}</b><div class="dk-mut">${t.km.toFixed(3)} km · ${t.laps} laps · ${esc(WK.forecast || '')}</div><div class="dk-mut">${G.spectator ? 'Teams are about to head out to dial in their set-ups.' : 'Choose a run plan for each driver, then start the session.'}</div></div>`}</div>
-  <div class="dk-fpfoot"><span class="dk-mut">Press ENTER/SPACE or click ${done ? 'Continue' : 'Run session'}.</span><span class="sp"></span>
+  <div class="dk-fpfoot"><span class="dk-mut kbhint">Press ENTER/SPACE or click ${done ? 'Continue' : 'Run session'}.</span><span class="sp"></span>
     ${last ? '<button data-a="dkexport">Export Logs</button>' : ''}
     ${!done && WK.sessions > 1 && WK.session <= WK.sessions ? '<button data-a="skipfp">Skip practice</button>' : ''}
     <button data-a="autorace">Skip to the ${WK.sprint && !WK.sprintRows ? 'Sprint' : 'race'}</button>
@@ -477,7 +478,7 @@ Object.assign(A, {
   dkmodal(el) {
     const v = el.dataset.v, kind = dkStage(), S = kind === 'race' ? RACE : kind === 'quali' ? curQS().live : null;
     if (v === 'settings') {
-      modal(`<h3>Display settings</h3><label class="row" style="margin:8px 0"><input type="checkbox" data-a="dkclassic"> Use the classic (mobile) layout on this computer</label>
+      modal(`<h3>Display settings</h3><label class="row" style="margin:8px 0"><input type="checkbox" data-a="dkclassic"> Use the classic layout on this device</label>
       <label class="row" style="margin:8px 0"><input type="checkbox" data-a="dkautop" ${G.autoPause ? 'checked' : ''}> Auto-pause for safety cars, rain and my car's problems</label>
       <div class="small mut">Keyboard: <b>T</b> telemetry / broadcast · <b>Space</b> pause · <b>1–5</b> speed</div><div class="row" style="margin-top:12px"><span class="sp"></span><button data-a="close">Close</button></div>`); return;
     }

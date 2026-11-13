@@ -511,3 +511,90 @@ body.dt .cls,body.dt .tower{font-family:"Titillium Web",system-ui,sans-serif}
 .dk .dkfp th,.dk .dkst th,.dk .dktt th{color:#e6ebf5}
 .dk .dktt th{color:#8fb3ff}
 .dk .dkst tr.me td.pos{box-shadow:inset 3px 0 0 #ffd400}
+/* ===================== Broadcast layout on phones & tablets ===================== */
+@media (max-width: 899px){
+  .dk{font-size:12px;padding:6px;gap:6px;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+  .dk .hm,.dk .kbhint,.dk kbd{display:none!important}
+  .dk section{flex:0 0 auto;overflow:visible}
+  .dk-scroll,.dk-table,.dk-fpbox{overflow-x:auto;overflow-y:visible;flex:0 0 auto}
+  /* live */
+  .dk-topbar{flex-wrap:wrap;gap:4px;padding:6px}
+  .dk-topbar>div{padding:0 6px;border-right:0}
+  .dk-topbar b{font-size:1.25em}
+  .dk-loc{min-width:0;flex:1 1 100%}
+  .dk-loc .dkfl.lg{height:1.6em}.dk-loc .dkfe.lg{font-size:1.6em}
+  .dk-sess i{height:2em}
+  .dk-btns{flex:1 1 100%;justify-content:stretch!important;flex-wrap:wrap}
+  .dk-btns button{flex:1;padding:.6em .4em;font-size:.95em}
+  .dk-btns button.ico{flex:0 0 auto}
+  .dk-grid{display:flex;flex-direction:column;gap:6px;flex:0 0 auto}
+  .dk-map .dk-bar{flex-wrap:wrap}
+  .dk-km{margin-left:0;width:100%;text-align:right;font-size:.9em}
+  .dk-spd .spd{min-width:2.2em;padding:.5em .4em}
+  .dk-mapbox{flex:0 0 auto;height:min(78vw,420px)}
+  .dk-maptitle{font-size:22px}
+  .dk-tabs button{min-width:0;flex:1;padding:.55em .3em}
+  .dk .dkt tr td,.dkt th{padding:.3em .3em;max-width:9em}
+  .dk-evlist{max-height:38vh}
+  .dk-events .dk-h{flex-wrap:wrap}
+  .dk-filt{margin-left:0;flex-wrap:wrap}
+  .dk-filt button{padding:.35em .55em}
+  #dkchars{padding:.6em}
+  .dkc{grid-template-columns:7em 1fr 4em}
+  .dk-wallb{max-height:none}
+  .dk-cmd1{gap:.4em}
+  .dk-seg button{padding:.45em .5em}
+  /* telemetry */
+  .dk-thead{flex-wrap:wrap;gap:6px}
+  .dk-thead .dk-spd{order:5;width:100%}
+  .dk-tmain{display:flex;flex-direction:column;gap:6px;flex:0 0 auto}
+  .dk-ttable .dk-scroll{max-height:none}
+  .dktt{font-size:.95em}
+  .dk-tfoot{flex-wrap:wrap;gap:.5em 1em;white-space:normal}
+  .dk-cross .dk-scroll,.dk-status .dk-scroll{max-height:34vh;overflow-y:auto}
+  .dk-pace{flex:0 0 auto}.dk-pace .dk-h{flex-wrap:wrap}.dk-pace .dk-scroll{max-height:40vh;overflow:auto}
+  .dk-tbot{display:flex;flex-direction:column;gap:6px;flex:0 0 auto}
+  .dk-gpsbox{height:min(70vw,380px);flex:0 0 auto}
+  .dk-minilog{width:60%}
+  .dk-datab{flex-direction:row;flex-wrap:wrap}
+  /* practice / quali / race results */
+  .dk-fp{padding:8px}
+  .dk-fptitle{font-size:1.35em}
+  .dk-fpd{flex-wrap:wrap;width:100%}
+  .dk .dkfp tr td{font-size:1em;padding:.35em .4em}
+  .dkfp th{padding:.35em .4em}
+  .dk-fpbox{min-height:40vh}
+  .dk-fpfoot{flex-wrap:wrap;position:sticky;bottom:-6px;background:#03050a;padding:6px 0}
+  .dk-fpfoot button{flex:1;padding:.75em .5em}
+  .dk-reshead h1{font-size:1.35em}
+  .dk-reshead .dk-mut{font-size:.85em}
+  .dk-resgrid{display:flex;flex-direction:column;gap:8px;flex:0 0 auto}
+  .dk-resside{overflow:visible}
+  .dkpods{gap:.4em;padding:.5em}
+  .dkpod{padding:.6em .2em;font-size:.9em}
+  /* standings */
+  .dk-page{padding:8px}
+  .dk-pagehead{flex-wrap:wrap}
+  .dk-pagehead h1{font-size:1.35em}
+  .dk-pagehead .dk-mut{order:3;width:100%}
+  .dk-pagebar{flex-wrap:wrap;gap:4px}
+  .dk-pagebar button{padding:.5em .6em;font-size:.95em}
+  .dk-pagebar .sp{display:none}
+  .dk-stbox{flex:0 0 auto}
+  .dkst{font-size:.95em}
+  .dkst td.pos,.dkst th:first-child{position:sticky;left:0;z-index:2;background:#05080f}
+  .dkst td.nm{position:sticky;left:2.6em;z-index:2;background:#05080f;max-width:9em;overflow:hidden;text-overflow:ellipsis}
+  .dkst.cons td.tcell:first-of-type{position:sticky;left:2.6em;z-index:2;max-width:9em;overflow:hidden;text-overflow:ellipsis}
+  .dkst th.fl{min-width:2em}
+  .dk-graph{height:70vw}
+  .dk-legend{flex-wrap:wrap}
+  /* global theme on small screens */
+  body.dt .wrap{padding:10px}
+  body.dt{font-size:13px}
+}
+.dk .sn{display:none}
+@media (max-width: 899px){
+  .dk .fn{display:none}.dk .sn{display:inline}
+  .dk .dkfp tr td,.dkfp th{padding:.35em .3em}
+  .dk .dkfp td.pos{width:auto}
+}

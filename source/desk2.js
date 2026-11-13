@@ -28,12 +28,12 @@ function deskStandings() {
   else if (DK2.panel === 'hist') body = dkHistory();
   else if (mode === 'd') {
     const sd = standingsDrivers(G).filter(d => d.team || d.pts > 0 || G.results.some(r => r.rows.some(x => x.id === d.id)));
-    body = `<div class="dk-h"><b>Driver Championship</b></div><div class="dk-scroll"><table class="dkst ${DK2.modern ? 'modern' : 'classic'}"><thead><tr><th>Pos</th><th class="l">Driver</th><th></th><th class="l">Team</th>${flags}<th class="pts">Pts</th></tr></thead><tbody>${sd.map((d, i) => {
+    body = `<div class="dk-h"><b>Driver Championship</b></div><div class="dk-scroll"><table class="dkst ${DK2.modern ? 'modern' : 'classic'}"><thead><tr><th>Pos</th><th class="l">Driver</th><th></th><th class="l hm">Team</th>${flags}<th class="pts">Pts</th></tr></thead><tbody>${sd.map((d, i) => {
       const cells = G.cal.map((_, k) => { const res = G.results[k]; const r = res && res.rows.find(x => x.id === d.id); return `<td class="rc ${dkResCls(r)}">${r ? dkResTxt(r, res) : ''}</td>`; }).join('');
       const tc = d.team ? G.teams[d.team].color : '#444';
       return `<tr class="${(G.player ? d.team === G.player : d.id === G.follow) ? 'me' : ''}"><td class="pos" style="border-left:3px solid ${tc}">${i + 1}</td><td class="l nm">${esc(d.name)}</td><td class="flc">${dkFlag(d.nat)}</td>${d.team ? dkTeamCell(d.team) : '<td class="l dim">—</td>'}${cells}<td class="pts">${d.pts}</td></tr>`; }).join('')}</tbody></table></div>`;
   } else {
-    body = `<div class="dk-h"><b>Constructor Championship</b></div><div class="dk-scroll"><table class="dkst cons ${DK2.modern ? 'modern' : 'classic'}"><thead><tr><th>Pos</th><th class="l">Team</th><th class="l">Engine</th>${flags}<th class="pts">Pts</th></tr></thead><tbody>${standingsTeams(G).map((t, i) => {
+    body = `<div class="dk-h"><b>Constructor Championship</b></div><div class="dk-scroll"><table class="dkst cons ${DK2.modern ? 'modern' : 'classic'}"><thead><tr><th>Pos</th><th class="l hm">Team</th><th class="l hm">Engine</th>${flags}<th class="pts">Pts</th></tr></thead><tbody>${standingsTeams(G).map((t, i) => {
       const cells = G.cal.map((_, k) => { const res = G.results[k]; if (!res) return '<td class="rc"></td>'; const rs = res.rows.filter(x => x.team === t.id).sort((a, b) => (a.out ? 99 : a.pos) - (b.out ? 99 : b.pos));
         return `<td class="rc2">${rs.map(r => `<div class="${dkResCls(r)}">${dkResTxt(r, res)}</div>`).join('')}</td>`; }).join('');
       return `<tr class="${t.id === G.player ? 'me' : ''}"><td class="pos" style="border-left:3px solid ${t.color}">${i + 1}</td>${dkTeamCell(t.id)}${dkEngCell(t.id)}${cells}<td class="pts">${t.pts}</td></tr>`; }).join('')}</tbody></table></div>`;
@@ -85,9 +85,9 @@ function deskQualiRes(key) {
   const tyre = TYRES[WK.weather.quali > 0.65 ? 'W' : WK.weather.quali > 0.25 ? 'I' : 'S'].name;
   const lead = rows && rows.find(r => r.best && r.best.t != null);
   const fmt = x => !x ? '' : x.crash || x.t == null ? 'NO TIME' : fmtTime(x.t);
-  const table = rows ? `<table class="dkfp"><thead><tr><th>Pos</th><th class="l">Driver</th><th class="l">Team</th><th class="l">Engine</th><th class="l">Tyre</th>${cols3 ? '<th class="ra">Q1</th><th class="ra">Q2</th><th class="ra">Q3</th>' : '<th class="ra">Lap</th>'}<th class="ra">Gap</th></tr></thead><tbody>${rows.map((r, i) => {
+  const table = rows ? `<table class="dkfp"><thead><tr><th>Pos</th><th class="l">Driver</th><th class="l hm">Team</th><th class="l hm">Engine</th><th class="l">Tyre</th>${cols3 ? '<th class="ra">Q1</th><th class="ra">Q2</th><th class="ra">Q3</th>' : '<th class="ra">Lap</th>'}<th class="ra">Gap</th></tr></thead><tbody>${rows.map((r, i) => {
     const e = r.e, gap = i === 0 || !r.best || r.best.t == null || !lead ? '--' : cols3 && i >= 10 ? '' : '+' + (r.best.t - lead.best.t).toFixed(3);
-    return `<tr class="${isMine(e) ? 'me' : ''} ${cut != null && i >= cut ? 'elim' : ''} ${cut === i ? 'cut' : ''}" style="--tc:${e.t.color};--ti:${dkInk(e.t.color)}"><td class="pos">P${String(i + 1).padStart(2, '0')}</td><td class="l">${dkFlag(e.d.nat)} ${esc(e.d.name)}</td><td class="l">${esc(e.t.name)}</td><td class="l">${esc(dkEngine(e.t))}</td><td class="l">${tyre}</td>
+    return `<tr class="${isMine(e) ? 'me' : ''} ${cut != null && i >= cut ? 'elim' : ''} ${cut === i ? 'cut' : ''}" style="--tc:${e.t.color};--ti:${dkInk(e.t.color)}"><td class="pos">P${String(i + 1).padStart(2, '0')}</td><td class="l">${dkFlag(e.d.nat)} ${dkNm(e.d.name)}</td><td class="l hm">${esc(e.t.name)}</td><td class="l hm">${esc(dkEngine(e.t))}</td><td class="l">${tyre}</td>
     ${cols3 ? r.q.map(x => `<td class="ra">${fmt(x)}</td>`).join('') : `<td class="ra">${fmt(r.best)}</td>`}<td class="ra">${gap}</td></tr>`; }).join('')}</tbody></table>` : '';
   const riskBtns = e => [['safe', 'Safe'], ['normal', 'Normal'], ['all', 'All-out']].map(([k, v]) => `<button class="${(WK.risks[e.d.id] || 'normal') === k ? 'on' : ''}" data-a="risk" data-d="${e.d.id}" data-v="${k}">${v}</button>`).join('');
   const alive = QS.alive || WK.entries;
@@ -96,7 +96,7 @@ function deskQualiRes(key) {
     : `<button data-a="runq">Skip ${I.label}</button><button class="pri" data-a="qlive" data-enter="1">Watch ${I.label} live</button>`;
   return `<div class="dk dk-fp" id="dk"><div class="dk-fptitle">${title}<span class="dk-mut">ROUND ${WK.round + 1} · ${G.year}${!done ? ` · NEXT: ${I.label} · ${Math.round(I.dur / 60)} MIN · ${I.n} CARS${I.cut ? ' · ' + I.cut + ' OUT' : ''}` : ''}</span></div>${plan}
   <div class="dk-fpbox">${table || `<div class="dk-fpempty"><div>${dkFlag(t.cc, 'xl')}</div><b>${esc(t.name)}</b><div class="dk-mut">${I.single ? 'One session · fastest lap takes pole' : 'Knockout qualifying: Q1 → Q2 → Q3'}${WK.weather.quali > 0.25 ? ' · 🌧️ wet session' : ''}</div><div class="dk-mut">${G.spectator ? 'Watch every flying lap live, or skip straight to the result.' : 'Choose how hard each driver pushes, then head out.'}</div></div>`}</div>
-  <div class="dk-fpfoot"><span class="dk-mut">Press ENTER/SPACE or click ${done ? 'Continue' : 'Watch live'}.</span><span class="sp"></span>${last ? '<button data-a="dkqexport">Export Logs</button>' : ''}${next}</div></div>`;
+  <div class="dk-fpfoot"><span class="dk-mut kbhint">Press ENTER/SPACE or click ${done ? 'Continue' : 'Watch live'}.</span><span class="sp"></span>${last ? '<button data-a="dkqexport">Export Logs</button>' : ''}${next}</div></div>`;
 }
 
 // ---------- race / sprint results screen ----------
@@ -105,8 +105,8 @@ function deskRaceRes(sprint) {
   const last = G.round >= G.cal.length;
   const timeOf = r => r.out ? `DNF (${r.out.length > 14 ? r.out.split(/[ (]/)[0] : r.out})` : r.pos === 1 ? fmtTime(r.time) : r.laps < lead.laps ? '+' + (lead.laps - r.laps) + ' Lap' + (lead.laps - r.laps > 1 ? 's' : '') : '+' + (r.time - lead.time).toFixed(3);
   const ord = rows.filter(r => !r.out).concat(rows.filter(r => r.out));
-  const table = `<table class="dkfp dkrr"><thead><tr><th>Pos</th><th>Grid</th><th class="l">Driver</th><th class="l">Team</th><th class="l">Engine</th><th>Stp</th><th>Laps</th><th class="ra">Time/Gap</th><th class="ra">Pts</th></tr></thead><tbody>${ord.map(r => { const tm = G.teams[r.team] || { color: '#444', name: '' }; const d = G.drivers[r.id];
-    return `<tr class="${dkMine(r) ? 'me' : ''} ${r.out ? 'dnf' : ''}" style="--tc:${tm.color};--ti:${dkInk(tm.color)}"><td class="pos">${r.out ? '' : String(r.pos).padStart(2, '0')}</td><td>${r.grid || ''}</td><td class="l">${d ? dkFlag(d.nat) : ''} ${esc(r.name)}</td><td class="l">${esc(tm.name)}</td><td class="l">${esc(dkEngine(tm))}</td><td>${r.stops ?? ''}</td><td>${r.laps ?? ''}</td><td class="ra plain">${timeOf(r)}</td><td class="ra plain">${r.pts || 0}</td></tr>`; }).join('')}</tbody></table>`;
+  const table = `<table class="dkfp dkrr"><thead><tr><th>Pos</th><th>Grid</th><th class="l">Driver</th><th class="l hm">Team</th><th class="l hm">Engine</th><th class="hm">Stp</th><th class="hm">Laps</th><th class="ra">Time/Gap</th><th class="ra">Pts</th></tr></thead><tbody>${ord.map(r => { const tm = G.teams[r.team] || { color: '#444', name: '' }; const d = G.drivers[r.id];
+    return `<tr class="${dkMine(r) ? 'me' : ''} ${r.out ? 'dnf' : ''}" style="--tc:${tm.color};--ti:${dkInk(tm.color)}"><td class="pos">${r.out ? '' : String(r.pos).padStart(2, '0')}</td><td>${r.grid || ''}</td><td class="l">${d ? dkFlag(d.nat) : ''} ${dkNm(r.name)}</td><td class="l hm">${esc(tm.name)}</td><td class="l hm">${esc(dkEngine(tm))}</td><td class="hm">${r.stops ?? ''}</td><td class="hm">${r.laps ?? ''}</td><td class="ra plain">${timeOf(r)}</td><td class="ra plain">${r.pts || 0}</td></tr>`; }).join('')}</tbody></table>`;
   // podium
   const pod = [rows[1], rows[0], rows[2]].map((r, k) => { if (!r) return '<div></div>'; const tm = G.teams[r.team] || {}; const d = G.drivers[r.id]; const p = [2, 1, 3][k];
     return `<div class="dkpod p${p}" style="--tc:${tm.color}"><div class="n">${p}</div><div class="f">${d ? dkFlag(d.nat, 'lg') : ''}</div><b>${esc(dkShort(r))}</b><span>${esc(tm.name || '')}</span><em>${p === 1 ? fmtTime(r.time) : timeOf(r)}</em></div>`; }).join('');
@@ -129,8 +129,8 @@ function deskRaceRes(sprint) {
   <div class="dk-resgrid"><div class="dk-fpbox">${table}</div>
     <div class="dk-resside"><section><div class="dk-h dk-c"><b>🏆 ${sprint ? 'SPRINT' : 'RACE'} PODIUM 🏆</b></div><div class="dkpods">${pod}</div></section>
     <section><div class="dk-h"><b>DRIVERS STANDINGS AFTER ${sprint ? 'SPRINT' : 'RACE'}</b><span class="sp"></span><span class="dk-mut">Top 10</span></div><table class="dkres"><thead><tr><th>#</th><th class="l">Driver</th><th class="ra">Pts</th><th class="ra">Δ</th></tr></thead><tbody>${dTab}</tbody></table></section>
-    <section><div class="dk-h"><b>TEAMS STANDINGS AFTER ${sprint ? 'SPRINT' : 'RACE'}</b><span class="sp"></span><span class="dk-mut">Top 6</span></div><table class="dkres"><thead><tr><th>#</th><th class="l">Team</th><th class="ra">Pts</th><th class="ra">Δ</th></tr></thead><tbody>${tTab}</tbody></table></section></div></div>
-  <div class="dk-fpfoot"><span class="dk-mut">ENTER or Continue to ${sprint ? 'go on to qualifying' : last ? 'see the season review' : 'return to HQ'}.</span><span class="sp"></span><button data-a="dkrexport" data-v="${sprint ? 's' : 'r'}">Export Logs</button>${sprint ? '' : '<button data-a="dkextras">Highlights &amp; Driver of the Day</button>'}${cont}</div></div>`;
+    <section><div class="dk-h"><b>TEAMS STANDINGS AFTER ${sprint ? 'SPRINT' : 'RACE'}</b><span class="sp"></span><span class="dk-mut">Top 6</span></div><table class="dkres"><thead><tr><th>#</th><th class="l hm">Team</th><th class="ra">Pts</th><th class="ra">Δ</th></tr></thead><tbody>${tTab}</tbody></table></section></div></div>
+  <div class="dk-fpfoot"><span class="dk-mut kbhint">ENTER or Continue to ${sprint ? 'go on to qualifying' : last ? 'see the season review' : 'return to HQ'}.</span><span class="sp"></span><button data-a="dkrexport" data-v="${sprint ? 's' : 'r'}">Export Logs</button>${sprint ? '' : '<button data-a="dkextras">Highlights &amp; Driver of the Day</button>'}${cont}</div></div>`;
 }
 
 // ---------- routing ----------
@@ -173,3 +173,10 @@ Object.assign(A, {
     dkCsv(`${el.dataset.v === 's' ? 'sprint' : 'race'}-${WK.track.id}-${G.year}.csv`, [['Pos', 'Grid', 'Driver', 'Team', 'Engine', 'Stops', 'Laps', 'Time', 'Status', 'Points']].concat(rows.map(r => [r.out ? 'DNF' : r.pos, r.grid, r.name, G.teams[r.team] ? G.teams[r.team].name : '', G.teams[r.team] ? dkEngine(G.teams[r.team]) : '', r.stops, r.laps, r.time ? fmtTime(r.time) : '', r.out || 'Finished', r.pts || 0])));
   },
 });
+// menu switch for the broadcast layout (so it can be turned back on from the classic look)
+const _dk2_hqMenu = hqMenu;
+hqMenu = function () {
+  let on = true; try { on = localStorage.getItem('pitwall_desk') !== 'off'; } catch (e) { }
+  return _dk2_hqMenu() + `<div class="card" style="margin-top:12px"><h3>Layout</h3><label class="row"><input type="checkbox" data-a="dklayout" ${on ? 'checked' : ''}> Broadcast layout (results, standings, live timing &amp; telemetry screens)</label><div class="small mut" style="margin-top:6px">Turn off to use the classic layout on this device.</div></div>`;
+};
+A.dklayout = el => { try { localStorage.setItem('pitwall_desk', el.checked ? 'on' : 'off'); } catch (e) { } render(); };
