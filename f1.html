@@ -1468,6 +1468,19 @@ function traceBand(data, w, h, x, y, tol, gap) {
   }
   // if the track has a centre line drawn inside it (e.g. white line inside a black outline), follow that line instead
   const inner = new Uint8Array(w * h); let ic = 0; for (let i = 0; i < w * h; i++) if (comp[i] && !ink[i]) { inner[i] = 1; ic++; }
+  // crossovers / merging lines: the line is a network, not a simple loop → drive around it
+  {
+    const multi = holeCount(comp, w, h, 0.04) >= 2;
+    const lines = centreLines(data, w, h, bg, ink, comp);
+    const useInner = lines.n > comp.count * 0.06;
+    if (multi || useInner) {
+      const M = useInner ? lines.mask : comp;
+      let skLen = 0; const skm = thinMask(boxMorph(M, w, h, 1, true), w, h); for (let i = 0; i < w * h; i++) skLen += skm[i];
+      const bandW = clamp(comp.count / Math.max(1, skLen), 3, 60);
+      const r = routeTrace(M, w, h, x, y, bandW);
+      if (r && (r.junctions > 0 || multi)) return Object.assign(r, { method: r.junctions ? 'crossover' : 'centre line', note: r.routes > 1 ? 'This drawing has more than one route through where you tapped. If the wrong one was picked, tap a part of the track only your layout uses.' : '' });
+    }
+  }
   if (ic > comp.count * 0.06) {
     let bestSeed = -1, bestN = 0; const seen = new Uint8Array(w * h);
     for (let i = 0; i < w * h; i++) { if (!inner[i] || seen[i]) continue; const c = floodLabel(inner, w, h, i, 1); let n = 0; for (let j = 0; j < w * h; j++) if (c[j]) { seen[j] = 1; n++; } if (n > bestN) { bestN = n; bestSeed = i; } if (bestN > ic * 0.5) break; }
@@ -1531,6 +1544,184 @@ function centreOfLoop(comp, w, h) {
     }
   }
   return { pts, width: medW, count: per };
+}
+
+// ---------- route tracer (figure-8 crossovers, merging/splitting lines) ----------
+// Thins the line to a 1-px skeleton, turns it into a graph of junctions and edges, then
+// drives around it: at a crossing it goes straight on, at a merge it follows the smooth line,
+// and it keeps going until it is back where it started.
+function thinMask(mask, w, h) {
+  const m = new Uint8Array(mask); let fg = []; for (let i = 0; i < w * h; i++) if (m[i]) { const x = i % w, y = (i - x) / w; if (x > 0 && y > 0 && x < w - 1 && y < h - 1) fg.push(i); else m[i] = 0; }
+  const del = [];
+  for (let it = 0; it < 200; it++) {
+    let changed = false;
+    for (let pass = 0; pass < 2; pass++) {
+      del.length = 0;
+      for (const i of fg) {
+        if (!m[i]) continue;
+        const p2 = m[i - w], p3 = m[i - w + 1], p4 = m[i + 1], p5 = m[i + w + 1], p6 = m[i + w], p7 = m[i + w - 1], p8 = m[i - 1], p9 = m[i - w - 1];
+        const B = p2 + p3 + p4 + p5 + p6 + p7 + p8 + p9; if (B < 2 || B > 6) continue;
+        const A = (!p2 && p3) + (!p3 && p4) + (!p4 && p5) + (!p5 && p6) + (!p6 && p7) + (!p7 && p8) + (!p8 && p9) + (!p9 && p2); if (A !== 1) continue;
+        if (pass === 0 ? (p2 * p4 * p6 || p4 * p6 * p8) : (p2 * p4 * p8 || p2 * p6 * p8)) continue;
+        del.push(i);
+      }
+      for (const i of del) m[i] = 0; if (del.length) changed = true;
+    }
+    fg = fg.filter(i => m[i]);
+    if (!changed) break;
+  }
+  return m;
+}
+function routeGraph(mask, w, h, bandW) {
+  const sk = thinMask(boxMorph(mask, w, h, 1, true), w, h); // fatten 1px first: thinning can erase 2px-wide diagonal lines
+  const N8 = [-w - 1, -w, -w + 1, -1, 1, w - 1, w, w + 1];
+  const nb = i => { let c = 0; for (const d of N8) c += sk[i + d]; return c; };
+  const pix = []; for (let i = 0; i < w * h; i++) if (sk[i]) pix.push(i);
+  // junction clusters
+  const r = Math.max(3, Math.round(bandW * 0.45));
+  const RING = [-w, -w + 1, 1, w + 1, w, w - 1, -1, -w - 1];
+  const cross = i => { let a = 0; for (let k = 0; k < 8; k++) if (!sk[i + RING[k]] && sk[i + RING[(k + 1) % 8]]) a++; return a; };
+  const node = new Int32Array(w * h); const jn = pix.filter(i => nb(i) >= 3 && cross(i) >= 3);
+  const near = new Uint8Array(w * h);
+  for (const i of jn) { const x = i % w, y = (i - x) / w; for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) { if (dx * dx + dy * dy > r * r) continue; const xx = x + dx, yy = y + dy; if (xx < 0 || yy < 0 || xx >= w || yy >= h) continue; const j = yy * w + xx; if (sk[j]) near[j] = 1; } }
+  let nid = 0; const nodes = [null];
+  for (const i of pix) {
+    if (!near[i] || node[i]) continue; const id = ++nid; const st = [i]; node[i] = id; let sx = 0, sy = 0, n = 0;
+    while (st.length) { const k = st.pop(); sx += k % w; sy += Math.floor(k / w); n++; for (const d of N8) { const j = k + d; if (near[j] && !node[j]) { node[j] = id; st.push(j); } } }
+    nodes.push({ id, x: sx / n, y: sy / n, ends: [] });
+  }
+  // edges = connected runs of non-node skeleton pixels
+  const seen = new Uint8Array(w * h); const edges = [];
+  const bfs = (start, inComp) => { const par = new Map([[start, -1]]); const q = [start]; let last = start;
+    for (let qi = 0; qi < q.length; qi++) { const k = q[qi]; last = k; for (const d of N8) { const j = k + d; if (inComp(j) && !par.has(j)) { par.set(j, k); q.push(j); } } }
+    return { last, par }; };
+  for (const i of pix) {
+    if (node[i] || seen[i]) continue;
+    const comp = new Set(); const st = [i]; comp.add(i); seen[i] = 1;
+    while (st.length) { const k = st.pop(); for (const d of N8) { const j = k + d; if (sk[j] && !node[j] && !seen[j]) { seen[j] = 1; comp.add(j); st.push(j); } } }
+    if (comp.size < 3) continue;
+    const inC = j => comp.has(j);
+    // prefer an end that touches a node or is a dead end
+    let start = i; for (const k of comp) { let c = 0, tn = false; for (const d of N8) { if (comp.has(k + d)) c++; if (node[k + d]) tn = true; } if (tn || c <= 1) { start = k; break; } }
+    const a = bfs(start, inC).last; const { last: b, par } = bfs(a, inC);
+    const path = []; for (let k = b; k !== -1; k = par.get(k)) path.push([k % w, Math.floor(k / w), k]);
+    const endNode = p => { const k = p[2]; for (const d of N8) if (node[k + d]) return node[k + d]; for (const d of N8) for (const d2 of N8) { const j = k + d + d2; if (j >= 0 && j < w * h && node[j]) return node[j]; } return 0; };
+    edges.push({ pts: path.map(p => [p[0], p[1]]), n0: endNode(path[0]), n1: endNode(path[path.length - 1]), len: path.length, size: comp.size });
+  }
+  // dead ends become their own nodes
+  edges.forEach(e => { ['n0', 'n1'].forEach((k, s) => { if (!e[k]) { const p = s ? e.pts[e.pts.length - 1] : e.pts[0]; const id = nodes.length; nodes.push({ id, x: p[0], y: p[1], ends: [], dead: true }); e[k] = id; } }); });
+  return { nodes, edges, sk };
+}
+function routeTrace(mask, w, h, tapX, tapY, bandW, opts = {}) {
+  let { nodes, edges } = routeGraph(mask, w, h, bandW);
+  const K = Math.max(8, Math.round(bandW * 1.3));
+  const relink = () => { nodes.forEach(n => { if (n) n.ends = []; }); edges.forEach((e, ei) => { if (e.gone) return; nodes[e.n0].ends.push([ei, 0]); nodes[e.n1].ends.push([ei, 1]); }); };
+  // drop short spurs (dead-end twigs from thinning) — repeat as they uncover
+  for (let pass = 0; pass < 4; pass++) { relink(); let any = false; edges.forEach(e => { if (e.gone) return; const d0 = nodes[e.n0].dead, d1 = nodes[e.n1].dead; if ((d0 || d1) && !(d0 && d1) && e.len < bandW * 2.2 + 6) { e.gone = true; any = true; } if (d0 && d1 && e.len < bandW * 3) { e.gone = true; any = true; } }); if (!any) break; }
+  relink();
+  const dirAt = (e, side) => { const P = e.pts, n = P.length; const a = side ? P[n - 1] : P[0], b = side ? P[Math.max(0, n - 1 - K)] : P[Math.min(n - 1, K)]; const dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy) || 1; return [dx / l, dy / l]; };
+  // bridge gaps (e.g. a crossover drawn as a bridge, where one line is broken)
+  const dead = nodes.filter(n => n && n.dead && n.ends.length === 1);
+  const used = new Set();
+  dead.forEach(a => { if (used.has(a.id)) return; const [ea, sa] = a.ends[0]; const da = dirAt(edges[ea], sa); const out = [-da[0], -da[1]];
+    let best = null, bs = 1e9;
+    dead.forEach(b => { if (b === a || used.has(b.id)) return; const dx = b.x - a.x, dy = b.y - a.y, l = Math.hypot(dx, dy); if (l > bandW * 4 + 10 || l < 1) return;
+      const [eb, sb] = b.ends[0]; const db = dirAt(edges[eb], sb); const c1 = (out[0] * dx + out[1] * dy) / l, c2 = (db[0] * dx + db[1] * dy) / l; if (c1 < 0.75 || c2 < 0.75) return; const s = l * (2 - c1 - c2 + 0.1); if (s < bs) { bs = s; best = b; } });
+    if (best) { used.add(a.id); used.add(best.id); const pts = []; const L = Math.max(2, Math.round(Math.hypot(best.x - a.x, best.y - a.y))); for (let i = 0; i <= L; i++) pts.push([a.x + (best.x - a.x) * i / L, a.y + (best.y - a.y) * i / L]); edges.push({ pts, n0: a.id, n1: best.id, len: L, bridge: true }); }
+  });
+  relink();
+  const live = edges.map((e, i) => i).filter(i => !edges[i].gone);
+  if (!live.length) return null;
+  const junctions = nodes.filter(n => n && n.ends.length >= 3).length;
+  // start on the edge nearest the tap
+  let se = -1, sd = 1e18; live.forEach(ei => { const e = edges[ei]; if (e.bridge) return; for (let k = 0; k < e.pts.length; k += 2) { const p = e.pts[k], d = (p[0] - tapX) ** 2 + (p[1] - tapY) ** 2; if (d < sd) { sd = d; se = ei; } } });
+  if (se < 0) return null;
+  // directed edge = [edge, dir] (dir 0: n0→n1). Walk until we are back on the start edge going the same way.
+  // crossings (4 arms): pair the arms that run most nearly straight through each other
+  const pairOf = new Map();
+  nodes.forEach(n => { if (!n || n.ends.length !== 4) return; const E = n.ends, D = E.map(([ej, s]) => dirAt(edges[ej], s));
+    const dd = (a, b) => D[a][0] * D[b][0] + D[a][1] * D[b][1];
+    const P = [[[0, 1], [2, 3]], [[0, 2], [1, 3]], [[0, 3], [1, 2]]].map(pp => ({ pp, s: dd(...pp[0]) + dd(...pp[1]) })).sort((a, b) => a.s - b.s)[0].pp;
+    P.forEach(([a, b]) => { pairOf.set(E[a][0] * 2 + E[a][1], E[b]); pairOf.set(E[b][0] * 2 + E[b][1], E[a]); }); });
+  const nextOpts = (ei, dir) => {
+    const e = edges[ei]; const nodeId = dir ? e.n0 : e.n1; const arriveSide = dir ? 0 : 1;
+    const pr = pairOf.get(ei * 2 + arriveSide); if (pr) return [{ ei: pr[0], dir: pr[1], dot: 1 }];
+    const din = dirAt(e, arriveSide); const v = [-din[0], -din[1]];
+    const c = nodes[nodeId].ends.filter(([ej, s]) => !(ej === ei && s === arriveSide)).map(([ej, s]) => { const d = dirAt(edges[ej], s); return { ei: ej, dir: s, dot: v[0] * d[0] + v[1] * d[1] }; });
+    if (!c.length) return [];
+    const best = Math.max(...c.map(o => o.dot));
+    const fork = c.length === 2; // a Y: from the shared stem both branches are fair game
+    return c.filter(o => fork ? o.dot > -0.1 && o.dot >= best - 0.6 : o.dot > 0.2 && o.dot >= best - 0.22).sort((a, b) => b.dot - a.dot);
+  };
+  // the edges that make up the drawing around the tapped spot (ignoring dead-end twigs)
+  const target = new Set(); { const seenN = new Set([edges[se].n0, edges[se].n1]); const q = [...seenN];
+    while (q.length) { const nId = q.pop(); nodes[nId].ends.forEach(([ej]) => { const e = edges[ej]; if (!nodes[e.n0].dead && !nodes[e.n1].dead) target.add(ej); [e.n0, e.n1].forEach(m => { if (!seenN.has(m)) { seenN.add(m); q.push(m); } }); }); } }
+  target.add(se);
+  // Search for laps. A lap that drives every part of the drawing wins (a stretch may be driven twice,
+  // e.g. a straight shared by both halves of a figure-8); otherwise the smoothest, longest loop.
+  const cycles = [], full = []; let budget = 30000;
+  const use = new Map(); const bump = (k, d) => use.set(k, (use.get(k) || 0) + d);
+  const covered = () => { for (const ej of target) if (!use.get(ej * 2) && !use.get(ej * 2 + 1)) return false; return true; };
+  const maxLen = target.size * 2 + 4;
+  const dfs = (path, cost) => {
+    if (budget-- < 0 || full.length > 6) return;
+    const [ei, dir] = path[path.length - 1];
+    for (const o of nextOpts(ei, dir)) {
+      if (o.ei === se && o.dir === 0) {
+        const c = { path: path.slice(), cost: cost + (1 - o.dot) };
+        if (covered()) full.push(c); else if (!path.some(([e2, d2], i) => path.findIndex(([e3, d3]) => e3 === e2 && d3 === d2) !== i)) cycles.push(c);
+        if (use.get(se * 2) >= 2) continue;
+      }
+      const key = o.ei * 2 + o.dir; if ((use.get(key) || 0) >= 2 || path.length > maxLen) continue;
+      bump(key, 1); path.push([o.ei, o.dir]); dfs(path, cost + (1 - o.dot)); path.pop(); bump(key, -1);
+    }
+  };
+  bump(se * 2, 1); dfs([[se, 0]], 0);
+  const lenOf = c => c.path.reduce((s, [ei]) => s + edges[ei].len, 0);
+  let pick, routes = 1;
+  if (full.length) { full.sort((a, b) => lenOf(a) - lenOf(b)); pick = full[0]; } // shortest lap that covers everything
+  else {
+    if (!cycles.length) return null;
+    const minCost = Math.min(...cycles.map(c => c.cost));
+    cycles.sort((a, b) => ((a.cost > minCost + 0.35) - (b.cost > minCost + 0.35)) || (lenOf(b) - lenOf(a)));
+    const sig = c => [...new Set(c.path.map(p => p[0]))].sort((a, b) => a - b).join(',');
+    routes = [...new Set(cycles.map(sig))].length; pick = cycles[0];
+  }
+  const raw = []; pick.path.forEach(([ei, dir]) => { const P = dir ? edges[ei].pts.slice().reverse() : edges[ei].pts; P.forEach(p => raw.push(p)); });
+  const clean = []; raw.forEach(p => { const q = clean[clean.length - 1]; if (!q || Math.hypot(p[0] - q[0], p[1] - q[1]) > 1.5) clean.push(p); });
+  if (clean.length < 20) return null;
+  let per = 0; for (let i = 0; i < clean.length; i++) { const a = clean[i], b = clean[(i + 1) % clean.length]; per += Math.hypot(b[0] - a[0], b[1] - a[1]); }
+  const n = clamp(Math.round(per / 6), 60, 320);
+  const pts = resampleLoop(smoothLoop(clean, 2), n);
+  return { pts, width: bandW, count: per, junctions, routes };
+}
+function holeCount(comp, w, h, minFrac) {
+  const { outside } = loopRegions(comp, w, h); const lab = new Uint8Array(w * h); let n = 0, total = 0;
+  for (let i = 0; i < w * h; i++) if (!comp[i] && !outside[i]) total++;
+  for (let i = 0; i < w * h; i++) { if (comp[i] || outside[i] || lab[i]) continue; const st = [i]; lab[i] = 1; let c = 0;
+    while (st.length) { const k = st.pop(); c++; const x = k % w, y = (k - x) / w; for (const j of [x > 0 ? k - 1 : -1, x < w - 1 ? k + 1 : -1, y > 0 ? k - w : -1, y < h - 1 ? k + w : -1]) if (j >= 0 && !comp[j] && !outside[j] && !lab[j]) { lab[j] = 1; st.push(j); } }
+    if (c > total * minFrac && c > 40) n++; }
+  return n;
+}
+
+// white (light) lines enclosed by the track ink: light components that don't touch the image edge and are thin (not an infield)
+function centreLines(data, w, h, bg, ink, comp) {
+  let ir = 0, ig = 0, ib = 0, n = 0; for (let i = 0; i < w * h; i += 3) if (comp[i] && ink[i]) { ir += data[i * 4]; ig += data[i * 4 + 1]; ib += data[i * 4 + 2]; n++; }
+  const light = new Uint8Array(w * h);
+  if (n) { ir /= n; ig /= n; ib /= n; for (let i = 0; i < w * h; i++) { const r0 = data[i * 4], g0 = data[i * 4 + 1], b0 = data[i * 4 + 2]; const dB = (r0 - bg[0]) ** 2 + (g0 - bg[1]) ** 2 + (b0 - bg[2]) ** 2, dI = (r0 - ir) ** 2 + (g0 - ig) ** 2 + (b0 - ib) ** 2; if (dB < dI * 0.8) light[i] = 1; } }
+  const lab = new Int32Array(w * h), mask = new Uint8Array(w * h); let id = 0, total = 0;
+  for (let i = 0; i < w * h; i++) {
+    if (!light[i] || lab[i]) continue; id++; const px = [i]; lab[i] = id; let edge = false, per = 0, near = 0;
+    for (let k = 0; k < px.length; k++) { const p = px[k], x = p % w, y = (p - x) / w; if (x === 0 || y === 0 || x === w - 1 || y === h - 1) edge = true;
+      if (comp[p]) near++;
+      const nb = [x > 0 ? p - 1 : -1, x < w - 1 ? p + 1 : -1, y > 0 ? p - w : -1, y < h - 1 ? p + w : -1]; let b = false;
+      for (const j of nb) { if (j < 0) continue; if (light[j]) { if (!lab[j]) { lab[j] = id; px.push(j); } } else b = true; } if (b) per++; }
+    if (edge || px.length < 12 || near < px.length * 0.5) continue;
+    const thick = px.length / Math.max(1, per / 2);
+    if (thick > 12) continue;
+    px.forEach(p => mask[p] = 1); total += px.length;
+  }
+  return { mask, n: total };
 }
 // ===== UI =====
 let G = null, VIEW = 'title', TAB = 'home', WK = null, RACE = null, SETUP = null, CALED = null, SUB = {}, raf = null;
@@ -2683,7 +2874,7 @@ function autoTraceAt(p) {
     trPush();
     TR.pts = res.pts.map(q => [q[0] / pr.ps * f.s + f.ox, q[1] / pr.ps * f.s + f.oy]);
     TR.fresh = false; TR.mode = 'adjust';
-    TR.msg = `Traced ${TR.pts.length} points (${res.method || 'line'} mode). Check the red line follows the track, then set the start line and direction. Drag points to fix any spots, e.g. where a pit lane joins.`; TR.err = false;
+    TR.msg = `Traced ${TR.pts.length} points (${res.method || 'line'} mode). Check the red line follows the track, then set the start line and direction. Drag points to fix any spots, e.g. where a pit lane joins.${res.note ? ' ' + res.note : ''}`; TR.err = false;
     refreshTracerSide();
   }, 20);
 }
