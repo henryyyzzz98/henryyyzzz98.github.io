@@ -218,6 +218,58 @@ canvas{display:block;width:100%}
   .cls-title{font-size:26px}.cls-event{font-size:15px}
   .cls-name{font-size:13.5px}.cls-name b{font-size:14.5px}.cls-time{font-size:13px}.cls-pos{font-size:15px}
 }
+/* ===== expansion ===== */
+.camsel{display:flex;gap:4px;margin-top:8px}
+.camsel button{flex:1;font-size:12px;padding:5px 7px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;color:#ccc}
+.camsel button.on{background:#fff;color:#000}
+.bgfx{position:absolute;left:8px;bottom:8px;pointer-events:none}
+.bbox{background:#111e;border:1px solid #333;border-radius:8px;overflow:hidden;font-size:12px}
+.bbox .bt{background:#fff;color:#111;font-weight:900;font-style:italic;padding:2px 8px;letter-spacing:.5px}
+.bbox .br{display:flex;gap:8px;align-items:center;padding:4px 8px}.bbox .br span{padding-left:5px;font-weight:800}
+.pitgfx{position:absolute;right:8px;bottom:8px;pointer-events:none}
+.pbox{background:#111e;border-radius:8px;overflow:hidden;font-size:12px;min-width:120px}
+.pbox .pt{background:#4fc3f7;color:#002;font-weight:900;font-style:italic;padding:2px 8px}
+.pbox .pr{display:flex;gap:8px;align-items:center;padding:4px 8px}.ptime{font-weight:900;font-size:16px;font-variant-numeric:tabular-nums}
+.radiogfx{position:absolute;left:50%;transform:translateX(-50%);bottom:52px;pointer-events:none;max-width:86%}
+.rbox{background:#000d;border-radius:8px;padding:5px 10px;font-size:12.5px;font-style:italic}
+.rbox .rt{font-style:normal;font-weight:800;font-size:11px;color:#f5c518;letter-spacing:.5px}
+.replaybadge{position:absolute;left:8px;top:40px;display:flex;gap:8px;align-items:center}
+.replaybadge span{background:#7b2cff;color:#fff;font-weight:900;font-style:italic;padding:3px 9px;border-radius:6px}
+.radar{display:flex;gap:4px;align-items:flex-end;height:70px;margin-bottom:4px}
+.radar div{flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%;text-align:center}
+.radar i{display:block;border-radius:3px 3px 0 0}.radar span{font-size:9.5px;color:var(--mut)}
+.onboard{background:linear-gradient(160deg,#1b2433,#121620)}
+.obrow{display:flex;align-items:center;gap:12px;margin-top:6px}
+.obspeed{text-align:center}.obspeed b{display:block;font-size:30px;font-weight:900;font-variant-numeric:tabular-nums;line-height:1}.obspeed span{font-size:10px;color:var(--mut)}
+.obgear{font-size:30px;font-weight:900;color:#f5c518;width:30px;text-align:center}
+.obbars{flex:1;display:flex;flex-direction:column;gap:3px}.obbars div{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--mut)}
+.obbars span{width:28px}.obbars i{display:block;height:8px;border-radius:4px;transition:width .2s}
+.drs{background:#2ecc71;color:#000;font-weight:900;padding:3px 7px;border-radius:5px;font-size:12px}
+.radio-box{background:#0d1118;border-left:3px solid #f5c518;border-radius:6px;padding:6px 8px;margin-top:6px;font-size:12.5px;font-style:italic}
+.radio-box div+div{margin-top:3px}
+.strat{display:flex;flex-direction:column;gap:3px}
+.strow{display:grid;grid-template-columns:30px 42px 1fr;gap:6px;align-items:center;font-size:12px}
+.strow.me{background:#ffffff12;border-radius:4px}
+.stc{text-align:center;color:var(--mut)}.stbar{display:flex;height:14px;border-radius:3px;overflow:hidden;background:#20242e}
+.stbar span{display:flex;align-items:center;justify-content:center;color:#000;font-size:10px;font-weight:700;border-right:2px solid #0e1016}
+.fgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:5px}
+.fpick{display:flex;flex-direction:column;align-items:flex-start;border-left:4px solid var(--tc);padding:5px 8px;font-size:12px}
+.fpick.on{background:#fff;color:#000}.fpick span{font-weight:400;font-size:11px}
+.podium{position:relative;display:flex;justify-content:center;align-items:flex-end;gap:6px;background:radial-gradient(circle at 50% 100%,#3a0d0d,#121318 70%);border-radius:16px;padding:20px 10px 0;margin-bottom:12px;overflow:hidden;min-height:200px}
+.pstep{width:31%;max-width:180px;text-align:center}
+.pname{font-size:13px;line-height:1.15;margin-bottom:6px}.pname b{display:block;font-size:16px;font-style:italic}.pname small{color:var(--mut)}
+.pblock{background:linear-gradient(180deg,var(--tc),#1d2028);border-radius:8px 8px 0 0;display:flex;align-items:flex-start;justify-content:center;font-size:30px;font-weight:900;font-style:italic;padding-top:6px}
+.podium.anim .pstep{animation:rise .8s ease-out both}.podium.anim .pstep:nth-child(1){animation-delay:.3s}.podium.anim .pstep:nth-child(3){animation-delay:.6s}
+@keyframes rise{from{transform:translateY(60px);opacity:0}to{transform:none;opacity:1}}
+.confetti{position:absolute;inset:0;pointer-events:none}
+.confetti i{position:absolute;top:-10px;width:7px;height:12px;border-radius:2px;animation:fall 3.2s linear infinite;opacity:.9}
+@keyframes fall{to{transform:translateY(240px) rotate(540deg)}}
+.champ-banner{background:linear-gradient(90deg,#b8860b,#ffd700,#b8860b);color:#1a1200;text-align:center;font-weight:900;font-style:italic;font-size:22px;padding:12px;border-radius:14px;margin-bottom:12px;letter-spacing:.5px}
+.champ-banner small{display:block;font-size:12px;font-style:normal;letter-spacing:1px}
+body.xp-text-s{font-size:13.5px}body.xp-text-l{font-size:17px}body.xp-text-xl{font-size:19px}
+body.xp-text-l .tw-row,body.xp-text-l .ttr{font-size:15px}body.xp-text-xl .tw-row,body.xp-text-xl .ttr{font-size:17px}
+body.xp-nomotion *{animation:none !important;transition:none !important}
+body.xp-contrast{--mut:#c8ccd6;--line:#5a6378}body.xp-contrast .card{border-width:2px}body.xp-contrast .tw-gap,body.xp-contrast .tw-pos{color:#fff}
 </style></head><body><div id="app"></div><script>
 // ===== DATA: teams, drivers, tracks =====
 const ENGINES = {
@@ -425,6 +477,10 @@ function seeded(str) { let h = 2166136261; for (const c of str) { h ^= c.charCod
 const fmtTime = s => { if (s == null || !isFinite(s)) return '—'; const h = Math.floor(s / 3600); const m = Math.floor((s % 3600) / 60); const r = s - h * 3600 - m * 60; const p2 = x => (x < 10 ? '0' : '') + x; return h ? h + ':' + p2(m) + ':' + (r < 10 ? '0' : '') + r.toFixed(3) : (m ? m + ':' + (r < 10 ? '0' : '') : '') + r.toFixed(3); };
 const fmtM = m => (m < 0 ? '-' : '') + '$' + Math.abs(m).toFixed(1) + 'M';
 
+// expansion hooks (filled in by expansion.js)
+let XPH = {};
+const xh = (name, ...args) => (XPH[name] ? XPH[name](...args) : undefined);
+
 // ---------- Track geometry ----------
 const GEO = {};
 function trackGeometry(t) {
@@ -520,6 +576,7 @@ function lapTimeFor(G, c, track, o) {
   if (!o.quali) lt += 2.0 * (1 - o.lap / (o.laps || track.laps)); else lt -= 0.4;
   lt += c.mode === 'push' ? -0.35 : c.mode === 'save' ? 0.45 : 0;
   lt += (1 - (c.setup || 0.4)) * 0.5;
+  if (d.morale != null) lt -= (d.morale - 70) * 0.005;
   lt += gauss() * (0.12 + (100 - d.cons) * 0.012);
   return lt;
 }
@@ -551,7 +608,7 @@ function runPractice(G, wk, session, programs) {
 // ---------- Qualifying ----------
 function qualiLap(G, e, track, wet, risk) {
   const c = { d: e.d, t: e.t, tyre: wet > 0.65 ? 'W' : wet > 0.25 ? 'I' : 'S', wear: 0, mode: 'push', setup: e.setup };
-  let t = lapTimeFor(G, c, track, { lap: 0, wet, quali: true }) - e.qualiPrep * 0.25;
+  let t = lapTimeFor(G, c, track, { lap: 0, wet, quali: true }) - e.qualiPrep * 0.25 + (xh('qualiSetPenalty', e, wet) || 0);
   const sigma = 0.15 + (100 - e.d.cons) * 0.01;
   if (risk === 'safe') t += 0.12 + Math.abs(gauss()) * sigma * 0.4;
   else if (risk === 'all') t += -0.15 + gauss() * sigma * 1.4;
@@ -594,6 +651,7 @@ class Race {
         stops: 0, penalty: 0, outLap: false, spin: 0, dnfLap: 0, planStop: rnd(0.62, 0.78), player: !!G.player && e.t.id === G.player
       };
     });
+    xh('raceInit', this);
     this.cars.forEach(c => c.curLT = this.lapTime(c, 0) + 2.5 + c.grid * 0.03);
     this.msg(`Lights out${this.sprint ? ' for the Sprint' : ''} at ${this.track.name}! ${this.wet > 0.2 ? 'Wet start.' : ''}`);
   }
@@ -601,6 +659,7 @@ class Race {
   lapTime(c, lap) {
     let lt = lapTimeFor(this.G, c, this.track, { lap, wet: this.wet, laps: this.laps });
     if (c.outLap) lt += 1.2;
+    lt += xh('lapDelta', this, c) || 0;
     return lt;
   }
   wearRate(c) {
@@ -655,8 +714,8 @@ class Race {
   }
   doPit(c, comp) {
     const loss = this.track.pit * (this.sc ? 0.55 : this.vsc ? 0.65 : 1);
-    let svc = rnd(2.1, 3.2); if (Math.random() < 0.03) { svc += rnd(3, 9); this.msg(`🐢 Slow stop for ${c.d.code}`, c.player || c.fav); }
-    c.pitT = loss + svc; c.tyre = comp; c.wear = 0; c.age = 0; c.used.add(comp); c.stops++; c.outLap = true; c.pitReq = null;
+    let svc = xh('pitService', this, c) ?? rnd(2.1, 3.2); if (Math.random() < (c.player ? (xh('slowStopP', this, c) ?? 0.03) : 0.03)) { svc += rnd(3, 9); this.msg(`🐢 Slow stop for ${c.d.code}`, c.player || c.fav); }
+    c.pitT = loss + svc; c.tyre = comp; c.wear = xh('pitTyre', this, c, comp) || 0; c.age = 0; xh('onPit', this, c, comp, svc); c.used.add(comp); c.stops++; c.outLap = true; c.pitReq = null;
     this.msg(`🔧 ${c.d.code} pits → ${TYRES[comp].name}s (${svc.toFixed(1)}s)`, false);
   }
   retire(c, why, flag) {
@@ -698,7 +757,7 @@ class Race {
         if (c.out) return;
       }
       const rel = teamRel(this.G, c.t);
-      if (Math.random() < 0.00075 * Math.pow((100 - rel) / 15, 1.6)) { this.retire(c, pick(['Power unit failure', 'Gearbox', 'Hydraulics', 'Brakes', 'Electrical issue', 'Engine']), Math.random() < 0.5 ? 'vsc' : null); return; }
+      if (Math.random() < 0.00075 * Math.pow((100 - rel) / 15, 1.6) * (xh('relMul', this, c) || 1)) { this.retire(c, pick(['Power unit failure', 'Gearbox', 'Hydraulics', 'Brakes', 'Electrical issue', 'Engine']), Math.random() < 0.5 ? 'vsc' : null); return; }
       if (c.wear > 0.88 && Math.random() < 0.18) {
         if (Math.random() < 0.25) { this.retire(c, 'Tyre failure', 'auto'); return; }
         c.spin = rnd(15, 25); this.msg(`💥 Puncture for ${c.d.code}!`, true); c.pitReq = c.pitReq || this.slick(c, this.laps - n) || 'M';
@@ -712,6 +771,7 @@ class Race {
     if (comp) this.doPit(c, comp);
     // AI driving mode
     if (c.auto && !c.player) c.mode = (this.laps - n < 8 && c.wear < 0.5) ? 'push' : c.wear > 0.65 ? 'save' : 'std';
+    xh('onLap', this, c, n);
     c.curLT = this.lapTime(c, n);
   }
   step(dt) {
@@ -740,8 +800,9 @@ class Race {
           if (!this.sc && !this.vsc && c.laps >= 0 && ahead.pitT <= 0) {
             const delta = ahead.curLT - c.curLT;
             const ease = 0.15 + this.track.ot * 1.6;
-            const chance = dt * (0.015 + Math.max(0, delta) * 0.35) * ease * (c.d.craft / ahead.d.craft) * (c.dist < 400 ? 2 : 1);
-            if (delta > 0.05 && Math.random() < chance) pass = true;
+            const pm = xh('passMul', this, c, ahead); const mul = pm == null ? 1 : pm;
+            const chance = dt * (0.015 + Math.max(0, delta) * 0.35) * ease * (c.d.craft / ahead.d.craft) * (c.dist < 400 ? 2 : 1) * mul;
+            if (mul === Infinity || (mul > 0 && delta > 0.05 && Math.random() < chance)) pass = true;
           }
           if (pass) { nd = Math.max(nd, ahead.dist + 0.5); const key = c.d.id + ahead.d.id + c.laps; if ((c.player || ahead.player || c.fav || ahead.fav || (this.order().indexOf(c) < 4)) && this.lastPass !== key && c.laps >= 1) { this.lastPass = key; this.msg(`⚔️ ${c.d.code} passes ${ahead.d.code}`, false); } }
           else nd = Math.min(nd, ahead.dist - minGap);
@@ -754,6 +815,7 @@ class Race {
       if (!c.finished && !c.out) ahead = c;
     }
     // water / speed of wetness
+    xh('onStep', this, dt);
     if (this.chequered && this.cars.every(c => c.out || c.finished)) this.finish();
     if (this.t > this.laps * base * 3) this.finish();
   }
@@ -763,6 +825,7 @@ class Race {
     if (!this.sprint && this.rules.twoCompound) this.cars.forEach(c => { if (!c.out && !this.anyWetUsed(c) && c.used.size < 2) { c.penalty = 30; this.msg(`⚖️ ${c.d.code}: +30s, only one dry compound used`, true); } });
     this.cars.forEach(c => { if (c.finished) c.finishT += c.penalty; });
     const ord = this.order();
+    xh('raceFinish', this);
     this.result = ord.map((c, i) => ({ pos: i + 1, c, id: c.d.id, team: c.t.id, out: c.out, laps: c.laps, time: c.finished ? c.finishT : null, grid: c.grid, best: c.best, stops: c.stops }));
   }
   gapStr(c, leader) {
@@ -862,7 +925,7 @@ function applyRaceResult(G, race, wk) {
     let g = sz.fail && Math.random() < sz.fail ? 0 : rnd(sz.min, sz.max);
     const tgt = p.area === 'power' ? G.engines[me.engine] : me;
     const key = p.area === 'power' ? 'power' : p.area;
-    if (g > 0) g *= devMult(tgt[key]);
+    if (g > 0) g *= devMult(tgt[key]) * (xh('partMul', G, p) || 1);
     tgt[key] = clamp(tgt[key] + g, 40, 99);
     if (G.timeline && G.bonus) G.bonus[p.area === 'power' ? 'power' : p.area] += g;
     p.result = g;
@@ -1481,7 +1544,7 @@ function toast(s) { const d = document.createElement('div'); d.className = 'toas
 function modal(html) { closeModal(); const m = document.createElement('div'); m.className = 'modal'; m.id = 'modal'; m.innerHTML = `<div class="card">${html}</div>`; m.addEventListener('click', e => { if (e.target === m) closeModal(); }); document.body.appendChild(m); }
 function closeModal() { const m = document.getElementById('modal'); if (m) m.remove(); }
 function autosave() { if (G) save(G); }
-function fixSave(g) { if (!g) return; mergeLib(g.trackLib); g.sprints = g.sprints || []; if (g.spectator === undefined) g.spectator = false; }
+function fixSave(g) { if (!g) return; mergeLib(g.trackLib); ensureXP(g); g.sprints = g.sprints || []; if (g.spectator === undefined) g.spectator = false; }
 function trackSVG(t, w = 120, col = '#fff') {
   const g = trackGeometry(t); const pts = g.P.filter((_, i) => i % 3 === 0).map(p => (p[0] * (w - 10) + 5).toFixed(1) + ',' + (p[1] * (w - 10) + 5).toFixed(1)).join(' ');
   return `<svg width="${w}" height="${w}" viewBox="0 0 ${w} ${w}"><polygon points="${pts}" fill="none" stroke="${col}" stroke-width="${w > 80 ? 3 : 2}" stroke-linejoin="round"/></svg>`;
@@ -1506,11 +1569,11 @@ function render() {
 function topBar(noTabs) {
   const me = G.teams[G.player]; const total = G.cal.length;
   if (!G.spectator && !me) return `<div class="top"><div class="topbar"><span class="logo">PIT<b>WALL</b></span><span class="chip">${G.year} · choose your team</span><span class="chip">💰 ${fmtM(G.bank || 0)}</span></div></div>`;
-  const tabs = G.spectator ? ['home', 'calendar', 'standings', 'drivers', 'menu'] : ['home', 'calendar', 'standings', 'car', 'drivers', 'finance', 'menu'];
+  const tabs = hqTabs();
   if (G.spectator) { const fav = G.follow && G.drivers[G.follow];
     return `<div class="top"><div class="topbar"><span class="logo">PIT<b>WALL</b></span><span class="chip">👀 Spectator</span><span class="chip">${G.year} · R${Math.min(G.round + 1, total)}/${total}</span>${fav ? `<span class="chip">⭐ ${esc(fav.name)}</span>` : ''}</div>
-    ${noTabs ? '' : `<div class="tabs">${tabs.map(t => `<button data-a="tab" data-v="${t}" class="${TAB === t ? 'on' : ''}">${({ home: '🏠 Home', calendar: '📅 Calendar', standings: '🏆 Standings', drivers: '👤 Grid', menu: '☰ Menu' })[t]}</button>`).join('')}</div>`}</div>`; }
-  const names = { home: '🏠 Home', calendar: '📅 Calendar', standings: '🏆 Standings', car: '🔧 Car & R&D', drivers: '👤 Drivers', finance: '💰 Finance', menu: '☰ Menu' };
+    ${noTabs ? '' : `<div class="tabs">${tabs.map(t => `<button data-a="tab" data-v="${t}" class="${TAB === t ? 'on' : ''}">${t === 'drivers' ? '👤 Grid' : TAB_NAMES[t]}</button>`).join('')}</div>`}</div>`; }
+  const names = TAB_NAMES;
   return `<div class="top"><div class="topbar"><span class="logo">PIT<b>WALL</b></span>
   <span class="chip">${tbar(me.id)}${esc(me.name)}</span><span class="chip">${G.year} · R${Math.min(G.round + 1, total)}/${total}</span>
   <span class="chip">💰 ${fmtM(me.money)}</span>${capFor(G) === Infinity ? '<span class="chip">No cost cap</span>' : `<span class="chip">Cap ${fmtM(COST_CAP - me.spent)} left</span>`}</div>
@@ -1599,7 +1662,8 @@ function viewCalEditor() {
 
 // ---------- HQ ----------
 function viewHQ() {
-  return ({ home: hqHome, calendar: hqCalendar, standings: hqStandings, car: hqCar, drivers: hqDrivers, finance: hqFinance, menu: hqMenu })[TAB]();
+  ensureXP(G);
+  return ({ home: hqHome, calendar: hqCalendar, standings: hqStandings, car: hqCar, drivers: hqDrivers, finance: hqFinance, menu: hqMenu, team: hqTeam, stats: hqStats, fan: hqFan }[TAB] || hqHome)();
 }
 function seatsOK() { return teamDrivers(G, G.player).length >= Math.min(2, G.teams[G.player].cars || 2); }
 function pickTeamView() {
@@ -1781,6 +1845,7 @@ function negotiateForm(d, ask, opts, buyout) {
   const sel = opts === 'renew' ? '' : `<select id="ng_when" style="width:100%;margin:6px 0">${opts.map(([k, v]) => `<option value="${k}">${esc(v)}</option>`).join('')}</select>`;
   return `${sel}<div class="row"><span class="mut">Salary $M/yr</span><input id="ng_sal" type="number" step="0.5" min="0.5" value="${ask.toFixed(1)}" style="width:90px"><span class="mut">Years</span>
   <select id="ng_yrs"><option>1</option><option selected>2</option><option>3</option></select>
+  </div><div class="row small" style="margin-top:6px"><label class="row"><input type="checkbox" id="ng_no1" ${d.no1 ? 'checked' : ''}> Number-one status (asks ~15% less)</label><label class="row"><input type="checkbox" id="ng_rel" ${d.release ? 'checked' : ''}> Release clause (asks ~8% less, but rival teams can buy him out)</label></div><div class="row" style="margin-top:6px">
   <button class="pri" data-a="offer" data-v="${d.id}" data-mode="${opts === 'renew' ? 'renew' : 'sign'}" data-buy="${buyout || 0}">${opts === 'renew' ? 'Offer extension' : 'Send offer'}</button></div><div id="ng_msg" class="small" style="margin-top:6px"></div>`;
 }
 function doOffer(id, mode, buyout) {
@@ -1793,6 +1858,8 @@ function doOffer(id, mode, buyout) {
   const ask = askingSalary(d), ap = appeal(G, G.player);
   let req = ask * (1.25 - ap * 0.5) * (mode === 'renew' ? 0.95 : 1) * (d.team && mode !== 'renew' ? 1.1 : 1);
   if (!d.team) req *= 0.9;
+  const no1 = !!(document.getElementById('ng_no1') || {}).checked, rel = !!(document.getElementById('ng_rel') || {}).checked;
+  if (no1) req *= 0.85; if (rel) req *= 0.92;
   const whenV = mode === 'renew' ? 'renew' : document.getElementById('ng_when').value;
   if (mode !== 'renew' && d.team && !whenV.startsWith('next')) {
     const theirs = appeal(G, d.team);
@@ -1801,12 +1868,14 @@ function doOffer(id, mode, buyout) {
   }
   const ok = sal >= req || (sal >= req * 0.85 && Math.random() < 0.4);
   if (!ok) { msgEl.innerHTML = `<span class="bad">Rejected. He's looking for more (try ~${fmtM(req * rnd(0.98, 1.08))}).</span>`; return; }
+  const setClauses = () => { d.no1 = no1; d.release = rel ? +(ask * 2.5 + 5).toFixed(1) : 0; if (no1) teamDrivers(G, G.player).forEach(x => { if (x !== d && x.no1) { x.no1 = false; x.morale = clamp((x.morale ?? 70) - 10, 5, 100); } }); if (no1) d.morale = clamp((d.morale ?? 70) + 6, 5, 100); };
   if (mode === 'renew') {
+    setClauses(); d.morale = clamp((d.morale ?? 70) + 5, 5, 100);
     d.salary = +sal.toFixed(1); d.until = G.year + yrs - (G.round === 0 ? 1 : 0);
     news(G, `✍️ ${d.name} extends with ${me.name} until ${d.until}.`); closeModal(); render(); toast('Contract extended!'); autosave(); return;
   }
   if (whenV === 'next') {
-    d.next = { team: G.player, salary: +sal.toFixed(1), until: G.year + yrs };
+    d.next = { team: G.player, salary: +sal.toFixed(1), until: G.year + yrs }; setClauses();
     news(G, `✍️ ${d.name} will join ${me.name} in ${G.year + 1}.`); closeModal(); render(); toast(`${d.name} signed for ${G.year + 1}!`); autosave(); return;
   }
   // join now
@@ -1815,7 +1884,7 @@ function doOffer(id, mode, buyout) {
   if (repl) { const r = G.drivers[repl]; me.money -= r.salary * left * 0.5; r.team = null; r.until = 0; news(G, `👋 ${me.name} release ${r.name}.`); }
   const oldTeam = d.team;
   if (oldTeam) { me.money -= buyout; G.teams[oldTeam].money += buyout; }
-  d.team = G.player; d.salary = +sal.toFixed(1); d.until = G.year + yrs - 1 + (G.round >= G.cal.length ? 1 : 0); d.rookie = false;
+  d.team = G.player; d.salary = +sal.toFixed(1); d.until = G.year + yrs - 1 + (G.round >= G.cal.length ? 1 : 0); d.rookie = false; setClauses(); if (G.xp) G.xp.academy = G.xp.academy.filter(x => x !== d.id);
   news(G, `✍️ ${d.name} joins ${me.name}${oldTeam ? ' from ' + G.teams[oldTeam].name : ''}!`);
   if (oldTeam) aiFillNow(G);
   closeModal(); render(); toast(`${d.name} signed!`); autosave();
@@ -2166,8 +2235,8 @@ function stepLights(ts) {
   const L = LIGHTS;
   if (L.phase === 'on') {
     const n = Math.min(5, Math.floor((ts - L.t0) / 1000) + 1);
-    if (n !== L.n) { L.n = n; updateGantry(); }
-    if (ts - L.t0 >= 4000 + L.hold) { L.phase = 'out'; L.tOut = ts; L.n = 0; updateGantry(); RACE.started = true; RACE.msg(`🟢 Lights out${RACE.sprint ? ' for the Sprint' : ''} at ${RACE.track.name}!`); RACE.events = [];
+    if (n !== L.n) { L.n = n; updateGantry(); SND.light(); }
+    if (ts - L.t0 >= 4000 + L.hold) { L.phase = 'out'; L.tOut = ts; L.n = 0; updateGantry(); RACE.started = true; SND.go(); RACE.msg(`🟢 Lights out${RACE.sprint ? ' for the Sprint' : ''} at ${RACE.track.name}!`); RACE.events = [];
       const m = document.getElementById('lomsg'); if (m) { m.textContent = 'LIGHTS OUT AND AWAY WE GO!'; m.classList.add('show'); }
       const rc = document.getElementById('rctl'); if (rc) rc.innerHTML = speedButtons() + '<span class="sp"></span><button class="sm" data-a="simend">Sim to finish ⏭</button>';
     }
@@ -2791,4 +2860,1148 @@ Object.assign(A, {
     toast('Tracks imported'); render();
   }
 });
+// ===================================================================
+// PITWALL EXPANSION — core systems (state, Team Principal, fan, stats)
+// ===================================================================
+const XP_ROLES = {
+  td: { name: 'Technical Director', desc: 'Boosts every R&D project and next-year development' },
+  aero: { name: 'Head of Aerodynamics', desc: 'Extra gains on aero parts' },
+  eng: { name: 'Chief Race Engineer', desc: 'Clearer setup feedback, better race calls' },
+  crew: { name: 'Pit Crew Chief', desc: 'Faster, more consistent pit stops' }
+};
+const XP_FAC = {
+  tunnel: { name: 'Wind tunnel', desc: '+6% aero gains per level' },
+  sim: { name: 'Driver simulator', desc: '+8% practice gains per level' },
+  factory: { name: 'Factory', desc: 'Cheaper and faster part builds' },
+  crew: { name: 'Pit-stop training centre', desc: 'Raises the pit crew training limit' }
+};
+const XP_PARTS = {
+  fw: { name: 'Front wing', area: 'aero' }, floor: { name: 'Floor', area: 'aero' }, rw: { name: 'Rear wing', area: 'aero' },
+  susp: { name: 'Suspension', area: 'chassis' }, side: { name: 'Sidepods & cooling', area: 'chassis' },
+  pu: { name: 'Power unit upgrade', area: 'power' }, gbx: { name: 'Gearbox', area: 'rel' }, elec: { name: 'Electronics', area: 'rel' }
+};
+const SPONSOR_NAMES = ['Apex Energy', 'NovaByte Cloud', 'Helix Watches', 'Orbit Telecom', 'Kestrel Air', 'Lumen Bank', 'Vanta Tyres', 'Pulse Drinks', 'Quanta AI', 'Meridian Shipping', 'Solstice Solar', 'Halcyon Hotels', 'Torque Tools', 'Zephyr Mobility', 'Crest Insurance', 'Ironbark Logistics'];
+const PUNDITS = [{ id: 'prof', name: 'The Professor', style: 'stats' }, { id: 'pete', name: 'Pit Lane Pete', style: 'bold' }, { id: 'gw', name: 'Grid Walker', style: 'safe' }];
+const WHATIFS = [
+  { id: 'senna94', label: 'Senna survives Imola 1994', start: 1994, driver: 'ayrton-senna', team: 'williams', from: 1994, to: 1999, desc: 'Ayrton Senna stays at Williams through to 1999.' },
+  { id: 'rindt70', label: 'Rindt survives Monza 1970', start: 1970, driver: 'jochen-rindt', team: 'lotus', from: 1970, to: 1974, desc: 'Jochen Rindt keeps racing for Lotus until 1974.' },
+  { id: 'clark68', label: 'Clark survives Hockenheim 1968', start: 1968, driver: 'jim-clark', team: 'lotus', from: 1968, to: 1972, desc: 'Jim Clark leads Lotus into the 1970s.' },
+  { id: 'gilles82', label: 'Gilles Villeneuve survives Zolder 1982', start: 1982, driver: 'gilles-villeneuve', team: 'ferrari', from: 1982, to: 1986, desc: 'Gilles Villeneuve stays a Ferrari driver to 1986.' },
+  { id: 'schumi07', label: 'Schumacher never retires (2007)', start: 2007, driver: 'michael-schumacher', team: 'ferrari', from: 2007, to: 2009, desc: 'Michael Schumacher races on at Ferrari from 2007 to 2009.' }
+];
+const FAMOUS = [
+  [1976, 'Hunt vs Lauda — the Nürburgring, the rain in Japan'], [1984, 'Lauda beats Prost by half a point'], [1988, 'Senna vs Prost, McLaren team-mates'],
+  [1994, 'Schumacher vs Hill, Adelaide'], [2008, 'Hamilton vs Massa, the last corner in Brazil'], [2010, 'Four drivers in the final-round title fight'], [2021, 'Verstappen vs Hamilton, Abu Dhabi']
+];
+
+function xpRand(seed) { return seeded(String(seed)); }
+function personName(r) { const cc = Object.keys(NAME_POOL)[Math.floor(r() * Object.keys(NAME_POOL).length)]; const p = NAME_POOL[cc]; return p[0][Math.floor(r() * p[0].length)] + ' ' + p[1][Math.floor(r() * p[1].length)]; }
+function makeStaff(role, rating, r) { r = r || Math.random; return { role, name: personName(r), rating: Math.round(rating), salary: +(Math.pow(rating / 60, 3) * 1.2).toFixed(1) }; }
+
+function ensureXP(G) {
+  if (!G) return;
+  if (!G.xp) G.xp = {};
+  const X = G.xp;
+  X.v = 1;
+  if (!X.staff) {
+    const me = G.player && G.teams[G.player];
+    const base = me ? clamp((me.aero + me.chassis) / 2 - 8, 55, 88) : 70;
+    X.staff = {}; Object.keys(XP_ROLES).forEach(k => X.staff[k] = makeStaff(k, base + rnd(-6, 6)));
+  }
+  if (!X.fac) X.fac = { tunnel: 2, sim: 2, factory: 2, crew: 2 };
+  if (!X.building) X.building = [];
+  if (!X.academy) X.academy = [];
+  if (X.focus == null) X.focus = 20;
+  if (X.nextPool == null) X.nextPool = 0;
+  if (!X.pu) X.pu = {};
+  if (X.rivalry == null) X.rivalry = 15;
+  if (!X.sponsors) X.sponsors = { offers: [], active: [] };
+  if (!X.board) X.board = null;
+  if (!X.trophies) X.trophies = [];
+  if (!X.fan) X.fan = { preds: {}, predPts: 0, pundits: Object.fromEntries(PUNDITS.map(p => [p.id, 0])), fantasy: null, dotd: {} };
+  if (!X.settings) X.settings = { sound: true, volume: 0.5, cam: 'track', text: 'm', motion: true, contrast: false };
+  if (!X.staffMarket) X.staffMarket = [];
+  if (!X.regYear) X.regYear = G.year + 5 - ((G.year - 2026) % 5 + 5) % 5 || G.year + 5;
+  Object.values(G.drivers).forEach(d => { if (d.morale == null) d.morale = 70; });
+  if (G.player && !X.board) xpNewSeasonBusiness(G, true);
+  if (G.player && !X.sponsors.offers.length && !X.sponsors.active.length) xpSponsorOffers(G);
+  if (!X.staffMarket.length) xpStaffMarket(G);
+  applyAccessibility(G);
+  return X;
+}
+
+// ---------- staff & facilities ----------
+function xpStaffMarket(G) {
+  const X = G.xp; X.staffMarket = [];
+  Object.keys(XP_ROLES).forEach(role => { for (let i = 0; i < 3; i++) X.staffMarket.push(makeStaff(role, rnd(58, 94))); });
+}
+function staffMul(G, role) { const s = G.xp && G.xp.staff[role]; return s ? s.rating / 75 : 1; }
+function facLevel(G, k) { return (G.xp && G.xp.fac[k]) || 1; }
+function facCost(level) { return 6 + level * 7; }
+function atrFactor(G) {
+  if (!G.rules ? false : !G.rules.capOn) return 1;
+  if (G.year < 2021) return 1;
+  const pos = G.round === 0 ? (G.xp.lastPos || 6) : teamRank(G, G.player);
+  const n = Object.keys(G.teams).length;
+  return +(0.7 + (pos - 1) / Math.max(1, n - 1) * 0.45).toFixed(2);
+}
+
+// ---------- R&D multipliers (wrap the base game's project completion) ----------
+function xpPartGainMul(G, area) {
+  let m = 0.75 + staffMul(G, 'td') * 0.25;
+  if (area === 'aero') m *= (0.85 + staffMul(G, 'aero') * 0.15) * (1 + (facLevel(G, 'tunnel') - 1) * 0.06) * atrFactor(G);
+  m *= 1 - (G.xp.focus / 100) * 0.6;
+  return m;
+}
+
+// ---------- power unit allocation ----------
+function puRules(G) { const y = G.year; if (y < 2014) return null; return { limit: Math.max(2, Math.round(G.cal.length / 6)), life: G.cal.length / Math.max(2, Math.round(G.cal.length / 6)) }; }
+function puState(G, did) { const X = G.xp; if (!X.pu[did]) X.pu[did] = { units: 1, wear: 0 }; return X.pu[did]; }
+
+// ---------- tyre sets ----------
+function tyreAllocation(G, sprint) { if (G.year < 2007) return null; return sprint ? { S: 6, M: 4, H: 2 } : { S: 8, M: 3, H: 2 }; }
+function initSets(WK) {
+  const al = tyreAllocation(G, WK.sprint); WK.sets = null; if (!al) return;
+  WK.sets = {}; WK.entries.forEach(e => { WK.sets[e.d.id] = { S: Array(al.S).fill(0), M: Array(al.M).fill(0), H: Array(al.H).fill(0) }; });
+}
+function takeSet(did, comp, prefer) {
+  if (!WK || !WK.sets || !WK.sets[did] || !WK.sets[did][comp]) return 0;
+  const arr = WK.sets[did][comp]; if (!arr.length) return 0.35;
+  let idx = 0; arr.forEach((w, i) => { if (w < arr[idx]) idx = i; });
+  if (prefer === 'used') { let best = -1; arr.forEach((w, i) => { if (w > 0 && w < 0.5 && (best < 0 || w < arr[best])) best = i; }); if (best >= 0) idx = best; }
+  const w = arr[idx]; arr.splice(idx, 1); return w;
+}
+function setsLeft(did, comp) { if (!WK || !WK.sets || !WK.sets[did]) return null; const a = WK.sets[did][comp] || []; return { fresh: a.filter(w => w === 0).length, used: a.filter(w => w > 0).length }; }
+function returnSet(did, comp, wear) { if (WK && WK.sets && WK.sets[did] && WK.sets[did][comp]) WK.sets[did][comp].push(+wear.toFixed(2)); }
+
+// ---------- setup puzzle ----------
+const SETUP_KEYS = [['fw', 'Front wing'], ['rw', 'Rear wing'], ['susp', 'Suspension'], ['ride', 'Ride height']];
+function setupOptimum(track, d) { const r = xpRand(track.id + d.id + G.year); const o = {}; SETUP_KEYS.forEach(([k]) => { o[k] = 2 + Math.round(r() * 6); }); o.rw = clamp(Math.round(2 + track.df * 7 + (r() - 0.5) * 2), 1, 10); o.fw = clamp(o.rw + Math.round((r() - 0.5) * 3), 1, 10); return o; }
+function setupScore(cur, opt) { let s = 0; SETUP_KEYS.forEach(([k]) => s += Math.abs(cur[k] - opt[k])); return clamp(1 - s / 22, 0, 1); }
+function setupFeedback(cur, opt, d, engRating) {
+  const lines = []; const noisy = engRating < 70 ? 1 : 0;
+  const say = (k, txt) => lines.push({ k, txt });
+  const df = (k) => (cur[k] - opt[k]) + (noisy && Math.random() < 0.25 ? (Math.random() < 0.5 ? -1 : 1) : 0);
+  const fw = df('fw'), rw = df('rw'), su = df('susp'), rh = df('ride');
+  if (fw > 1) say('fw', 'Too much front end — the car is nervous on entry, the rear wants to step out.'); else if (fw < -1) say('fw', 'Understeer in the slow corners, the front just won\'t bite.'); else if (fw !== 0) say('fw', 'Front end is close, maybe a click ' + (fw > 0 ? 'less' : 'more') + ' front wing.');
+  if (rw > 1) say('rw', 'We\'re slow on the straights, too much drag.'); else if (rw < -1) say('rw', 'The rear is loose in the fast corners, I need more rear wing.'); else if (rw !== 0) say('rw', 'Rear wing almost there — a touch ' + (rw > 0 ? 'less' : 'more') + '.');
+  if (su > 1) say('susp', 'Too stiff — it\'s bouncing over the kerbs.'); else if (su < -1) say('susp', 'It\'s wallowing in the direction changes, stiffen it up.'); else if (su !== 0) say('susp', 'Suspension feels nearly right, maybe ' + (su > 0 ? 'softer' : 'stiffer') + '.');
+  if (rh > 1) say('ride', 'The car feels lazy, we\'re losing downforce — try it lower.'); else if (rh < -1) say('ride', 'It\'s bottoming out on the straights, raise it.'); else if (rh !== 0) say('ride', 'Ride height is very close, one click ' + (rh > 0 ? 'down' : 'up') + '.');
+  if (!lines.length) say('', 'The car feels fantastic. Don\'t touch anything!');
+  return lines;
+}
+
+// ---------- sponsors ----------
+function xpSponsorOffers(G) {
+  const X = G.xp; const me = G.teams[G.player]; if (!me) return;
+  const rank = Math.max(1, teamRank(G, G.player) || 5), n = Object.keys(G.teams).length;
+  const strength = 1 - (rank - 1) / Math.max(1, n - 1);
+  const used = new Set(X.sponsors.active.map(s => s.name)); const names = SPONSOR_NAMES.filter(s => !used.has(s)).sort(() => Math.random() - 0.5);
+  const rivals = Object.values(G.teams).filter(t => t.id !== G.player);
+  const cal = G.cal.map((id, i) => i).filter(i => i >= G.round);
+  X.sponsors.offers = names.slice(0, 5).map((name, k) => {
+    const types = ['points', 'podium', 'beat', 'gp', 'pos'];
+    const type = types[k % types.length];
+    let obj;
+    if (type === 'points') obj = { type, n: Math.max(2, Math.round(G.cal.length * (0.25 + strength * 0.5))), text: '' };
+    else if (type === 'podium') obj = { type, n: Math.max(1, Math.round(1 + strength * 5)) };
+    else if (type === 'beat') { const r = rivals.sort((a, b) => teamRank(G, a.id) - teamRank(G, b.id)).find(t => teamRank(G, t.id) <= rank) || pick(rivals); obj = { type, team: r.id }; }
+    else if (type === 'gp') { const i = cal.length ? pick(cal) : 0; obj = { type, round: i, pos: Math.max(1, Math.round(10 - strength * 7)) }; }
+    else obj = { type, pos: Math.max(1, rank - (Math.random() < 0.5 ? 1 : 0)) };
+    return { id: 's' + Math.random().toString(36).slice(2, 8), name, perRace: +(0.6 + strength * 2.2 + Math.random()).toFixed(1), bonus: +(5 + Math.random() * 10 + strength * 8).toFixed(1), obj, progress: 0, done: false, failed: false };
+  });
+}
+function sponsorText(G, s) {
+  const o = s.obj;
+  if (o.type === 'points') return `Score points in ${o.n} races`;
+  if (o.type === 'podium') return `Take ${o.n} podium${o.n > 1 ? 's' : ''}`;
+  if (o.type === 'beat') return `Beat ${G.teams[o.team] ? G.teams[o.team].name : 'a rival'} in the constructors' standings`;
+  if (o.type === 'gp') { const t = TRACK_BY_ID[G.cal[o.round]]; return `Finish top ${o.pos} at ${G.calInfo && G.calInfo[o.round] ? G.calInfo[o.round].gp : t ? t.short : 'a race'} (round ${o.round + 1})`; }
+  return `Finish P${o.pos} or better in the constructors' standings`;
+}
+
+// ---------- board ----------
+function xpNewSeasonBusiness(G, fresh) {
+  const X = G.xp; if (!G.player || !G.teams[G.player]) return;
+  const carRank = Object.values(G.teams).map(t => ({ t, s: (t.aero + t.chassis + G.engines[t.engine].power) / 3 })).sort((a, b) => b.s - a.s).findIndex(x => x.t.id === G.player) + 1;
+  const prevConf = X.board ? X.board.conf : 60;
+  X.board = { target: Math.max(1, carRank - (Math.random() < 0.4 ? 1 : 0)), conf: fresh ? 60 : clamp(prevConf * 0.5 + 35, 25, 80), year: G.year, notes: [] };
+}
+function boardUpdateRace(G, summary) {
+  const X = G.xp; if (!X.board || !G.player) return;
+  const pos = teamRank(G, G.player); const d = X.board.target - pos;
+  let delta = clamp(d * 0.6, -1.6, 1.6);
+  const mine = summary.rows.filter(r => r.team === G.player);
+  if (mine.some(r => !r.out && r.pos === 1)) delta += 3; else if (mine.some(r => !r.out && r.pos <= 3)) delta += 1.5;
+  if (mine.every(r => r.out)) delta -= 3;
+  X.board.conf = clamp(X.board.conf + delta, 0, 100);
+}
+
+// ---------- morale & rivalry ----------
+function moraleAfterRace(G, summary) {
+  if (!G.player) return;
+  const X = G.xp; const n = Object.keys(G.teams).length;
+  const rank = teamRank(G, G.player) || 5; const expect = rank * 2 - 0.5;
+  const mine = summary.rows.filter(r => r.team === G.player);
+  mine.forEach(r => { const d = G.drivers[r.id]; if (!d) return; let m = 0;
+    if (r.out) m -= /Crash|wall|Collision|gravel/.test(r.out) ? 2 : 4; else m += clamp((expect - r.pos) * 1.2, -6, 8);
+    if (!r.out && r.pos === 1) m += 6;
+    d.morale = clamp((d.morale ?? 70) + m + (70 - (d.morale ?? 70)) * 0.08, 5, 100); });
+  if (mine.length === 2) {
+    const [a, b] = mine; const da = G.drivers[a.id], db = G.drivers[b.id];
+    if (da && db && Math.abs(da.pts - db.pts) < 25 && !a.out && !b.out && Math.abs(a.pos - b.pos) <= 2) X.rivalry = clamp(X.rivalry + 4, 0, 100);
+    else X.rivalry = clamp(X.rivalry - 2, 0, 100);
+  }
+  Object.values(G.drivers).forEach(d => { if (d.team !== G.player) d.morale = clamp((d.morale ?? 70) + (70 - (d.morale ?? 70)) * 0.2, 5, 100); });
+}
+
+// ---------- power units before the race (AI always, player when a unit is worn out) ----------
+function puPreRace(G, WK) {
+  const pr = puRules(G); if (!pr || WK.puChecked || !WK.grid) return; WK.puChecked = true;
+  WK.entries.forEach(e => { const st = puState(G, e.d.id); const mine = e.t.id === G.player;
+    if ((!mine && st.wear > 0.95) || (mine && st.wear >= 1 && !(WK.newPU && WK.newPU[e.d.id]))) { st.units++; st.wear = 0; if (mine) news(G, `🔧 ${e.d.name}'s power unit was worn out — a new one has been fitted.`); if (st.units > pr.limit) applyGridPenalty(e, 10, 'new power unit'); } });
+}
+function applyGridPenalty(e, n, why) {
+  const g = WK.grid; const i = g.indexOf(e); if (i < 0) return;
+  g.splice(i, 1); g.splice(Math.min(g.length, i + n), 0, e);
+  (WK.penalties = WK.penalties || []).push({ code: e.d.code, n, why });
+  news(G, `⚠️ ${e.d.name}: ${n}-place grid penalty (${why}).`);
+}
+
+// ---------- records (real history from F1DB + this save) ----------
+let REAL_WINS = null;
+function realWinsBefore(year) {
+  if (!REAL_WINS) { REAL_WINS = {}; Object.entries(HIST.years).forEach(([y, Y]) => Y.cal.forEach(c => { if (c[7] >= 0) { const id = HIST.drivers[c[7]][0]; (REAL_WINS[id] = REAL_WINS[id] || []).push(+y); } })); }
+  const out = {}; Object.entries(REAL_WINS).forEach(([id, ys]) => { const n = ys.filter(y => y < year).length; if (n) out[id] = n; }); return out;
+}
+function realTitlesBefore(year) { const out = {}; Object.entries(HIST.years).forEach(([y, Y]) => { if (+y < year && Y.champ >= 0) { const id = HIST.drivers[Y.champ][0]; out[id] = (out[id] || 0) + 1; } }); return out; }
+const MODERN_TO_HIST = { norris: 'lando-norris', piastri: 'oscar-piastri', russell: 'george-russell', antonelli: 'andrea-kimi-antonelli', leclerc: 'charles-leclerc', hamilton: 'lewis-hamilton', verstappen: 'max-verstappen', hadjar: 'isack-hadjar', albon: 'alexander-albon', sainz: 'carlos-sainz-jr', lawson: 'liam-lawson', lindblad: 'arvid-lindblad', alonso: 'fernando-alonso', stroll: 'lance-stroll', ocon: 'esteban-ocon', bearman: 'oliver-bearman', hulkenberg: 'nico-hulkenberg', bortoleto: 'gabriel-bortoleto', gasly: 'pierre-gasly', colapinto: 'franco-colapinto', perez: 'sergio-perez', bottas: 'valtteri-bottas', tsunoda: 'yuki-tsunoda', doohan: 'jack-doohan' };
+function recordBase(G) {
+  if (G.xp.recBase && G.xp.recBase.year === (G.startYear || 2026)) return G.xp.recBase;
+  const y0 = G.startYear || (G.timeline ? G.year : 2026);
+  const w = realWinsBefore(y0), t = realTitlesBefore(y0);
+  const names = {}; HIST.drivers.forEach(d => names[d[0]] = d[1]);
+  G.xp.recBase = { year: y0, wins: w, titles: t, names };
+  return G.xp.recBase;
+}
+function careerWins(G, d) { const B = recordBase(G); const hid = MODERN_TO_HIST[d.id] || d.id; return (B.wins[hid] || 0) + (d.careerWins || 0); }
+function careerTitles(G, d) { const B = recordBase(G); const hid = MODERN_TO_HIST[d.id] || d.id; return (B.titles[hid] || 0) + (d.titles || 0); }
+function winsLeaderboard(G, n = 15) {
+  const B = recordBase(G); const map = {};
+  Object.entries(B.wins).forEach(([id, w]) => map[id] = { name: B.names[id] || id, wins: w, live: false });
+  Object.values(G.drivers).forEach(d => { const hid = MODERN_TO_HIST[d.id] || d.id; const e = map[hid] || (map[hid] = { name: d.name, wins: 0 }); e.wins = (B.wins[hid] || 0) + (d.careerWins || 0); e.live = !d.retired; e.id = d.id; });
+  return Object.values(map).filter(e => e.wins > 0).sort((a, b) => b.wins - a.wins).slice(0, n);
+}
+function milestoneNews(G, winner) {
+  const w = careerWins(G, winner); const board = winsLeaderboard(G, 40);
+  const idx = board.findIndex(e => e.id === winner.id);
+  const peer = board.find(e => e.id !== winner.id && e.wins === w);
+  if (w === 1) return `🎉 ${winner.name} takes a first-ever Grand Prix victory!`;
+  if (peer) return `📈 ${winner.name}'s win #${w} draws level with ${peer.name} on the all-time list.`;
+  if ([10, 25, 50, 75, 100].includes(w)) return `📈 Win number ${w} for ${winner.name}!`;
+  if (idx === 0) return `👑 ${winner.name} extends the all-time record to ${w} wins.`;
+  return null;
+}
+
+// ---------- predictions & fantasy ----------
+function punditPicks(G, WK, kind) {
+  const pool = WK.entries.map(e => ({ e, s: carScore(G, e.t, WK.track) * 0.7 + e.d.pace * 0.3 }));
+  return Object.fromEntries(PUNDITS.map(p => {
+    const noise = p.style === 'bold' ? 4 : p.style === 'safe' ? 0.8 : 1.8;
+    const ranked = pool.map(x => ({ id: x.e.d.id, s: x.s + gauss() * noise })).sort((a, b) => b.s - a.s).map(x => x.id);
+    return [p.id, { pole: ranked[0], win: ranked[0], podium: ranked.slice(0, 3), fl: ranked[Math.floor(Math.random() * 4)] }];
+  }));
+}
+function scorePrediction(pred, res) {
+  if (!pred) return 0; let p = 0;
+  if (pred.pole && res.pole === pred.pole) p += 5;
+  if (pred.win && res.win === pred.win) p += 10;
+  (pred.podium || []).forEach((id, i) => { if (!id) return; const at = res.podium.indexOf(id); if (at >= 0) p += 3 + (at === i ? 2 : 0); });
+  if (pred.fl && res.fl === pred.fl) p += 3;
+  return p;
+}
+function fantasyPrices(G) {
+  const out = { drivers: {}, teams: {} };
+  const scored = Object.values(G.drivers).filter(d => d.team).map(d => ({ d, s: overall(d) * 0.45 + ((G.teams[d.team].aero + G.teams[d.team].chassis + G.engines[G.teams[d.team].engine].power) / 3) * 0.55 }));
+  const min = Math.min(...scored.map(x => x.s)), max = Math.max(...scored.map(x => x.s));
+  scored.forEach(x => out.drivers[x.d.id] = +(5 + Math.pow((x.s - min) / Math.max(1, max - min), 1.6) * 25).toFixed(1));
+  Object.values(G.teams).forEach(t => { const s = (t.aero + t.chassis + G.engines[t.engine].power) / 3; out.teams[t.id] = +(5 + Math.pow(clamp((s - min) / Math.max(1, max - min), 0, 1), 1.4) * 20).toFixed(1); });
+  return out;
+}
+function fantasyScoreRace(G, summary) {
+  const F = G.xp.fan.fantasy; if (!F || !F.drivers || F.drivers.length < 5) return null;
+  const PT = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1];
+  let total = 0; const lines = [];
+  F.drivers.forEach(id => { const r = summary.rows.find(x => x.id === id); if (!r) return; let p = r.out ? -5 : (PT[r.pos - 1] || 0) + Math.max(0, r.grid - r.pos);
+    if (summary.poleId === id) p += 3; if (summary.fastest && summary.fastest.id === id) p += 3; total += p; lines.push([r.code, p]); });
+  if (F.team) { const tp = Math.round(summary.rows.filter(r => r.team === F.team).reduce((s, r) => s + (r.out ? 0 : (PT[r.pos - 1] || 0)), 0) / 2); total += tp; lines.push([G.teams[F.team] ? G.teams[F.team].name : F.team, tp]); }
+  total -= F.pendingPenalty || 0; F.pendingPenalty = 0;
+  F.pts += total; F.history.push({ round: summary.round, pts: total }); F.freeTransfers = Math.min(3, (F.freeTransfers || 0) + 2);
+  return { total, lines };
+}
+
+// ---------- after-race processing (wraps the base game) ----------
+const _baseApplyRace = applyRaceResult;
+applyRaceResult = function (G, race, wk) {
+  ensureXP(G);
+  const out = _baseApplyRace(G, race, wk);
+  const s = out.summary; const X = G.xp;
+  // richer stats for charts
+  s.lapPos = race.lapPos || null; s.stints = race.stintLog || null;
+  s.poleId = wk.grid && wk.grid[0] ? wk.grid[0].d.id : null;
+  if (race.fastest) s.fastest.id = race.fastest.c.d.id;
+  // records & milestones
+  const win = s.rows[0] && G.drivers[s.rows[0].id];
+  if (win) { const m = milestoneNews(G, win); if (m) news(G, m); s.milestone = m; }
+  // team principal systems
+  if (G.player && G.teams[G.player]) {
+    moraleAfterRace(G, s); boardUpdateRace(G, s);
+    // PU wear
+    const pr = puRules(G);
+    if (pr) race.cars.forEach(c => { const st = puState(G, c.d.id); st.wear = clamp(st.wear + (1 / pr.life) * (c.puStress || 1) * rnd(0.9, 1.1), 0, 1.2); });
+    // facility builds & next-year development
+    X.building.forEach(b => b.left--);
+    X.building.filter(b => b.left <= 0).forEach(b => { X.fac[b.key] = Math.min(5, X.fac[b.key] + 1); news(G, `🏗️ ${XP_FAC[b.key].name} upgraded to level ${X.fac[b.key]}.`); });
+    X.building = X.building.filter(b => b.left > 0);
+    X.nextPool += (X.focus / 100) * 0.3 * (0.75 + staffMul(G, 'td') * 0.25);
+    // staff wages (per race)
+    const wages = Object.values(X.staff).reduce((a, st) => a + st.salary, 0) / G.cal.length;
+    G.teams[G.player].money -= wages; out.moneyLog.player && (out.moneyLog.player.staff = wages);
+    // academy growth
+    X.academy.forEach(id => { const d = G.drivers[id]; if (!d) return; ['pace', 'craft', 'cons', 'wet', 'tyre'].forEach(k => d[k] = +clamp(d[k] + rnd(0, 0.12) * (1 + d.pot / 4) * (0.8 + facLevel(G, 'sim') * 0.1), 50, 95).toFixed(2)); });
+    // sponsors
+    const mine = s.rows.filter(r => r.team === G.player); let sp = 0;
+    X.sponsors.active.forEach(sn => {
+      sp += sn.perRace; if (sn.done || sn.failed) return; const o = sn.obj;
+      if (o.type === 'points' && mine.some(r => r.pts > 0)) sn.progress++;
+      if (o.type === 'podium') sn.progress += mine.filter(r => !r.out && r.pos <= 3).length;
+      if (o.type === 'gp' && s.round - 1 === o.round) { if (mine.some(r => !r.out && r.pos <= o.pos)) { sn.progress = 1; } else sn.failed = true; }
+      const goal = o.type === 'points' || o.type === 'podium' ? o.n : o.type === 'gp' ? 1 : null;
+      if (goal && sn.progress >= goal) { sn.done = true; G.teams[G.player].money += sn.bonus; X.board && (X.board.conf = clamp(X.board.conf + 4, 0, 100)); news(G, `🤝 ${sn.name} target hit — ${fmtM(sn.bonus)} bonus!`); X.trophies.push({ y: G.year, t: 'sponsor', s: `${sn.name}: ${sponsorText(G, sn)}` }); }
+    });
+    if (sp) { G.teams[G.player].money += sp; if (out.moneyLog.player) out.moneyLog.player.sponsorDeals = sp; }
+    // trophies
+    mine.forEach(r => { if (!r.out && r.pos === 1) X.trophies.push({ y: G.year, t: 'win', s: `${r.name} wins the ${s.gp || wk.track.short} GP` }); });
+  }
+  // fan: predictions, pundits, fantasy, driver of the day candidates
+  const res = { pole: s.poleId, win: s.rows[0].id, podium: s.rows.slice(0, 3).map(r => r.id), fl: s.fastest ? s.fastest.id : null };
+  const P = X.fan.preds[G.year + ':' + s.round];
+  if (P) { P.score = scorePrediction(P.mine, res); X.fan.predPts += P.score; Object.entries(P.pundits || {}).forEach(([k, v]) => X.fan.pundits[k] = (X.fan.pundits[k] || 0) + scorePrediction(v, res)); s.pred = { score: P.score }; }
+  s.fantasy = fantasyScoreRace(G, s);
+  const gainers = s.rows.filter(r => !r.out).map(r => ({ r, g: r.grid - r.pos })).sort((a, b) => b.g - a.g);
+  const cands = [s.rows[0]].concat(gainers.slice(0, 3).map(x => x.r)); if (G.follow) { const f = s.rows.find(r => r.id === G.follow); if (f) cands.push(f); }
+  s.dotdCands = [...new Set(cands.map(r => r.id))].slice(0, 5);
+  // title clinched?
+  s.clinched = titleClinched(G);
+  return out;
+};
+function titleClinched(G) {
+  if (G.xp.clinchedYear === G.year) return null;
+  const ds = standingsDrivers(G); if (ds.length < 2) return null;
+  const P1 = ((G.rules && G.rules.points) || POINTS)[0]; let left = (G.cal.length - G.round) * (P1 + 1);
+  for (let i = G.round; i < G.cal.length; i++) if (isSprintRound(G, i)) left += 8;
+  if (ds[0].pts - ds[1].pts > left) { G.xp.clinchedYear = G.year; return { id: ds[0].id, name: ds[0].name, team: ds[0].team }; }
+  return null;
+}
+
+// ---------- R&D completion: scale part gains ----------
+XPH.partMul = (G, p) => G.xp ? xpPartGainMul(G, p.area) : 1;
+
+// ---------- season end (wrap both modes) ----------
+function xpSeasonEnd(G, summary) {
+  const X = G.xp; if (!X) return;
+  if (G.player && G.teams[G.player]) {
+    const me = G.teams[G.player];
+    // next-year car
+    const regChange = G.year >= X.regYear;
+    let pool = X.nextPool * (regChange ? 1.8 : 1);
+    if (G.timeline) { G.bonus.aero += pool / 2; G.bonus.chassis += pool / 2; } else { me.aero = clamp(me.aero + pool / 2, 40, 99); me.chassis = clamp(me.chassis + pool / 2, 40, 99); }
+    summary.nextYear = +pool.toFixed(2);
+    if (regChange && !G.timeline) {
+      Object.values(G.teams).forEach(t => { if (t.id === G.player) return; t.aero = +(80 + (t.aero - 80) * 0.6 + rnd(-2.5, 2.5)).toFixed(2); t.chassis = +(80 + (t.chassis - 80) * 0.6 + rnd(-2.5, 2.5)).toFixed(2); });
+      me.aero = +(80 + (me.aero - 80) * 0.6 + pool * 0.6).toFixed(2); me.chassis = +(80 + (me.chassis - 80) * 0.6 + pool * 0.6).toFixed(2);
+      news(G, `📜 New regulations for ${G.year}! The pecking order has been shaken up.`); X.regYear = G.year + 5; summary.regChange = true;
+    }
+    X.nextPool = 0;
+    // board verdict
+    if (X.board) {
+      const pos = summary.playerPos || teamRank(G, G.player);
+      X.board.conf = clamp(X.board.conf + (pos <= X.board.target ? 15 : -(pos - X.board.target) * 8), 0, 100);
+      summary.board = { target: X.board.target, pos, conf: Math.round(X.board.conf) };
+      if (X.board.conf < 15) { summary.sacked = true; X.sacked = true; }
+    }
+    X.lastPos = summary.playerPos || teamRank(G, G.player);
+    // sponsor season-end objectives
+    X.sponsors.active.forEach(sn => { if (sn.done || sn.failed) return; const o = sn.obj; let ok = false;
+      if (o.type === 'beat') ok = summary.finalTable ? summary.finalTable.indexOf(G.player) < summary.finalTable.indexOf(o.team) : false;
+      if (o.type === 'pos') ok = (summary.playerPos || 99) <= o.pos;
+      if (ok) { me.money += sn.bonus; X.trophies.push({ y: summary.year, t: 'sponsor', s: `${sn.name}: ${sponsorText(G, sn)}` }); } });
+    X.sponsors.active = []; X.pu = {};
+    // rival teams can trigger release clauses on star drivers
+    teamDrivers(G, G.player).forEach(d => { if (!d.release || overall(d) < 85) return; const suitor = Object.values(G.teams).filter(t => t.id !== G.player && appeal(G, t.id) > appeal(G, G.player)).sort((a, b) => appeal(G, b.id) - appeal(G, a.id))[0];
+      if (suitor && Math.random() < 0.35) { const out = teamDrivers(G, suitor.id).sort((a, b) => overall(a) - overall(b))[0]; if (out) out.team = null; d.team = suitor.id; d.no1 = false; me.money += d.release; summary.moves = summary.moves || []; summary.moves.push(`${d.name} leaves for ${suitor.name} — release clause paid (${fmtM(d.release)})`); news(G, `💸 ${suitor.name} trigger ${d.name}'s release clause!`); d.release = 0; } });
+    // trophies
+    if (summary.champ && G.drivers[summary.champ.id] && G.drivers[summary.champ.id].team === G.player) X.trophies.push({ y: summary.year, t: 'title', s: `Drivers' champion: ${summary.champ.name}` });
+    if (summary.cchamp && summary.cchamp.id === G.player) X.trophies.push({ y: summary.year, t: 'title', s: `Constructors' champions` });
+    // hall of fame
+    hofAdd({ y: summary.year, team: me.name, pos: summary.playerPos, mode: G.timeline ? 'timeline' : 'modern' });
+  }
+  // fan season wrap
+  X.fan.seasonLog = X.fan.seasonLog || []; X.fan.seasonLog.push({ y: summary.year, pred: X.fan.predPts, fantasy: X.fan.fantasy ? X.fan.fantasy.pts : 0 });
+  X.clinchedYear = null;
+  xpStaffMarket(G);
+}
+function xpSeasonStart(G) {
+  const X = G.xp; if (!X) return;
+  Object.values(G.drivers).forEach(d => { if (d.morale == null) d.morale = 70; });
+  X.academy = X.academy.filter(id => G.drivers[id] && !G.drivers[id].team && !G.drivers[id].retired);
+  if (G.player && G.teams[G.player]) { xpNewSeasonBusiness(G, false); X.sponsors.offers = []; xpSponsorOffers(G); }
+  if (X.fan.fantasy) { X.fan.fantasy.freeTransfers = 99; X.fan.fantasy.seasonPts = 0; }
+  X.fan.predPts = 0; X.fan.pundits = Object.fromEntries(PUNDITS.map(p => [p.id, 0]));
+}
+const _baseEndSeason = endSeason;
+endSeason = function (G) {
+  ensureXP(G);
+  const table = standingsTeams(G).map(t => t.id); const prePos = G.player ? table.indexOf(G.player) + 1 : 0;
+  const s = _baseEndSeason(G);
+  s.finalTable = table; s.playerPos = s.playerPos || prePos;
+  if (s.champ && !s.champ.id) s.champ.id = (Object.values(G.drivers).find(d => d.name === s.champ.name) || {}).id;
+  xpSeasonEnd(G, s); xpSeasonStart(G);
+  return s;
+};
+const _baseEndTimeline = endSeasonTimeline;
+endSeasonTimeline = function (G) {
+  ensureXP(G);
+  const table = standingsTeams(G).map(t => t.id); const prePos = G.player ? table.indexOf(G.player) + 1 : 0;
+  const champId = standingsDrivers(G)[0] && standingsDrivers(G)[0].id;
+  const s = _baseEndTimeline(G);
+  s.finalTable = table; s.playerPos = s.playerPos || prePos; if (s.champ) s.champ.id = s.champ.id || champId;
+  xpSeasonEnd(G, s); xpSeasonStart(G);
+  return s;
+};
+
+// ---------- what-if scenarios (wrap loadSeason) ----------
+let PENDING_WHATIF = null;
+const _baseLoadSeason = loadSeason;
+loadSeason = function (G, y) {
+  _baseLoadSeason(G, y);
+  const wid = G.whatIf || PENDING_WHATIF;
+  const W = wid && WHATIFS.find(w => w.id === wid);
+  if (!W || y < W.from || y > W.to || !G.teams[W.team]) return;
+  if (Object.values(G.drivers).some(d => d.id === W.driver && d.team === W.team)) return;
+  // latest real ratings for the driver
+  let row = null, rowYear = 0;
+  for (let yy = y; yy >= 1950; yy--) { const Y = HIST.years[yy]; if (!Y) continue; const idx = HIST.drivers.findIndex(x => x[0] === W.driver); const r = Y.drivers.find(x => x[0] === idx); if (r) { row = r; rowYear = yy; break; } }
+  if (!row) return;
+  const D = HIST.drivers[row[0]]; const age = y - D[4]; const decay = Math.max(0, age - 33) * (y - rowYear) * 0.25;
+  const mates = Object.values(G.drivers).filter(d => d.team === W.team).sort((a, b) => a.pace - b.pace);
+  if (mates.length >= (G.teams[W.team].cars || 2)) { mates[0].team = null; }
+  const c = G.careers[D[0]] || { titles: 0, wins: 0 };
+  G.drivers[D[0]] = { id: D[0], name: D[1], code: D[2], num: row[2], nat: D[3], age, pace: row[3] - decay, craft: row[4] - decay * 0.5, cons: row[5], wet: row[6] - decay * 0.5, tyre: row[7],
+    salary: 10, until: y, pot: 0, team: W.team, pts: 0, res: [], wins: 0, pods: 0, poles: 0, careerWins: c.wins, titles: c.titles, next: null, morale: 75, whatIf: true };
+  news(G, `🔮 What-if: ${D[1]} races for ${G.teams[W.team].name} in ${y}.`);
+};
+
+// ---------- hall of fame (across careers, this browser) ----------
+function hofLoad() { try { return JSON.parse(localStorage.getItem('pitwall_hof') || '[]'); } catch (e) { return []; } }
+function hofAdd(e) { try { const h = hofLoad(); h.push(e); localStorage.setItem('pitwall_hof', JSON.stringify(h.slice(-200))); } catch (er) { } }
+
+// ---------- accessibility ----------
+function applyAccessibility(G) {
+  const s = G && G.xp && G.xp.settings; if (!s || typeof document === 'undefined') return;
+  const b = document.body; if (!b) return;
+  b.classList.toggle('xp-text-s', s.text === 's'); b.classList.toggle('xp-text-l', s.text === 'l'); b.classList.toggle('xp-text-xl', s.text === 'xl');
+  b.classList.toggle('xp-nomotion', !s.motion); b.classList.toggle('xp-contrast', !!s.contrast);
+}
+// ===================================================================
+// PITWALL EXPANSION — race-time systems (hooks into the Race engine)
+// ===================================================================
+function ersOn(G) { return G.year >= 2014; }
+function modeNames(G) { return ersOn(G) ? { harvest: 'Harvest', balanced: 'Balanced', overtake: 'Overtake' } : { harvest: 'Lean mix', balanced: 'Standard', overtake: 'Rich mix' }; }
+
+XPH.raceInit = race => {
+  const G = race.G; ensureXP(G);
+  race.lapPos = []; race.replay = []; race.highlights = []; race.pendingClips = []; race.radio = []; race.comm = []; race.teamOrder = 'free';
+  race.pitGfx = null; race.lastLeader = null; race.outCount = 0; race.lastRec = 0; race.commLap = 0;
+  race.cars.forEach(c => {
+    c.ers = 'balanced'; c.battery = 60; c.stints = [{ tyre: c.tyre, from: 0 }]; c.puStress = 1; c.radioFlags = {};
+    if (typeof WK !== 'undefined' && WK && WK.sets && WK.sets[c.d.id]) c.wear = takeSet(c.d.id, c.tyre, c.grid <= 10 && G.year >= 2014 && G.year < 2022 ? 'used' : null);
+  });
+};
+XPH.lapDelta = (race, c) => {
+  if (!c.ers) return 0;
+  if (c.ers === 'overtake' && c.battery > 0) return -0.35;
+  if (c.ers === 'harvest') return 0.25;
+  return 0;
+};
+XPH.passMul = (race, c, ahead) => {
+  let m = 1;
+  if (c.player && ahead.player) {
+    if (ahead.yieldTo === c.d.id) return Infinity;
+    if (race.teamOrder === 'hold' && !c.ignoring) return 0;
+  }
+  if (c.ers === 'overtake' && c.battery > 0) m *= 1.6;
+  if (ahead.ers === 'overtake' && ahead.battery > 0) m *= 0.75;
+  if (race.G.year >= 2011 && c.laps >= 2) m *= 1.25; // DRS
+  return m;
+};
+XPH.pitService = (race, c) => {
+  if (!c.player || !race.G.xp) return undefined;
+  const r = race.G.xp.staff.crew.rating;
+  return clamp(3.25 - (r - 50) * 0.026 + gauss() * 0.22, 1.85, 4.5);
+};
+XPH.slowStopP = (race, c) => clamp(0.05 - race.G.xp.staff.crew.rating * 0.00045, 0.006, 0.05);
+XPH.pitTyre = (race, c, comp) => (typeof WK !== 'undefined' && WK && WK.sets ? takeSet(c.d.id, comp) : 0);
+XPH.onPit = (race, c, comp, svc) => {
+  c.stints.push({ tyre: comp, from: c.laps }); c.radioFlags.tyre = false;
+  if (c.player || c.fav || race.order().indexOf(c) < 5) race.pitGfx = { c, svc, t: race.t, comp };
+  SND.pit();
+};
+XPH.relMul = (race, c) => {
+  const st = race.G.xp && race.G.xp.pu[c.d.id]; let m = 1;
+  if (st && st.wear > 0.8) m *= 1 + (st.wear - 0.8) * 9;
+  if (c.ers === 'overtake') m *= 1.1;
+  return m;
+};
+XPH.onLap = (race, c, n) => {
+  const G = race.G; const ord = race.order(); const pos = ord.indexOf(c); const ahead = ord[pos - 1];
+  const gapAhead = ahead && !ahead.out ? (ahead.dist - c.dist) / (race.L / c.curLT) : 99;
+  // battery / engine mode
+  if (c.ers === 'overtake') { c.battery -= 28; c.puStress += 0.02; if (c.battery <= 0) { c.battery = 0; c.ers = 'balanced'; if (c.player) radio(race, c, 'Battery is empty, back to balanced mode.'); } }
+  else if (c.ers === 'harvest') c.battery = Math.min(100, c.battery + 22);
+  else c.battery = Math.min(100, c.battery + 4);
+  if (!c.player || c.auto) c.ers = gapAhead < 1 && c.battery > 40 ? 'overtake' : c.battery < 25 ? 'harvest' : 'balanced';
+  // lap chart snapshot when the leader completes a lap
+  if (pos === 0 && n > race.lapPos.length) race.lapPos.push(ord.filter(x => !x.out).map(x => x.d.id));
+  if (c.ignoring && n > c.ignoring) c.ignoring = 0;
+  if (c.yieldTo && n > c.yieldLap + 1) c.yieldTo = null;
+  // team radio
+  const loud = c.player || c.fav;
+  if (loud && !c.finished && !c.out) {
+    if (c.wear > 0.72 && !c.radioFlags.tyre) { c.radioFlags.tyre = true; radio(race, c, pick(['The tyres are gone, I can\'t push anymore.', 'Rears are finished, mate.', 'I\'m losing so much grip, these tyres are dead.']), c.player ? [['Box this lap', 'box'], ['Stay out', 'stay']] : null); }
+    if (race.wet > 0.25 && 'SMH'.includes(c.tyre) && !c.radioFlags.rain) { c.radioFlags.rain = true; radio(race, c, pick(['It\'s raining in sector 2!', 'Track is getting really slippery here.', 'Rain! I need inters.']), c.player ? [['Box for inters', 'inter'], ['Stay out', 'stay']] : null); }
+    if (race.wet < 0.15 && 'IW'.includes(c.tyre) && !c.radioFlags.dry) { c.radioFlags.dry = true; radio(race, c, 'There\'s a dry line now, slicks soon?', c.player ? [['Box for slicks', 'slick'], ['Stay out', 'stay']] : null); }
+    if (c.player && ahead && ahead.player && race.teamOrder !== 'hold' && ahead.curLT - c.curLT > 0.35 && gapAhead < 1.5 && !c.radioFlags.swap) { c.radioFlags.swap = n; radio(race, c, `I'm much faster than ${ahead.d.code}, let me through!`, [['Swap positions', 'swap'], ['Hold positions', 'hold']]); }
+    if (c.radioFlags.swap && n - c.radioFlags.swap > 6) c.radioFlags.swap = 0;
+  }
+  if (n === race.laps && pos === 0) radio(race, c, pick(['YES! Get in there! What a car!', 'Let\'s gooo! Thank you guys!', 'Unbelievable. That one\'s for the whole team.']));
+  // commentary on the battle at the front every few laps
+  if (pos === 0 && n >= race.commLap + 4 && !race.chequered) {
+    race.commLap = n;
+    const b = topBattle(race); if (b) comment(race, pick([`${b.b.d.name.split(' ').pop()} is all over the back of ${b.a.d.name.split(' ').pop()} in the fight for P${b.pos} — just ${b.gap.toFixed(1)}s between them.`, `Pressure building for P${b.pos}: ${b.b.d.code} is ${b.gap.toFixed(1)} seconds behind ${b.a.d.code}.`, `Keep an eye on P${b.pos}, ${b.b.d.code} has closed right up on ${b.a.d.code}.`]));
+    else comment(race, `Lap ${n} of ${race.laps}: ${c.d.name} leads${ord[1] ? `, ${(gapSecondsSafe(race, ord[1], c)).toFixed(1)}s clear of ${ord[1].d.code}` : ''}.`);
+  }
+};
+function gapSecondsSafe(race, c, leader) { return Math.max(0, (leader.dist - c.dist) / (race.L / leader.curLT)); }
+function topBattle(race, maxPos = 10) {
+  const ord = race.order().filter(c => !c.out && !c.finished && c.pitT <= 0); let best = null;
+  for (let i = 1; i < Math.min(ord.length, maxPos); i++) { const a = ord[i - 1], b = ord[i]; const gap = (a.dist - b.dist) / (race.L / b.curLT); if (gap < 1.2 && gap > 0 && (!best || i < best.pos - 1 || gap < best.gap * 0.6)) best = { a, b, gap, pos: i }; }
+  return best;
+}
+function radio(race, c, txt, actions) { race.radio.unshift({ t: race.t, lap: race.leaderLap, c, txt, actions: actions || null, id: Math.random().toString(36).slice(2, 7) }); if (race.radio.length > 6) race.radio.pop(); SND.blip(); }
+function comment(race, txt) { race.comm.unshift({ lap: race.leaderLap, txt }); if (race.comm.length > 40) race.comm.pop(); }
+
+// commentary from race-control messages
+const _raceMsg = Race.prototype.msg;
+Race.prototype.msg = function (s, imp) {
+  _raceMsg.call(this, s, imp);
+  if (!this.comm) return;
+  const m = s.match(/^⚔️ (\w+) passes (\w+)/); const name = code => { const c = this.cars.find(x => x.d.code === code); return c ? c.d.name.split(' ').pop() : code; };
+  if (m) { const c = this.cars.find(x => x.d.code === m[1]); const p = c ? this.order().indexOf(c) + 1 : 0; comment(this, p === 1 ? `NEW LEADER! ${name(m[1])} gets past ${name(m[2])} and takes the lead of the race!` : pick([`${name(m[1])} makes it stick on ${name(m[2])}${p ? ` for P${p}` : ''}.`, `Lovely move from ${name(m[1])}, through on ${name(m[2])}!`, `${name(m[2])} can't hold off ${name(m[1])}.`])); return; }
+  if (/SAFETY CAR deployed/.test(s)) return comment(this, 'The safety car is out! That could change everything for strategy.');
+  if (/VIRTUAL SAFETY CAR/.test(s)) return comment(this, 'Virtual safety car — a cheap pit stop for anyone who wants one.');
+  if (/^❌ (\w+) out: (.*)/.test(s)) { const [, code, why] = s.match(/^❌ (\w+) out: (.*)/); return comment(this, /Crash|wall|Collision|gravel/.test(why) ? `Oh no, ${name(code)} is in the wall! Race over.` : `Smoke from the back of ${name(code)}'s car… ${why.toLowerCase()}. That's heartbreak.`); }
+  if (/🌀 (\w+) spins/.test(s)) return comment(this, `${name(s.match(/🌀 (\w+)/)[1])} has spun! Lost a lot of time there.`);
+  if (/Rain is starting/.test(s)) return comment(this, 'Here comes the rain! Who blinks first on tyres?');
+  if (/🏁 (.*) wins!/.test(s)) { SND.cheer(); return comment(this, `${s.match(/🏁 (.*) wins!/)[1]} takes the chequered flag and WINS the Grand Prix!`); }
+  if (/Lights out/.test(s)) return comment(this, 'Lights out and away we go!');
+  if (/Safety car in/.test(s)) return comment(this, 'Safety car is in this lap — get ready for the restart!');
+};
+
+// replay buffer + highlight clips
+XPH.onStep = (race, dt) => {
+  if (race.t - race.lastRec >= 0.5) {
+    race.lastRec = race.t;
+    race.replay.push({ t: race.t, d: race.cars.map(c => c.out ? null : (c.pitT > 0 ? -1e9 + c.dist : c.dist)) });
+    if (race.replay.length > 140) race.replay.shift();
+  }
+  const ord = race.order(); const leader = ord[0];
+  if (race.started && race.lastLeader && leader !== race.lastLeader && !race.chequered && race.leaderLap >= 1) clipLater(race, `Lead change: ${leader.d.code} takes P1`);
+  race.lastLeader = leader;
+  const outN = race.cars.filter(c => c.out).length;
+  if (outN > race.outCount) { const c = race.cars.filter(c => c.out).sort((a, b) => b.dnfLap - a.dnfLap)[0]; if (c && /Crash|wall|Collision|gravel/.test(c.out)) clipLater(race, `${c.d.code} crashes out`); race.outCount = outN; }
+  race.pendingClips = race.pendingClips.filter(p => { if (race.t >= p.tEnd) { race.highlights.push({ label: p.label, lap: p.lap, frames: race.replay.filter(f => f.t >= p.t0 && f.t <= p.tEnd).map(f => ({ t: f.t, d: f.d.slice() })) }); if (race.highlights.length > 8) race.highlights.shift(); return false; } return true; });
+};
+function clipLater(race, label) { if (race.pendingClips.some(p => race.t - p.t < 5)) return; race.pendingClips.push({ label, lap: race.leaderLap, t: race.t, t0: race.t - 18, tEnd: race.t + 6 }); }
+XPH.raceFinish = race => {
+  race.stintLog = {}; race.cars.forEach(c => { const end = c.out ? c.dnfLap : c.laps; race.stintLog[c.d.id] = c.stints.map((s, i) => [s.tyre, Math.max(0, (c.stints[i + 1] ? c.stints[i + 1].from : end) - s.from)]); });
+};
+
+// ---------- radio responses (player) ----------
+function radioAction(race, id, act) {
+  const r = race.radio.find(x => x.id === id); if (!r) return; const c = r.c; r.actions = null; r.answer = act;
+  const best = race.slick(c, race.laps - c.laps) || 'M';
+  if (act === 'box') c.pitReq = best;
+  if (act === 'inter') c.pitReq = race.wet > 0.62 ? 'W' : 'I';
+  if (act === 'slick') c.pitReq = best;
+  if (act === 'swap') teamOrderSwap(race);
+  if (act === 'hold') { race.teamOrder = 'hold'; }
+}
+function teamOrderSwap(race) {
+  const mine = race.order().filter(c => c.player && !c.out && !c.finished);
+  if (mine.length < 2) return 'Both cars need to be running.';
+  const [a, b] = mine; const gap = (a.dist - b.dist) / (race.L / b.curLT);
+  if (gap > 2.5) return `${b.d.code} is ${gap.toFixed(1)}s back — too far to swap.`;
+  const X = race.G.xp; const ignoreP = (X.rivalry / 150) + ((a.d.morale ?? 70) < 40 ? 0.15 : 0) + (a.d.no1 ? 0.25 : 0);
+  if (Math.random() < ignoreP) { radio(race, a, pick(['No. I\'m not moving over.', 'Why? I\'m racing here!', 'Tell him to pass me on track.'])); X.rivalry = clamp(X.rivalry + 12, 0, 100); a.d.morale = clamp((a.d.morale ?? 70) + 2, 5, 100); b.d.morale = clamp((b.d.morale ?? 70) - 4, 5, 100); race.msg(`📻 ${a.d.code} ignores team orders!`, true); return 'ignored'; }
+  a.yieldTo = b.d.id; a.yieldLap = a.laps; a.d.morale = clamp((a.d.morale ?? 70) - 8, 5, 100); b.d.morale = clamp((b.d.morale ?? 70) + 3, 5, 100); X.rivalry = clamp(X.rivalry + 8, 0, 100);
+  radio(race, a, pick(['Copy… understood.', 'OK. Not happy, but OK.', 'Fine, let him go.'])); race.msg(`📻 Team orders: ${a.d.code} lets ${b.d.code} through`, false);
+  return 'ok';
+}
+
+// ---------- quali tyre sets ----------
+XPH.qualiSetPenalty = (e, wet) => {
+  if (wet > 0.25 || typeof WK === 'undefined' || !WK || !WK.sets || !WK.sets[e.d.id]) return 0;
+  const w = takeSet(e.d.id, 'S'); returnSet(e.d.id, 'S', Math.max(w, 0.18));
+  return w * 3;
+};
+
+// ---------- sound (synthesised with Web Audio, no files) ----------
+const SND = (() => {
+  let ctx = null, eng = null, engGain = null, master = null;
+  const on = () => typeof G !== 'undefined' && G && G.xp && G.xp.settings.sound;
+  function init() { if (ctx) return true; try { ctx = new (window.AudioContext || window.webkitAudioContext)(); master = ctx.createGain(); master.connect(ctx.destination); return true; } catch (e) { return false; } }
+  function vol() { return (G && G.xp ? G.xp.settings.volume : 0.5); }
+  function tone(f, d, type = 'square', g = 0.12) { if (!on() || !init()) return; master.gain.value = vol(); const o = ctx.createOscillator(), a = ctx.createGain(); o.type = type; o.frequency.value = f; a.gain.setValueAtTime(g, ctx.currentTime); a.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + d); o.connect(a); a.connect(master); o.start(); o.stop(ctx.currentTime + d + 0.02); }
+  function noise(d, g, f = 1200, q = 0.7) { if (!on() || !init()) return; master.gain.value = vol(); const b = ctx.createBuffer(1, ctx.sampleRate * d, ctx.sampleRate); const x = b.getChannelData(0); for (let i = 0; i < x.length; i++) x[i] = (Math.random() * 2 - 1) * (1 - i / x.length); const s = ctx.createBufferSource(); s.buffer = b; const fl = ctx.createBiquadFilter(); fl.type = 'bandpass'; fl.frequency.value = f; fl.Q.value = q; const a = ctx.createGain(); a.gain.value = g; s.connect(fl); fl.connect(a); a.connect(master); s.start(); }
+  return {
+    unlock() { if (on() && init() && ctx.state === 'suspended') ctx.resume(); },
+    light() { tone(880, 0.25, 'square', 0.1); },
+    go() { noise(1.2, 0.5, 600, 0.5); tone(220, 0.6, 'sawtooth', 0.05); },
+    blip() { tone(1320, 0.07, 'sine', 0.05); setTimeout(() => tone(990, 0.07, 'sine', 0.05), 80); },
+    pit() { if (!on()) return; for (let i = 0; i < 4; i++) setTimeout(() => noise(0.05, 0.25, 3000, 2), i * 70); },
+    cheer() { noise(2.5, 0.35, 900, 0.4); },
+    engine(level, pitch) { // level 0..1, pitch 0..1
+      if (!on() || !init()) { if (engGain) engGain.gain.value = 0; return; }
+      master.gain.value = vol();
+      if (!eng) { eng = ctx.createOscillator(); eng.type = 'sawtooth'; const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 900; engGain = ctx.createGain(); engGain.gain.value = 0; eng.connect(f); f.connect(engGain); engGain.connect(master); eng.start(); }
+      eng.frequency.setTargetAtTime(60 + pitch * 260, ctx.currentTime, 0.08); engGain.gain.setTargetAtTime(level * 0.06, ctx.currentTime, 0.2);
+    },
+    stopEngine() { if (engGain && ctx) engGain.gain.setTargetAtTime(0, ctx.currentTime, 0.1); }
+  };
+})();
+// ===================================================================
+// PITWALL EXPANSION — screens & controls
+// ===================================================================
+const TAB_NAMES = { home: '🏠 Home', calendar: '📅 Calendar', standings: '🏆 Standings', car: '🔧 Car', team: '🏢 Team', drivers: '👤 Drivers', finance: '💰 Business', stats: '📊 Stats', fan: '🎯 Fan zone', menu: '☰ Menu' };
+function hqTabs() { return G.spectator ? ['home', 'calendar', 'standings', 'drivers', 'fan', 'stats', 'menu'] : ['home', 'calendar', 'standings', 'car', 'team', 'drivers', 'finance', 'stats', 'fan', 'menu']; }
+let CAM = { mode: null, x: 0, y: 0, z: 1 }, REPLAY = null, CHARTSEL = null;
+
+// ---------- HQ: Home additions ----------
+const _hqHomeBase = hqHome;
+hqHome = function () {
+  ensureXP(G);
+  if (G.xp.sacked && G.player) return sackedView();
+  let html = _hqHomeBase();
+  if (G.player && G.teams[G.player] && G.xp.board) {
+    const B = G.xp.board, pos = teamRank(G, G.player);
+    const mine = teamDrivers(G, G.player);
+    html += `<div class="grid g2" style="margin-top:12px"><div class="card"><h3>The board</h3><div class="row"><div class="sp"><div class="small mut">Target this season</div><div class="big">P${B.target}</div></div><div><div class="small mut">Currently</div><div class="big">P${pos || '—'}</div></div></div>
+      ${statBar('Confidence', B.conf, 100, 0, B.conf < 30 ? '#ff5b5b' : B.conf < 55 ? '#f5c518' : '#2ecc71')}<div class="small mut">${B.conf < 30 ? 'The board is losing patience. Finish below target and you could be sacked.' : B.conf < 55 ? 'The board wants to see progress.' : 'The board is happy with your work.'}</div></div>
+      <div class="card"><h3>Driver mood</h3>${mine.map(d => `<div class="row" style="margin:6px 0"><span class="sp">${esc(d.name)}${d.no1 ? ' <span class="pill">No.1</span>' : ''}</span>${moraleFace(d.morale)}<span class="small mut" style="width:34px;text-align:right">${Math.round(d.morale)}</span></div>`).join('')}
+      ${mine.length === 2 ? statBar('Rivalry', G.xp.rivalry, 100, 0, '#ff8a3d') : ''}<div class="small mut">High rivalry means team orders may be ignored.</div></div></div>`;
+  }
+  return html;
+};
+function moraleFace(m) { return `<span title="Morale">${m >= 80 ? '😄' : m >= 60 ? '🙂' : m >= 40 ? '😐' : m >= 25 ? '😟' : '😠'}</span>`; }
+function sackedView() {
+  const me = G.teams[G.player];
+  const offers = Object.values(G.teams).filter(t => t.id !== G.player).sort((a, b) => appeal(G, a.id) - appeal(G, b.id)).slice(0, 3);
+  return `<div class="card hl"><h2>📰 You've been sacked</h2><div>The ${esc(me.name)} board has lost confidence and ended your contract. Your record: ${G.xp.trophies.length} trophies in the cabinet.</div>
+  <h3 style="margin-top:12px">Job offers</h3><div class="grid g3">${offers.map(t => `<div class="teamcard" data-a="xpjob" data-v="${t.id}"><div class="stripe" style="background:${t.color}"></div><b>${esc(t.name)}</b><div class="small mut">P${teamRank(G, t.id)} last season · ${teamDrivers(G, t.id).map(d => esc(d.code)).join(' / ')}</div></div>`).join('')}</div>
+  <button style="margin-top:12px" data-a="xpretire">Retire and enter the Hall of Fame</button></div>`;
+}
+
+// ---------- HQ: Car (parts, next-year focus, power units) ----------
+function hqCar() {
+  ensureXP(G);
+  const me = G.teams[G.player], eng = G.engines[me.engine], X = G.xp;
+  const all = Object.values(G.teams);
+  const rankOf = k => all.slice().sort((a, b) => (k === 'power' ? G.engines[b.engine].power - G.engines[a.engine].power : b[k] - a[k])).findIndex(t => t.id === me.id) + 1;
+  const capLeft = capFor(G) - me.spent; const fac = facLevel(G, 'factory');
+  const comp = all.map(t => ({ t, s: (t.aero + t.chassis + G.engines[t.engine].power) / 3 })).sort((a, b) => b.s - a.s);
+  const sizes = Object.entries(RD_SIZES);
+  const partCards = Object.entries(XP_PARTS).map(([pk, p]) => {
+    const locked = p.area === 'power' && !me.works;
+    return `<div class="card" style="background:var(--panel2);padding:10px"><div class="row"><b class="sp">${p.name}</b><span class="small mut">${RD_AREAS[p.area].name}</span></div>
+    ${locked ? `<div class="small mut">Customer engine — ${esc(eng.name)} develops it.</div>` : `<div class="row" style="margin-top:6px">${sizes.map(([sk, s]) => { const cost = +(s.cost * (1 - 0.04 * (fac - 1))).toFixed(1), races = Math.max(1, s.races - Math.floor((fac - 1) / 2));
+      return `<button class="sm" data-a="xppart" data-p="${pk}" data-size="${sk}" ${G.projects.length >= 3 || capLeft < cost || me.money < cost || G.round >= G.cal.length ? 'disabled' : ''}>${s.name} ${fmtM(cost)} · ${races}r</button>`; }).join('')}</div>`}</div>`;
+  }).join('');
+  const pr = puRules(G);
+  const pu = pr ? teamDrivers(G, G.player).map(d => { const st = puState(G, d.id); return `<div class="row" style="margin:5px 0"><span class="sp">${esc(d.name)}</span><span class="small">Unit ${st.units}/${pr.limit}</span><div class="bar" style="width:90px"><i style="width:${Math.min(100, st.wear * 100)}%;background:${st.wear > 0.8 ? '#ff5b5b' : '#2ecc71'}"></i></div><b class="small">${Math.round(st.wear * 100)}%</b></div>`; }).join('') : '<div class="small mut">No power-unit limits in this era.</div>';
+  const atr = atrFactor(G);
+  return `<div class="grid g2"><div class="card hl"><h3>Your car</h3>
+  ${statBar(`Aero (P${rankOf('aero')})`, me.aero)}${statBar(`Chassis (P${rankOf('chassis')})`, me.chassis)}${statBar(`Power (P${rankOf('power')})`, eng.power)}${statBar('Reliability', teamRel(G, me), 100, 60, '#4aa3ff')}
+  <div class="small mut">Engine: ${esc(eng.name)}${me.works ? ' (works team)' : ' (customer)'}.</div></div>
+  <div class="card"><h3>Grid pecking order</h3><table>${comp.map((c, i) => `<tr class="${c.t.id === me.id ? 'me' : ''}"><td>${i + 1}</td><td>${tbar(c.t.id)}${esc(c.t.name)}</td><td style="width:45%"><div class="bar"><i style="width:${clamp((c.s - 70) / 30, 0, 1) * 100}%;background:${c.t.color}"></i></div></td><td>${c.s.toFixed(1)}</td></tr>`).join('')}</table></div>
+  <div class="card" style="grid-column:1/-1"><div class="row"><h3 class="sp">Design office</h3><span class="chip">${capLeft === Infinity ? 'No cost cap' : 'Cap left ' + fmtM(capLeft)}</span><span class="chip">Projects ${G.projects.length}/3</span>${atr !== 1 ? `<span class="chip">Wind tunnel allowance ${Math.round(atr * 100)}%</span>` : ''}</div>
+  <div class="small mut" style="margin:4px 0 8px">Pick a part and a project size. Your Technical Director, Head of Aero and facilities multiply the gain; the factory makes builds cheaper and quicker.</div>
+  ${G.projects.length ? `<div style="margin-bottom:8px">${G.projects.map(p => `<div class="row news"><b class="sp">${RD_SIZES[p.size].name} ${p.part ? XP_PARTS[p.part].name : RD_AREAS[p.area].name}</b><span class="mut">${p.left} race${p.left > 1 ? 's' : ''} to go</span></div>`).join('')}</div>` : ''}
+  <div class="grid g3">${partCards}</div></div>
+  <div class="card"><h3>This year vs next year</h3><div class="row"><span class="small">This year</span><input type="range" id="xpfocus" min="0" max="100" step="5" value="${X.focus}" style="flex:1"><span class="small">Next year</span></div>
+  <div class="small" style="margin-top:4px"><b id="xpfocusv">${X.focus}%</b> of the design team works on next year's car. Current-year part gains are cut by up to 60%; banked development so far: <b>+${X.nextPool.toFixed(2)}</b>.</div>
+  <div class="small mut" style="margin-top:4px">${G.timeline ? 'In the historic timeline, banked development carries into next season\'s car.' : `Next regulation change: <b>${X.regYear}</b> — development banked for that year counts 1.8× and the field gets shuffled.`}</div></div>
+  <div class="card"><h3>Power units</h3>${pr ? `<div class="small mut" style="margin-bottom:4px">${pr.limit} per driver this season. Worn units (80%+) fail more often. A unit beyond the limit costs a grid penalty — fit new ones on the grid screen.</div>` : ''}${pu}</div></div>`;
+}
+
+// ---------- HQ: Team (staff, facilities, academy) ----------
+function hqTeam() {
+  ensureXP(G); const X = G.xp, me = G.teams[G.player];
+  const staff = Object.entries(XP_ROLES).map(([k, r]) => { const s = X.staff[k]; return `<div class="row news"><div class="sp"><b>${r.name}</b><div class="small mut">${esc(s.name)} · ${r.desc}</div></div><span class="pill">${s.rating}</span><span class="small mut" style="width:70px;text-align:right">${fmtM(s.salary)}/yr</span></div>`; }).join('');
+  const market = X.staffMarket.slice().sort((a, b) => a.role.localeCompare(b.role) || b.rating - a.rating).map((s, i) => `<div class="row news"><div class="sp"><b>${esc(s.name)}</b><div class="small mut">${XP_ROLES[s.role].name}</div></div><span class="pill">${s.rating}</span><span class="small mut">${fmtM(s.salary)}/yr</span><button class="sm" data-a="xphire" data-v="${X.staffMarket.indexOf(s)}" ${s.rating <= X.staff[s.role].rating ? 'disabled' : ''}>Hire</button></div>`).join('');
+  const fac = Object.entries(XP_FAC).map(([k, f]) => { const lv = X.fac[k]; const b = X.building.find(x => x.key === k); return `<div class="row news"><div class="sp"><b>${f.name}</b> <span class="small">Lv ${lv}/5</span><div class="small mut">${f.desc}</div></div>${b ? `<span class="small warn">Building · ${b.left} races</span>` : lv >= 5 ? '<span class="small good">Max</span>' : `<button class="sm" data-a="xpfac" data-v="${k}" ${me.money < facCost(lv) ? 'disabled' : ''}>Upgrade ${fmtM(facCost(lv))}</button>`}</div>`; }).join('');
+  const cap = 60 + X.fac.crew * 8;
+  const acad = X.academy.map(id => G.drivers[id]).filter(Boolean);
+  const youngsters = freeAgents(G).filter(d => d.age <= 22 && !X.academy.includes(d.id)).sort((a, b) => (b.pot - a.pot) || overall(b) - overall(a)).slice(0, 6);
+  return `<div class="grid g2"><div class="card hl"><h3>Key staff</h3>${staff}</div>
+  <div class="card"><h3>Staff market</h3><div class="small mut" style="margin-bottom:6px">Hiring someone better replaces the current person in that role. New candidates every season.</div>${market}</div>
+  <div class="card"><h3>Facilities</h3>${fac}</div>
+  <div class="card"><h3>Pit crew</h3><div class="row"><span class="sp">Crew rating <b>${X.staff.crew.rating}</b> · limit ${cap}</span><button class="sm" data-a="xpdrill" ${X.drillRound === G.round || X.staff.crew.rating >= cap || me.money < 0.4 ? 'disabled' : ''}>Practice drills $0.4M</button></div>
+  <div class="small mut" style="margin-top:4px">One drill session between races. Average stop ≈ ${(3.25 - (X.staff.crew.rating - 50) * 0.026).toFixed(2)}s.</div></div>
+  <div class="card" style="grid-column:1/-1"><h3>Junior academy (${acad.length}/2)</h3>
+  ${acad.map(d => `<div class="row news"><div class="sp"><b>${flag(d.nat)} ${esc(d.name)}</b> <span class="small mut">age ${d.age} · ${'★'.repeat(Math.max(1, d.pot))}</span></div><span class="pill">OVR ${overall(d).toFixed(1)}</span><button class="sm" data-a="xppromote" data-v="${d.id}">Promote to race seat</button><button class="sm" data-a="xprelease" data-v="${d.id}">Release</button></div>`).join('') || '<div class="small mut">No juniors yet.</div>'}
+  ${acad.length < 2 ? `<div class="small" style="margin:8px 0 4px">Scouting report — young free agents ($1M a year each):</div>${youngsters.map(d => `<div class="row news"><span class="sp">${flag(d.nat)} ${esc(d.name)} <span class="small mut">age ${d.age} · ${'★'.repeat(Math.max(1, d.pot))}</span></span><span class="pill">OVR ${overall(d).toFixed(1)}</span><button class="sm" data-a="xpacademy" data-v="${d.id}">Sign to academy</button></div>`).join('')}` : ''}</div></div>`;
+}
+
+// ---------- HQ: Business (finance + sponsors + board) ----------
+const _hqFinanceBase = hqFinance;
+hqFinance = function () {
+  ensureXP(G); const X = G.xp;
+  const act = X.sponsors.active, offers = X.sponsors.offers;
+  const sCard = s => `<div class="row news"><div class="sp"><b>${esc(s.name)}</b><div class="small">${esc(sponsorText(G, s))}</div><div class="small mut">${fmtM(s.perRace)} per race · ${fmtM(s.bonus)} bonus${s.obj.n ? ` · progress ${s.progress}/${s.obj.n}` : ''}</div></div>${s.done ? '<span class="pill" style="background:#0f5f2a">✓ Done</span>' : s.failed ? '<span class="pill" style="background:#5f0f0f">Missed</span>' : ''}</div>`;
+  return _hqFinanceBase() + `<div class="grid g2" style="margin-top:12px"><div class="card hl"><h3>Sponsor deals (${act.length}/2)</h3>${act.map(sCard).join('') || '<div class="small mut">No deals signed — pick up to two offers.</div>'}</div>
+  <div class="card"><h3>Offers</h3>${offers.length && act.length < 2 ? offers.map((s, i) => `<div class="row news"><div class="sp"><b>${esc(s.name)}</b><div class="small">${esc(sponsorText(G, s))}</div><div class="small mut">${fmtM(s.perRace)} per race · ${fmtM(s.bonus)} bonus</div></div><button class="sm" data-a="xpsponsor" data-v="${i}">Sign</button></div>`).join('') : '<div class="small mut">New offers arrive at the start of each season.</div>'}</div>
+  <div class="card"><h3>Staff wages</h3><div class="big">${fmtM(Object.values(X.staff).reduce((a, s) => a + s.salary, 0))}/yr</div><div class="small mut">Paid per race. Facilities are capital spending and don't count towards the cost cap.</div></div></div>`;
+};
+
+// ---------- HQ: Stats ----------
+function hqStats() {
+  ensureXP(G);
+  const mode = SUB.stats || 'race';
+  const tabs = [['race', 'Last race'], ['title', 'Title fight'], ['h2h', 'Head-to-heads'], ['records', 'Records']].concat(G.player ? [['cabinet', 'Trophy cabinet']] : []);
+  let body = '';
+  const last = G.results[G.results.length - 1];
+  if (mode === 'race') body = last ? `<h3>Lap chart — ${esc(last.gp || TRACK_BY_ID[last.track].short)}</h3>${lapChart(last)}<h3 style="margin-top:14px">Strategy</h3>${strategyChart(last)}` : '<div class="mut">Race once to see charts.</div>';
+  if (mode === 'title') body = G.results.length ? `<h3>Points after each round — top 6</h3>${titleChart()}${titleStory()}` : '<div class="mut">The season hasn\'t started.</div>';
+  if (mode === 'h2h') body = h2hTable();
+  if (mode === 'records') { const lb = winsLeaderboard(G, 20); body = `<h3>All-time race wins</h3><div class="small mut" style="margin-bottom:6px">Real results from F1DB up to ${recordBase(G).year}, plus every win in this save.</div><table>${lb.map((e, i) => `<tr class="${e.live ? 'me' : ''}"><td>${i + 1}</td><td>${esc(e.name)}${e.live ? ' <span class="pill">active</span>' : ''}</td><td style="text-align:right"><b>${e.wins}</b></td></tr>`).join('')}</table>`; }
+  if (mode === 'cabinet') { const T = G.xp.trophies.slice().reverse(); const h = hofLoad().slice().reverse(); body = `<h3>Trophy cabinet</h3>${T.length ? T.map(t => `<div class="news">${t.t === 'title' ? '🏆' : t.t === 'win' ? '🥇' : '🤝'} <span class="mut small">${t.y}</span> ${esc(t.s)}</div>`).join('') : '<div class="mut small">Win something!</div>'}<h3 style="margin-top:12px">Hall of Fame (all careers in this browser)</h3>${h.length ? `<table>${h.slice(0, 30).map(e => `<tr><td>${e.y}</td><td>${esc(e.team || '')}</td><td>P${e.pos}</td><td class="small mut">${e.mode}${e.retired ? ' · retired' : ''}</td></tr>`).join('')}</table>` : '<div class="mut small">Finish a season to start it.</div>'}`; }
+  return `<div class="card"><div class="row" style="margin-bottom:10px">${tabs.map(([k, v]) => `<button class="sm ${mode === k ? 'on' : ''}" data-a="sub" data-k="stats" data-v="${k}">${v}</button>`).join('')}</div>${body}</div>`;
+}
+function lapChart(r) {
+  if (!r.lapPos || r.lapPos.length < 2) return '<div class="mut small">No lap data for this race.</div>';
+  const W = 760, H = 330, L = r.lapPos.length, N = Math.max(...r.lapPos.map(a => a.length));
+  const x = i => 30 + i / (L - 1) * (W - 90), y = p => 12 + p / Math.max(1, N - 1) * (H - 30);
+  const ids = [...new Set(r.lapPos.flat())];
+  const hi = new Set(r.rows.filter(x2 => G.player ? x2.team === G.player : x2.id === G.follow).map(x2 => x2.id).concat(r.rows.slice(0, 3).map(x2 => x2.id)));
+  const lines = ids.map(id => { const pts = r.lapPos.map((ord, i) => ord.indexOf(id) >= 0 ? `${x(i).toFixed(1)},${y(ord.indexOf(id)).toFixed(1)}` : null).filter(Boolean); const row = r.rows.find(z => z.id === id); const col = row ? teamCol(row.team) : '#888';
+    const isHi = hi.has(id); const lastI = r.lapPos.length - 1; const fp = r.lapPos[lastI].indexOf(id);
+    return `<polyline points="${pts.join(' ')}" fill="none" stroke="${col}" stroke-width="${isHi ? 2.6 : 1.2}" opacity="${isHi ? 1 : 0.35}"/>${fp >= 0 && isHi ? `<text x="${x(lastI) + 6}" y="${y(fp) + 4}" font-size="11" fill="#fff" font-weight="700">${row ? esc(row.code) : ''}</text>` : ''}`; }).join('');
+  const grid = Array.from({ length: N }, (_, p) => p % 5 === 0 || p === N - 1 ? `<text x="8" y="${y(p) + 4}" font-size="10" fill="#8a93a6">${p + 1}</text>` : '').join('');
+  return `<div style="overflow-x:auto"><svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:520px;background:#0e1016;border-radius:10px">${grid}${lines}<text x="${W - 60}" y="${H - 4}" font-size="10" fill="#8a93a6">lap ${L}</text></svg></div><div class="small mut">Position by lap. Highlighted: the podium and ${G.player ? 'your drivers' : 'your followed driver'}.</div>`;
+}
+function strategyChart(r) {
+  if (!r.stints) return '<div class="mut small">No strategy data.</div>';
+  const maxL = Math.max(...r.rows.map(x => x.laps), 1);
+  return `<div class="strat">${r.rows.map(row => { const st = r.stints[row.id] || []; return `<div class="strow ${(G.player ? row.team === G.player : row.id === G.follow) ? 'me' : ''}"><span class="stc">${row.out ? 'DNF' : row.pos}</span><b class="stn">${esc(row.code)}</b><div class="stbar">${st.map(([t, l]) => `<span style="width:${l / maxL * 100}%;background:${TYRES[t].col}" title="${TYRES[t].name} · ${l} laps">${l >= 4 ? l : ''}</span>`).join('')}</div></div>`; }).join('')}</div>`;
+}
+function titleChart() {
+  const top = standingsDrivers(G).slice(0, 6); const R = G.results.length;
+  const cum = top.map(d => { let s = 0; return [0].concat(G.results.map(r => { const row = r.rows.find(x => x.id === d.id); const sp = r.sprint ? (r.sprint.find(x => x.id === d.id) || {}).pts || 0 : 0; s += (row ? row.pts : 0) + sp; return s; })); });
+  const maxP = Math.max(1, ...cum.flat()); const W = 760, H = 300; const x = i => 40 + i / Math.max(1, R) * (W - 120), y = v => H - 24 - v / maxP * (H - 40);
+  return `<div style="overflow-x:auto"><svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:520px;background:#0e1016;border-radius:10px">${[0, 0.25, 0.5, 0.75, 1].map(f => `<line x1="40" x2="${W - 80}" y1="${y(maxP * f)}" y2="${y(maxP * f)}" stroke="#1f2430"/><text x="6" y="${y(maxP * f) + 4}" font-size="10" fill="#8a93a6">${Math.round(maxP * f)}</text>`).join('')}
+    ${top.map((d, i) => `<polyline points="${cum[i].map((v, k) => `${x(k).toFixed(1)},${y(v).toFixed(1)}`).join(' ')}" fill="none" stroke="${teamCol(d.team)}" stroke-width="${i === 0 ? 3 : 2}" ${i % 2 ? 'stroke-dasharray="5 3"' : ''}/><text x="${x(R) + 6}" y="${y(cum[i][R]) + 4}" font-size="11" fill="#fff" font-weight="700">${esc(d.code)} ${d.pts}</text>`).join('')}</svg></div>`;
+}
+function titleStory() {
+  const ds = standingsDrivers(G); if (ds.length < 2) return '';
+  const gap = ds[0].pts - ds[1].pts; const P1 = ((G.rules && G.rules.points) || POINTS)[0]; const left = (G.cal.length - G.round) * P1;
+  return `<div class="news" style="margin-top:8px">${gap > left ? `🏆 <b>${esc(ds[0].name)}</b> is the champion.` : `<b>${esc(ds[0].name)}</b> leads <b>${esc(ds[1].name)}</b> by ${gap} points with ${left} still available.${ds[2] && ds[0].pts - ds[2].pts <= left ? ` ${esc(ds[2].name)} is still in it too.` : ''}`}</div>`;
+}
+function h2hTable() {
+  const rows = Object.values(G.teams).map(t => { const ds = teamDrivers(G, t.id); if (ds.length < 2) return ''; const [a, b] = ds; let qa = 0, qb = 0, ra = 0, rb = 0;
+    G.results.forEach(r => { const A = r.rows.find(x => x.id === a.id), B = r.rows.find(x => x.id === b.id); if (!A || !B) return; if (A.grid < B.grid) qa++; else qb++; if (!A.out && !B.out) { if (A.pos < B.pos) ra++; else rb++; } });
+    return `<tr><td>${tbar(t.id)}${esc(t.name)}</td><td><b>${esc(a.code)}</b> v ${esc(b.code)}</td><td>${qa}–${qb}</td><td>${ra}–${rb}</td><td>${a.pts}–${b.pts}</td></tr>`; }).join('');
+  return `<h3>Team-mate head-to-heads</h3><table><tr><th>Team</th><th>Drivers</th><th>Quali</th><th>Race</th><th>Points</th></tr>${rows}</table>`;
+}
+
+// ---------- HQ: Fan zone (predictions, fantasy, driver of the day) ----------
+function hqFan() {
+  ensureXP(G); const F = G.xp.fan; const mode = SUB.fan || 'pred';
+  const tabs = [['pred', 'Predictions'], ['fantasy', 'Fantasy league'], ['dotd', 'Driver of the Day']];
+  let body = '';
+  if (mode === 'pred') {
+    const board = [{ name: 'You', pts: F.predPts, me: true }].concat(PUNDITS.map(p => ({ name: p.name, pts: F.pundits[p.id] || 0 }))).sort((a, b) => b.pts - a.pts);
+    const past = Object.entries(F.preds).filter(([k]) => k.startsWith(G.year + ':')).sort((a, b) => +b[0].split(':')[1] - +a[0].split(':')[1]);
+    body = `<div class="small mut" style="margin-bottom:8px">Before qualifying, pick the pole sitter. Before the race, pick the winner, the podium and the fastest lap. Pole 5 pts · winner 10 · each podium driver 3 (+2 in the exact spot) · fastest lap 3.</div>
+    <h3>Season leaderboard</h3><table>${board.map((b, i) => `<tr class="${b.me ? 'me' : ''}"><td>${i + 1}</td><td>${esc(b.name)}</td><td style="text-align:right"><b>${b.pts}</b></td></tr>`).join('')}</table>
+    <h3 style="margin-top:12px">Your picks</h3>${past.map(([k, p]) => `<div class="news">R${k.split(':')[1]}: ${p.mine.win ? 'win ' + esc(dcode(p.mine.win)) : ''} ${p.mine.pole ? '· pole ' + esc(dcode(p.mine.pole)) : ''} ${p.score != null ? `<b class="good">+${p.score}</b>` : '<span class="mut">pending</span>'}</div>`).join('') || '<div class="mut small">No picks yet — you\'ll be asked during the next race weekend.</div>'}`;
+  }
+  if (mode === 'fantasy') body = fantasyView();
+  if (mode === 'dotd') { const list = Object.entries(F.dotd).sort((a, b) => b[1] - a[1]); body = `<div class="small mut">Vote after every race. Fans' choice this season:</div><table>${list.map(([id, n], i) => `<tr><td>${i + 1}</td><td>${esc(dname(id))}</td><td style="text-align:right">${n}×</td></tr>`).join('') || '<tr><td class="mut">No votes yet.</td></tr>'}</table>`; }
+  return `<div class="card"><div class="row" style="margin-bottom:10px">${tabs.map(([k, v]) => `<button class="sm ${mode === k ? 'on' : ''}" data-a="sub" data-k="fan" data-v="${k}">${v}</button>`).join('')}</div>${body}</div>`;
+}
+const dname = id => G.drivers[id] ? G.drivers[id].name : id;
+const dcode = id => G.drivers[id] ? G.drivers[id].code : id;
+function fantasyView() {
+  const F = G.xp.fan; if (!F.fantasy) F.fantasy = { drivers: [], team: null, pts: 0, history: [], budget: 100, freeTransfers: 99 };
+  const T = F.fantasy; const P = fantasyPrices(G);
+  const spent = T.drivers.reduce((s, id) => s + (P.drivers[id] || 0), 0) + (T.team ? P.teams[T.team] || 0 : 0);
+  const left = +(T.budget - spent).toFixed(1);
+  const drivers = Object.values(G.drivers).filter(d => d.team).sort((a, b) => (P.drivers[b.id] || 0) - (P.drivers[a.id] || 0));
+  const teams = Object.values(G.teams).sort((a, b) => P.teams[b.id] - P.teams[a.id]);
+  return `<div class="row"><div class="sp"><div class="big">${T.pts} pts</div><div class="small mut">Budget left ${fmtM(left)} · free transfers ${T.freeTransfers >= 99 ? 'unlimited (pre-season)' : T.freeTransfers} · extra transfers −4 pts</div></div></div>
+  <div class="small mut" style="margin:6px 0">Pick 5 drivers and 1 constructor. Scoring: race points (25…1) + places gained, pole +3, fastest lap +3, retirement −5; your constructor scores half its drivers' race points.</div>
+  <h3>Drivers (${T.drivers.length}/5)</h3><div class="fgrid">${drivers.map(d => { const on = T.drivers.includes(d.id); return `<button class="fpick ${on ? 'on' : ''}" data-a="xpfd" data-v="${d.id}" style="--tc:${teamCol(d.team)}"><b>${esc(d.code)}</b><span>${fmtM(P.drivers[d.id])}</span></button>`; }).join('')}</div>
+  <h3 style="margin-top:10px">Constructor</h3><div class="fgrid">${teams.map(t => `<button class="fpick ${T.team === t.id ? 'on' : ''}" data-a="xpft" data-v="${t.id}" style="--tc:${t.color}"><b>${esc(t.name)}</b><span>${fmtM(P.teams[t.id])}</span></button>`).join('')}</div>
+  ${T.history.length ? `<h3 style="margin-top:10px">Round by round</h3><div class="row">${T.history.slice(-12).map(h => `<span class="chip">R${h.round} <b>${h.pts}</b></span>`).join('')}</div>` : ''}`;
+}
+
+// ---------- weekend: practice setup puzzle + tyre sets ----------
+const _startWeekendBase = startWeekend;
+startWeekend = function () { _startWeekendBase(); if (WK && WK.sets === undefined) { initSets(WK); render(); } };
+const _wkPracticeBase = wkPractice;
+wkPractice = function () {
+  ensureXP(G);
+  if (!WK.setupCur) { WK.setupCur = {}; WK.setupFb = {}; myEntries().forEach(e => { WK.setupCur[e.d.id] = { fw: 5, rw: 5, susp: 5, ride: 5 }; }); }
+  if (WK.sets === undefined) initSets(WK);
+  let html = _wkPracticeBase();
+  const mine = myEntries(); if (!mine.length) return html;
+  const locked = WK.stage !== 'fp';
+  html += `<div class="card" style="margin-top:12px"><h3>Setup — talk to your drivers</h3><div class="small mut" style="margin-bottom:8px">Adjust the setup, then run a session with the <b>Setup work</b> plan to hear what the driver thinks. Setups lock (parc fermé) once qualifying starts.</div>
+  <div class="grid g2">${mine.map(e => { const cur = WK.setupCur[e.d.id]; const fb = WK.setupFb[e.d.id] || [];
+    return `<div class="card" style="background:var(--panel2)"><div class="row"><b class="sp">${esc(e.d.name)}</b><span class="chip">Setup ${Math.round(e.setup * 100)}%</span></div>
+    ${SETUP_KEYS.map(([k, lab]) => `<div class="stat" style="grid-template-columns:100px 1fr 26px"><span class="mut small">${lab}</span><input type="range" min="1" max="10" value="${cur[k]}" data-setup="${e.d.id}:${k}" ${locked ? 'disabled' : ''}><b class="small">${cur[k]}</b></div>`).join('')}
+    ${fb.length ? `<div class="radio-box">${fb.map(l => `<div>📻 “${esc(l.txt)}”</div>`).join('')}</div>` : '<div class="small mut">No feedback yet.</div>'}
+    ${WK.sets ? `<div class="small" style="margin-top:6px">Tyre sets left: ${['S', 'M', 'H'].map(c => { const s = setsLeft(e.d.id, c); return `${tyreB(c)} ${s.fresh} new${s.used ? ` + ${s.used} used` : ''}`; }).join(' · ')}</div>` : ''}</div>`; }).join('')}</div></div>`;
+  return html;
+};
+const _runPracticeBase = runPractice;
+runPractice = function (G, wk, session, programs) {
+  const rows = _runPracticeBase(G, wk, session, programs);
+  if (G.player && wk.setupCur) {
+    const eng = G.xp.staff.eng.rating; const simB = 1 + (facLevel(G, 'sim') - 1) * 0.08;
+    myEntries().forEach(e => {
+      const opt = setupOptimum(wk.track, e.d); const cur = wk.setupCur[e.d.id]; const sc = setupScore(cur, opt);
+      e.setup = clamp(0.3 + 0.7 * sc * Math.min(1, 0.85 * simB), 0, 1);
+      if ((programs[e.d.id] || 'setup') === 'setup') wk.setupFb[e.d.id] = setupFeedback(cur, opt, e.d, eng);
+      else e.tyreKnow = clamp(e.tyreKnow * simB, 0, 1);
+    });
+  }
+  if (wk.sets) wk.entries.forEach(e => { for (let k = 0; k < 2; k++) { const c = Math.random() < 0.6 ? 'S' : 'M'; const w = takeSet(e.d.id, c); if (w < 0.35) returnSet(e.d.id, c, w + rnd(0.15, 0.4)); } });
+  return rows;
+};
+
+// ---------- weekend: predictions on the quali & grid screens ----------
+function predKey() { return G.year + ':' + (WK.round + 1); }
+function predCard(kind) {
+  ensureXP(G); const P = G.xp.fan.preds[predKey()] || (G.xp.fan.preds[predKey()] = { mine: {}, pundits: punditPicks(G, WK) });
+  const opts = sel => WK.entries.slice().sort((a, b) => a.t.name.localeCompare(b.t.name)).map(e => `<option value="${e.d.id}" ${sel === e.d.id ? 'selected' : ''}>${esc(e.d.code)} · ${esc(e.d.name)}</option>`).join('');
+  const s = (field, label, i) => { const v = i != null ? (P.mine.podium || [])[i] : P.mine[field]; return `<label class="small" style="display:block;margin:4px 0">${label}<select data-pred="${field}${i != null ? ':' + i : ''}" style="width:100%"><option value="">— pick —</option>${opts(v)}</select></label>`; };
+  if (kind === 'quali') return `<div class="card" style="margin-top:12px"><h3>🎯 Prediction: who takes pole?</h3>${s('pole', 'Pole position')}<div class="small mut">Pundit picks: ${PUNDITS.map(p => `${p.name}: <b>${esc(dcode(P.pundits[p.id].pole))}</b>`).join(' · ')}</div></div>`;
+  return `<div class="card" style="margin-top:12px"><h3>🎯 Predictions for the race</h3><div class="grid g2"><div>${s('win', 'Winner')}${s('fl', 'Fastest lap')}</div><div>${s('podium', 'P1', 0)}${s('podium', 'P2', 1)}${s('podium', 'P3', 2)}</div></div>
+  <div class="small mut">Pundits: ${PUNDITS.map(p => `${p.name} → <b>${esc(dcode(P.pundits[p.id].win))}</b>`).join(' · ')}</div></div>`;
+}
+const _wkQualiBase = wkQuali;
+wkQuali = function (key) {
+  const html = _wkQualiBase(key);
+  const QS = WK[key]; if (key === 'Q' && QS.stage === 1 && !QS.live) return html + predCard('quali');
+  return html;
+};
+const _wkGridBase = wkGrid;
+wkGrid = function (sprint) {
+  ensureXP(G);
+  let html = _wkGridBase(sprint);
+  if (!sprint) {
+    // power units (manager) + AI auto changes
+    const pr = puRules(G);
+
+    if (pr && G.player) html += `<div class="card" style="margin-top:12px"><h3>Power units</h3>${myEntries().map(e => { const st = puState(G, e.d.id); const over = st.units + 1 > pr.limit;
+      return `<div class="row news"><span class="sp"><b>${esc(e.d.name)}</b> · unit ${st.units}/${pr.limit} · wear <b class="${st.wear > 0.8 ? 'bad' : ''}">${Math.round(st.wear * 100)}%</b></span>${WK.newPU && WK.newPU[e.d.id] ? '<span class="pill" style="background:#0f5f2a">New unit fitted</span>' : `<button class="sm" data-a="xpnewpu" data-v="${e.d.id}">Fit new unit${over ? ' (+10 grid places)' : ''}</button>`}</div>`; }).join('')}
+      ${(WK.penalties || []).length ? `<div class="small warn" style="margin-top:6px">Grid penalties: ${WK.penalties.map(p => `${esc(p.code)} +${p.n} (${p.why})`).join(', ')}</div>` : ''}</div>`;
+    html += predCard('race');
+  }
+  return html;
+};
+// ---------- race view: camera, onboard, radio, team orders, graphics, replays ----------
+const _wkRaceBase = wkRace;
+wkRace = function () {
+  ensureXP(G);
+  if (!CAM.mode) CAM.mode = G.xp.settings.cam || 'track';
+  let html = _wkRaceBase();
+  html = html.replace('<div class="row" style="margin:8px 0" id="rctl">', `<div class="camsel">${[['track', 'Full track'], ['director', '🎥 Director'], ['onboard', '🎯 Onboard']].map(([k, v]) => `<button class="${CAM.mode === k ? 'on' : ''}" data-a="xpcam" data-v="${k}">${v}</button>`).join('')}</div><div class="row" style="margin:8px 0" id="rctl">`);
+  html = html.replace('<div class="hud" id="hud"></div>', `<div class="hud" id="hud"></div><div class="bgfx" id="bgfx"></div><div class="pitgfx" id="pitgfx"></div><div class="radiogfx" id="radiogfx"></div><div class="replaybadge" id="replaybadge"></div>`);
+  html = html.replace('<div class="card" style="margin-top:10px"><h3>Race control</h3><div class="feed" id="feed"></div></div>',
+    `<div class="grid g2" style="margin-top:10px"><div class="card"><div class="row"><h3 class="sp" style="margin:0">${G.spectator ? 'Commentary' : 'Race control'}</h3><button class="sm" data-a="xpfeed">${(SUB.feed || (G.spectator ? 'comm' : 'rc')) === 'comm' ? 'Race control' : 'Commentary'}</button></div><div class="feed" id="feed" style="margin-top:6px"></div></div>
+    <div class="card"><h3>📻 Team radio</h3><div id="radiolist" class="feed"></div></div>
+    <div class="card"><h3>🌦️ Weather radar</h3><div id="radar"></div></div>
+    <div class="card"><h3>🎬 Highlights</h3><div id="hlist" class="small mut">Key moments appear here.</div></div></div>`);
+  return html;
+};
+// Replace the base drawRace with a camera-aware version
+drawRace = function () {
+  const cv = document.getElementById('cv'); if (!cv || !RACE) return;
+  const ctx = cv.getContext('2d'); const { _w: w, _h: h, _dpr: dpr } = cv;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, w, h);
+  const g = trackGeometry(RACE.track); const s = Math.min(w, h) - 60; const ox = (w - s) / 2, oy = (h - s) / 2 + 8;
+  const L = RACE.L; const frame = REPLAY ? replayFrame() : null;
+  const posOf = (c, i) => { let dist = frame ? frame.d[RACE.cars.indexOf(c)] : (c.pitT > 0 ? c.dist - 1e9 : c.dist); if (dist == null) return null; const inPit = dist < -1e8; if (inPit) dist += 1e9;
+    let frac = (!frame && c.finished) ? 0.002 * i : (RACE.started || frame ? dist : dist * 2.6) / L; const p = pointAt(g, frac); let x = ox + p[0] * s, y = oy + p[1] * s;
+    if (!RACE.started && !frame) { const n = p[2] + Math.PI / 2, side = (c.grid % 2 ? -1 : 1) * 5; x += Math.cos(n) * side; y += Math.sin(n) * side; }
+    if (inPit) { const n = p[2] + Math.PI / 2; x += Math.cos(n) * 16; y += Math.sin(n) * 16; } return [x, y]; };
+  // camera target
+  let tz = 1, tx = w / 2, ty = h / 2;
+  const ord = RACE.order();
+  if (CAM.mode !== 'track') {
+    let focus = null;
+    if (CAM.mode === 'director') { const b = topBattle(RACE, 12); focus = b ? [b.a, b.b] : [ord[0]]; tz = 2.3; }
+    else { const c = RACE.cars.find(x => x.fav) || RACE.cars.find(x => x.player) || ord[0]; focus = [c]; tz = 3; }
+    const ps = focus.map(c => posOf(c, ord.indexOf(c))).filter(Boolean);
+    if (ps.length) { tx = ps.reduce((a, p) => a + p[0], 0) / ps.length; ty = ps.reduce((a, p) => a + p[1], 0) / ps.length; }
+  }
+  const k = 0.12; CAM.x += (tx - CAM.x) * k; CAM.y += (ty - CAM.y) * k; CAM.z += (tz - CAM.z) * k;
+  if (!CAM.x) { CAM.x = tx; CAM.y = ty; CAM.z = tz; }
+  ctx.save(); ctx.translate(w / 2, h / 2); ctx.scale(CAM.z, CAM.z); ctx.translate(-CAM.x, -CAM.y);
+  drawTrackBase(ctx, w, h, RACE.track, { wet: frame ? 0 : RACE.wet, yellow: !frame && (RACE.sc || RACE.vsc) });
+  ctx.restore();
+  const toScr = p => [(p[0] - CAM.x) * CAM.z + w / 2, (p[1] - CAM.y) * CAM.z + h / 2];
+  const labelSet = new Set();
+  if (CAM.mode === 'director') { const b = topBattle(RACE, 12); if (b) { labelSet.add(b.a); labelSet.add(b.b); } }
+  for (let i = ord.length - 1; i >= 0; i--) { const c = ord[i]; if (c.out && !frame) continue; const p = posOf(c, i); if (!p) continue; const q = toScr(p);
+    if (q[0] < -20 || q[1] < -20 || q[0] > w + 20 || q[1] > h + 20) continue;
+    const lab = (RACE.started || frame) && (CAM.mode === 'track' ? i < 3 : CAM.mode === 'director' ? labelSet.has(c) : true);
+    drawCar(ctx, q[0], q[1], c, lab, false); }
+};
+function replayFrame() {
+  const R = REPLAY; const fr = R.clip.frames; if (!fr.length) return null;
+  const el = (performance.now() - R.start) / 1000 * 4; const t = fr[0].t + el;
+  if (t >= fr[fr.length - 1].t) { stopReplay(); return null; }
+  let i = 0; while (i < fr.length - 2 && fr[i + 1].t < t) i++;
+  const a = fr[i], b = fr[i + 1] || a; const f = (t - a.t) / Math.max(0.001, b.t - a.t);
+  return { d: a.d.map((v, j) => v == null || b.d[j] == null ? v : v + (b.d[j] - v) * f) };
+}
+function stopReplay() { REPLAY = null; PAUSED = !!(window._wasPaused); const rb = document.getElementById('replaybadge'); if (rb) rb.innerHTML = ''; }
+
+// extra UI updates after each tick
+const _updateRaceUIBase = updateRaceUI;
+updateRaceUI = function (force) {
+  _updateRaceUIBase(force); if (!RACE) return;
+  const feedMode = SUB.feed || (G.spectator ? 'comm' : 'rc');
+  const feed = document.getElementById('feed');
+  if (feed && feedMode === 'comm') feed.innerHTML = (RACE.comm || []).slice(0, 25).map(l => `<div><span class="mut">L${l.lap}</span> 🎙️ ${esc(l.txt)}</div>`).join('') || '<div class="mut">The commentators are getting ready…</div>';
+  // battle box
+  const bg = document.getElementById('bgfx');
+  if (bg) { const b = RACE.started && !RACE.chequered ? topBattle(RACE, 10) : null; bg.innerHTML = b ? `<div class="bbox"><div class="bt">BATTLE FOR P${b.pos}</div><div class="br"><span style="border-left:4px solid ${b.a.t.color}">${esc(b.a.d.code)}</span><b>${b.gap.toFixed(1)}s</b><span style="border-left:4px solid ${b.b.t.color}">${esc(b.b.d.code)}</span></div></div>` : ''; }
+  // pit stop timer graphic
+  const pg = document.getElementById('pitgfx');
+  if (pg) { const p = RACE.pitGfx; pg.innerHTML = p && RACE.t - p.t < 30 ? `<div class="pbox" style="border-left:5px solid ${p.c.t.color}"><div class="pt">PIT STOP</div><div class="pr"><b>${esc(p.c.d.code)}</b><span class="ptime">${p.svc.toFixed(1)}s</span>${tyreB(p.comp)}</div></div>` : ''; }
+  // radio overlay & list
+  const latest = RACE.radio && RACE.radio[0];
+  const rg = document.getElementById('radiogfx');
+  if (rg) rg.innerHTML = latest && RACE.t - latest.t < 20 ? `<div class="rbox" style="border-left:5px solid ${latest.c.t.color}"><div class="rt">📻 ${esc(latest.c.d.name.toUpperCase())}</div><div>“${esc(latest.txt)}”</div></div>` : '';
+  const rl = document.getElementById('radiolist');
+  if (rl) rl.innerHTML = (RACE.radio || []).map(r => `<div><b style="color:${r.c.t.color}">${esc(r.c.d.code)}</b> “${esc(r.txt)}”${r.actions ? `<div class="row" style="margin:3px 0">${r.actions.map(([lab, act]) => `<button class="sm" data-a="xpradio" data-v="${r.id}" data-act="${act}">${lab}</button>`).join('')}</div>` : r.answer ? ` <span class="mut small">→ ${esc(r.answer)}</span>` : ''}</div>`).join('') || '<div class="mut">Quiet on the radio.</div>';
+  // weather radar
+  const rd = document.getElementById('radar');
+  if (rd) { const lap = RACE.leaderLap; let w = RACE.wet, tgt = RACE.wetTarget; const cells = [];
+    for (let k = 1; k <= 10; k++) { const L2 = lap + k; RACE.plan.forEach(p => { if (p.lap === L2) tgt = p.target; }); w += (tgt - w) * 0.35; cells.push([L2, w]); }
+    rd.innerHTML = `<div class="radar">${cells.map(([L2, w2]) => `<div title="Lap ${L2}"><i style="height:${Math.max(6, w2 * 100)}%;background:${w2 > 0.6 ? '#2f7bef' : w2 > 0.22 ? '#3bb54a' : w2 > 0.05 ? '#8aa' : '#3a3f4b'}"></i><span>${L2}</span></div>`).join('')}</div><div class="small mut">${cells.some(c => c[1] > 0.22) ? 'Rain expected — inters territory in the blue/green laps.' : 'Dry for the next 10 laps (forecasts can change).'}</div>`; }
+  // highlights
+  const hl = document.getElementById('hlist');
+  if (hl) hl.innerHTML = (RACE.highlights || []).map((c, i) => `<div class="row news"><span class="sp">L${c.lap} · ${esc(c.label)}</span><button class="sm" data-a="xpreplay" data-v="${i}">▶ Replay</button></div>`).join('') || 'Key moments appear here.';
+  // extra player controls: engine modes + team orders
+  RACE.cars.filter(c => c.player).forEach(c => {
+    const el = document.getElementById('ctl_' + c.d.id); if (!el || c.out || c.finished) return;
+    const mn = modeNames(G);
+    el.insertAdjacentHTML('beforeend', `<div class="small mut" style="margin-top:4px">${ersOn(G) ? 'Battery' : 'Fuel mix'} ${ersOn(G) ? Math.round(c.battery) + '%' : ''}</div><div class="seg">${Object.entries(mn).map(([k, v]) => `<button class="sm ${c.ers === k ? 'on' : ''}" data-a="xpers" data-d="${c.d.id}" data-v="${k}">${v}</button>`).join('')}</div>
+    ${WK.sets ? `<div class="small mut" style="margin-top:3px">Sets left: ${['S', 'M', 'H'].map(t => { const s = setsLeft(c.d.id, t); return `${t} ${s.fresh}${s.used ? '+' + s.used : ''}`; }).join(' · ')}</div>` : ''}`);
+  });
+  const ctrls = document.getElementById('ctrls');
+  if (ctrls && G.player && RACE.cars.filter(c => c.player && !c.out).length === 2 && !document.getElementById('xporders')) ctrls.insertAdjacentHTML('beforeend', `<div class="ctrl" id="xporders"></div>`);
+  const to = document.getElementById('xporders');
+  if (to) to.innerHTML = `<b>Team orders</b><div class="seg" style="margin-top:4px"><button class="sm ${RACE.teamOrder === 'free' ? 'on' : ''}" data-a="xporder" data-v="free">Free to race</button><button class="sm ${RACE.teamOrder === 'hold' ? 'on' : ''}" data-a="xporder" data-v="hold">Hold positions</button><button class="sm" data-a="xporder" data-v="swap">Swap cars</button></div><div class="small mut" style="margin-top:3px">Rivalry ${Math.round(G.xp.rivalry)} — high rivalry means orders may be ignored.</div>`;
+  // onboard panel for followed driver (spectator) or my lead car
+  const focus = RACE.cars.find(x => x.fav) || (G.player ? RACE.cars.find(x => x.player && !x.out) : null);
+  let ob = document.getElementById('onboard');
+  if (focus && ctrls) { if (!ob) { ctrls.insertAdjacentHTML('afterbegin', '<div class="ctrl onboard" id="onboard"></div>'); ob = document.getElementById('onboard'); } ob.innerHTML = onboardHTML(focus); }
+  else if (ob) ob.remove();
+  // engine sound
+  if (RACE.started && !PAUSED && !RACE.done && focus) { const sp = onboardSpeed(focus); SND.engine(1, sp / 340); } else SND.stopEngine();
+};
+function onboardSpeed(c) {
+  if (c.out || c.finished) return 0; if (c.pitT > 0) return 80;
+  const g = trackGeometry(RACE.track); const f = (c.dist / RACE.L) % 1; const d = 0.004;
+  const a1 = pointAt(g, f - d)[2], a2 = pointAt(g, f + d)[2]; let da = Math.abs(a2 - a1); if (da > Math.PI) da = 2 * Math.PI - da;
+  const a3 = pointAt(g, f + d * 3)[2]; let da2 = Math.abs(a3 - a2); if (da2 > Math.PI) da2 = 2 * Math.PI - da2;
+  const vmax = 335 * eraSpeed(G.year), vmin = 85;
+  let v = vmax - (vmax - vmin) * clamp(da * 4.2, 0, 1);
+  if (RACE.sc) v = Math.min(v, 170); if (RACE.vsc) v = Math.min(v, 200); if (!RACE.started) v = 0;
+  c._brake = da2 > da * 1.6 && da2 > 0.05; return Math.round(v);
+}
+function onboardHTML(c) {
+  const v = onboardSpeed(c); const gear = v === 0 ? 'N' : v < 95 ? 2 : v < 130 ? 3 : v < 170 ? 4 : v < 210 ? 5 : v < 250 ? 6 : v < 290 ? 7 : 8;
+  const brake = c._brake && v > 0; const thr = brake ? 0 : v > 0 ? clamp(40 + v / 4, 0, 100) : 0;
+  const ord = RACE.order(); const pos = ord.indexOf(c) + 1; const ahead = ord[pos - 2];
+  const drs = G.year >= 2011 && RACE.started && !RACE.sc && !RACE.vsc && ahead && !ahead.out && (ahead.dist - c.dist) / (RACE.L / c.curLT) < 1 && !brake && v > 250 && c.laps >= 2;
+  const stints = (c.stints || []).map((s, i) => { const end = c.stints[i + 1] ? c.stints[i + 1].from : c.laps; return `<span style="background:${TYRES[s.tyre].col};color:#000;padding:0 5px;border-radius:4px;font-size:11px;font-weight:700">${s.tyre} ${end - s.from}</span>`; }).join(' ');
+  return `<div class="row"><b style="color:${c.t.color}">P${pos}</b><b class="sp">🎯 ${esc(c.d.name)}</b>${tyreB(c.tyre)}</div>
+  <div class="obrow"><div class="obspeed"><b>${v}</b><span>km/h</span></div><div class="obgear">${gear}</div><div class="obbars"><div><span>THR</span><i style="width:${thr}%;background:#2ecc71"></i></div><div><span>BRK</span><i style="width:${brake ? 100 : 0}%;background:#ff3b3b"></i></div>${ersOn(G) ? `<div><span>ERS</span><i style="width:${c.battery || 0}%;background:#f5c518"></i></div>` : ''}</div>${drs ? '<div class="drs">DRS</div>' : ''}</div>
+  <div class="small mut" style="margin-top:4px">Tyre history: ${stints} · last lap ${fmtTime(c.lastLap)}</div>`;
+}
+
+// ---------- results: podium, celebration, DOTD, fan scores ----------
+const _wkResultsBase = wkResults;
+wkResults = function () {
+  ensureXP(G);
+  const s = WK.applied.summary; const top = s.rows.slice(0, 3);
+  const step = (r, h, n) => `<div class="pstep" style="--tc:${teamCol(r.team)}"><div class="pname">${flag(G.drivers[r.id] ? G.drivers[r.id].nat : '')} <b>${esc(surnameUpper(r.name).last)}</b><small>${esc(G.teams[r.team].name)}</small></div><div class="pblock" style="height:${h}px">${n}</div></div>`;
+  const podium = `<div class="podium ${G.xp.settings.motion ? 'anim' : ''}">${top[1] ? step(top[1], 70, 2) : ''}${step(top[0], 100, 1)}${top[2] ? step(top[2], 50, 3) : ''}${G.xp.settings.motion ? '<div class="confetti">' + Array.from({ length: 28 }, (_, i) => `<i style="left:${(i * 37) % 100}%;animation-delay:${(i % 7) * 0.3}s;background:${['#ff3b3b', '#ffd400', '#2ecc71', '#4aa3ff', '#fff'][i % 5]}"></i>`).join('') + '</div>' : ''}</div>`;
+  const champ = s.clinched ? `<div class="champ-banner">🏆 ${esc(s.clinched.name.toUpperCase())} IS WORLD CHAMPION! <small>${esc(G.teams[s.clinched.team] ? G.teams[s.clinched.team].name : '')}</small></div>` : '';
+  const dotd = s.dotdCands ? (WK.dotd ? `<div class="card"><h3>Driver of the Day</h3>${WK.dotd.map((x, i) => `<div class="row" style="margin:4px 0"><span class="sp">${i === 0 ? '⭐ ' : ''}${esc(dname(x.id))}</span><div class="bar" style="width:45%"><i style="width:${x.pct}%;background:${i === 0 ? '#f5c518' : '#4a5468'}"></i></div><b class="small" style="width:40px;text-align:right">${x.pct}%</b></div>`).join('')}</div>`
+    : `<div class="card"><h3>Vote: Driver of the Day</h3><div class="row">${s.dotdCands.map(id => `<button data-a="xpdotd" data-v="${id}">${esc(dname(id))}</button>`).join('')}</div></div>`) : '';
+  const fan = (s.pred || s.fantasy) ? `<div class="card"><h3>Fan zone</h3>${s.pred ? `<div>🎯 Predictions: <b>+${s.pred.score}</b> pts</div>` : ''}${s.fantasy ? `<div>🏁 Fantasy: <b>${s.fantasy.total >= 0 ? '+' : ''}${s.fantasy.total}</b> pts <span class="small mut">${s.fantasy.lines.map(l => `${esc(l[0])} ${l[1]}`).join(' · ')}</span></div>` : ''}${s.milestone ? `<div class="small" style="margin-top:4px">${esc(s.milestone)}</div>` : ''}</div>` : (s.milestone ? `<div class="card"><div>${esc(s.milestone)}</div></div>` : '');
+  const hl = RACE && RACE.highlights && RACE.highlights.length ? `<div class="card"><h3>🎬 Highlights</h3>${RACE.highlights.map((c, i) => `<div class="row news"><span class="sp">L${c.lap} · ${esc(c.label)}</span><button class="sm" data-a="xpreplaypost" data-v="${i}">▶ Watch</button></div>`).join('')}</div>` : '';
+  return champ + podium + _wkResultsBase() + `<div class="grid g2" style="margin-top:12px">${dotd}${fan}${hl}</div>`;
+};
+
+// ---------- setup screen: create-a-team, famous seasons, what-ifs ----------
+const _viewSetupBase = viewSetup;
+viewSetup = function () {
+  let html = _viewSetupBase(); const S = SETUP;
+  if (S.era === 'hist') {
+    const fam = `<div class="card" style="margin-top:12px"><h3>Famous seasons</h3><div class="row">${FAMOUS.map(([y, t]) => `<button class="sm ${S.year === y && !S.whatIf ? 'on' : ''}" data-a="xpfamous" data-v="${y}" title="${esc(t)}">${y}</button>`).join('')}</div>${FAMOUS.find(f => f[0] === S.year) ? `<div class="small mut" style="margin-top:4px">${esc(FAMOUS.find(f => f[0] === S.year)[1])}</div>` : ''}
+    <h3 style="margin-top:10px">What if…?</h3>${WHATIFS.map(w => `<label class="row small" style="margin:4px 0"><input type="radio" name="whatif" data-a="xpwhatif" data-v="${w.id}" ${S.whatIf === w.id ? 'checked' : ''}> <b>${esc(w.label)}</b> <span class="mut">— ${esc(w.desc)}</span></label>`).join('')}
+    ${S.whatIf ? '<button class="sm" data-a="xpwhatif" data-v="">Clear what-if</button>' : ''}</div>`;
+    html = html.replace('<div class="row" style="margin:16px 0 40px">', fam + '<div class="row" style="margin:16px 0 40px">');
+  } else if (S.mode !== 'spectator') {
+    const engs = Object.entries(ENGINES);
+    const ct = `<div class="card" style="margin-top:12px"><label class="row"><input type="checkbox" data-a="xpcustomteam" ${S.custom ? 'checked' : ''}> <b>Create your own team</b> <span class="small mut">— join the grid as a new 12th team</span></label>
+    ${S.custom ? `<div class="grid g2" style="margin-top:8px"><label class="small">Team name<input id="ct_name" value="${esc(S.custom.name)}" style="width:100%"></label><label class="small">Colour<input id="ct_col" type="color" value="${S.custom.color}" style="width:100%;height:38px"></label>
+    <label class="small">Engine supplier<select id="ct_eng" style="width:100%">${engs.map(([k, e]) => `<option value="${k}" ${S.custom.engine === k ? 'selected' : ''}>${e.name}</option>`).join('')}</select></label><div class="small mut">You start with a $120M budget, a car around the back of the grid, and the two best available free agents.</div></div>` : ''}</div>`;
+    html = html.replace('<div class="row" style="margin:16px 0 40px">', ct + '<div class="row" style="margin:16px 0 40px">');
+    if (S.custom) html = html.replace('data-a="startgame" disabled', 'data-a="startgame"');
+  }
+  return html;
+};
+const _newGameBase = newGame;
+newGame = function (opts) {
+  const G2 = _newGameBase(opts);
+  if (opts.customTeam) {
+    const c = opts.customTeam; const id = 'myteam';
+    G2.teams[id] = { id, name: c.name, full: c.name + ' F1 Team', color: c.color, engine: c.engine, works: false, aero: 74, chassis: 74, rel: 78, money: 120, sponsor: 5, dev: 1, pts: 0, spent: 0, drivers: [] };
+    G2.player = id;
+    const fa = Object.values(G2.drivers).filter(d => !d.team).sort((a, b) => overall(b) - overall(a)).slice(0, 2);
+    fa.forEach(d => { d.team = id; d.until = G2.year + 1; d.salary = askingSalary(d); });
+    G2.news = []; news(G2, `🆕 ${c.name} joins the grid! ${fa.map(d => d.name).join(' and ')} will drive.`);
+  }
+  if (opts.whatIf) G2.whatIf = opts.whatIf;
+  ensureXP(G2);
+  return G2;
+};
+const _newTimelineBase = newTimelineGame;
+newTimelineGame = function (opts) {
+  PENDING_WHATIF = opts.whatIf || null;
+  const real = _newTimelineBase(opts);
+  PENDING_WHATIF = null;
+  if (opts.whatIf) real.whatIf = opts.whatIf;
+  if (!real.spectator && !real.teams[real.player]) real.player = Object.keys(real.teams)[0];
+  ensureXP(real);
+  return real;
+};
+
+// ---------- menu: settings for sound, camera, accessibility ----------
+const _hqMenuBase = hqMenu;
+hqMenu = function () {
+  ensureXP(G); const S = G.xp.settings;
+  return _hqMenuBase() + `<div class="card" style="margin-top:12px"><h3>Sound & view</h3>
+  <label class="row"><input type="checkbox" data-a="xpset" data-v="sound" ${S.sound ? 'checked' : ''}> Sound (engine, start lights, pit stops, crowd)</label>
+  <div class="row"><span class="small mut">Volume</span><input type="range" id="xpvol" min="0" max="100" value="${Math.round(S.volume * 100)}"></div>
+  <div class="row" style="margin-top:6px"><span class="small mut">Default race camera</span>${[['track', 'Full track'], ['director', 'Director'], ['onboard', 'Onboard']].map(([k, v]) => `<button class="sm ${S.cam === k ? 'on' : ''}" data-a="xpsetcam" data-v="${k}">${v}</button>`).join('')}</div>
+  <h3 style="margin-top:12px">Accessibility</h3>
+  <div class="row"><span class="small mut">Text size</span>${[['s', 'Small'], ['m', 'Normal'], ['l', 'Large'], ['xl', 'Extra large']].map(([k, v]) => `<button class="sm ${S.text === k ? 'on' : ''}" data-a="xptext" data-v="${k}">${v}</button>`).join('')}</div>
+  <label class="row"><input type="checkbox" data-a="xpset" data-v="motion" ${S.motion ? 'checked' : ''}> Animations (confetti, light effects)</label>
+  <label class="row"><input type="checkbox" data-a="xpset" data-v="contrast" ${S.contrast ? 'checked' : ''}> High contrast</label>
+  <div class="small mut">Tyres always show a letter as well as a colour.</div></div>`;
+};
+
+// ---------- actions ----------
+Object.assign(A, {
+  xpjob(el) { G.player = el.dataset.v; G.xp.sacked = false; G.xp.board = null; xpNewSeasonBusiness(G, true); G.xp.sponsors = { offers: [], active: [] }; xpSponsorOffers(G); news(G, `🤝 You are the new team principal of ${G.teams[G.player].full}.`); autosave(); render(); },
+  xpretire() { hofAdd({ y: G.year, team: G.teams[G.player].name, pos: G.xp.lastPos || 0, mode: G.timeline ? 'timeline' : 'modern', retired: true }); G.xp.sacked = false; toast('Career over — see you in the Hall of Fame'); try { localStorage.removeItem('f1mgr_save'); } catch (e) { } G = null; VIEW = 'title'; render(); },
+  xppart(el) {
+    const me = G.teams[G.player], s = RD_SIZES[el.dataset.size], part = XP_PARTS[el.dataset.p]; const fac = facLevel(G, 'factory');
+    const cost = +(s.cost * (1 - 0.04 * (fac - 1))).toFixed(1), races = Math.max(1, s.races - Math.floor((fac - 1) / 2));
+    if (G.projects.length >= 3 || me.spent + cost > capFor(G) || me.money < cost) return toast('Not possible right now');
+    me.money -= cost; me.spent += cost; G.projects.push({ area: part.area, part: el.dataset.p, size: el.dataset.size, left: races });
+    toast(`${s.name} ${part.name} project started`); autosave(); render();
+  },
+  xphire(el) { const X = G.xp; const s = X.staffMarket[+el.dataset.v]; if (!s) return; const old = X.staff[s.role]; G.teams[G.player].money -= old.salary * 0.5; X.staff[s.role] = s; X.staffMarket.splice(+el.dataset.v, 1); news(G, `👔 ${s.name} joins as ${XP_ROLES[s.role].name}.`); autosave(); render(); },
+  xpfac(el) { const k = el.dataset.v, X = G.xp, me = G.teams[G.player]; const c = facCost(X.fac[k]); if (me.money < c || X.building.some(b => b.key === k)) return; me.money -= c; X.building.push({ key: k, left: 4 }); toast(`${XP_FAC[k].name} upgrade started`); autosave(); render(); },
+  xpdrill() { const X = G.xp, me = G.teams[G.player]; me.money -= 0.4; X.staff.crew.rating = Math.min(60 + X.fac.crew * 8, X.staff.crew.rating + 1); X.drillRound = G.round; toast('Pit crew drilled: +1'); autosave(); render(); },
+  xpacademy(el) { const X = G.xp; if (X.academy.length >= 2) return; X.academy.push(el.dataset.v); G.teams[G.player].money -= 1; news(G, `🎓 ${dname(el.dataset.v)} joins the ${G.teams[G.player].name} junior academy.`); autosave(); render(); },
+  xprelease(el) { G.xp.academy = G.xp.academy.filter(id => id !== el.dataset.v); autosave(); render(); },
+  xppromote(el) { G.xp.academy = G.xp.academy.filter(id => id !== el.dataset.v); TAB = 'drivers'; render(); openDriver(el.dataset.v); },
+  xpsponsor(el) { const X = G.xp; const s = X.sponsors.offers[+el.dataset.v]; if (!s || X.sponsors.active.length >= 2) return; X.sponsors.active.push(s); X.sponsors.offers.splice(+el.dataset.v, 1); news(G, `🤝 ${s.name} signs a sponsorship deal with ${G.teams[G.player].name}.`); autosave(); render(); },
+  xpnewpu(el) { const pr = puRules(G); const st = puState(G, el.dataset.v); st.units++; st.wear = 0; (WK.newPU = WK.newPU || {})[el.dataset.v] = true; if (st.units > pr.limit) { const e = WK.entries.find(x => x.d.id === el.dataset.v); applyGridPenalty(e, 10, 'new power unit'); } autosave(); render(); },
+  xpcam(el) { CAM.mode = el.dataset.v; document.querySelectorAll('.camsel button').forEach(b => b.classList.toggle('on', b.dataset.v === CAM.mode)); },
+  xpfeed(el) { SUB.feed = (SUB.feed || (G.spectator ? 'comm' : 'rc')) === 'comm' ? 'rc' : 'comm'; const b = el; if (b) b.textContent = SUB.feed === 'comm' ? 'Race control' : 'Commentary'; updateRaceUI(); },
+  xpradio(el) { radioAction(RACE, el.dataset.v, el.dataset.act); updateRaceUI(); },
+  xporder(el) { if (el.dataset.v === 'swap') { const r = teamOrderSwap(RACE); if (r && r !== 'ok' && r !== 'ignored') toast(r); } else RACE.teamOrder = el.dataset.v; updateRaceUI(); },
+  xpers(el) { const c = RACE.cars.find(x => x.d.id === el.dataset.d); if (c) { c.ers = el.dataset.v; c.curLT = RACE.lapTime(c, c.laps); } updateRaceUI(); },
+  xpreplay(el) { const clip = RACE.highlights[+el.dataset.v]; if (!clip) return; window._wasPaused = PAUSED; PAUSED = true; REPLAY = { clip, start: performance.now() }; const rb = document.getElementById('replaybadge'); if (rb) rb.innerHTML = `<span>⟲ REPLAY · ${esc(clip.label)}</span><button class="sm" data-a="xpreplaystop">Back to live</button>`; window.scrollTo(0, 0); },
+  xpreplaystop() { stopReplay(); },
+  xpreplaypost(el) {
+    const clip = RACE.highlights[+el.dataset.v]; if (!clip) return;
+    modal(`<div class="row"><h2 class="sp">🎬 ${esc(clip.label)}</h2><button class="sm" data-a="xpreplayclose">✕</button></div><div class="cvbox"><canvas id="cv"></canvas><div class="replaybadge" id="replaybadge"><span>⟲ REPLAY</span></div></div>`);
+    sizeCanvas(); REPLAY = { clip, start: performance.now() }; const loop = () => { if (!REPLAY || !document.getElementById('cv')) return; drawRace(); requestAnimationFrame(loop); }; requestAnimationFrame(loop);
+  },
+  xpreplayclose() { REPLAY = null; closeModal(); },
+  xpdotd(el) { const s = WK.applied.summary; const c = s.dotdCands; const w = c.map(id => { const r = s.rows.find(x => x.id === id); return { id, w: Math.max(1, (r.grid - r.pos) * 2 + (r.pos === 1 ? 6 : 0) + rnd(0, 6) + (id === el.dataset.v ? 6 : 0)) }; }); const tot = w.reduce((a, x) => a + x.w, 0); WK.dotd = w.map(x => ({ id: x.id, pct: Math.round(x.w / tot * 100) })).sort((a, b) => b.pct - a.pct); G.xp.fan.dotd[WK.dotd[0].id] = (G.xp.fan.dotd[WK.dotd[0].id] || 0) + 1; autosave(); const y = window.scrollY; render(); window.scrollTo(0, y); },
+  xpfd(el) { const T = G.xp.fan.fantasy; const id = el.dataset.v; const P = fantasyPrices(G); const i = T.drivers.indexOf(id);
+    if (i >= 0) { T.drivers.splice(i, 1); } else { if (T.drivers.length >= 5) return toast('5 drivers max — remove one first'); const spent = T.drivers.reduce((s, x) => s + (P.drivers[x] || 0), 0) + (T.team ? P.teams[T.team] : 0); if (spent + P.drivers[id] > T.budget) return toast('Over budget'); T.drivers.push(id); if (T.freeTransfers < 99) { if (T.freeTransfers > 0) T.freeTransfers--; else T.pendingPenalty = (T.pendingPenalty || 0) + 4; } }
+    autosave(); const y = window.scrollY; render(); window.scrollTo(0, y); },
+  xpft(el) { const T = G.xp.fan.fantasy; const P = fantasyPrices(G); const spent = T.drivers.reduce((s, x) => s + (P.drivers[x] || 0), 0); if (T.team !== el.dataset.v && spent + P.teams[el.dataset.v] > T.budget) return toast('Over budget'); T.team = T.team === el.dataset.v ? null : el.dataset.v; autosave(); const y = window.scrollY; render(); window.scrollTo(0, y); },
+  xpfamous(el) { SETUP.year = +el.dataset.v; SETUP.team = null; SETUP.follow = null; SETUP.whatIf = null; render(); },
+  xpwhatif(el) { SETUP.whatIf = el.dataset.v || null; const w = WHATIFS.find(x => x.id === SETUP.whatIf); if (w) { SETUP.year = w.start; SETUP.team = null; SETUP.follow = null; } render(); },
+  xpcustomteam(el) { SETUP.custom = el.checked ? { name: 'Lion City Racing', color: '#E4002B', engine: 'MER' } : null; render(); },
+  xpset(el) { G.xp.settings[el.dataset.v] = el.checked; applyAccessibility(G); if (el.dataset.v === 'sound' && el.checked) SND.unlock(); autosave(); },
+  xpsetcam(el) { G.xp.settings.cam = el.dataset.v; CAM.mode = el.dataset.v; autosave(); render(); },
+  xptext(el) { G.xp.settings.text = el.dataset.v; applyAccessibility(G); autosave(); render(); }
+});
+// wrap the start-game action so new options reach the game
+const _startraceBase = A.startrace;
+A.startrace = function (q) { if (WK && WK.stage === 'grid') puPreRace(G, WK); return _startraceBase(q); };
+const _startgame = A.startgame;
+A.startgame = function () {
+  if (SETUP.custom) { const n = document.getElementById('ct_name'), c = document.getElementById('ct_col'), e = document.getElementById('ct_eng'); if (n) SETUP.custom = { name: n.value.trim() || 'My Team', color: c.value, engine: e.value }; SETUP.team = SETUP.team || 'mer'; }
+  if (SETUP.era === 'hist') {
+    if (SETUP.mode !== 'spectator' && !SETUP.team) return;
+    G = newTimelineGame({ year: SETUP.year, team: SETUP.team, spectator: SETUP.mode === 'spectator', follow: SETUP.mode === 'spectator' ? SETUP.follow : null, difficulty: SETUP.difficulty, whatIf: SETUP.whatIf });
+    VIEW = 'hq'; TAB = 'home'; autosave(); render(); window.scrollTo(0, 0); return;
+  }
+  if (SETUP.cal.length < 3) return toast('Pick at least 3 races');
+  G = newGame({ team: SETUP.team, difficulty: SETUP.difficulty, cal: SETUP.cal, sprints: SETUP.sprints.filter(id => SETUP.cal.includes(id)), spectator: SETUP.mode === 'spectator', follow: SETUP.mode === 'spectator' ? SETUP.follow : null, customTeam: SETUP.mode !== 'spectator' ? SETUP.custom : null });
+  VIEW = 'hq'; TAB = 'home'; autosave(); render(); window.scrollTo(0, 0);
+};
+// inputs that aren't buttons
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t.dataset && t.dataset.setup) { const [did, k] = t.dataset.setup.split(':'); WK.setupCur[did][k] = +t.value; t.nextElementSibling && (t.nextElementSibling.textContent = t.value); }
+  if (t.id === 'xpfocus') { G.xp.focus = +t.value; const v = document.getElementById('xpfocusv'); if (v) v.textContent = t.value + '%'; autosave(); }
+  if (t.id === 'xpvol') { G.xp.settings.volume = +t.value / 100; autosave(); }
+});
+document.addEventListener('change', e => {
+  const t = e.target;
+  if (t.dataset && t.dataset.pred) { const P = G.xp.fan.preds[predKey()]; const [f, i] = t.dataset.pred.split(':'); if (i != null) { P.mine.podium = P.mine.podium || []; P.mine.podium[+i] = t.value || null; } else P.mine[f] = t.value || null; autosave(); }
+});
+document.addEventListener('click', () => SND.unlock(), { once: false, capture: true });
 </script></body></html>
