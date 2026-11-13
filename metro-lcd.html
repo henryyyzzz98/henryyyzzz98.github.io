@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Metro LCD Simulator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Hind:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#1b1d22;color:#e9ecf1;font-family:"Hind","Noto Sans JP",system-ui,sans-serif}
+h1{font-size:18px;margin:0;font-weight:600}
+.wrap{max-width:1100px;margin:0 auto;padding:14px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.muted{color:#9aa2b1;font-size:13px}
+
+/* ---------- bezel & screen ---------- */
+.bezel{background:linear-gradient(#c9b8a8,#b9a696);padding:clamp(8px,2.2vw,22px);border-radius:10px}
+.lcdframe{background:#2a2b2e;padding:clamp(3px,.7vw,7px);border-radius:4px}
+.viewport{position:relative;width:100%;overflow:hidden;background:#f4f6f8}
+.screen{position:absolute;left:0;top:0;width:1280px;height:720px;transform-origin:0 0;
+  background:linear-gradient(#fbfcfd,#eef1f4);color:#2b2f36;font-family:"Hind","Noto Sans JP",sans-serif;overflow:hidden}
+.screen *{line-height:1}
+.screen .jpf{font-family:"Noto Sans JP",sans-serif}
+.fade{animation:fade .35s ease}
+@keyframes fade{from{opacity:.15}to{opacity:1}}
+.abs{position:absolute}
+
+.typebadge{position:absolute;left:14px;top:18px;height:62px;min-width:210px;padding:0 22px;border-radius:7px;
+  display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:44px;white-space:nowrap}
+.typebadge.jp{font-family:"Noto Sans JP",sans-serif;font-size:40px;letter-spacing:4px}
+.car{position:absolute;right:40px;top:20px;display:flex;align-items:flex-start;gap:10px;color:#5d636d;font-size:24px}
+.car b{display:inline-flex;align-items:center;justify-content:center;min-width:64px;height:62px;padding:0 6px;border-radius:8px;
+  background:linear-gradient(#4a4e56,#23262b);color:#fff;font-size:52px;font-weight:700;margin-top:4px;font-family:"Hind",sans-serif}
+.lbadge{flex:none;border-radius:50%;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#2b2f36;font-weight:700;font-family:"Hind",sans-serif}
+.fit{white-space:nowrap;transform-origin:0 50%}
+.fitc{white-space:nowrap;transform-origin:50% 50%}
+
+/* strip bits */
+.trk{position:absolute}
+.tbox{position:absolute;display:flex;align-items:center;justify-content:center;font-weight:700;color:#2f343c;font-family:"Hind",sans-serif}
+.dot{position:absolute;width:19px;height:19px;margin-left:-9.5px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.35)}
+.code{position:absolute;width:110px;margin-left:-55px;text-align:center;font-weight:700;color:#2f343c;white-space:nowrap;font-family:"Hind",sans-serif}
+.nm{position:absolute;width:80px;margin-left:-40px;display:flex;justify-content:center;color:#2f343c}
+.nm .v{writing-mode:vertical-rl;text-orientation:upright;font-family:"Noto Sans JP",sans-serif;white-space:nowrap}
+.nm .e{writing-mode:vertical-rl;font-weight:600;white-space:nowrap}
+.gry{color:#a7adb5!important}
+.note{position:absolute;right:26px;bottom:14px;font-size:20px;color:#2f343c;font-family:"Noto Sans JP",sans-serif}
+.note.en{font-family:"Hind",sans-serif;font-size:22px}
+.stack{position:absolute;display:flex;flex-direction:column;gap:3px;transform-origin:0 100%}
+.tri{display:flex;align-items:center;gap:5px;white-space:nowrap;font-size:17px;font-weight:500;color:#2b2f36;font-family:"Noto Sans JP",sans-serif}
+.ic{display:inline-flex;align-items:center;justify-content:center;flex:none;font-style:normal;font-weight:700;font-family:"Hind",sans-serif;color:#222}
+.ic.c{border-radius:50%;border:3px solid #888;background:#fff}
+.ic.t{border-radius:3px;background:#24262a}
+
+/* next-station screen (style 1) */
+.nx-label{position:absolute;left:60px;top:250px;font-size:54px;font-weight:600;color:#5a606a}
+.nx-main{position:absolute;left:60px;right:60px;top:318px;height:190px;display:flex;align-items:center}
+.nx-name{font-size:140px;font-weight:600;color:#2b2f36}
+.nx-sub{font-size:42px;color:#6a707a;margin-top:12px;white-space:nowrap;font-family:"Noto Sans JP",sans-serif}
+.nx-tr{position:absolute;left:60px;right:60px;display:flex;flex-wrap:wrap;gap:14px 30px;align-items:center}
+.nx-tr .tri{font-size:30px}
+.nx-door{position:absolute;left:60px;right:60px;bottom:30px;height:72px;border-radius:10px;display:flex;align-items:center;gap:20px;padding:0 28px;
+  background:#fff3cf;color:#6b4a00;font-size:36px;font-weight:600;border:2px solid #f0c64a}
+.empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:40px;color:#888}
+
+/* ---------- controls ---------- */
+.panel{background:#262930;border:1px solid #343844;border-radius:12px;padding:14px;margin-top:14px}
+.panel h2{font-size:15px;margin:0 0 10px;color:#cfd5df;font-weight:600;text-transform:uppercase;letter-spacing:.3px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+button,select,input{font:inherit;font-size:14px;color:#e9ecf1;background:#323641;border:1px solid #444a58;border-radius:8px;padding:8px 10px;min-width:0}
+button{cursor:pointer;font-weight:600}
+button:hover{background:#3b404d}
+button.pri{background:#0d7fa3;border-color:#0d7fa3}
+button.danger{background:#5a2730;border-color:#7a3340}
+button.sm{padding:6px 8px;font-size:13px}
+input[type=color]{padding:2px;width:44px;height:36px;flex:none}
+input[type=checkbox]{width:18px;height:18px;accent-color:#0d7fa3}
+.seg{display:inline-flex;border:1px solid #444a58;border-radius:8px;overflow:hidden}
+.seg button{border:0;border-radius:0;background:#2d313b}
+.seg button.on{background:#0d7fa3}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+.grid label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:#9aa2b1}
+.grid input,.grid select{width:100%}
+.lines{display:flex;flex-direction:column;gap:6px}
+.ln{display:grid;grid-template-columns:70px 44px 1fr 1fr auto;gap:6px;align-items:center}
+.stations{margin-top:6px;display:flex;flex-direction:column;gap:8px}
+.st{background:#2c3039;border:1px solid #3a3f4b;border-radius:10px;padding:8px;border-left:5px solid #888}
+.st.cur{box-shadow:0 0 0 2px #0d7fa3}
+.st.pass{opacity:.8;background:repeating-linear-gradient(135deg,#2c3039 0 10px,#292c34 10px 20px)}
+.st .r1{display:grid;grid-template-columns:24px 76px 64px 1fr 1fr;gap:6px;align-items:center}
+.st .r2{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:6px}
+.st .idx{font-size:12px;color:#8a92a1;text-align:right}
+.st .r2 input[type=number]{width:72px}
+.chk{display:inline-flex;gap:5px;align-items:center;font-size:13px;color:#cfd5df;background:#323641;border:1px solid #444a58;border-radius:8px;padding:6px 9px;cursor:pointer}
+.sp{flex:1}
+.trbox{margin-top:8px;padding:8px;border-radius:8px;background:#22252c;display:flex;flex-direction:column;gap:6px}
+.tr{display:grid;grid-template-columns:96px 52px 44px 1fr 1fr auto;gap:6px;align-items:center}
+@media (max-width:640px){
+  .st .r1{grid-template-columns:20px 64px 56px 1fr}
+  .st .r1 .jpin{grid-column:2 / -1}
+  .tr{grid-template-columns:90px 48px 44px 1fr}
+  .tr .tren{grid-column:1 / 4}
+  .ln{grid-template-columns:60px 44px 1fr auto}
+  .ln .lnjp{grid-column:1 / 4}
+}
+textarea{width:100%;min-height:150px;background:#1d2026;color:#d8dde6;border:1px solid #444a58;border-radius:8px;padding:10px;font:12px/1.4 ui-monospace,monospace}
+.status{font-size:13px;color:#9fe0f2;min-height:18px;margin-top:6px}
+.pos{font-size:14px;color:#cfd5df}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <h1>🚇 Metro LCD Simulator</h1>
+    <span class="muted">Tokyo Metro–style in-car display · custom routes, through-service, passing stations</span>
+  </div>
+
+  <div class="bezel"><div class="lcdframe"><div class="viewport" id="vp"><div class="screen" id="screen"></div></div></div></div>
+
+  <div class="panel">
+    <h2>Playback</h2>
+    <div class="row">
+      <button id="prev">◀ Back</button>
+      <button id="next" class="pri">Advance ▶</button>
+      <button id="auto">▶ Auto-run</button>
+      <span class="pos" id="pos"></span>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <span class="muted">Style</span>
+      <div class="seg" id="segStyle"><button data-v="1">Classic</button><button data-v="2">Next + strip</button></div>
+      <span class="muted" id="modeLbl">Screen</span>
+      <div class="seg" id="segMode"><button data-v="auto">Cycle</button><button data-v="route">Route map</button><button data-v="next">Next station</button></div>
+      <span class="muted">Language</span>
+      <div class="seg" id="segLang"><button data-v="auto">Cycle</button><button data-v="jp">日本語</button><button data-v="en">English</button></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Route</h2>
+    <div class="row" style="margin-bottom:12px">
+      <select id="routeSel" style="flex:1;min-width:180px"></select>
+      <button id="newRoute">+ New</button>
+      <button id="dupRoute">Duplicate</button>
+      <button id="delRoute" class="danger">Delete</button>
+    </div>
+    <div class="grid">
+      <label>Route name (for your list)<input id="f_name"></label>
+      <label>Train type preset<select id="f_typePreset">
+        <option value="">— custom —</option>
+        <option value="Local|各駅停車|#1d58e0">Local / 各駅停車</option>
+        <option value="Rapid|快速|#e5541b">Rapid / 快速</option>
+        <option value="Commuter Rapid|通勤快速|#0b8a3e">Commuter Rapid / 通勤快速</option>
+        <option value="Semi Express|準急|#1a9e5a">Semi Express / 準急</option>
+        <option value="Express|急 行|#e0262b">Express / 急行</option>
+        <option value="Commuter Express|通勤急行|#e0262b">Commuter Express / 通勤急行</option>
+        <option value="Rapid Express|快速急行|#8a3fc2">Rapid Express / 快速急行</option>
+        <option value="Limited Express|特急|#c2185b">Limited Express / 特急</option>
+      </select></label>
+      <label>Train type (EN)<input id="f_typeEn"></label>
+      <label>Train type (JP)<input id="f_typeJp"></label>
+      <label>Type badge colour<input id="f_typeColor" type="color"></label>
+      <label>Car No.<input id="f_car" maxlength="3"></label>
+      <label>Terminus (train runs to)<select id="f_dest"></select></label>
+      <label>Stations shown on strip<select id="f_visible"></select></label>
+      <label>Passed stations kept on strip<select id="f_past"></select></label>
+      <label>Arrow direction<select id="f_dir"><option value="right">→ Left to right</option><option value="left">← Right to left</option></select></label>
+      <label>Footer note (JP)<input id="f_noteJp"></label>
+      <label>Footer note (EN)<input id="f_noteEn"></label>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Lines on this route (through-service)</h2>
+    <p class="muted" style="margin:0 0 10px">Add every line the train runs on. Each station picks its line, which sets its code letter and the strip colour. If the terminus is on another line, the display shows “… Line through service”.</p>
+    <div class="lines" id="lines"></div>
+    <div class="row" style="margin-top:8px">
+      <button id="addLine" class="pri">+ Add line</button>
+      <select id="lineLib"><option value="">Quick add a line…</option></select>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Stations</h2>
+    <div class="stations" id="stations"></div>
+    <div class="row" style="margin-top:10px">
+      <button id="addSt" class="pri">+ Add station</button>
+      <button id="renum">Auto-number codes (per line)</button>
+      <button id="reverse">Reverse direction</button>
+    </div>
+    <p class="muted" style="margin:10px 0 0">Min = minutes from the first station. Tick <b>Pass</b> for stations this train skips: no time, greyed name, and Advance skips them. <b>⇄</b> edits that station's interchanges.</p>
+  </div>
+
+  <div class="panel">
+    <h2>Import / Export</h2>
+    <div class="row">
+      <button id="exp">Show route JSON</button>
+      <button id="copy">Copy</button>
+      <button id="imp" class="pri">Import JSON as new route</button>
+      <button id="reset" class="danger">Restore preset routes</button>
+    </div>
+    <textarea id="json" style="margin-top:10px" placeholder="Paste route JSON here to import…"></textarea>
+    <div class="status" id="status"></div>
+  </div>
+</div>
+
+<script>
+/* ================= libraries ================= */
+// [kind, letter, colour, JP, EN]  kind c = subway roundel, t = railway icon
+const LIB=[
+ ['c','G','#F39700','銀座線','Ginza Line'],['c','M','#E60012','丸ノ内線','Marunouchi Line'],['c','H','#9CAEB7','日比谷線','Hibiya Line'],
+ ['c','T','#009BBF','東西線','Tozai Line'],['c','C','#00BB85','千代田線','Chiyoda Line'],['c','Y','#C1A470','有楽町線','Yurakucho Line'],
+ ['c','Z','#8F76D6','半蔵門線','Hanzomon Line'],['c','N','#00AC9B','南北線','Namboku Line'],['c','F','#9C5E31','副都心線','Fukutoshin Line'],
+ ['c','A','#E85298','都営浅草線','Toei Asakusa Line'],['c','I','#0079C2','都営三田線','Toei Mita Line'],['c','S','#6CBB5A','都営新宿線','Toei Shinjuku Line'],
+ ['c','E','#B6007A','都営大江戸線','Toei Oedo Line'],
+ ['t','','','都電荒川線','Toden Arakawa Line'],['t','','','JR線','JR Lines'],['t','','','西武池袋線','Seibu Ikebukuro Line'],
+ ['t','','','西武豊島線','Seibu Toshima Line'],['t','','','西武新宿線','Seibu Shinjuku Line'],['t','','','東武東上線','Tobu Tojo Line'],
+ ['t','','','東武スカイツリーライン','Tobu Skytree Line'],['t','','','東急東横線','Tokyu Toyoko Line'],['t','','','東急田園都市線','Tokyu Den-en-toshi Line'],
+ ['t','','','東急目黒線','Tokyu Meguro Line'],['t','','','京王線','Keio Line'],['t','','','京王井の頭線','Keio Inokashira Line'],
+ ['t','','','小田急線','Odakyu Line'],['t','','','京急線','Keikyu Line'],['t','','','京成線','Keisei Line'],
+ ['t','','','つくばエクスプレス','Tsukuba Express'],['t','','','ゆりかもめ','Yurikamome'],['t','','','りんかい線','Rinkai Line'],
+ ['t','','','東京モノレール','Tokyo Monorail'],['t','','','東葉高速線','Toyo Rapid Line'],['t','','','埼玉高速鉄道線','Saitama Railway Line'],['t','','','相鉄線','Sotetsu Line'],
+];
+// lines a train can run on: [letter, colour, JP, EN]
+const LINE_LIB=[...LIB.filter(x=>x[0]==='c').map(x=>[x[1],x[2],x[3],x[4]]),
+ ['SI','#F08A1C','西武池袋線','Seibu Ikebukuro Line'],['TJ','#0F4C9E','東武東上線','Tobu Tojo Line'],['TY','#DA0442','東急東横線','Tokyu Toyoko Line'],
+ ['DT','#20A288','東急田園都市線','Tokyu Den-en-toshi Line'],['MG','#009CD2','東急目黒線','Tokyu Meguro Line'],['TS','#0F6CC3','東武スカイツリーライン','Tobu Skytree Line'],
+ ['TR','#2E9E48','東葉高速線','Toyo Rapid Line'],['SR','#0D5FA8','埼玉高速鉄道線','Saitama Railway Line'],['JB','#FFD400','中央・総武線各駅停車','Chuo-Sobu Line (Local)'],
+ ['OH','#1E6FBF','小田急線','Odakyu Line'],['KS','#005AAA','京成線','Keisei Line']];
+const libTr=x=>{
+  if(Array.isArray(x)) return {k:x[0],l:x[1],c:x[2],jp:x[3],en:x[4]};
+  const e=LIB.find(e=>e[3]===x); return e?{k:e[0],l:e[1],c:e[2],jp:e[3],en:e[4]}:{k:'t',l:'',c:'',jp:x,en:x};
+};
+
+/* ================= presets ================= */
+// stations: [lineKey, code, EN, JP, min, pass, transfers[]]
+const NOTE_JP="運転状況により、多少時間は異なります。", NOTE_EN="Times may vary depending on operating conditions.";
+const PRESETS=[
+ {name:"Tozai Line Local → Nishi-funabashi",typeEn:"Local",typeJp:"各駅停車",typeColor:"#1d58e0",car:"10",visible:16,past:0,dir:"right",
+  lines:{T:['T','#009BBF','東西線','Tozai Line']},
+  st:[['T','01','Nakano','中野',0,0,['JR線']],['T','02','Ochiai','落合',3],['T','03','Takadanobaba','高田馬場',6,0,['JR線','西武新宿線']],
+   ['T','04','Waseda','早稲田',9],['T','05','Kagurazaka','神楽坂',12],['T','06','Iidabashi','飯田橋',14,0,['JR線','有楽町線','南北線','都営大江戸線']],
+   ['T','07','Kudanshita','九段下',16,0,['半蔵門線','都営新宿線']],['T','08','Takebashi','竹橋',18],['T','09','Otemachi','大手町',20,0,['丸ノ内線','千代田線','半蔵門線','都営三田線']],
+   ['T','10','Nihombashi','日本橋',22,0,['銀座線','都営浅草線']],['T','11','Kayabacho','茅場町',24,0,['日比谷線']],['T','12','Monzen-nakacho','門前仲町',26,0,['都営大江戸線']],
+   ['T','13','Kiba','木場',28],['T','14','Toyocho','東陽町',30],['T','15','Minami-sunamachi','南砂町',32],['T','16','Nishi-kasai','西葛西',35],
+   ['T','17','Kasai','葛西',37],['T','18','Urayasu','浦安',39],['T','19','Minami-gyotoku','南行徳',41],['T','20','Gyotoku','行徳',43],
+   ['T','21','Myoden','妙典',45],['T','22','Baraki-nakayama','原木中山',48],['T','23','Nishi-funabashi','西船橋',50,0,['JR線','東葉高速線']]]},
+ {name:"Fukutoshin Express → Nerima (Seibu through)",typeEn:"Express",typeJp:"急 行",typeColor:"#e0262b",car:"5",visible:8,past:4,dir:"left",
+  lines:{F:['F','#9C5E31','副都心線','Fukutoshin Line'],SI:['SI','#F08A1C','西武池袋線','Seibu Ikebukuro Line']},
+  st:[['F','16','Shibuya','渋谷',0,0,['銀座線','半蔵門線','JR線','東急東横線','京王井の頭線']],['F','15','Meiji-jingumae','明治神宮前',2,0,['千代田線','JR線']],
+   ['F','14','Kita-sando','北参道',4,1],['F','13','Shinjuku-sanchome','新宿三丁目',5,0,['丸ノ内線','都営新宿線']],['F','12','Higashi-shinjuku','東新宿',7,0,['都営大江戸線']],
+   ['F','11','Nishi-waseda','西早稲田',9,1],['F','10','Zoshigaya','雑司が谷',11,1,['都電荒川線']],
+   ['F','09','Ikebukuro','池袋',13,0,['西武池袋線','東武東上線','JR線','丸ノ内線','有楽町線']],['F','08','Kanamecho','要町',15],['F','07','Senkawa','千川',16],
+   ['F','06','Kotake-mukaihara','小竹向原',17,0,[['c','Y','#C1A470','有楽町線（和光市方面）','Yurakucho Line (for Wakoshi)']]],
+   ['SI','37','Shin-sakuradai','新桜台',18,1],['SI','06','Nerima','練馬',19,0,['都営大江戸線','西武豊島線','西武池袋線']]]},
+ {name:"Ginza Line → Asakusa",typeEn:"Local",typeJp:"各駅停車",typeColor:"#1d58e0",car:"3",visible:16,past:0,dir:"right",
+  lines:{G:['G','#F39700','銀座線','Ginza Line']},
+  st:[['G','01','Shibuya','渋谷',0,0,['半蔵門線','副都心線','JR線','東急東横線','京王井の頭線']],['G','02','Omote-sando','表参道',2,0,['千代田線','半蔵門線']],
+   ['G','03','Gaiemmae','外苑前',4],['G','04','Aoyama-itchome','青山一丁目',5,0,['半蔵門線','都営大江戸線']],['G','05','Akasaka-mitsuke','赤坂見附',7,0,['丸ノ内線']],
+   ['G','06','Tameike-sanno','溜池山王',9,0,['南北線']],['G','07','Toranomon','虎ノ門',10],['G','08','Shimbashi','新橋',12,0,['JR線','都営浅草線','ゆりかもめ']],
+   ['G','09','Ginza','銀座',14,0,['丸ノ内線','日比谷線']],['G','10','Kyobashi','京橋',15],['G','11','Nihombashi','日本橋',17,0,['東西線','都営浅草線']],
+   ['G','12','Mitsukoshimae','三越前',18,0,['半蔵門線']],['G','13','Kanda','神田',20,0,['JR線']],['G','14','Suehirocho','末広町',21],
+   ['G','15','Ueno-hirokoji','上野広小路',23],['G','16','Ueno','上野',25,0,['日比谷線','JR線']],['G','17','Inaricho','稲荷町',26],
+   ['G','18','Tawaramachi','田原町',28],['G','19','Asakusa','浅草',30,0,['都営浅草線','東武スカイツリーライン']]]}
+];
+function fromPreset(p){
+  const ids={}, lines=Object.entries(p.lines).map(([k,v])=>{const id=uid();ids[k]=id;return {id,letter:v[0],color:v[1],nameJp:v[2],nameEn:v[3]};});
+  const r={id:uid(),name:p.name,typeEn:p.typeEn,typeJp:p.typeJp,typeColor:p.typeColor,car:p.car,visible:p.visible,past:p.past,dir:p.dir,noteJp:NOTE_JP,noteEn:NOTE_EN,lines,
+    stations:p.st.map(s=>({line:ids[s[0]],code:s[1],en:s[2],jp:s[3],min:s[4],pass:!!s[5],door:"",tr:(s[6]||[]).map(libTr)}))};
+  r.dest=r.stations.length-1; return r;
+}
+function uid(){return Math.random().toString(36).slice(2,10)}
+
+/* ================= state ================= */
+const LS="metroPids.v2", LS1="metroPids.v1";
+let routes=[], curId=null, style="1";
+let pos={i:0,moving:true};
+let mode="auto", lang="auto", phase=0, autoRun=null;
+const openTr=new Set();
+
+function norm(r){
+  if(!Array.isArray(r.lines)||!r.lines.length) r.lines=[{id:uid(),letter:r.letter||"X",color:r.lineColor||"#009BBF",nameEn:"",nameJp:""}];
+  r.lines=r.lines.map(l=>({id:l.id||uid(),letter:l.letter??"",color:l.color||"#888888",nameEn:l.nameEn??"",nameJp:l.nameJp??""}));
+  const byId=new Set(r.lines.map(l=>l.id));
+  r.stations=(r.stations||[]).map(s=>Array.isArray(s)?{code:s[0],en:s[1],jp:s[2],min:s[3]}:s).map(s=>{
+    let line=s.line; if(!byId.has(line)){const m=r.lines.find(l=>l.letter===line); line=m?m.id:r.lines[0].id;}
+    return {line,code:s.code??"",en:s.en??"",jp:s.jp??"",min:+s.min||0,door:s.door||"",pass:!!s.pass,
+      tr:Array.isArray(s.tr)?s.tr.map(t=>typeof t==="string"||Array.isArray(t)?libTr(t):{k:t.k==="c"?"c":"t",l:t.l??"",c:t.c||"",jp:t.jp??"",en:t.en??""}):[]};
+  });
+  const d={name:"Untitled route",typeEn:"Local",typeJp:"各駅停車",typeColor:"#1d58e0",car:"1",visible:16,past:0,dir:"right",noteJp:NOTE_JP,noteEn:NOTE_EN};
+  for(const k in d) if(r[k]==null) r[k]=d[k];
+  if(r.dest==null||r.dest>=r.stations.length||r.dest<0) r.dest=Math.max(0,r.stations.length-1);
+  delete r.letter; delete r.lineColor; if(!r.id) r.id=uid();
+  return r;
+}
+function load(){
+  try{const d=JSON.parse(localStorage.getItem(LS)); if(d&&d.routes&&d.routes.length){routes=d.routes.map(norm);curId=d.curId;style=d.style||"1";}}catch(e){}
+  if(!routes.length){
+    routes=PRESETS.map(fromPreset);
+    try{const o=JSON.parse(localStorage.getItem(LS1)); if(o&&o.routes) o.routes.forEach(r=>{r.name=(r.name||"Route")+" (saved)";routes.push(norm(r));});}catch(e){}
+    curId=routes[0].id;
+  }
+  if(!routes.find(r=>r.id===curId)) curId=routes[0].id;
+}
+function save(){try{localStorage.setItem(LS,JSON.stringify({routes,curId,style}))}catch(e){}}
+const R=()=>routes.find(r=>r.id===curId);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const col=c=>/^#[0-9a-f]{3,8}$/i.test(c||"")?c:"#888888";
+const mix=(c,p,w)=>`color-mix(in srgb,${col(c)} ${p}%,${w})`;
+const trackBg=c=>`linear-gradient(${mix(c,55,"#fff")},${col(c)} 55%,${mix(c,75,"#000")})`;
+const $=id=>document.getElementById(id);
+
+/* ================= route logic ================= */
+const lineOf=(r,s)=>r.lines.find(l=>l.id===s?.line)||r.lines[0];
+const isStop=(r,k)=>k===r.dest||k===0||!r.stations[k].pass;
+function nextStop(r,i){for(let j=i+1;j<=r.dest;j++) if(isStop(r,j)) return j; return r.dest;}
+function prevStop(r,i){for(let j=i-1;j>0;j--) if(isStop(r,j)) return j; return 0;}
+const target=r=>pos.moving?nextStop(r,pos.i):pos.i;
+
+/* ================= rendering ================= */
+const screen=$("screen"), vp=$("vp");
+function fit(){const s=vp.clientWidth/1280;screen.style.transform=`scale(${s})`;vp.style.height=(720*s)+"px";}
+window.addEventListener("resize",fit);
+
+function curView(){
+  const m = style==="2" ? "strip" : (mode==="auto" ? (phase<2?"route":"next") : mode);
+  const l = lang==="auto" ? (phase%2===0?"jp":"en") : lang;
+  return {m,l};
+}
+const TRAIN=`<svg viewBox="0 0 20 20" width="78%" height="78%"><rect x="4" y="2" width="12" height="12.5" rx="2.6" fill="#fff"/><rect x="5.7" y="4" width="8.6" height="4.6" rx=".6" fill="#24262a"/><circle cx="7.2" cy="11.7" r="1.1" fill="#24262a"/><circle cx="12.8" cy="11.7" r="1.1" fill="#24262a"/><path d="M6.3 15.6 4.6 18.4M13.7 15.6l1.7 2.8" stroke="#fff" stroke-width="1.7" stroke-linecap="round"/></svg>`;
+function trIcon(t,sz){
+  if(t.k==="c"){const L=String(t.l||"");return `<i class="ic c" style="width:${sz}px;height:${sz}px;border-color:${col(t.c)};border-width:${Math.max(2,sz*.13)}px;font-size:${sz*(L.length>1?.38:.52)}px">${esc(L)}</i>`;}
+  return `<i class="ic t" style="width:${sz}px;height:${sz}px">${TRAIN}</i>`;
+}
+const trName=(t,l)=>l==="jp"?t.jp:(t.en||t.jp);
+function lineBadge(L,code,d,ring){
+  const len=String(L.letter).length;
+  return `<div class="lbadge" style="width:${d}px;height:${d}px;border:${ring}px solid ${col(L.color)}">
+    <div style="font-size:${d*(len>1?.25:.3)}px;margin-bottom:${d*.02}px">${esc(L.letter)}</div><div style="font-size:${d*.38}px">${esc(code)}</div></div>`;
+}
+function typeBadge(r,l,extra=""){
+  const c=r.typeColor;
+  return `<div class="typebadge ${l==="jp"?"jp":""}" style="${extra};background:linear-gradient(180deg,${mix(c,70,"#fff")} 0%,${col(c)} 50%,${mix(c,82,"#000")} 100%);box-shadow:inset 0 0 0 2px ${mix(c,70,"#000")}">${esc(l==="jp"?r.typeJp:r.typeEn)}</div>`;
+}
+function throughText(r,l,fromStation){
+  const DL=lineOf(r,r.stations[r.dest]), FL=lineOf(r,fromStation);
+  if(DL.id===FL.id) return "";
+  return l==="jp" ? `${esc(DL.nameJp||DL.letter)}直通` : `Through to ${esc(DL.nameEn||DL.letter)}`;
+}
+
+/* ---- classic header ---- */
+function header1(r,l){
+  const D=r.stations[r.dest], DL=lineOf(r,D), jp=l==="jp";
+  const thr=throughText(r,l,r.stations[target(r)]);
+  return `${typeBadge(r,l)}
+   ${thr?`<div class="abs jpf" style="left:${260}px;top:34px;font-size:30px;font-weight:700;color:#4a4f58">${thr}</div>`:""}
+   <div class="car">${jp?`<span class="jpf">号車</span>`:"Car No."}<b>${esc(r.car)}</b></div>
+   <div class="abs" style="left:96px;top:66px;width:210px;height:210px;border-radius:50%;background:radial-gradient(circle,${mix(DL.color,20,"transparent")} 0 55%,transparent 56%)"></div>
+   <div class="abs" style="left:18px;top:98px;right:30px;height:110px;display:flex;align-items:center">
+     ${jp?`<div style="width:132px;flex:none"></div>`:`<div style="font-size:76px;font-weight:600;color:#3a3f47;margin-right:16px;margin-top:10px">for</div>`}
+     ${lineBadge(DL,D.code,112,11)}
+     <div class="fit ${jp?"jpf":""}" data-fit="${jp?900:880}" style="margin-left:26px;font-size:${jp?94:100}px;font-weight:${jp?700:600};color:#3a3f47;letter-spacing:${jp?4:-.5}px;margin-top:${jp?0:12}px">${esc(jp?D.jp:D.en)}</div>
+     ${jp?`<div class="jpf" style="font-weight:700;font-size:56px;margin-left:10px;color:#3a3f47;align-self:flex-end;margin-bottom:18px">行</div>`:""}
+   </div>
+   <div class="abs" style="left:0;right:30px;top:210px;height:5px;background:${mix(DL.color,55,"#fff")}"></div>`;
+}
+
+/* ---- next + strip header ---- */
+function header2(r,l){
+  const tk=target(r), T=r.stations[tk], TL=lineOf(r,T), D=r.stations[r.dest], jp=l==="jp";
+  const thr=throughText(r,l,T);
+  const terminal=tk===r.dest;
+  const label = pos.moving ? (jp?(terminal?"つぎは終点":"つぎは"):(terminal?"Next, last stop":"Next")) : (jp?(terminal?"終点":"ただいま"):(terminal?"Last stop":"Now at"));
+  const destTxt = jp ? `${thr?thr+"　":""}<b style="font-size:40px">${esc(D.jp)}</b>　ゆき`
+                     : `${thr?thr+" · ":""}for <b style="font-size:38px">${esc(D.en)}</b>`;
+  return `${typeBadge(r,l,"top:12px;height:58px;font-size:"+(jp?40:38)+"px;letter-spacing:"+(jp?6:0)+"px;border-radius:5px")}
+   <div class="abs fit ${jp?"jpf":""}" data-fit="${1280-260-200}" style="left:260px;top:26px;font-size:30px;font-weight:700;color:#2b2f36">${destTxt}</div>
+   <div class="abs" style="right:28px;top:12px;display:flex;align-items:flex-end;gap:6px">
+     <b style="display:inline-flex;align-items:center;justify-content:center;min-width:58px;height:58px;border-radius:8px;background:linear-gradient(#4a4e56,#23262b);color:#fff;font-size:46px;font-weight:700">${esc(r.car)}</b>
+     <span class="${jp?"jpf":""}" style="font-size:${jp?20:18}px;font-weight:700;color:#3a3f47">${jp?"号車":"Car"}</span></div>
+   <div class="abs ${jp?"jpf":""}" style="left:40px;width:210px;top:120px;text-align:right;font-size:${jp?48:44}px;font-weight:700;color:#2b2f36">${label}</div>
+   <div class="abs" style="left:262px;top:78px">${lineBadge(TL,T.code,108,10)}</div>
+   <div class="abs" style="left:400px;right:40px;top:82px;height:104px;display:flex;align-items:center;justify-content:center">
+     <div class="fitc ${jp?"jpf":""}" data-fit="840" style="font-size:${jp?100:92}px;font-weight:700;letter-spacing:${jp?24:0}px;color:#16181c">${esc(jp?T.jp:T.en)}</div></div>
+   <div class="abs" style="left:0;right:0;top:192px;height:6px;background:${col(TL.color)}"></div>`;
+}
+
+/* ---- strip (both styles) ---- */
+const S1={id:1,x0:150,x1:1150,trB:326,timeY:332,ty:384,th:24,codeY:418,codeF:20,nameY:452,nameH:228,nameJ:36,nameE:28};
+const S2={id:2,x0:120,x1:1140,trB:330,ty:340,th:48,codeY:398,codeF:26,nameY:436,nameH:248,nameJ:46,nameE:32};
+function chev1(){return `<svg viewBox="0 0 42 40" width="42" height="40"><path d="M4 2H24L40 20 24 38H4L20 20Z" fill="#0d2b8f" stroke="#fff" stroke-width="3" stroke-linejoin="round"/></svg>`;}
+function chev2(){return `<svg viewBox="0 0 54 56" width="54" height="56"><path d="M3 3H17L34 28 17 53H3L20 28Z" fill="#e0262b" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/><path d="M19 3H33L50 28 33 53H19L36 28Z" fill="#e0262b" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/></svg>`;}
+
+function strip(r,l,S){
+  const st=r.stations, vis=Math.max(4,+r.visible||12), past=Math.min(Math.max(0,+r.past||0),vis-2);
+  const ref=pos.i, tgt=target(r), jp=l==="jp", left=r.dir==="left";
+  const start=Math.max(0,Math.min(ref,tgt-past));
+  const end=Math.min(r.dest,start+vis-1);
+  const list=[]; for(let k=start;k<=end;k++) list.push(k);
+  const sp=(S.x1-S.x0)/(vis-1);
+  const F=n=>S.x0+n*sp, XF=f=>left?1280-f:f, X=n=>XF(F(n)), ix=k=>k-start;
+  const last=list.length-1, endsHere=end===r.dest;
+  const fEnd = endsHere ? F(last)+sp*0.55 : Math.min(1262,S.x1+sp*0.7);
+  const fChev = S.id===2 ? F(ix(tgt))-sp*0.42 : (pos.moving ? F(ix(tgt))-sp*0.5 : F(ix(ref)));
+  let h="";
+  const piece=(fa,fb,bg,extra="")=>{const a=XF(fa),b=XF(fb);h+=`<div class="trk" style="top:${S.ty}px;height:${S.th}px;left:${Math.min(a,b)}px;width:${Math.abs(b-a)+.5}px;background:${bg};${extra}"></div>`;};
+  piece(0,F(0),trackBg(lineOf(r,st[start]).color));
+  for(let n=0;n<last;n++) piece(F(n),F(n+1),trackBg(lineOf(r,st[list[n+1]]).color));
+  const tailLine=lineOf(r,st[end<r.dest?end+1:end]);
+  piece(F(last),fEnd,trackBg(tailLine.color));
+  if(S.id===1) piece(0,fChev,"linear-gradient(#eceef1,#c3c8cf)");
+  // arrow tip
+  if(S.id===1){
+    const tc=mix(tailLine.color,80,"#000"), tx=XF(fEnd);
+    h+=`<div class="abs" style="top:${S.ty-12}px;left:${left?tx-26:tx}px;width:0;height:0;border-top:24px solid transparent;border-bottom:24px solid transparent;${left?"border-right":"border-left"}:26px solid ${tc}"></div>`;
+    if(last>0){const lx=X(last)+(left?-34:34);h+=`<div class="abs ${jp?"jpf":""}" style="top:${S.timeY+8}px;${left?`right:${1280-lx}px`:`left:${lx}px`};font-size:26px;font-weight:700;color:#2f343c">${jp?"分":"min"}</div>`;}
+  }else{
+    const w=74, tx=XF(fEnd), pale=mix(tailLine.color,32,"#fff");
+    h+=`<div class="abs" style="top:${S.ty-16}px;left:${left?tx-w:tx}px;width:${w}px;height:${S.th+32}px;background:${pale};clip-path:${left?"polygon(100% 0,0 50%,100% 100%)":"polygon(0 0,100% 50%,0 100%)"}"></div>`;
+    h+=`<div class="abs ${jp?"jpf":""}" style="top:${S.ty+S.th/2-12}px;left:${left?tx-30:tx+6}px;font-size:24px;font-weight:700;color:#fff">${jp?"分":"min"}</div>`;
+  }
+  // under-code rule (style 2)
+  if(S.id===2){const a=X(Math.max(0,ix(tgt)-0.5)),b=X(last)+(left?-sp*.5:sp*.5);h+=`<div class="abs" style="top:${S.codeY+30}px;height:3px;left:${Math.min(a,b)}px;width:${Math.abs(b-a)}px;background:${mix(lineOf(r,st[tgt]).color,70,"#fff")}"></div>`;}
+  if(S.id===1) h+=`<div class="abs" style="top:${S.codeY+24}px;height:3px;left:${Math.min(X(0),X(last))-40}px;width:${Math.abs(X(last)-X(0))+80}px;background:${mix(lineOf(r,st[tgt]).color,50,"#fff")}"></div>`;
+
+  const base=+st[ref].min||0;
+  list.forEach((k,n)=>{
+    const s=st[k], x=X(n), L=lineOf(r,s);
+    const isPast=k<tgt, isPass=!isStop(r,k), cur=k===tgt;
+    const grey=isPast||isPass;
+    const showTime=!isPast&&!isPass&&!(k===ref&&!pos.moving)||(S.id===2&&cur&&!pos.moving&&false);
+    const t=(+s.min||0)-base;
+    // transfers
+    if(s.tr&&s.tr.length){
+      const avail=S.trB-(S.id===1?222:204);
+      if(sp>=110){
+        const need=s.tr.length*25, sc=Math.min(1,avail/need);
+        const items=s.tr.map(tr=>`<div class="tri" style="font-size:${jp?17:15}px">${trIcon(tr,21)}<span>${esc(trName(tr,l))}</span></div>`).join("");
+        h+=`<div class="stack" style="left:${x-14}px;bottom:${720-S.trB}px;transform:scale(${sc});opacity:${isPast?.4:1}">${items}</div>`;
+      }else{ // narrow columns: icon grid only
+        const w=sp-6, per=Math.max(1,Math.floor((w+3)/27)), rows=Math.ceil(s.tr.length/per), sz=Math.min(24,(avail/rows)-3);
+        h+=`<div class="abs" style="left:${x-w/2}px;width:${w}px;bottom:${720-S.trB}px;display:flex;flex-wrap:wrap-reverse;justify-content:center;gap:3px;opacity:${isPast?.4:1}">${s.tr.map(tr=>trIcon(tr,sz)).join("")}</div>`;
+      }
+    }
+    if(S.id===1){
+      if(showTime) h+=`<div class="tbox" style="left:${x-27}px;top:${S.timeY}px;width:54px;height:40px;background:#e3e7ec;font-size:34px;padding-top:4px">${t}</div>`;
+      if(isPass) h+=`<div class="abs" style="left:${x-9}px;top:${S.ty+1}px;font-size:22px;font-weight:700;color:#fff;transform:scaleX(${left?-1:1})">›</div>`;
+      else h+=`<div class="dot" style="left:${x}px;top:${S.ty+2.5}px;${isPast?"background:#f2f2f2;box-shadow:0 0 0 1px #aab":""}"></div>`;
+    }else{
+      if(isPass) h+=`<div class="abs" style="left:${x-12}px;top:${S.ty+4}px;font-size:40px;font-weight:300;color:#fff;transform:scaleX(${left?1:-1})">‹</div>`;
+      else h+=`<div class="tbox" style="left:${x-31}px;top:${S.ty+7}px;width:62px;height:34px;background:linear-gradient(#fff,#e9ecef);font-size:36px;padding-top:5px;border-radius:2px">${showTime?t:""}</div>`;
+    }
+    if(!isPass) h+=`<div class="code ${grey?"gry":""}" style="left:${x}px;top:${S.codeY}px;font-size:${S.codeF}px">${esc(L.letter)}-${esc(s.code)}</div>`;
+    const ny=isPass&&S.id===2?S.codeY+4:S.nameY, nh=S.nameH+(S.nameY-ny);
+    if(jp){
+      const len=[...(s.jp||"")].length||1, fs=Math.min(S.nameJ,nh/len);
+      h+=`<div class="nm ${grey?"gry":""}" style="left:${x}px;top:${ny}px"><span class="v" style="font-size:${fs}px;font-weight:${S.id===2?700:500};letter-spacing:${S.id===2&&len<=2?fs*.9:2}px">${esc(s.jp)}</span></div>`;
+    }else{
+      const len=(s.en||"").length||1, fs=Math.min(S.nameE,nh/(len*0.56));
+      h+=`<div class="nm ${grey?"gry":""}" style="left:${x}px;top:${ny}px"><span class="e" style="font-size:${fs}px">${esc(s.en)}</span></div>`;
+    }
+  });
+  const cx=XF(fChev);
+  h+= S.id===1 ? `<div class="abs" style="top:${S.ty-8}px;left:${cx-21}px;transform:scaleX(${left?-1:1})">${chev1()}</div>`
+               : `<div class="abs" style="top:${S.ty-4}px;left:${cx-27}px;transform:scaleX(${left?-1:1})">${chev2()}</div>`;
+  h+=`<div class="note ${jp?"":"en"}" style="${S.id===2?"font-size:16px;bottom:8px;right:16px":""}">${esc(jp?r.noteJp:r.noteEn)}</div>`;
+  return h;
+}
+
+function doorSVG(side){
+  return `<svg width="70" height="52" viewBox="0 0 70 52" style="flex:none;${side==="L"?"":"transform:scaleX(-1)"}"><rect x="34" y="4" width="32" height="44" rx="3" fill="#fff" stroke="#6b4a00" stroke-width="3"/><path d="M28 26H4M14 14 2 26l12 12" stroke="#6b4a00" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+}
+function nextScreen(r,l){
+  const k=target(r), s=r.stations[k], L=lineOf(r,s), jp=l==="jp", terminal=k===r.dest;
+  const label = pos.moving ? (jp?(terminal?"次は 終点":"次は"):(terminal?"Next, the last stop":"Next"))
+                           : (jp?(terminal?"終点":"ただいま"):(terminal?"This is the last stop":"Now stopping at"));
+  let h=header1(r,l)+`<div class="nx-label ${jp?"jpf":""}">${label}</div>
+    <div class="nx-main">${lineBadge(L,s.code,150,15)}
+      <div style="margin-left:40px;min-width:0;flex:1">
+        <div class="nx-name fit ${jp?"jpf":""}" data-fit="${1280-120-190}" style="letter-spacing:${jp?10:-1}px;${jp?"font-weight:700":""}">${esc(jp?s.jp:s.en)}</div>
+        <div class="nx-sub">${esc(jp?s.en:s.jp)}</div></div></div>`;
+  const hasDoor=s.door==="L"||s.door==="R";
+  if(s.tr&&s.tr.length){
+    h+=`<div class="nx-tr" style="top:${hasDoor?520:540}px">${jp?`<span class="jpf" style="font-size:28px;color:#6a707a;font-weight:700">乗換</span>`:`<span style="font-size:28px;color:#6a707a;font-weight:700">Transfer</span>`}
+      ${s.tr.map(t=>`<div class="tri" style="font-size:${s.tr.length>4?24:30}px">${trIcon(t,s.tr.length>4?28:34)}<span>${esc(trName(t,l))}</span></div>`).join("")}</div>`;
+  }
+  if(hasDoor){
+    const txt=jp?(s.door==="L"?"左側のドアが開きます":"右側のドアが開きます"):(s.door==="L"?"Doors on the left side will open":"Doors on the right side will open");
+    h+=`<div class="nx-door ${jp?"jpf":""}">${doorSVG(s.door)}${txt}</div>`;
+  }else if(!(s.tr&&s.tr.length)) h+=`<div class="note ${jp?"":"en"}">${esc(jp?r.noteJp:r.noteEn)}</div>`;
+  return h;
+}
+
+let lastKey="";
+function render(animate){
+  const r=R(); if(!r) return;
+  r.dest=Math.min(Math.max(0,r.dest),Math.max(0,r.stations.length-1));
+  if(pos.i>r.dest) pos.i=r.dest;
+  if(pos.i>0&&!isStop(r,pos.i)) pos.i=prevStop(r,pos.i);
+  if(pos.i>=r.dest) pos.moving=false;
+  const v=curView();
+  let html;
+  if(r.stations.length<2) html=`<div class="empty">Add at least 2 stations</div>`;
+  else if(v.m==="strip") html=header2(r,v.l)+strip(r,v.l,S2);
+  else if(v.m==="route") html=header1(r,v.l)+strip(r,v.l,S1);
+  else html=nextScreen(r,v.l);
+  screen.innerHTML=html;
+  const key=style+v.m+v.l;
+  if(animate||key!==lastKey){screen.classList.remove("fade");void screen.offsetWidth;screen.classList.add("fade");}
+  lastKey=key;
+  screen.querySelectorAll("[data-fit]").forEach(el=>{const max=+el.dataset.fit,w=el.scrollWidth;if(w>max) el.style.transform=`scaleX(${max/w})`;});
+  const s=r.stations;
+  $("pos").textContent = s.length<2?"":(pos.moving ? `Between ${s[pos.i].en} → ${s[nextStop(r,pos.i)].en}` : `Stopped at ${s[pos.i].en}`);
+}
+
+/* ================= playback ================= */
+function advance(){
+  const r=R(); if(!r||r.stations.length<2) return;
+  if(pos.moving){pos.i=nextStop(r,pos.i);pos.moving=false;}
+  else if(pos.i<r.dest){pos.moving=true;}
+  else {pos.i=0;pos.moving=false;}
+  render(true); markCur();
+}
+function back(){
+  const r=R(); if(!r) return;
+  if(pos.moving) pos.moving=false;
+  else if(pos.i>0){pos.i=prevStop(r,pos.i);pos.moving=true;}
+  render(true); markCur();
+}
+$("next").onclick=advance; $("prev").onclick=back;
+$("auto").onclick=()=>{
+  if(autoRun){clearInterval(autoRun);autoRun=null;$("auto").textContent="▶ Auto-run";}
+  else{autoRun=setInterval(advance,8000);$("auto").textContent="■ Stop auto-run";}
+};
+setInterval(()=>{phase=(phase+1)%4; if((mode==="auto"&&style==="1")||lang==="auto") render(false);},4000);
+
+function seg(id,get,set){
+  const el=$(id);
+  const paint=()=>el.querySelectorAll("button").forEach(b=>b.classList.toggle("on",b.dataset.v===get()));
+  el.onclick=e=>{const b=e.target.closest("button");if(!b)return;set(b.dataset.v);phase=0;paint();render(true);};
+  paint(); return paint;
+}
+seg("segMode",()=>mode,v=>mode=v);
+seg("segLang",()=>lang,v=>lang=v);
+function syncStyleUI(){const hide=style==="2";$("segMode").style.display=hide?"none":"";$("modeLbl").style.display=hide?"none":"";}
+seg("segStyle",()=>style,v=>{style=v;save();syncStyleUI();});
+
+/* ================= editor: basics ================= */
+const FIELDS=["name","typeEn","typeJp","typeColor","car","noteJp","noteEn"];
+function fillRouteSel(){$("routeSel").innerHTML=routes.map(r=>`<option value="${r.id}" ${r.id===curId?"selected":""}>${esc(r.name||"Untitled")}</option>`).join("");}
+function fillDest(){const r=R();$("f_dest").innerHTML=r.stations.map((s,i)=>`<option value="${i}" ${i===r.dest?"selected":""}>${esc(lineOf(r,s).letter)}-${esc(s.code)} ${esc(s.en)}</option>`).join("");}
+function fillForm(){
+  const r=R();
+  FIELDS.forEach(f=>$("f_"+f).value=r[f]??"");
+  $("f_typePreset").value=""; $("f_dir").value=r.dir;
+  fillDest();
+  let vo="";for(let n=6;n<=20;n++) vo+=`<option ${n==r.visible?"selected":""}>${n}</option>`; $("f_visible").innerHTML=vo;
+  let po="";for(let n=0;n<=8;n++) po+=`<option ${n==r.past?"selected":""}>${n}</option>`; $("f_past").innerHTML=po;
+  drawLines(); drawStations();
+}
+FIELDS.forEach(f=>$("f_"+f).addEventListener("input",e=>{R()[f]=e.target.value;save();render(false);if(f==="name")fillRouteSel();}));
+$("f_typePreset").onchange=e=>{if(!e.target.value)return;const [en,jp,c]=e.target.value.split("|"),r=R();r.typeEn=en;r.typeJp=jp;r.typeColor=c;save();fillForm();render(true);};
+$("f_dest").onchange=e=>{R().dest=+e.target.value;save();render(true);};
+$("f_visible").onchange=e=>{R().visible=+e.target.value;save();render(true);};
+$("f_past").onchange=e=>{R().past=+e.target.value;save();render(true);};
+$("f_dir").onchange=e=>{R().dir=e.target.value;save();render(true);};
+
+/* ================= editor: lines ================= */
+$("lineLib").innerHTML+=LINE_LIB.map((x,i)=>`<option value="${i}">${esc(x[0])} · ${esc(x[3])} / ${esc(x[2])}</option>`).join("");
+function drawLines(){
+  const r=R();
+  $("lines").innerHTML=r.lines.map((L,i)=>`<div class="ln" data-l="${i}">
+     <input data-lk="letter" value="${esc(L.letter)}" maxlength="3" placeholder="Letter">
+     <input data-lk="color" type="color" value="${col(L.color)}">
+     <input data-lk="nameEn" value="${esc(L.nameEn)}" placeholder="Line name (EN)">
+     <input data-lk="nameJp" class="lnjp" value="${esc(L.nameJp)}" placeholder="路線名">
+     <button class="sm danger" data-la="del" ${r.lines.length<2?"disabled":""}>✕</button></div>`).join("");
+}
+$("lines").addEventListener("input",e=>{
+  const k=e.target.dataset.lk;if(!k)return;const L=R().lines[+e.target.closest(".ln").dataset.l];
+  L[k]=e.target.value;save();render(false);if(k==="letter"||k==="color"){fillDest();drawStations();}
+});
+$("lines").addEventListener("click",e=>{
+  const b=e.target.closest("[data-la]");if(!b)return;const r=R(),i=+b.closest(".ln").dataset.l;
+  if(r.lines.length<2)return;const gone=r.lines.splice(i,1)[0];
+  r.stations.forEach(s=>{if(s.line===gone.id)s.line=r.lines[0].id;});
+  save();fillForm();render(true);
+});
+$("addLine").onclick=()=>{R().lines.push({id:uid(),letter:"",color:"#888888",nameEn:"",nameJp:""});save();drawLines();drawStations();$("lines").lastElementChild.querySelector("input").focus();};
+$("lineLib").onchange=e=>{
+  if(e.target.value==="")return;const x=LINE_LIB[+e.target.value];
+  R().lines.push({id:uid(),letter:x[0],color:x[1],nameJp:x[2],nameEn:x[3]});e.target.value="";save();drawLines();drawStations();render(true);
+};
+
+/* ================= editor: stations ================= */
+const libOpts=`<option value="">+ Quick add…</option>`+LIB.map((x,i)=>`<option value="${i}">${x[0]==="c"?"Ⓜ "+esc(x[1])+" ":"🚆 "}${esc(x[3])} · ${esc(x[4])}</option>`).join("");
+function drawStations(){
+  const r=R();
+  $("stations").innerHTML=r.stations.map((s,i)=>{
+    const L=lineOf(r,s), open=openTr.has(s);
+    return `<div class="st ${s.pass?"pass":""}" data-i="${i}" style="border-left-color:${col(L.color)}">
+      <div class="r1"><span class="idx">${i+1}</span>
+        <select data-k="line" title="Line">${r.lines.map(l=>`<option value="${l.id}" ${l.id===s.line?"selected":""}>${esc(l.letter||"?")}</option>`).join("")}</select>
+        <input data-k="code" value="${esc(s.code)}" maxlength="4" title="Code number">
+        <input data-k="en" value="${esc(s.en)}" placeholder="Station (EN)">
+        <input data-k="jp" class="jpin" value="${esc(s.jp)}" placeholder="駅名"></div>
+      <div class="r2">
+        <input data-k="min" type="number" min="0" value="${esc(s.min)}" title="Minutes from first station">
+        <select data-k="door" title="Door side"><option value="" ${!s.door?"selected":""}>Doors —</option><option value="L" ${s.door==="L"?"selected":""}>Doors L</option><option value="R" ${s.door==="R"?"selected":""}>Doors R</option></select>
+        <label class="chk"><input type="checkbox" data-k="pass" ${s.pass?"checked":""}>Pass</label>
+        <button class="sm" data-a="tr">⇄ ${s.tr.length||""} ${open?"▴":"▾"}</button>
+        <span class="sp"></span>
+        <button class="sm" data-a="go" title="Put train here">📍</button>
+        <button class="sm" data-a="up">↑</button><button class="sm" data-a="dn">↓</button>
+        <button class="sm danger" data-a="del">✕</button></div>
+      ${open?`<div class="trbox">${s.tr.map((t,j)=>`<div class="tr" data-t="${j}">
+          <select data-tk="k"><option value="c" ${t.k==="c"?"selected":""}>Ⓜ Ring</option><option value="t" ${t.k!=="c"?"selected":""}>🚆 Rail</option></select>
+          <input data-tk="l" value="${esc(t.l)}" maxlength="3" placeholder="Ltr" ${t.k!=="c"?"disabled":""}>
+          <input data-tk="c" type="color" value="${col(t.c)}" ${t.k!=="c"?"disabled":""}>
+          <input data-tk="jp" value="${esc(t.jp)}" placeholder="路線名">
+          <input data-tk="en" class="tren" value="${esc(t.en)}" placeholder="Line (EN)">
+          <button class="sm danger" data-a="trdel">✕</button></div>`).join("")}
+        <div class="row"><select data-a="trlib" style="flex:1">${libOpts}</select><button class="sm" data-a="tradd">+ Blank</button></div></div>`:""}
+    </div>`;}).join("");
+  markCur();
+}
+function markCur(){document.querySelectorAll(".st[data-i]").forEach(el=>el.classList.toggle("cur",+el.dataset.i===pos.i));}
+$("stations").addEventListener("input",e=>{
+  const row=e.target.closest(".st");if(!row)return;
+  const r=R(), s=r.stations[+row.dataset.i];
+  if(e.target.dataset.tk){
+    const t=s.tr[+e.target.closest(".tr").dataset.t], k=e.target.dataset.tk;
+    t[k]=e.target.value; save(); render(false);
+    if(k==="k") drawStations();
+    return;
+  }
+  const k=e.target.dataset.k; if(!k) return;
+  if(k==="pass") s.pass=e.target.checked;
+  else if(k==="min") s.min=e.target.value===""?0:+e.target.value;
+  else s[k]=e.target.value;
+  save(); render(false);
+  if(k==="line"||k==="pass") drawStations();
+  if(k!=="min"&&k!=="door"&&k!=="pass") fillDest();
+});
+$("stations").addEventListener("change",e=>{
+  if(e.target.dataset.a!=="trlib"||e.target.value==="")return;
+  const s=R().stations[+e.target.closest(".st").dataset.i];
+  s.tr.push(libTr(LIB[+e.target.value][3]));save();drawStations();render(false);
+});
+$("stations").addEventListener("click",e=>{
+  const b=e.target.closest("button[data-a]");if(!b)return;
+  const r=R(), i=+b.closest(".st").dataset.i, st=r.stations, s=st[i], a=b.dataset.a;
+  if(a==="tr"){openTr.has(s)?openTr.delete(s):openTr.add(s);drawStations();return;}
+  if(a==="tradd"){s.tr.push({k:"t",l:"",c:"",jp:"",en:""});save();drawStations();return;}
+  if(a==="trdel"){s.tr.splice(+b.closest(".tr").dataset.t,1);save();drawStations();render(false);return;}
+  if(a==="go"){
+    if(i>r.dest)return;
+    if(isStop(r,i)){pos.i=i;pos.moving=false;}else{pos.i=prevStop(r,i);pos.moving=true;}
+    render(true);markCur();return;
+  }
+  const destStation=st[r.dest];
+  if(a==="up"&&i>0)[st[i-1],st[i]]=[st[i],st[i-1]];
+  if(a==="dn"&&i<st.length-1)[st[i+1],st[i]]=[st[i],st[i+1]];
+  if(a==="del")st.splice(i,1);
+  const d=st.indexOf(destStation); r.dest=d<0?st.length-1:d;
+  if(pos.i>=st.length)pos.i=Math.max(0,st.length-1);
+  save();fillForm();render(true);
+});
+$("addSt").onclick=()=>{
+  const r=R(),st=r.stations,lastS=st[st.length-1],wasEnd=r.dest===st.length-1;
+  const n=String((parseInt(lastS?.code,10)||st.length)+1).padStart(2,"0");
+  st.push({line:lastS?lastS.line:r.lines[0].id,code:n,en:"New Station",jp:"新駅",min:lastS?(+lastS.min||0)+2:0,door:"",pass:false,tr:[]});
+  if(wasEnd)r.dest=st.length-1;
+  save();fillForm();render(true);
+  const rows=document.querySelectorAll(".st[data-i]");rows[rows.length-1]?.querySelector('[data-k="en"]').select();
+};
+$("renum").onclick=()=>{const c={};R().stations.forEach(s=>{c[s.line]=(c[s.line]||0)+1;s.code=String(c[s.line]).padStart(2,"0");});save();fillForm();render(true);};
+$("reverse").onclick=()=>{
+  const r=R(),st=r.stations;if(!st.length)return;
+  const total=Math.max(...st.map(s=>+s.min||0));
+  st.reverse();st.forEach(s=>s.min=total-(+s.min||0));
+  r.dest=st.length-1;pos={i:0,moving:false};
+  if(r.name&&r.name.includes("→")) r.name=r.name.replace(/→\s*[^(]*/,"→ "+st[r.dest].en+" ");
+  save();fillRouteSel();fillForm();render(true);
+};
+
+/* ================= routes ================= */
+function selectRoute(id){curId=id;pos={i:0,moving:true};openTr.clear();save();fillRouteSel();fillForm();render(true);}
+$("routeSel").onchange=e=>selectRoute(e.target.value);
+$("newRoute").onclick=()=>{
+  const lid=uid();
+  const r=norm({name:"My Line → Terminus",lines:[{id:lid,letter:"X",color:"#8b2fc9",nameEn:"My Line",nameJp:"マイ線"}],visible:12,
+    stations:[{line:lid,code:"01",en:"First Station",jp:"一番駅",min:0},{line:lid,code:"02",en:"Second Station",jp:"二番駅",min:2},{line:lid,code:"03",en:"Terminus",jp:"終点駅",min:5}]});
+  routes.push(r);selectRoute(r.id);
+};
+$("dupRoute").onclick=()=>{const r=JSON.parse(JSON.stringify(R()));r.id=uid();r.name+=" (copy)";routes.push(r);selectRoute(r.id);};
+function arm(btn,label,armed,fn){
+  if(btn.dataset.arm!=="1"){btn.dataset.arm="1";btn.textContent=armed;setTimeout(()=>{btn.dataset.arm="";btn.textContent=label;},2800);return;}
+  btn.dataset.arm="";btn.textContent=label;fn();
+}
+$("delRoute").onclick=e=>arm(e.target,"Delete","Tap again to delete",()=>{
+  routes=routes.filter(r=>r.id!==curId);if(!routes.length)routes=PRESETS.map(fromPreset);selectRoute(routes[0].id);
+});
+
+/* ================= import / export ================= */
+const status=t=>{$("status").textContent=t;setTimeout(()=>{if($("status").textContent===t)$("status").textContent="";},4000);};
+const exportJSON=()=>{const r=JSON.parse(JSON.stringify(R()));delete r.id;return JSON.stringify(r,null,1);};
+$("exp").onclick=()=>{$("json").value=exportJSON();status("Route JSON shown below.");};
+$("copy").onclick=async()=>{
+  if(!$("json").value)$("json").value=exportJSON();
+  try{await navigator.clipboard.writeText($("json").value);status("Copied to clipboard.");}catch(e){$("json").select();status("Text selected — copy it manually.");}
+};
+$("imp").onclick=()=>{
+  try{
+    const r=JSON.parse($("json").value);
+    if(!Array.isArray(r.stations))throw new Error("no stations array");
+    delete r.id; const nr=norm(r); nr.name=nr.name||"Imported route";
+    routes.push(nr);selectRoute(nr.id);status("Imported ✓");
+  }catch(e){status("Couldn't import: "+e.message);}
+};
+$("reset").onclick=e=>arm(e.target,"Restore preset routes","Tap again — adds the 3 presets",()=>{
+  const add=PRESETS.map(fromPreset);routes.push(...add);selectRoute(add[0].id);status("Preset routes added.");
+});
+
+/* boot */
+load(); fillRouteSel(); fillForm(); syncStyleUI();
+document.querySelectorAll("#segStyle button").forEach(b=>b.classList.toggle("on",b.dataset.v===style));
+fit(); render(true);
+document.fonts&&document.fonts.ready.then(()=>render(false));
+</script>
+</body>
+</html>
