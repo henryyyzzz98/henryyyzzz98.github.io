@@ -1582,6 +1582,16 @@ function routeGraph(mask, w, h, bandW) {
   const RING = [-w, -w + 1, 1, w + 1, w, w - 1, -1, -w - 1];
   const cross = i => { let a = 0; for (let k = 0; k < 8; k++) if (!sk[i + RING[k]] && sk[i + RING[(k + 1) % 8]]) a++; return a; };
   const node = new Int32Array(w * h); const jn = pix.filter(i => nb(i) >= 3 && cross(i) >= 3);
+  { // clumps of pixels at a crossing can hide the junction from the per-pixel test: judge each clump by how many lines leave it
+    const cand = new Uint8Array(w * h); pix.forEach(i => { if (nb(i) >= 3) cand[i] = 1; });
+    const lab = new Int32Array(w * h); let L = 0;
+    for (const i of pix) { if (!cand[i] || lab[i]) continue; L++; const cl = [i]; lab[i] = L;
+      for (let k = 0; k < cl.length; k++) for (const d of N8) { const j = cl[k] + d; if (cand[j] && !lab[j]) { lab[j] = L; cl.push(j); } }
+      if (cl.length < 2) continue;
+      const ring = new Set(); cl.forEach(k => N8.forEach(d => { const j = k + d; if (sk[j] && lab[j] !== L) ring.add(j); }));
+      let comps = 0; const seenR = new Set(); for (const r0 of ring) { if (seenR.has(r0)) continue; comps++; const st = [r0]; seenR.add(r0); while (st.length) { const k = st.pop(); for (const d of N8) { const j = k + d; if (ring.has(j) && !seenR.has(j)) { seenR.add(j); st.push(j); } } } }
+      if (comps >= 3) cl.forEach(k => jn.push(k)); }
+  }
   const near = new Uint8Array(w * h);
   for (const i of jn) { const x = i % w, y = (i - x) / w; for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) { if (dx * dx + dy * dy > r * r) continue; const xx = x + dx, yy = y + dy; if (xx < 0 || yy < 0 || xx >= w || yy >= h) continue; const j = yy * w + xx; if (sk[j]) near[j] = 1; } }
   let nid = 0; const nodes = [null];
