@@ -390,8 +390,19 @@ function teamDrivers(G, tid) { return Object.values(G.drivers).filter(d => d.tea
 function freeAgents(G) { return Object.values(G.drivers).filter(d => !d.team && !d.retired); }
 function diffMult(G, tid) { if (tid === G.player) return 1; return { easy: 0.8, normal: 1, hard: 1.25 }[G.difficulty] || 1; }
 function devMult(stat) { return clamp((100 - stat) / 15, 0.15, 1.3); }
-function standingsDrivers(G) { return Object.values(G.drivers).filter(d => d.team || d.pts > 0).filter(d => !d.retired || d.pts > 0).sort((a, b) => b.pts - a.pts || b.wins - a.wins || b.pods - a.pods); }
-function standingsTeams(G) { return Object.values(G.teams).sort((a, b) => b.pts - a.pts); }
+// Tie-break on equal points, as in F1: most wins, then most 2nds, 3rds… (countback). Any finish beats a retirement.
+function countback(G, match, upto) {
+  const c = []; (G.results || []).slice(0, upto == null ? undefined : upto).forEach(r => r.rows.forEach(x => { if (match(x) && !x.out && x.pos) c[x.pos] = (c[x.pos] || 0) + 1; })); return c;
+}
+function cbCompare(ca, cb) { const n = Math.max(ca.length, cb.length); for (let p = 1; p < n; p++) { const d = (cb[p] || 0) - (ca[p] || 0); if (d) return d; } return 0; }
+function standingsDrivers(G, upto, ptsOf) {
+  const pts = ptsOf || (d => d.pts); const cache = new Map(); const cb = d => { if (!cache.has(d.id)) cache.set(d.id, countback(G, x => x.id === d.id, upto)); return cache.get(d.id); };
+  return Object.values(G.drivers).filter(d => d.team || d.pts > 0).filter(d => !d.retired || d.pts > 0).sort((a, b) => pts(b) - pts(a) || cbCompare(cb(a), cb(b)) || a.name.localeCompare(b.name));
+}
+function standingsTeams(G, upto, ptsOf) {
+  const pts = ptsOf || (t => t.pts); const cache = new Map(); const cb = t => { if (!cache.has(t.id)) cache.set(t.id, countback(G, x => x.team === t.id, upto)); return cache.get(t.id); };
+  return Object.values(G.teams).sort((a, b) => pts(b) - pts(a) || cbCompare(cb(a), cb(b)) || a.name.localeCompare(b.name));
+}
 function teamRank(G, tid) { return standingsTeams(G).findIndex(t => t.id === tid) + 1; }
 function appeal(G, tid) {
   const rank = G.round === 0 ? (Object.values(G.teams).sort((a, b) => (b.aero + b.chassis) - (a.aero + a.chassis)).findIndex(t => t.id === tid) + 1) : teamRank(G, tid);

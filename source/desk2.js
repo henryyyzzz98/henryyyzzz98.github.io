@@ -115,9 +115,10 @@ function deskRaceRes(sprint) {
   Object.values(G.drivers).forEach(d => { ptsNow.set(d.id, d.pts || 0); ptsWas.set(d.id, d.pts || 0); });
   rows.forEach(r => ptsWas.set(r.id, (ptsWas.get(r.id) || 0) - (r.pts || 0)));
   Object.values(G.teams).forEach(tm => { tNow.set(tm.id, tm.pts); tWas.set(tm.id, tm.pts); }); rows.forEach(r => tWas.set(r.team, (tWas.get(r.team) || 0) - (r.pts || 0)));
-  const rank = m => [...m.entries()].sort((a, b) => b[1] - a[1]).map(x => x[0]);
-  const dNow = rank(ptsNow).filter(id => ptsNow.get(id) > 0 || (G.drivers[id] && G.drivers[id].team)), dWas = rank(ptsWas), teNow = rank(tNow), teWas = rank(tWas);
-  const fresh = new Set(ptsWas.values()).size <= 1;
+  const nR = G.results.length, prevUpto = sprint ? nR : nR - 1; // results already include this GP (not the sprint)
+  const dNow = standingsDrivers(G).map(d => d.id), dWas = standingsDrivers(G, prevUpto, d => ptsWas.get(d.id) || 0).map(d => d.id);
+  const teNow = standingsTeams(G).map(t => t.id), teWas = standingsTeams(G, prevUpto, t => tWas.get(t.id) || 0).map(t => t.id);
+  const fresh = prevUpto === 0 && new Set(ptsWas.values()).size <= 1;
   const delta = (id, now, was) => { if (fresh) return '<span class="dim">–</span>'; const a = now.indexOf(id), b = was.indexOf(id); const dd = b - a; return dd > 0 ? `<span class="g">▲+${dd}</span>` : dd < 0 ? `<span class="r">▼${dd}</span>` : '<span class="dim">–</span>'; };
   const dTab = dNow.slice(0, 10).map((id, i) => { const d = G.drivers[id]; return `<tr class="${(G.player ? d.team === G.player : id === G.follow) ? 'me' : ''}"><td>${i + 1}</td><td class="l">${dkFlag(d.nat)} ${esc(d.name)}</td><td class="ra">${ptsNow.get(id)}</td><td class="ra">${delta(id, dNow, dWas)}</td></tr>`; }).join('');
   const tTab = teNow.slice(0, 6).map((id, i) => { const tm = G.teams[id]; return `<tr class="${id === G.player ? 'me' : ''}"><td>${i + 1}</td><td class="l"><i class="tsw" style="background:${tm.color}"></i>${esc(tm.name)}</td><td class="ra">${tNow.get(id)}</td><td class="ra">${delta(id, teNow, teWas)}</td></tr>`; }).join('');
