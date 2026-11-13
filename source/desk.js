@@ -517,6 +517,7 @@ document.addEventListener('keydown', e => {
   if (!document.getElementById('dk') || e.target.closest && e.target.closest('input,textarea,select') || document.getElementById('modal')) return;
   const kind = dkStage();
   if (kind === 'fp') { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); A.dkcont(); } return; }
+  if (kind !== 'race' && kind !== 'quali') return;
   if (e.key === 't' || e.key === 'T') { DK.view = DK.view === 'tele' ? 'live' : 'tele'; render(); }
   else if (e.key === ' ') { e.preventDefault(); if (kind === 'race' && !RACE.started) A.lights(); else { PAUSED = !PAUSED; DK.rsig = ''; dkUpdate(); } }
   else if (/^[1-5]$/.test(e.key) && !(kind === 'race' && !RACE.started)) { PAUSED = false; SPEED = [4, 16, 32, 64, 256][+e.key - 1]; raceBanner = ''; const b = document.getElementById('rbanner'); if (b) { b.className = ''; b.textContent = ''; } DK.rsig = ''; dkUpdate(); }
