@@ -180,7 +180,7 @@ function autoTraceAt(p) {
     trPush();
     TR.pts = res.pts.map(q => [q[0] / pr.ps * f.s + f.ox, q[1] / pr.ps * f.s + f.oy]);
     TR.fresh = false; TR.mode = 'adjust';
-    TR.msg = `Traced ${TR.pts.length} points (${res.method || 'line'} mode). Check the red line follows the track, then set the start line and direction. Drag points to fix any spots, e.g. where a pit lane joins.`; TR.err = false;
+    TR.msg = `Traced ${TR.pts.length} points (${res.method || 'line'} mode). Check the red line follows the track, then set the start line and direction. Drag points to fix any spots, e.g. where a pit lane joins.${res.note ? ' ' + res.note : ''}`; TR.err = false;
     refreshTracerSide();
   }, 20);
 }
