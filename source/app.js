@@ -10,7 +10,7 @@ function toast(s) { const d = document.createElement('div'); d.className = 'toas
 function modal(html) { closeModal(); const m = document.createElement('div'); m.className = 'modal'; m.id = 'modal'; m.innerHTML = `<div class="card">${html}</div>`; m.addEventListener('click', e => { if (e.target === m) closeModal(); }); document.body.appendChild(m); }
 function closeModal() { const m = document.getElementById('modal'); if (m) m.remove(); }
 function autosave() { if (G) save(G); }
-function fixSave(g) { if (!g) return; mergeLib(g.trackLib); g.sprints = g.sprints || []; if (g.spectator === undefined) g.spectator = false; }
+function fixSave(g) { if (!g) return; mergeLib(g.trackLib); ensureXP(g); g.sprints = g.sprints || []; if (g.spectator === undefined) g.spectator = false; }
 function trackSVG(t, w = 120, col = '#fff') {
   const g = trackGeometry(t); const pts = g.P.filter((_, i) => i % 3 === 0).map(p => (p[0] * (w - 10) + 5).toFixed(1) + ',' + (p[1] * (w - 10) + 5).toFixed(1)).join(' ');
   return `<svg width="${w}" height="${w}" viewBox="0 0 ${w} ${w}"><polygon points="${pts}" fill="none" stroke="${col}" stroke-width="${w > 80 ? 3 : 2}" stroke-linejoin="round"/></svg>`;
@@ -35,11 +35,11 @@ function render() {
 function topBar(noTabs) {
   const me = G.teams[G.player]; const total = G.cal.length;
   if (!G.spectator && !me) return `<div class="top"><div class="topbar"><span class="logo">PIT<b>WALL</b></span><span class="chip">${G.year} · choose your team</span><span class="chip">💰 ${fmtM(G.bank || 0)}</span></div></div>`;
-  const tabs = G.spectator ? ['home', 'calendar', 'standings', 'drivers', 'menu'] : ['home', 'calendar', 'standings', 'car', 'drivers', 'finance', 'menu'];
+  const tabs = hqTabs();
   if (G.spectator) { const fav = G.follow && G.drivers[G.follow];
     return `<div class="top"><div class="topbar"><span class="logo">PIT<b>WALL</b></span><span class="chip">👀 Spectator</span><span class="chip">${G.year} · R${Math.min(G.round + 1, total)}/${total}</span>${fav ? `<span class="chip">⭐ ${esc(fav.name)}</span>` : ''}</div>
-    ${noTabs ? '' : `<div class="tabs">${tabs.map(t => `<button data-a="tab" data-v="${t}" class="${TAB === t ? 'on' : ''}">${({ home: '🏠 Home', calendar: '📅 Calendar', standings: '🏆 Standings', drivers: '👤 Grid', menu: '☰ Menu' })[t]}</button>`).join('')}</div>`}</div>`; }
-  const names = { home: '🏠 Home', calendar: '📅 Calendar', standings: '🏆 Standings', car: '🔧 Car & R&D', drivers: '👤 Drivers', finance: '💰 Finance', menu: '☰ Menu' };
+    ${noTabs ? '' : `<div class="tabs">${tabs.map(t => `<button data-a="tab" data-v="${t}" class="${TAB === t ? 'on' : ''}">${t === 'drivers' ? '👤 Grid' : TAB_NAMES[t]}</button>`).join('')}</div>`}</div>`; }
+  const names = TAB_NAMES;
   return `<div class="top"><div class="topbar"><span class="logo">PIT<b>WALL</b></span>
   <span class="chip">${tbar(me.id)}${esc(me.name)}</span><span class="chip">${G.year} · R${Math.min(G.round + 1, total)}/${total}</span>
   <span class="chip">💰 ${fmtM(me.money)}</span>${capFor(G) === Infinity ? '<span class="chip">No cost cap</span>' : `<span class="chip">Cap ${fmtM(COST_CAP - me.spent)} left</span>`}</div>
@@ -128,7 +128,8 @@ function viewCalEditor() {
 
 // ---------- HQ ----------
 function viewHQ() {
-  return ({ home: hqHome, calendar: hqCalendar, standings: hqStandings, car: hqCar, drivers: hqDrivers, finance: hqFinance, menu: hqMenu })[TAB]();
+  ensureXP(G);
+  return ({ home: hqHome, calendar: hqCalendar, standings: hqStandings, car: hqCar, drivers: hqDrivers, finance: hqFinance, menu: hqMenu, team: hqTeam, stats: hqStats, fan: hqFan }[TAB] || hqHome)();
 }
 function seatsOK() { return teamDrivers(G, G.player).length >= Math.min(2, G.teams[G.player].cars || 2); }
 function pickTeamView() {
@@ -310,6 +311,7 @@ function negotiateForm(d, ask, opts, buyout) {
   const sel = opts === 'renew' ? '' : `<select id="ng_when" style="width:100%;margin:6px 0">${opts.map(([k, v]) => `<option value="${k}">${esc(v)}</option>`).join('')}</select>`;
   return `${sel}<div class="row"><span class="mut">Salary $M/yr</span><input id="ng_sal" type="number" step="0.5" min="0.5" value="${ask.toFixed(1)}" style="width:90px"><span class="mut">Years</span>
   <select id="ng_yrs"><option>1</option><option selected>2</option><option>3</option></select>
+  </div><div class="row small" style="margin-top:6px"><label class="row"><input type="checkbox" id="ng_no1" ${d.no1 ? 'checked' : ''}> Number-one status (asks ~15% less)</label><label class="row"><input type="checkbox" id="ng_rel" ${d.release ? 'checked' : ''}> Release clause (asks ~8% less, but rival teams can buy him out)</label></div><div class="row" style="margin-top:6px">
   <button class="pri" data-a="offer" data-v="${d.id}" data-mode="${opts === 'renew' ? 'renew' : 'sign'}" data-buy="${buyout || 0}">${opts === 'renew' ? 'Offer extension' : 'Send offer'}</button></div><div id="ng_msg" class="small" style="margin-top:6px"></div>`;
 }
 function doOffer(id, mode, buyout) {
@@ -322,6 +324,8 @@ function doOffer(id, mode, buyout) {
   const ask = askingSalary(d), ap = appeal(G, G.player);
   let req = ask * (1.25 - ap * 0.5) * (mode === 'renew' ? 0.95 : 1) * (d.team && mode !== 'renew' ? 1.1 : 1);
   if (!d.team) req *= 0.9;
+  const no1 = !!(document.getElementById('ng_no1') || {}).checked, rel = !!(document.getElementById('ng_rel') || {}).checked;
+  if (no1) req *= 0.85; if (rel) req *= 0.92;
   const whenV = mode === 'renew' ? 'renew' : document.getElementById('ng_when').value;
   if (mode !== 'renew' && d.team && !whenV.startsWith('next')) {
     const theirs = appeal(G, d.team);
@@ -330,12 +334,14 @@ function doOffer(id, mode, buyout) {
   }
   const ok = sal >= req || (sal >= req * 0.85 && Math.random() < 0.4);
   if (!ok) { msgEl.innerHTML = `<span class="bad">Rejected. He's looking for more (try ~${fmtM(req * rnd(0.98, 1.08))}).</span>`; return; }
+  const setClauses = () => { d.no1 = no1; d.release = rel ? +(ask * 2.5 + 5).toFixed(1) : 0; if (no1) teamDrivers(G, G.player).forEach(x => { if (x !== d && x.no1) { x.no1 = false; x.morale = clamp((x.morale ?? 70) - 10, 5, 100); } }); if (no1) d.morale = clamp((d.morale ?? 70) + 6, 5, 100); };
   if (mode === 'renew') {
+    setClauses(); d.morale = clamp((d.morale ?? 70) + 5, 5, 100);
     d.salary = +sal.toFixed(1); d.until = G.year + yrs - (G.round === 0 ? 1 : 0);
     news(G, `✍️ ${d.name} extends with ${me.name} until ${d.until}.`); closeModal(); render(); toast('Contract extended!'); autosave(); return;
   }
   if (whenV === 'next') {
-    d.next = { team: G.player, salary: +sal.toFixed(1), until: G.year + yrs };
+    d.next = { team: G.player, salary: +sal.toFixed(1), until: G.year + yrs }; setClauses();
     news(G, `✍️ ${d.name} will join ${me.name} in ${G.year + 1}.`); closeModal(); render(); toast(`${d.name} signed for ${G.year + 1}!`); autosave(); return;
   }
   // join now
@@ -344,7 +350,7 @@ function doOffer(id, mode, buyout) {
   if (repl) { const r = G.drivers[repl]; me.money -= r.salary * left * 0.5; r.team = null; r.until = 0; news(G, `👋 ${me.name} release ${r.name}.`); }
   const oldTeam = d.team;
   if (oldTeam) { me.money -= buyout; G.teams[oldTeam].money += buyout; }
-  d.team = G.player; d.salary = +sal.toFixed(1); d.until = G.year + yrs - 1 + (G.round >= G.cal.length ? 1 : 0); d.rookie = false;
+  d.team = G.player; d.salary = +sal.toFixed(1); d.until = G.year + yrs - 1 + (G.round >= G.cal.length ? 1 : 0); d.rookie = false; setClauses(); if (G.xp) G.xp.academy = G.xp.academy.filter(x => x !== d.id);
   news(G, `✍️ ${d.name} joins ${me.name}${oldTeam ? ' from ' + G.teams[oldTeam].name : ''}!`);
   if (oldTeam) aiFillNow(G);
   closeModal(); render(); toast(`${d.name} signed!`); autosave();
@@ -695,8 +701,8 @@ function stepLights(ts) {
   const L = LIGHTS;
   if (L.phase === 'on') {
     const n = Math.min(5, Math.floor((ts - L.t0) / 1000) + 1);
-    if (n !== L.n) { L.n = n; updateGantry(); }
-    if (ts - L.t0 >= 4000 + L.hold) { L.phase = 'out'; L.tOut = ts; L.n = 0; updateGantry(); RACE.started = true; RACE.msg(`🟢 Lights out${RACE.sprint ? ' for the Sprint' : ''} at ${RACE.track.name}!`); RACE.events = [];
+    if (n !== L.n) { L.n = n; updateGantry(); SND.light(); }
+    if (ts - L.t0 >= 4000 + L.hold) { L.phase = 'out'; L.tOut = ts; L.n = 0; updateGantry(); RACE.started = true; SND.go(); RACE.msg(`🟢 Lights out${RACE.sprint ? ' for the Sprint' : ''} at ${RACE.track.name}!`); RACE.events = [];
       const m = document.getElementById('lomsg'); if (m) { m.textContent = 'LIGHTS OUT AND AWAY WE GO!'; m.classList.add('show'); }
       const rc = document.getElementById('rctl'); if (rc) rc.innerHTML = speedButtons() + '<span class="sp"></span><button class="sm" data-a="simend">Sim to finish ⏭</button>';
     }

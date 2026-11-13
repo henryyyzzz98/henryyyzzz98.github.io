@@ -8,6 +8,10 @@ function seeded(str) { let h = 2166136261; for (const c of str) { h ^= c.charCod
 const fmtTime = s => { if (s == null || !isFinite(s)) return '—'; const h = Math.floor(s / 3600); const m = Math.floor((s % 3600) / 60); const r = s - h * 3600 - m * 60; const p2 = x => (x < 10 ? '0' : '') + x; return h ? h + ':' + p2(m) + ':' + (r < 10 ? '0' : '') + r.toFixed(3) : (m ? m + ':' + (r < 10 ? '0' : '') : '') + r.toFixed(3); };
 const fmtM = m => (m < 0 ? '-' : '') + '$' + Math.abs(m).toFixed(1) + 'M';
 
+// expansion hooks (filled in by expansion.js)
+let XPH = {};
+const xh = (name, ...args) => (XPH[name] ? XPH[name](...args) : undefined);
+
 // ---------- Track geometry ----------
 const GEO = {};
 function trackGeometry(t) {
@@ -103,6 +107,7 @@ function lapTimeFor(G, c, track, o) {
   if (!o.quali) lt += 2.0 * (1 - o.lap / (o.laps || track.laps)); else lt -= 0.4;
   lt += c.mode === 'push' ? -0.35 : c.mode === 'save' ? 0.45 : 0;
   lt += (1 - (c.setup || 0.4)) * 0.5;
+  if (d.morale != null) lt -= (d.morale - 70) * 0.005;
   lt += gauss() * (0.12 + (100 - d.cons) * 0.012);
   return lt;
 }
@@ -134,7 +139,7 @@ function runPractice(G, wk, session, programs) {
 // ---------- Qualifying ----------
 function qualiLap(G, e, track, wet, risk) {
   const c = { d: e.d, t: e.t, tyre: wet > 0.65 ? 'W' : wet > 0.25 ? 'I' : 'S', wear: 0, mode: 'push', setup: e.setup };
-  let t = lapTimeFor(G, c, track, { lap: 0, wet, quali: true }) - e.qualiPrep * 0.25;
+  let t = lapTimeFor(G, c, track, { lap: 0, wet, quali: true }) - e.qualiPrep * 0.25 + (xh('qualiSetPenalty', e, wet) || 0);
   const sigma = 0.15 + (100 - e.d.cons) * 0.01;
   if (risk === 'safe') t += 0.12 + Math.abs(gauss()) * sigma * 0.4;
   else if (risk === 'all') t += -0.15 + gauss() * sigma * 1.4;
@@ -177,6 +182,7 @@ class Race {
         stops: 0, penalty: 0, outLap: false, spin: 0, dnfLap: 0, planStop: rnd(0.62, 0.78), player: !!G.player && e.t.id === G.player
       };
     });
+    xh('raceInit', this);
     this.cars.forEach(c => c.curLT = this.lapTime(c, 0) + 2.5 + c.grid * 0.03);
     this.msg(`Lights out${this.sprint ? ' for the Sprint' : ''} at ${this.track.name}! ${this.wet > 0.2 ? 'Wet start.' : ''}`);
   }
@@ -184,6 +190,7 @@ class Race {
   lapTime(c, lap) {
     let lt = lapTimeFor(this.G, c, this.track, { lap, wet: this.wet, laps: this.laps });
     if (c.outLap) lt += 1.2;
+    lt += xh('lapDelta', this, c) || 0;
     return lt;
   }
   wearRate(c) {
@@ -238,8 +245,8 @@ class Race {
   }
   doPit(c, comp) {
     const loss = this.track.pit * (this.sc ? 0.55 : this.vsc ? 0.65 : 1);
-    let svc = rnd(2.1, 3.2); if (Math.random() < 0.03) { svc += rnd(3, 9); this.msg(`🐢 Slow stop for ${c.d.code}`, c.player || c.fav); }
-    c.pitT = loss + svc; c.tyre = comp; c.wear = 0; c.age = 0; c.used.add(comp); c.stops++; c.outLap = true; c.pitReq = null;
+    let svc = xh('pitService', this, c) ?? rnd(2.1, 3.2); if (Math.random() < (c.player ? (xh('slowStopP', this, c) ?? 0.03) : 0.03)) { svc += rnd(3, 9); this.msg(`🐢 Slow stop for ${c.d.code}`, c.player || c.fav); }
+    c.pitT = loss + svc; c.tyre = comp; c.wear = xh('pitTyre', this, c, comp) || 0; c.age = 0; xh('onPit', this, c, comp, svc); c.used.add(comp); c.stops++; c.outLap = true; c.pitReq = null;
     this.msg(`🔧 ${c.d.code} pits → ${TYRES[comp].name}s (${svc.toFixed(1)}s)`, false);
   }
   retire(c, why, flag) {
@@ -281,7 +288,7 @@ class Race {
         if (c.out) return;
       }
       const rel = teamRel(this.G, c.t);
-      if (Math.random() < 0.00075 * Math.pow((100 - rel) / 15, 1.6)) { this.retire(c, pick(['Power unit failure', 'Gearbox', 'Hydraulics', 'Brakes', 'Electrical issue', 'Engine']), Math.random() < 0.5 ? 'vsc' : null); return; }
+      if (Math.random() < 0.00075 * Math.pow((100 - rel) / 15, 1.6) * (xh('relMul', this, c) || 1)) { this.retire(c, pick(['Power unit failure', 'Gearbox', 'Hydraulics', 'Brakes', 'Electrical issue', 'Engine']), Math.random() < 0.5 ? 'vsc' : null); return; }
       if (c.wear > 0.88 && Math.random() < 0.18) {
         if (Math.random() < 0.25) { this.retire(c, 'Tyre failure', 'auto'); return; }
         c.spin = rnd(15, 25); this.msg(`💥 Puncture for ${c.d.code}!`, true); c.pitReq = c.pitReq || this.slick(c, this.laps - n) || 'M';
@@ -295,6 +302,7 @@ class Race {
     if (comp) this.doPit(c, comp);
     // AI driving mode
     if (c.auto && !c.player) c.mode = (this.laps - n < 8 && c.wear < 0.5) ? 'push' : c.wear > 0.65 ? 'save' : 'std';
+    xh('onLap', this, c, n);
     c.curLT = this.lapTime(c, n);
   }
   step(dt) {
@@ -323,8 +331,9 @@ class Race {
           if (!this.sc && !this.vsc && c.laps >= 0 && ahead.pitT <= 0) {
             const delta = ahead.curLT - c.curLT;
             const ease = 0.15 + this.track.ot * 1.6;
-            const chance = dt * (0.015 + Math.max(0, delta) * 0.35) * ease * (c.d.craft / ahead.d.craft) * (c.dist < 400 ? 2 : 1);
-            if (delta > 0.05 && Math.random() < chance) pass = true;
+            const pm = xh('passMul', this, c, ahead); const mul = pm == null ? 1 : pm;
+            const chance = dt * (0.015 + Math.max(0, delta) * 0.35) * ease * (c.d.craft / ahead.d.craft) * (c.dist < 400 ? 2 : 1) * mul;
+            if (mul === Infinity || (mul > 0 && delta > 0.05 && Math.random() < chance)) pass = true;
           }
           if (pass) { nd = Math.max(nd, ahead.dist + 0.5); const key = c.d.id + ahead.d.id + c.laps; if ((c.player || ahead.player || c.fav || ahead.fav || (this.order().indexOf(c) < 4)) && this.lastPass !== key && c.laps >= 1) { this.lastPass = key; this.msg(`⚔️ ${c.d.code} passes ${ahead.d.code}`, false); } }
           else nd = Math.min(nd, ahead.dist - minGap);
@@ -337,6 +346,7 @@ class Race {
       if (!c.finished && !c.out) ahead = c;
     }
     // water / speed of wetness
+    xh('onStep', this, dt);
     if (this.chequered && this.cars.every(c => c.out || c.finished)) this.finish();
     if (this.t > this.laps * base * 3) this.finish();
   }
@@ -346,6 +356,7 @@ class Race {
     if (!this.sprint && this.rules.twoCompound) this.cars.forEach(c => { if (!c.out && !this.anyWetUsed(c) && c.used.size < 2) { c.penalty = 30; this.msg(`⚖️ ${c.d.code}: +30s, only one dry compound used`, true); } });
     this.cars.forEach(c => { if (c.finished) c.finishT += c.penalty; });
     const ord = this.order();
+    xh('raceFinish', this);
     this.result = ord.map((c, i) => ({ pos: i + 1, c, id: c.d.id, team: c.t.id, out: c.out, laps: c.laps, time: c.finished ? c.finishT : null, grid: c.grid, best: c.best, stops: c.stops }));
   }
   gapStr(c, leader) {
@@ -445,7 +456,7 @@ function applyRaceResult(G, race, wk) {
     let g = sz.fail && Math.random() < sz.fail ? 0 : rnd(sz.min, sz.max);
     const tgt = p.area === 'power' ? G.engines[me.engine] : me;
     const key = p.area === 'power' ? 'power' : p.area;
-    if (g > 0) g *= devMult(tgt[key]);
+    if (g > 0) g *= devMult(tgt[key]) * (xh('partMul', G, p) || 1);
     tgt[key] = clamp(tgt[key] + g, 40, 99);
     if (G.timeline && G.bonus) G.bonus[p.area === 'power' ? 'power' : p.area] += g;
     p.result = g;
