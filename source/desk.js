@@ -59,8 +59,8 @@ function dkSplit(track, lt, seedStr) {
   const w = dkProf(track).w, r = seeded(seedStr); const n1 = (r() - 0.5) * 0.008, n2 = (r() - 0.5) * 0.008;
   const s1 = lt * w[0] * (1 + n1), s2 = lt * w[1] * (1 + n2); return [s1, s2, lt - s1 - s2];
 }
-function dkEnv(wet, prog) {
-  const t = WK.track, r = seeded(t.id + ':' + G.year + ':' + WK.round);
+function dkEnv(wet, prog, tr, rd) {
+  const t = tr || WK.track, r = seeded(t.id + ':' + G.year + ':' + (rd != null ? rd : WK.round));
   const air = 13 + r() * 16, sun = r(), wb = 4 + r() * 16, d0 = r() * 360;
   return { air: air - wet * 5, track: air + 5 + sun * 13 - wet * 12 + Math.sin(prog * 2.1) * 1.2, rain: wet > 0.05 ? wet * 9 : 0, wind: Math.max(1, wb + Math.sin(prog * 6 + sun * 4) * 3), dir: (d0 + Math.sin(prog * 4) * 25 + 360) % 360 };
 }

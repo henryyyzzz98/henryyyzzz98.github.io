@@ -604,3 +604,8 @@ body.dt .cls,body.dt .tower{font-family:"Titillium Web",system-ui,sans-serif}
 .dk-lapl{width:100%;height:auto;max-height:340px;display:block;padding:.4em .6em 0}
 .dkllrow{display:flex;flex-wrap:wrap;gap:.4em .9em;padding:.3em .8em .7em;font-size:.9em;align-items:center}
 .dkll{display:inline-flex;align-items:center;gap:.35em;font-weight:700}.dkll i{width:.6em;height:.9em}
+tr.dkcal{cursor:pointer}
+tr.dkcal:hover td{background:#14213b}
+.dk-arch .dk-pagebar{margin-bottom:.4em}
+.dk-backbtn{background:#e6ebf5!important;color:#000!important;font-weight:700}
+@media (max-width: 899px){ .dk-arch .dk-pagebar .dk-tabs2{width:100%;overflow-x:auto} .dk-arch .dk-tabs2 button{white-space:nowrap} }
