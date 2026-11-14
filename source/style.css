@@ -586,7 +586,8 @@ body.dt .cls,body.dt .tower{font-family:"Titillium Web",system-ui,sans-serif}
   .dkst th.stk1{position:sticky;left:2.6em;z-index:3;background:#0b0f18}
   .dkst td.pos,.dkst th.stk0{width:2.6em;min-width:2.6em;max-width:2.6em;box-sizing:border-box}
   .dkst td.nm{position:sticky;left:2.6em;z-index:2;background:#05080f;max-width:9em;overflow:hidden;text-overflow:ellipsis}
-  .dkst.cons td.tcell:first-of-type{position:sticky;left:2.6em;z-index:2;max-width:9em;overflow:hidden;text-overflow:ellipsis}
+  .dkst.cons td.stk1{position:sticky;left:2.6em;z-index:2;max-width:9em;overflow:hidden;text-overflow:ellipsis}
+  .dkst.cons th.stk1{max-width:9em}
   .dkst th.fl{min-width:2em}
   .dk-graph{height:70vw}
   .dk-legend{flex-wrap:wrap}
