@@ -589,7 +589,8 @@ body.dt .cls,body.dt .tower{font-family:"Titillium Web",system-ui,sans-serif}
   .dkst th.stk1{position:sticky;left:2.6em;z-index:3;background:#0b0f18}
   .dkst td.pos,.dkst th.stk0{width:2.6em;min-width:2.6em;max-width:2.6em;box-sizing:border-box}
   .dkst td.nm{position:sticky;left:2.6em;z-index:2;background:#05080f;max-width:9em;overflow:hidden;text-overflow:ellipsis}
-  .dkst.cons td.tcell:first-of-type{position:sticky;left:2.6em;z-index:2;max-width:9em;overflow:hidden;text-overflow:ellipsis}
+  .dkst.cons td.stk1{position:sticky;left:2.6em;z-index:2;max-width:9em;overflow:hidden;text-overflow:ellipsis}
+  .dkst.cons th.stk1{max-width:9em}
   .dkst th.fl{min-width:2em}
   .dk-graph{height:70vw}
   .dk-legend{flex-wrap:wrap}
@@ -5248,7 +5249,7 @@ function deskStandings() {
     body = `<div class="dk-h"><b>Constructor Championship</b></div><div class="dk-scroll"><table class="dkst cons ${DK2.modern ? 'modern' : 'classic'}"><thead><tr><th class="stk0">Pos</th><th class="l stk1">Team</th><th class="l">Engine</th>${flags}<th class="pts">Pts</th></tr></thead><tbody>${standingsTeams(G).map((t, i) => {
       const cells = G.cal.map((_, k) => { const res = G.results[k]; if (!res) return '<td class="rc"></td>'; const rs = res.rows.filter(x => x.team === t.id).sort((a, b) => (a.out ? 99 : a.pos) - (b.out ? 99 : b.pos));
         return `<td class="rc2">${rs.map(r => `<div class="${dkResCls(r)}">${dkResTxt(r, res)}</div>`).join('')}</td>`; }).join('');
-      return `<tr class="${t.id === G.player ? 'me' : ''}"><td class="pos" style="border-left:3px solid ${t.color}">${i + 1}</td>${dkTeamCell(t.id)}${dkEngCell(t.id)}${cells}<td class="pts">${t.pts}</td></tr>`; }).join('')}</tbody></table></div>`;
+      return `<tr class="${t.id === G.player ? 'me' : ''}"><td class="pos" style="border-left:3px solid ${t.color}">${i + 1}</td>${dkTeamCell(t.id).replace('class="l tcell"', 'class="l tcell stk1"')}${dkEngCell(t.id)}${cells}<td class="pts">${t.pts}</td></tr>`; }).join('')}</tbody></table></div>`;
   }
   const legend = [['c-1', '1st'], ['c-2', '2nd'], ['c-3', '3rd'], ['c-pts', 'Pts'], ['c-np', 'No pts'], ['c-ret', 'RET'], ['c-dsq', 'DSQ']];
   return `<div class="dk dk-page" id="dk"><div class="dk-pagehead"><h1>Championship Standings</h1><span class="sp"></span><span class="dk-mut">${G.year} · Round ${done} of ${rounds}${G.spectator ? ' · Spectator' : ' · ' + esc(G.teams[G.player] ? G.teams[G.player].name : '')}</span><button data-a="tab" data-v="home">Back</button></div>
