@@ -604,6 +604,9 @@ body.dt .cls,body.dt .tower{font-family:"Titillium Web",system-ui,sans-serif}
   .dk .dkfp tr td,.dkfp th{padding:.35em .3em}
   .dk .dkfp td.pos{width:auto}
 }
+.dk-lapl{width:100%;height:auto;max-height:340px;display:block;padding:.4em .6em 0}
+.dkllrow{display:flex;flex-wrap:wrap;gap:.4em .9em;padding:.3em .8em .7em;font-size:.9em;align-items:center}
+.dkll{display:inline-flex;align-items:center;gap:.35em;font-weight:700}.dkll i{width:.6em;height:.9em}
 </style></head><body><div id="app"></div><script>
 // ===== DATA: teams, drivers, tracks =====
 const ENGINES = {
@@ -5336,14 +5339,52 @@ function deskRaceRes(sprint) {
   const dTab = dNow.slice(0, 10).map((id, i) => { const d = G.drivers[id]; return `<tr class="${(G.player ? d.team === G.player : id === G.follow) ? 'me' : ''}"><td>${i + 1}</td><td class="l">${dkFlag(d.nat)} ${esc(d.name)}</td><td class="ra">${ptsNow.get(id)}</td><td class="ra">${delta(id, dNow, dWas)}</td></tr>`; }).join('');
   const tTab = teNow.slice(0, 6).map((id, i) => { const tm = G.teams[id]; return `<tr class="${id === G.player ? 'me' : ''}"><td>${i + 1}</td><td class="l"><i class="tsw" style="background:${tm.color}"></i>${esc(tm.name)}</td><td class="ra">${tNow.get(id)}</td><td class="ra">${delta(id, teNow, teWas)}</td></tr>`; }).join('');
   const env = dkEnv(0, 0.5);
+  const leaders = dkLapLeaders(sprint);
   const fl = summary && summary.fastest;
   const cont = sprint ? `<button class="pri" data-a="toquali" data-enter="1">Continue</button>` : `<button class="pri" data-a="${last ? 'endseason' : 'tohq'}" data-enter="1">Continue</button>`;
   return `<div class="dk dk-fp dk-res" id="dk"><div class="dk-reshead">${dkFlag(t.cc, 'lg')}<div><h1>${sprint ? 'Sprint' : 'Race'} Results - ${esc(t.short)}</h1><div class="dk-mut">${esc(t.name)} | Round ${WK.round + 1} of ${G.cal.length} | 🌡 Avg ${Math.round(env.air + 3)}°C | ${lead.laps} Laps${fl ? ` | ⏱ Fastest lap ${esc(fl.code)} ${fmtTime(fl.t)}` : ''}${G.timeline && t.realWin >= 0 && !sprint ? ` | 📜 Real winner: ${esc(histDriverName(t.realWin))}` : ''}</div></div></div>
   <div class="dk-resgrid"><div class="dk-fpbox">${table}</div>
     <div class="dk-resside"><section><div class="dk-h dk-c"><b>🏆 ${sprint ? 'SPRINT' : 'RACE'} PODIUM 🏆</b></div><div class="dkpods">${pod}</div></section>
+    <section><div class="dk-h"><b>LAP LEADERS</b><span class="sp"></span><span class="dk-mut">${leaders ? (leaders.length - 1) + ' lead change' + (leaders.length === 2 ? '' : 's') : ''}</span></div>${dkLeaderChart(leaders, lead.laps)}</section>
     <section><div class="dk-h"><b>DRIVERS STANDINGS AFTER ${sprint ? 'SPRINT' : 'RACE'}</b><span class="sp"></span><span class="dk-mut">Top 10</span></div><table class="dkres"><thead><tr><th>#</th><th class="l">Driver</th><th class="ra">Pts</th><th class="ra">Δ</th></tr></thead><tbody>${dTab}</tbody></table></section>
-    <section><div class="dk-h"><b>TEAMS STANDINGS AFTER ${sprint ? 'SPRINT' : 'RACE'}</b><span class="sp"></span><span class="dk-mut">Top 6</span></div><table class="dkres"><thead><tr><th>#</th><th class="l hm">Team</th><th class="ra">Pts</th><th class="ra">Δ</th></tr></thead><tbody>${tTab}</tbody></table></section></div></div>
+    <section><div class="dk-h"><b>TEAMS STANDINGS AFTER ${sprint ? 'SPRINT' : 'RACE'}</b><span class="sp"></span><span class="dk-mut">Top 6</span></div><table class="dkres"><thead><tr><th>#</th><th class="l">Team</th><th class="ra">Pts</th><th class="ra">Δ</th></tr></thead><tbody>${tTab}</tbody></table></section></div></div>
   <div class="dk-fpfoot"><span class="dk-mut kbhint">ENTER or Continue to ${sprint ? 'go on to qualifying' : last ? 'see the season review' : 'return to HQ'}.</span><span class="sp"></span><button data-a="dkrexport" data-v="${sprint ? 's' : 'r'}">Export Logs</button>${sprint ? '' : '<button data-a="dkextras">Highlights &amp; Driver of the Day</button>'}${cont}</div></div>`;
+}
+
+
+// ---------- lap leaders ----------
+function dkLapLeaders(sprint) {
+  const store = sprint ? WK : WK.applied && WK.applied.summary; const key = sprint ? 'sprintLeaders' : 'leaders';
+  if (store && store[key]) return store[key];
+  if (!RACE || !RACE.cars || !!RACE.sprint !== !!sprint) return null;
+  const segs = []; const maxN = Math.max(...RACE.cars.map(c => c.cross.length - 1));
+  for (let n = 1; n <= Math.min(maxN, RACE.laps); n++) {
+    let best = null; RACE.cars.forEach(c => { if (c.cross[n] != null && (!best || c.cross[n] < best.cross[n])) best = c; });
+    if (!best) break; const last = segs[segs.length - 1];
+    if (last && last.id === best.d.id) last.to = n; else segs.push({ id: best.d.id, name: best.d.name, team: best.t.id, from: n, to: n });
+  }
+  if (store) store[key] = segs;
+  return segs;
+}
+function dkLeaderChart(segs, laps) {
+  if (!segs || !segs.length) return '<div class="dk-mut" style="padding:.8em">Lap-by-lap data isn\'t available for this race.</div>';
+  const H = 300, T = 14, B = 18, X0 = 46, BW = 40, Y = l => T + (1 - l / laps) * (H - T - B);
+  const ticks = []; const step = laps > 40 ? 5 : laps > 15 ? 5 : 1;
+  for (let l = 0; l <= laps; l++) { const major = l % step === 0; ticks.push(`<line x1="${X0 - (major ? 8 : 4)}" x2="${X0}" y1="${Y(l)}" y2="${Y(l)}" stroke="#7f8aa3" stroke-width="1"/>${major ? `<text x="${X0 - 12}" y="${Y(l) + 4}" fill="#9aa6bf" font-size="11" text-anchor="end">${l}</text>` : ''}`); }
+  // teammates share a colour, so the second driver of a team gets a striped bar
+  const first = {}, pats = {}; segs.forEach(sg => { if (!first[sg.team]) first[sg.team] = sg.id; });
+  const fillOf = sg => { const tm = G.teams[sg.team] || { color: '#888' }; if (first[sg.team] === sg.id) return tm.color; const k = 'llh' + String(sg.team).replace(/[^a-z0-9]/gi, ''); pats[k] = tm.color; return `url(#${k})`; };
+  const bars = segs.map(sg => { return `<rect x="${X0 + 1}" y="${Y(sg.to)}" width="${BW}" height="${Math.max(1, Y(sg.from - 1) - Y(sg.to))}" fill="${fillOf(sg)}" stroke="#03050a" stroke-width="1"><title>${esc(sg.name)}: laps ${sg.from}–${sg.to}</title></rect>`; }).join('');
+  // labels at each stint's middle, nudged apart so they never overlap
+  const lab = segs.map(sg => ({ sg, y: (Y(sg.from - 1) + Y(sg.to)) / 2 + 4 })).sort((a, b) => a.y - b.y);
+  for (let i = 1; i < lab.length; i++) lab[i].y = Math.max(lab[i].y, lab[i - 1].y + 15);
+  for (let i = lab.length - 1; i >= 0; i--) lab[i].y = Math.min(lab[i].y, i === lab.length - 1 ? H - 4 : lab[i + 1].y - 15);
+  const labels = lab.map(({ sg, y }) => { const tm = G.teams[sg.team] || { color: '#888' }; const mid = (Y(sg.from - 1) + Y(sg.to)) / 2;
+    return `<line x1="${X0 + BW + 3}" x2="${X0 + BW + 12}" y1="${mid}" y2="${y - 4}" stroke="${tm.color}" stroke-width="1"/><text x="${X0 + BW + 16}" y="${y}" fill="#e6ebf5" font-size="12">${esc(sg.name)} <tspan fill="#9aa6bf">(Lap${sg.from === sg.to ? ' ' + sg.from : 's ' + sg.from + '–' + sg.to})</tspan></text>`; }).join('');
+  const cnt = {}; segs.forEach(sg => cnt[sg.id] = (cnt[sg.id] || 0) + sg.to - sg.from + 1);
+  const tot = Object.entries(cnt).sort((a, b) => b[1] - a[1]).map(([id, n]) => { const d = G.drivers[id]; const tm = d && G.teams[d.team]; const striped = tm && first[tm.id] && first[tm.id] !== id; return `<span class="dkll"><i style="background:${tm ? (striped ? `repeating-linear-gradient(45deg,${tm.color} 0 3px,#ffffffaa 3px 5px)` : tm.color) : '#888'}"></i>${esc(d ? d.code : id)} ${n}</span>`; }).join('');
+  const defs = `<defs>${Object.entries(pats).map(([k, c]) => `<pattern id="${k}" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="${c}"/><rect width="3" height="6" fill="#ffffff" opacity=".55"/></pattern>`).join('')}</defs>`;
+  return `<svg class="dk-lapl" viewBox="0 0 360 ${H}" preserveAspectRatio="xMinYMid meet">${defs}<rect x="${X0 + 1}" y="${Y(laps)}" width="${BW}" height="${Y(0) - Y(laps)}" fill="#e6ebf5"/>${bars}<line x1="${X0}" x2="${X0}" y1="${Y(laps) - 4}" y2="${Y(0)}" stroke="#9aa6bf" stroke-width="1.5"/>${ticks.join('')}${labels}</svg><div class="dkllrow"><span class="dk-mut">Laps led:</span>${tot}</div>`;
 }
 
 // ---------- routing ----------
