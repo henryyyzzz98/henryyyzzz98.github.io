@@ -585,7 +585,9 @@ body.dt .cls,body.dt .tower{font-family:"Titillium Web",system-ui,sans-serif}
   .dk-pagebar .sp{display:none}
   .dk-stbox{flex:0 0 auto}
   .dkst{font-size:.95em}
-  .dkst td.pos,.dkst th:first-child{position:sticky;left:0;z-index:2;background:#05080f}
+  .dkst td.pos,.dkst th.stk0{position:sticky;left:0;z-index:3;background:#05080f}
+  .dkst th.stk1{position:sticky;left:2.6em;z-index:3;background:#0b0f18}
+  .dkst td.pos,.dkst th.stk0{width:2.6em;min-width:2.6em;max-width:2.6em;box-sizing:border-box}
   .dkst td.nm{position:sticky;left:2.6em;z-index:2;background:#05080f;max-width:9em;overflow:hidden;text-overflow:ellipsis}
   .dkst.cons td.tcell:first-of-type{position:sticky;left:2.6em;z-index:2;max-width:9em;overflow:hidden;text-overflow:ellipsis}
   .dkst th.fl{min-width:2em}
@@ -5238,12 +5240,12 @@ function deskStandings() {
   else if (DK2.panel === 'hist') body = dkHistory();
   else if (mode === 'd') {
     const sd = standingsDrivers(G).filter(d => d.team || d.pts > 0 || G.results.some(r => r.rows.some(x => x.id === d.id)));
-    body = `<div class="dk-h"><b>Driver Championship</b></div><div class="dk-scroll"><table class="dkst ${DK2.modern ? 'modern' : 'classic'}"><thead><tr><th>Pos</th><th class="l">Driver</th><th></th><th class="l hm">Team</th>${flags}<th class="pts">Pts</th></tr></thead><tbody>${sd.map((d, i) => {
+    body = `<div class="dk-h"><b>Driver Championship</b></div><div class="dk-scroll"><table class="dkst ${DK2.modern ? 'modern' : 'classic'}"><thead><tr><th class="stk0">Pos</th><th class="l stk1">Driver</th><th></th><th class="l">Team</th>${flags}<th class="pts">Pts</th></tr></thead><tbody>${sd.map((d, i) => {
       const cells = G.cal.map((_, k) => { const res = G.results[k]; const r = res && res.rows.find(x => x.id === d.id); return `<td class="rc ${dkResCls(r)}">${r ? dkResTxt(r, res) : ''}</td>`; }).join('');
       const tc = d.team ? G.teams[d.team].color : '#444';
       return `<tr class="${(G.player ? d.team === G.player : d.id === G.follow) ? 'me' : ''}"><td class="pos" style="border-left:3px solid ${tc}">${i + 1}</td><td class="l nm">${esc(d.name)}</td><td class="flc">${dkFlag(d.nat)}</td>${d.team ? dkTeamCell(d.team) : '<td class="l dim">—</td>'}${cells}<td class="pts">${d.pts}</td></tr>`; }).join('')}</tbody></table></div>`;
   } else {
-    body = `<div class="dk-h"><b>Constructor Championship</b></div><div class="dk-scroll"><table class="dkst cons ${DK2.modern ? 'modern' : 'classic'}"><thead><tr><th>Pos</th><th class="l hm">Team</th><th class="l hm">Engine</th>${flags}<th class="pts">Pts</th></tr></thead><tbody>${standingsTeams(G).map((t, i) => {
+    body = `<div class="dk-h"><b>Constructor Championship</b></div><div class="dk-scroll"><table class="dkst cons ${DK2.modern ? 'modern' : 'classic'}"><thead><tr><th class="stk0">Pos</th><th class="l stk1">Team</th><th class="l">Engine</th>${flags}<th class="pts">Pts</th></tr></thead><tbody>${standingsTeams(G).map((t, i) => {
       const cells = G.cal.map((_, k) => { const res = G.results[k]; if (!res) return '<td class="rc"></td>'; const rs = res.rows.filter(x => x.team === t.id).sort((a, b) => (a.out ? 99 : a.pos) - (b.out ? 99 : b.pos));
         return `<td class="rc2">${rs.map(r => `<div class="${dkResCls(r)}">${dkResTxt(r, res)}</div>`).join('')}</td>`; }).join('');
       return `<tr class="${t.id === G.player ? 'me' : ''}"><td class="pos" style="border-left:3px solid ${t.color}">${i + 1}</td>${dkTeamCell(t.id)}${dkEngCell(t.id)}${cells}<td class="pts">${t.pts}</td></tr>`; }).join('')}</tbody></table></div>`;
