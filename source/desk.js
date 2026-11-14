@@ -21,10 +21,7 @@ function dkInk(hex) {
   const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
   return (0.299 * r + 0.587 * g + 0.114 * b) > 140 ? '#0b0d12' : '#fff';
 }
-function dkFlag(cc, cls = '') {
-  if (cc && /^[A-Z]{2}$/.test(cc) && !FLAGS[cc]) return `<img class="dkfl ${cls}" src="https://flagcdn.com/w80/${cc.toLowerCase()}.png" alt="${cc}" onerror="this.outerHTML='<span class=&quot;dkfe ${cls}&quot;>${flag(cc)}</span>'">`;
-  return `<span class="dkfe ${cls}">${flag(cc)}</span>`;
-}
+function dkFlag(cc, cls = '') { return flagImg(cc, cls); }
 const dkEngine = t => (G.engines[t.engine] && G.engines[t.engine].name) || '';
 const dkNm = n => { const p = String(n).split(' '); const sh = p.length > 1 ? p[0][0] + '. ' + p.slice(1).join(' ') : n; return `<span class="fn">${esc(n)}</span><span class="sn">${esc(sh)}</span>`; };
 const dkShort = d => { const p = d.name.split(' '); return (p.length > 1 ? p[0][0] + '. ' : '') + p[p.length - 1]; };
@@ -58,6 +55,13 @@ function dkPAt(track, frac) {
 function dkSplit(track, lt, seedStr) {
   const w = dkProf(track).w, r = seeded(seedStr); const n1 = (r() - 0.5) * 0.008, n2 = (r() - 0.5) * 0.008;
   const s1 = lt * w[0] * (1 + n1), s2 = lt * w[1] * (1 + n2); return [s1, s2, lt - s1 - s2];
+}
+// real number of turns (F1DB) for this round, else for the circuit, else counted from the drawn layout
+function dkTurns(t, rd) {
+  rd = rd != null ? rd : WK ? WK.round : 0;
+  const y = G && G.timeline && TURNS_Y[G.year]; if (y && y[rd] && G.cal[rd] === t.id) return y[rd];
+  if (TURNS_T[t.id]) return TURNS_T[t.id];
+  return dkProf(t).corners;
 }
 function dkEnv(wet, prog, tr, rd) {
   const t = tr || WK.track, r = seeded(t.id + ':' + G.year + ':' + (rd != null ? rd : WK.round));
@@ -192,7 +196,7 @@ function deskLive(kind) {
     <div class="dk-btns"><button data-a="dkmodal" data-v="${kind === 'race' ? 'gps' : 'trap'}">${kind === 'race' ? '📍 GPS Data' : '📶 Speed Trap'}</button><button data-a="dkmodal" data-v="weather">⛅ Weather Forecast</button><button data-a="dkview" data-v="tele">📊 Telemetry <kbd>T</kbd></button><button class="ico" data-a="dkmodal" data-v="settings" title="Settings">⚙</button></div>
   </div>
   <div class="dk-grid">
-    <section class="dk-map"><div class="dk-bar"><span class="dk-flagst" id="dkflag"></span><span class="sp"></span><span class="dk-spd" id="rctl">${dkSpd()}</span><span class="dk-km">${t.km.toFixed(3)} km · ${pr.corners} corners</span></div>
+    <section class="dk-map"><div class="dk-bar"><span class="dk-flagst" id="dkflag"></span><span class="sp"></span><span class="dk-spd" id="rctl">${dkSpd()}</span><span class="dk-km">${t.km.toFixed(3)} km · ${dkTurns(t)} turns</span></div>
       <div class="dk-mapbox"><canvas id="cv"></canvas>
         <div class="dk-maptitle">${dkFlag(t.cc, 'xl')}<span>${esc(t.short)}</span></div>
         ${kind === 'race' ? `<div class="gantry dk-gantry ${RACE.started && !(LIGHTS && LIGHTS.phase === 'out') ? 'gone' : ''}" id="gantry">${[0, 1, 2, 3, 4].map(() => '<div class="glamp"><i></i><i></i></div>').join('')}</div><div class="lomsg" id="lomsg"></div>` : ''}
