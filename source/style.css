@@ -736,3 +736,35 @@ img.dkfl.emj{height:.95em;width:auto;vertical-align:-.1em;margin:0 .1em}
 /* player rows keep their team colour (the generic dark "me" highlight is for plain tables only) */
 body.dt .dk .dkfp tr.me td{background:var(--tc);color:var(--ti)}
 body.dt .dk .dkst tr.me td.tcell{background:var(--tc);color:var(--ti)}
+/* ---------- real-world data: profiles, team history ---------- */
+.dk tr[data-prof],.dk tr[data-tprof],.dkx-ms{cursor:pointer}
+.dk .dkfp tr[data-prof]:hover td{filter:brightness(1.12)}
+.dkx-off{color:#93a3bf;font-size:.85em;letter-spacing:.04em;margin-top:.15em}
+.dkx-car{font-weight:400;opacity:.8;font-size:.82em;margin-left:.3em}
+.dkx-sh{display:block;font-weight:400;font-size:.72em;opacity:.85;line-height:1.15;white-space:normal;max-width:24em}
+.dk em.g,.dkx-mod em.g{color:#86efac;font-style:normal}.dk em.r,.dkx-mod em.r{color:#fca5a5;font-style:normal}
+.dkx-ms{display:flex;flex-direction:column;padding:.3em 0;border-bottom:1px solid #141e33}.dkx-ms span{color:#fcd34d}
+.dkx-ov{position:fixed;inset:0;z-index:300;background:#000a;display:flex;align-items:center;justify-content:center;padding:2vh 2vw;font-family:"JetBrains Mono","Cascadia Mono","SF Mono",Consolas,Menlo,ui-monospace,monospace;font-size:clamp(12px,.8vw,15px);color:#e6ebf5}
+.dkx-mod{width:min(760px,96vw);max-height:94vh;overflow:auto;background:#060a14;border:1px solid #1f2d4a;border-top:4px solid var(--tc);border-radius:8px;box-shadow:0 20px 60px #000}
+.dkx-hd{display:flex;align-items:center;gap:.9em;padding:1em 1.1em;border-bottom:1px solid #141e33;position:sticky;top:0;background:#060a14;z-index:1}
+.dkx-hd h2{margin:0;font-size:1.5em}.dkx-hd .sp{flex:1}
+.dkx-num{font-size:2em;font-weight:900;color:var(--tc);font-style:italic}
+.dkx-sw{width:.6em;align-self:stretch;background:var(--tc);border-radius:3px}
+.dkx-x{background:none;border:1px solid #1f2d4a;color:#e6ebf5;border-radius:4px;padding:.3em .6em;cursor:pointer;font:inherit}
+.dkx-body{padding:.8em;display:flex;flex-direction:column;gap:.8em}
+.dkx-body section{border:1px solid #1f2d4a;border-radius:6px;background:#0a0f1c}
+.dkx-mod a{color:#8fb4ff;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.dkx-mod .dkg-row b{text-align:right;font-weight:600}
+.dkx-st{width:100%;border-collapse:collapse;font-size:.95em}
+.dkx-st th,.dkx-st td{padding:.4em .7em;text-align:right;border-bottom:1px solid #141e33}
+.dkx-st th{color:#8fb4ff;font-size:.8em;letter-spacing:.06em;vertical-align:bottom}.dkx-st th small{display:block;color:#5b6b8a;font-weight:400}
+.dkx-st .l{text-align:left}
+.dkx-next{padding:.5em .8em}
+.dkx-lin{display:flex;flex-wrap:wrap;align-items:center;gap:.4em;padding:.7em .8em}
+.dkx-lin span{display:flex;flex-direction:column;border:1px solid #1f2d4a;border-radius:4px;padding:.3em .6em}
+.dkx-lin span.on{border-color:var(--tc);background:#10203d}
+.dkx-lin small{color:#7f8aa3}.dkx-lin i{color:#5b6b8a;font-style:normal}
+@media (max-width:899px){.dkx-ov{padding:0}.dkx-mod{max-height:100vh;width:100vw;border-radius:0}.dkx-st th,.dkx-st td{padding:.35em .4em}}
+.dk-sgr .dk-fpbox{overflow-x:auto}
+.dkx-strip{display:flex;gap:1em;align-items:center;flex-wrap:wrap;padding:.1em .6em .3em;color:#93a3bf;font-size:.9em}
+.dkx-strip .sp{flex:1}.dkx-rw{color:#8fb4ff;letter-spacing:.08em;font-size:.9em}.dkx-strip span b+*{color:#e6ebf5}

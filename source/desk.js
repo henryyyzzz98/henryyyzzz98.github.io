@@ -426,7 +426,7 @@ function deskPractice() {
   const sess = WK.fp.length ? (WK.sprint ? 'Practice' : 'FP' + WK.fp.length) : (WK.sprint ? 'Practice' : 'FP' + WK.session);
   const lead = last && last[0];
   const rows = last ? last.map((r, i) => { const e = r.e, ty = r.tyre || 'S';
-    return `<tr class="${isMine(e) ? 'me' : ''}" style="--tc:${e.t.color};--ti:${dkInk(e.t.color)}"><td class="pos">P${String(i + 1).padStart(2, '0')}</td><td class="l">${dkFlag(e.d.nat)} ${dkNm(e.d.name)}</td><td class="l hm">${esc(e.t.name)}</td><td class="l hm">${esc(dkEngine(e.t))}</td><td class="l">${TYRES[ty].name}</td><td class="ra">${fmtTime(r.t)}</td><td class="ra">${i ? '+' + (r.t - lead.t).toFixed(3) : '--'}</td><td class="ra dimc">${r.laps}</td></tr>`; }).join('') : '';
+    return `<tr class="${isMine(e) ? 'me' : ''}" data-prof="${e.d.id}" style="--tc:${e.t.color};--ti:${dkInk(e.t.color)}"><td class="pos">P${String(i + 1).padStart(2, '0')}</td><td class="l">${dkFlag(e.d.nat)} ${dkNm(e.d.name)}</td><td class="l hm">${esc(e.t.name)}</td><td class="l hm">${esc(dkEngine(e.t))}</td><td class="l">${TYRES[ty].name}</td><td class="ra">${fmtTime(r.t)}</td><td class="ra">${i ? '+' + (r.t - lead.t).toFixed(3) : '--'}</td><td class="ra dimc">${r.laps}</td></tr>`; }).join('') : '';
   const progBtns = e => Object.entries(PROGRAMS).map(([k, p]) => `<button class="${(WK.programs[e.d.id] || 'setup') === k ? 'on' : ''}" data-a="prog" data-d="${e.d.id}" data-v="${k}">${p.name}</button>`).join('');
   const pct = v => Math.round(v * 100) + '%';
   return `<div class="dk dk-fp" id="dk">

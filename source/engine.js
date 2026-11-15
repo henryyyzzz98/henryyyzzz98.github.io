@@ -260,7 +260,7 @@ class Race {
   }
   makeRain() { this.wetTarget = rnd(0.45, 0.9); this.msg('🌧️ Rain is starting to fall!', true); }
   stopRain() { this.wetTarget = 0; this.msg('🌤️ The rain has stopped, track drying', true); }
-  randomIncident() { const run = this.cars.filter(c => !c.out && !c.finished && c.pitT <= 0); if (!run.length) return; const c = pick(run); if (Math.random() < 0.55) this.retire(c, pick(['Crash', 'Collision', 'Hit the wall']), Math.random() < 0.7 ? 'sc' : 'vsc'); else { c.spin = rnd(8, 16); this.msg(`🌀 ${c.d.code} spins!`, true); } }
+  randomIncident() { const run = this.cars.filter(c => !c.out && !c.finished && c.pitT <= 0); if (!run.length) return; const c = pick(run); if (Math.random() < 0.55) this.retire(c, typeof dkWhy === 'function' ? dkWhy(this.G, 'c') : pick(['Crash', 'Collision', 'Hit the wall']), Math.random() < 0.7 ? 'sc' : 'vsc'); else { c.spin = rnd(8, 16); this.msg(`🌀 ${c.d.code} spins!`, true); } }
   startSC() { if (this.sc || this.chequered) return; this.vsc = 0; this.sc = 1; this.scLapsLeft = rint(3, 5); this.flag = 'sc'; this.msg('🟨 SAFETY CAR deployed', true); }
   startVSC() { if (this.sc || this.vsc || this.chequered) return; this.vsc = rnd(40, 110); this.flag = 'vsc'; this.msg('🟨 VIRTUAL SAFETY CAR', true); }
   onLap(c, tc) {
@@ -281,14 +281,14 @@ class Race {
     // incidents
     if (this.incidentsOn) {
       const mism = (this.wet > 0.3 && 'SMH'.includes(c.tyre)) ? 6 : 0;
-      let pc = 0.0011 * (1 + (100 - c.d.cons) / 25) * (c.mode === 'push' ? 1.7 : c.mode === 'save' ? 0.6 : 1) * (1 + this.wet * 4 + mism) * (n === 1 ? 3 : 1);
+      let pc = 0.0011 * (1 + (100 - c.d.cons) / 25) * (c.mode === 'push' ? 1.7 : c.mode === 'save' ? 0.6 : 1) * (1 + this.wet * 4 + mism) * (n === 1 ? 3 : 1) * (xh('crashMul', this, c) || 1);
       if (Math.random() < pc) {
-        if (Math.random() < 0.5) this.retire(c, pick(['Crash', 'Collision', 'Hit the wall', 'Spun into the gravel']), Math.random() < 0.65 ? 'sc' : 'vsc');
+        if (Math.random() < 0.5) this.retire(c, typeof dkWhy === 'function' ? dkWhy(this.G, 'c') : pick(['Crash', 'Collision', 'Hit the wall', 'Spun into the gravel']), Math.random() < 0.65 ? 'sc' : 'vsc');
         else { c.spin = rnd(6, 14); c.wear = clamp(c.wear + 0.1, 0, 1); this.msg(`🌀 ${c.d.code} spins!`, c.player || c.fav); }
         if (c.out) return;
       }
       const rel = teamRel(this.G, c.t);
-      if (Math.random() < 0.00075 * Math.pow((100 - rel) / 15, 1.6) * (xh('relMul', this, c) || 1)) { this.retire(c, pick(['Power unit failure', 'Gearbox', 'Hydraulics', 'Brakes', 'Electrical issue', 'Engine']), Math.random() < 0.5 ? 'vsc' : null); return; }
+      if (Math.random() < 0.00075 * Math.pow((100 - rel) / 15, 1.6) * (xh('relMul', this, c) || 1)) { this.retire(c, typeof dkWhy === 'function' ? dkWhy(this.G, 'm') : pick(['Power unit failure', 'Gearbox', 'Hydraulics', 'Brakes', 'Electrical issue', 'Engine']), Math.random() < 0.5 ? 'vsc' : null); return; }
       if (c.wear > 0.88 && Math.random() < 0.18) {
         if (Math.random() < 0.25) { this.retire(c, 'Tyre failure', 'auto'); return; }
         c.spin = rnd(15, 25); this.msg(`💥 Puncture for ${c.d.code}!`, true); c.pitReq = c.pitReq || this.slick(c, this.laps - n) || 'M';

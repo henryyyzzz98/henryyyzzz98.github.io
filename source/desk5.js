@@ -12,10 +12,12 @@ function deskGrid(sprint) {
   const qOrder = (sprint && !ac ? WK.sgrid : WK.grid) || grid;
   const pen = new Map((WK.penalties || []).map(p => [p.code, p]));
   const name = sprint ? (ac ? 'Reverse Grid Race' : 'Sprint') : (ac ? 'Feature Race' : 'Grand Prix');
-  const rows = grid.map((e, i) => { const ty = tyreOf(e), q = qt.get(e), qp = qOrder.indexOf(e) + 1, p = pen.get(e.d.code);
-    return `<tr class="${isMine(e) ? 'me' : ''}" style="--tc:${e.t.color};--ti:${dkInk(e.t.color)}"><td class="pos">P${String(i + 1).padStart(2, '0')}</td><td class="l">${dkFlag(e.d.nat)} ${dkNm(e.d.name)}${G.follow === e.d.id ? ' ⭐' : ''}</td><td class="l hm">${esc(e.t.name)}</td><td class="l hm">${esc(dkEngine(e.t))}</td>
-      <td class="ra hm">${q != null ? fmtTime(q) : 'NO TIME'}</td><td class="ra">${qp ? 'P' + qp : ''}${p ? ` <span title="${esc(p.why)}">+${p.n}</span>` : ''}</td><td class="l">${ty ? TYRES[ty].name : '—'}</td></tr>`; }).join('');
-  const table = `<table class="dkfp"><thead><tr><th>Grid</th><th class="l">Driver</th><th class="l hm">Team</th><th class="l hm">Engine</th><th class="ra hm">Quali time</th><th class="ra">Qualified</th><th class="l">Start tyre</th></tr></thead><tbody>${rows}</tbody></table>`;
+  const carOf = e => typeof hxCar === 'function' ? hxCar(G, e.t.id) : null;
+  const makers = new Set(grid.map(e => { const c = carOf(e); return c && c[2] ? c[2].split(' / ')[0] : null; }).filter(Boolean)), tw = makers.size > 1;
+  const rows = grid.map((e, i) => { const ty = tyreOf(e), q = qt.get(e), qp = qOrder.indexOf(e) + 1, p = pen.get(e.d.code), car = carOf(e);
+    return `<tr class="${isMine(e) ? 'me' : ''}" data-prof="${e.d.id}" style="--tc:${e.t.color};--ti:${dkInk(e.t.color)}"><td class="pos">P${String(i + 1).padStart(2, '0')}</td><td class="l">${dkFlag(e.d.nat)} ${dkNm(e.d.name)}${G.follow === e.d.id ? ' ⭐' : ''}</td><td class="l hm">${esc(e.t.name)}${car && car[0] ? ` <small class="dkx-car">${esc(car[0])}</small>` : ''}${e.standin ? ' <small class="dkx-car">one-off</small>' : ''}</td><td class="l hm">${esc(car && car[1] ? car[1] : dkEngine(e.t))}</td>${tw ? `<td class="l hm">${esc(car && car[2] ? car[2].split(' / ')[0] : '')}</td>` : ''}
+      <td class="ra hm">${q != null ? fmtTime(q) : 'NO TIME'}</td><td class="ra">${qp ? 'P' + qp : ''}${p ? ` <span title="${esc(p.why)}">+${p.n}</span>` : ''}</td>${G.player ? `<td class="l">${ty ? TYRES[ty].name : '—'}</td>` : ''}</tr>`; }).join('');
+  const table = `<table class="dkfp"><thead><tr><th>Grid</th><th class="l">Driver</th><th class="l hm">Team / Car</th><th class="l hm">Engine</th>${tw ? '<th class="l hm">Tyres</th>' : ''}<th class="ra hm">Quali time</th><th class="ra">Qualified</th>${G.player ? '<th class="l">Start tyre</th>' : ''}</tr></thead><tbody>${rows}</tbody></table>`;
 
   const env = dkEnv(W.start, 0, t, WK.round);
   const forecast = sprint ? forecastText(W, { rain: 0 }) : WK.forecast;
@@ -25,7 +27,7 @@ function deskGrid(sprint) {
   const preview = `<section><div class="dk-h"><b>${name.toUpperCase()} PREVIEW</b></div><div class="dkg-body">
     <div class="dkg-fc">${esc(forecast)}</div>
     ${kv('DISTANCE', `${laps} laps · ${(t.km * laps).toFixed(1)} km`)}${kv('AIR / TRACK', `${Math.round(env.air)}°C / ${Math.round(env.track)}°C`)}${kv('OVERTAKING', lvl(t.ot))}${kv('TYRE WEAR', lvl(t.wear))}
-    ${fav ? kv('YOUR DRIVER', `${esc(fav.d.name)} · P${grid.indexOf(fav) + 1}`) : ''}<div class="dk-mut dkg-note">${rule}</div></div></section>`;
+    ${tw ? kv('TYRE WAR', [...makers].join(' vs ')) : ''}${fav ? kv('YOUR DRIVER', `${esc(fav.d.name)} · P${grid.indexOf(fav) + 1}`) : ''}<div class="dk-mut dkg-note">${rule}</div></div></section>`;
 
   const strat = G.spectator || !mine.length ? '' : `<section><div class="dk-h"><b>RACE STRATEGY</b></div><div class="dkg-body">${mine.map(e => `<div class="dkg-car" style="--tc:${e.t.color}">
     <div class="dkg-cn"><b>P${grid.indexOf(e) + 1} ${esc(e.d.name)}</b></div>
