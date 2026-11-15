@@ -73,8 +73,8 @@ function deskQualiRes(key) {
   let title, rows, cut = null, cols3 = false;
   if (!last) title = `${name} - ${esc(t.short)}`;
   else if (done) {
-    title = `${name} Results - ${esc(t.short)}`;
-    const grid = I.sprint ? WK.sgrid : WK.grid;
+    title = `${name} Results - ${esc(t.short)}`; if (typeof dkAcad === 'function' && dkAcad()) title += `<span class="dk-mut">${I.sprint ? 'Reverse Grid Race: top 8 from qualifying reversed' : 'Feature Race: grid in qualifying order'}</span>`;
+    const grid = I.sprint && !(typeof dkAcad === 'function' && dkAcad()) ? WK.sgrid : WK.grid;
     const timeIn = (e, st) => { const r = QS.rounds.find(x => x.stage === st); const x = r && r.res.find(y => y.e === e); return x ? x : null; };
     cols3 = !I.single && QS.rounds.length >= 3;
     rows = grid.map(e => { const q = [1, 2, 3].map(s => timeIn(e, s)); const best = I.single ? timeIn(e, last.stage) : [...q].reverse().find(x => x && x.t != null) || q.find(Boolean); return { e, q, best }; });
@@ -115,19 +115,19 @@ function dkRaceView(o) {
   const sp = sprint ? null : o.sprintRows;
   const now = dkPts(prev.concat([sp, rows])), was = dkPts(prev.concat([sp]));
   const upNow = sprint ? k : k + 1, upWas = k;
-  const timeOf = r => r.out ? `DNF (${r.out.length > 14 ? r.out.split(/[ (]/)[0] : r.out})` : r.pos === 1 ? fmtTime(r.time) : r.laps < lead.laps ? '+' + (lead.laps - r.laps) + ' Lap' + (lead.laps - r.laps > 1 ? 's' : '') : '+' + (r.time - lead.time).toFixed(3);
+  const timeOf = r => r.time == null && !r.out ? (r.pos === 1 ? 'Winner' : 'Finished') : r.out ? `DNF (${r.out.length > 14 ? r.out.split(/[ (]/)[0] : r.out})` : r.pos === 1 ? fmtTime(r.time) : r.laps < lead.laps ? '+' + (lead.laps - r.laps) + ' Lap' + (lead.laps - r.laps > 1 ? 's' : '') : '+' + (r.time - lead.time).toFixed(3);
   const ord = rows.filter(r => !r.out).concat(rows.filter(r => r.out));
   const table = `<table class="dkfp dkrr"><thead><tr><th>Pos</th><th>Grid</th><th class="l">Driver</th><th class="l hm">Team</th><th class="l hm">Engine</th><th class="hm">Stp</th><th class="hm">Laps</th><th class="ra">Time/Gap</th><th class="ra">Pts</th></tr></thead><tbody>${ord.map(r => { const tm = G.teams[r.team] || { color: '#444', name: '' }; const d = G.drivers[r.id];
     return `<tr class="${dkMine(r) ? 'me' : ''} ${r.out ? 'dnf' : ''}" style="--tc:${tm.color};--ti:${dkInk(tm.color)}"><td class="pos">${r.out ? '' : String(r.pos).padStart(2, '0')}</td><td>${r.grid || ''}</td><td class="l">${d ? dkFlag(d.nat) : ''} ${dkNm(r.name)}</td><td class="l hm">${esc(tm.name)}</td><td class="l hm">${esc(dkEngine(tm))}</td><td class="hm">${r.stops ?? ''}</td><td class="hm">${r.laps ?? ''}</td><td class="ra plain">${timeOf(r)}</td><td class="ra plain">${r.pts || 0}</td></tr>`; }).join('')}</tbody></table>`;
   const pod = [rows[1], rows[0], rows[2]].map((r, j) => { if (!r) return '<div></div>'; const tm = G.teams[r.team] || {}; const d = G.drivers[r.id]; const p = [2, 1, 3][j];
-    return `<div class="dkpod p${p}" style="--tc:${tm.color}"><div class="n">${p}</div><div class="f">${d ? dkFlag(d.nat, 'lg') : ''}</div><b>${esc(dkShort(r))}</b><span>${esc(tm.name || '')}</span><em>${p === 1 ? fmtTime(r.time) : timeOf(r)}</em></div>`; }).join('');
+    return `<div class="dkpod p${p}" style="--tc:${tm.color}"><div class="n">${p}</div><div class="f">${d ? dkFlag(d.nat, 'lg') : ''}</div><b>${esc(dkShort(r))}</b><span>${esc(tm.name || '')}</span><em>${p === 1 && r.time != null ? fmtTime(r.time) : timeOf(r)}</em></div>`; }).join('');
   const dNow = dkRank(now.d, upNow, false), dWas = dkRank(was.d, upWas, false), teNow = dkRank(now.t, upNow, true), teWas = dkRank(was.t, upWas, true);
   const fresh = k === 0 && !sp && !sprint ? true : k === 0 && sprint;
   const delta = (id, a, b) => { if (fresh) return '<span class="dim">–</span>'; const dd = b.indexOf(id) - a.indexOf(id); return dd > 0 ? `<span class="g">▲+${dd}</span>` : dd < 0 ? `<span class="r">▼${dd}</span>` : '<span class="dim">–</span>'; };
   const dTab = dNow.slice(0, 10).map((id, i) => { const d = G.drivers[id]; return `<tr class="${(G.player ? d.team === G.player : id === G.follow) ? 'me' : ''}"><td>${i + 1}</td><td class="l">${dkFlag(d.nat)} ${esc(d.name)}</td><td class="ra">${now.d.get(id) || 0}</td><td class="ra">${delta(id, dNow, dWas)}</td></tr>`; }).join('');
   const tTab = teNow.slice(0, 6).map((id, i) => { const tm = G.teams[id]; return `<tr class="${id === G.player ? 'me' : ''}"><td>${i + 1}</td><td class="l"><i class="tsw" style="background:${tm.color}"></i>${esc(tm.name)}</td><td class="ra">${now.t.get(id) || 0}</td><td class="ra">${delta(id, teNow, teWas)}</td></tr>`; }).join('');
   const env = dkEnv(0, 0.5, t, k), fl = o.fastest, leaders = o.leaders;
-  return `<div class="dk-reshead">${dkFlag(t.cc, 'lg')}<div><h1>${sprint ? 'Sprint' : 'Race'} Results - ${esc(t.short)}</h1><div class="dk-mut">${esc(t.name)} | Round ${k + 1} of ${G.cal.length} | 🌡 Avg ${Math.round(env.air + 3)}°C | ${lead.laps} Laps${fl ? ` | ⏱ Fastest lap ${esc(fl.code)} ${fmtTime(fl.t)}` : ''}${G.timeline && t.realWin >= 0 && !sprint ? ` | 📜 Real winner: ${esc(histDriverName(t.realWin))}` : ''}</div></div>${o.headExtra || ''}</div>
+  return `<div class="dk-reshead">${dkFlag(t.cc, 'lg')}<div><h1>${sprint ? 'Sprint' : 'Race'} Results - ${esc(t.short)}</h1><div class="dk-mut">${esc(t.name)} | Round ${k + 1} of ${G.cal.length} | 🌡 Avg ${Math.round(env.air + 3)}°C${lead.laps ? ` | ${lead.laps} Laps` : ''}${fl ? ` | ⏱ Fastest lap ${esc(fl.code)} ${fmtTime(fl.t)}` : ''}${G.timeline && t.realWin >= 0 && !sprint ? ` | 📜 Real winner: ${esc(histDriverName(t.realWin))}` : ''}</div></div>${o.headExtra || ''}</div>
   <div class="dk-resgrid"><div class="dk-fpbox">${table}</div>
     <div class="dk-resside"><section><div class="dk-h dk-c"><b>🏆 ${sprint ? 'SPRINT' : 'RACE'} PODIUM 🏆</b></div><div class="dkpods">${pod}</div></section>
     <section><div class="dk-h"><b>LAP LEADERS</b><span class="sp"></span><span class="dk-mut">${leaders ? (leaders.length - 1) + ' lead change' + (leaders.length === 2 ? '' : 's') : ''}</span></div>${dkLeaderChart(leaders, lead.laps)}</section>
@@ -175,8 +175,10 @@ function dkArchive() {
   const t = TRACK_BY_ID[r.track] || roundTrack(G, k), A0 = r.arch || {};
   const tabs = [];
   (A0.fp || []).forEach((_, i) => tabs.push(['fp' + i, A0.sprintFp && A0.fp.length === 1 ? 'Practice' : 'FP' + (i + 1)]));
-  if (A0.sq) tabs.push(['sq', 'Sprint Quali']); if (r.sprint) tabs.push(['sprint', 'Sprint']);
-  if (A0.q) tabs.push(['q', 'Qualifying']); tabs.push(['race', 'Race']);
+  const ac = typeof dkAcad === 'function' && dkAcad();
+  if (ac) { if (A0.q) tabs.push(['q', 'Qualifying']); if (r.sprint) tabs.push(['sprint', 'Reverse Grid Race']); tabs.push(['race', 'Feature Race']); }
+  else { if (A0.sq) tabs.push(['sq', 'Sprint Quali']); if (r.sprint) tabs.push(['sprint', 'Sprint']);
+  if (A0.q) tabs.push(['q', 'Qualifying']); tabs.push(['race', 'Race']); }
   const tab = tabs.some(x => x[0] === DK2.arch.tab) ? DK2.arch.tab : 'race';
   const nav = `<div class="dk-pagebar"><span class="dk-tabs2">${tabs.map(([v, l]) => `<button class="${tab === v ? 'on' : ''}" data-a="dkarchtab" data-v="${v}">${l}</button>`).join('')}</span><span class="sp"></span>
     <button data-a="dkarch" data-v="${k - 1}" ${k > 0 ? '' : 'disabled'}>‹ Prev</button><button data-a="dkarch" data-v="${k + 1}" ${G.results[k + 1] ? '' : 'disabled'}>Next ›</button><button class="dk-backbtn" data-a="dkarch" data-v="-1">Back</button></div>`;
@@ -287,7 +289,7 @@ Object.assign(A, {
   dkst2(el) { const v = el.dataset.v;
     if (v === 'legend') DK2.legend = !DK2.legend; else if (v === 'color') DK2.modern = !DK2.modern; else if (v === 'markers') DK2.markers = (DK2.markers + 1) % DK_MARKERS.length;
     else DK2.panel = DK2.panel === v ? 'grid' : v; render(); },
-  dkextras() { DK2.extras = true; _dk2_render(); document.body.classList.remove('dk-on'); window.scrollTo(0, 0); },
+  dkextras() { DK2.extras = true; _dk2_render(); if (typeof dkAcadText === 'function') dkAcadText(document.body); document.body.classList.remove('dk-on'); window.scrollTo(0, 0); },
   dkqexport() {
     const QS = curQS(), out = [['Session', 'Pos', 'Driver', 'Team', 'Engine', 'Lap', 'Gap']];
     QS.rounds.forEach(r => { const l = r.res.find(x => x.t != null); r.res.forEach((x, i) => out.push([(WK.stage === 'squali' ? 'SQ' : 'Q') + r.stage, i + 1, x.e.d.name, x.e.t.name, dkEngine(x.e.t), x.t != null ? fmtTime(x.t) : 'NO TIME', x.t != null && l && i ? (x.t - l.t).toFixed(3) : ''])); });

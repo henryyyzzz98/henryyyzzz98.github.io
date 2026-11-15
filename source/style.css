@@ -466,9 +466,9 @@ table.dkst{border-collapse:separate;border-spacing:1px;width:100%;white-space:no
 .dk-resside section{flex:0 0 auto}
 .dk-c{justify-content:center}
 .dkpods{display:grid;grid-template-columns:1fr 1.1fr 1fr;gap:.8em;padding:.8em;align-items:end}
-.dkpod{border:2px solid #e6ebf5;border-radius:6px;padding:.8em .4em;text-align:center;display:flex;flex-direction:column;gap:.35em;align-items:center;border-top:4px solid var(--tc)}
-.dkpod.p1{border-color:#facc15;padding-top:1.4em}.dkpod.p3{border-color:#f59e0b}
-.dkpod .n{font-size:1.6em;font-weight:800}.dkpod.p1 .n{color:#facc15}.dkpod.p3 .n{color:#f59e0b}
+.dkpod{border:2px solid #e6ebf5;border-radius:6px;padding:.8em .4em;text-align:center;display:flex;flex-direction:column;gap:.35em;align-items:center}
+.dkpod.p1{border-color:#facc15;padding-top:1.4em}.dkpod.p2{border-color:#cbd5e1}.dkpod.p3{border-color:#f59e0b}
+.dkpod .n{font-size:1.6em;font-weight:800}.dkpod.p1 .n{color:#facc15}.dkpod.p2 .n{color:#cbd5e1}.dkpod.p3 .n{color:#f59e0b}
 .dkpod span{font-size:.9em}.dkpod em{font-style:normal;font-weight:700}
 table.dkres{width:100%;border-collapse:collapse}
 .dkres th{color:#7f8aa3;font-weight:600;padding:.3em .6em;text-align:center}
@@ -663,3 +663,17 @@ img.dkfl.emj{height:.95em;width:auto;vertical-align:-.1em;margin:0 .1em}
   .dk-season{width:100%}
 }
 .dk-pagehead button:not([data-a=tab]){background:#0d1424!important;color:#dfe7f5!important;font-weight:600;border:1px solid #1f2d4a}
+
+/* calendar info panel: keep everything inside the box */
+.dkc-main{grid-template-rows:minmax(0,1.4fr) minmax(0,.9fr) minmax(0,.9fr)}
+.dkc-info{padding:.5em 1em;overflow-y:auto;scrollbar-width:thin}
+.dkc-info h2{font-size:1.45em;margin:0 0 .1em}
+.dkc-circ{margin-bottom:.3em}
+.dkc-row{padding:.32em 0;font-size:.95em}
+.dkc-row b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70%}
+/* F1 Academy: two result columns per round */
+.dkst th.fl small{display:block;font-size:.72em;letter-spacing:.06em;color:#93a3bf;padding:.1em 0;font-weight:700}
+.dkst .ac2{border-right:2px solid #3a4a68}
+.dkst th.fl.ac1 .dkfl,.dkst th.fl.ac2 .dkfl{height:1.1em}
+.dk4-note{padding:.2em 1em .5em;font-size:.85em}
+.dk-cal .dk-pagehead .dk-season{margin-right:.4em}

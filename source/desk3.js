@@ -27,7 +27,7 @@ function dkArchiveSeason(G0) {
     const pack = r => [r.id, r.team, r.pos || 0, r.out ? 1 : 0, r.pts || 0, r.grid || 0, r.code || ''];
     const ids = new Set(); G0.results.forEach(r => r.rows.forEach(x => ids.add(x.id)));
     standingsDrivers(G0).forEach(d => ids.add(d.id));
-    const A0 = { year: G0.year, n: G0.cal.length, cal: G0.cal.map((id, i) => { const t = roundTrack(G0, i); return [t.short, t.cc]; }),
+    const A0 = { year: G0.year, acad: dkAcad(G0), n: G0.cal.length, cal: G0.cal.map((id, i) => { const t = roundTrack(G0, i); return [t.short, t.cc]; }),
       res: G0.results.map(r => ({ r: r.rows.map(pack), s: r.sprint ? r.sprint.map(pack) : null, f: r.fastest ? r.fastest.code : null })),
       d: Object.fromEntries([...ids].filter(id => G0.drivers[id]).map(id => { const d = G0.drivers[id]; return [id, [d.name, d.nat, d.code, d.team, d.pts]]; })),
       t: Object.fromEntries(Object.values(G0.teams).map(t => [t.id, [t.name, t.color, ...eng(t), t.pts]])) };
@@ -40,8 +40,9 @@ function dkLoadSeason(y) { try { return JSON.parse(localStorage.getItem('pitwall
 // ---------- custom regulations (alternative history) ----------
 const DK_PTS = { era: null, p50: [8, 6, 4, 3, 2], p60: [8, 6, 4, 3, 2, 1], p61: [9, 6, 4, 3, 2, 1], p91: [10, 6, 4, 3, 2, 1], p03: [10, 8, 6, 5, 4, 3, 2, 1], p10: [25, 18, 15, 12, 10, 8, 6, 4, 2, 1], top15: [25, 20, 16, 13, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1] };
 const DK_PTS_NAMES = { era: 'Real rules of each season', p50: '1950–59 · 8-6-4-3-2', p60: '1960 · 8-6-4-3-2-1', p61: '1961–90 · 9-6-4-3-2-1', p91: '1991–2002 · 10-6-4-3-2-1', p03: '2003–09 · 10-8-6-5-4-3-2-1', p10: '2010–today · 25-18-15-12-10-8-6-4-2-1', top15: 'Points to 15th · 25-20-16-13-11…1', custom: 'Custom…' };
-const DK_REG0 = { pts: 'era', custom: '25,18,15,12,10,8,6,4,2,1', pole: 0, fl: 'era', quali: 'era', drop: 'era' };
-function dkRegsActive(r) { return r && (r.pts !== 'era' || r.pole || r.fl !== 'era' || r.quali !== 'era' || r.drop !== 'era'); }
+const DK_REG0 = { format: 'f1', pts: 'era', custom: '25,18,15,12,10,8,6,4,2,1', pole: 0, fl: 'era', quali: 'era', drop: 'era' };
+const dkAcad = (G0 = G) => !!(G0 && G0.regs && G0.regs.format === 'academy');
+function dkRegsActive(r) { return r && (r.format === 'academy' || r.pts !== 'era' || r.pole || r.fl !== 'era' || r.quali !== 'era' || r.drop !== 'era'); }
 function dkApplyRegs(G0) {
   if (!G0 || !G0.regs || !dkRegsActive(G0.regs)) return;
   const r = G0.regs;
@@ -52,6 +53,9 @@ function dkApplyRegs(G0) {
   if (r.quali !== 'era') base.quali = r.quali;
   if (r.drop === 'all') base.bestN = 0;
   base.polePts = +r.pole || 0;
+  if (r.format === 'academy') { // F1 Academy: one qualifying, Reverse Grid Race (top 8 reversed), Feature Race
+    Object.assign(base, { points: [25, 18, 15, 12, 10, 8, 6, 4, 2, 1], sprintPts: [10, 8, 6, 5, 4, 3, 2, 1], fl: 'top10', polePts: 2, quali: 'single', bestN: 0, academy: true });
+  }
   G0.rules = base;
 }
 const _dk3_applyRaceResult = applyRaceResult;
@@ -69,7 +73,12 @@ const _dk3_startWeekend = startWeekend;
 startWeekend = function () { dkApplyRegs(G); return _dk3_startWeekend.apply(this, arguments); };
 function dkRegsForm(r, act) {
   const sel = (k, opts) => `<select data-dkc="${act}" data-k="${k}" style="width:100%">${opts.map(([v, l]) => `<option value="${v}" ${String(r[k]) === String(v) ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>`;
-  return `<div class="grid g2" style="gap:10px">
+  const fmt = `<label class="small" style="grid-column:1/-1">Weekend format${sel('format', [['f1', 'Formula 1 weekend'], ['academy', 'F1 Academy weekend — qualifying, Reverse Grid Race, Feature Race']])}</label>`;
+  if (r.format === 'academy') return `<div class="grid g2" style="gap:10px">${fmt}<div class="small" style="grid-column:1/-1;line-height:1.5">
+    <b>Every round:</b> up to two practice sessions · one 30-minute qualifying · two short races (about 100 km each).<br>
+    <b>Reverse Grid Race:</b> the top 8 from qualifying start in reverse order · points 10-8-6-5-4-3-2-1 · +1 for fastest lap if in the top 8.<br>
+    <b>Feature Race:</b> grid in qualifying order · points 25-18-15-12-10-8-6-4-2-1 · +2 for pole · +1 for fastest lap if in the top 10.</div></div>`;
+  return `<div class="grid g2" style="gap:10px">${fmt}
   <label class="small">Points system${sel('pts', Object.entries(DK_PTS_NAMES))}</label>
   ${r.pts === 'custom' ? `<label class="small">Points for 1st, 2nd, 3rd… (comma separated)<input data-dkc="${act}" data-k="custom" value="${esc(r.custom)}" style="width:100%"></label>` : '<span></span>'}
   <label class="small">Pole position bonus${sel('pole', [[0, 'No points for pole'], [1, '1 point for pole'], [2, '2 points for pole'], [3, '3 points for pole']])}</label>
@@ -107,7 +116,7 @@ function deskCalendar() {
   const n = G.cal.length; if (DK3.sel == null || DK3.sel >= n) DK3.sel = Math.min(G.round, n - 1);
   const k = DK3.sel, t = roundTrack(G, k), res = G.results[k], rec = (G.trackRec && G.trackRec[t.id]) || [];
   const list = G.cal.map((id, i) => { const tt = roundTrack(G, i), r = G.results[i];
-    return `<div class="dkcl ${i === k ? 'on' : ''} ${i < G.round ? 'done' : ''} ${i === G.round ? 'next' : ''}" data-a="dkcalsel" data-v="${i}"><span class="rn">R${String(i + 1).padStart(2, '0')}</span>${dkFlag(tt.cc)}<span class="nm">${esc(tt.short.toUpperCase())}</span>${isSprintRound(G, i) ? '<span class="spr">⚡</span>' : ''}${r ? `<span class="wn">${esc(r.rows[0].code || '')}</span>` : i === G.round ? '<span class="wn nx">NEXT</span>' : ''}</div>`; }).join('');
+    return `<div class="dkcl ${i === k ? 'on' : ''} ${i < G.round ? 'done' : ''} ${i === G.round ? 'next' : ''}" data-a="dkcalsel" data-v="${i}"><span class="rn">R${String(i + 1).padStart(2, '0')}</span>${dkFlag(tt.cc)}<span class="nm">${esc(tt.short.toUpperCase())}</span>${isSprintRound(G, i) && !dkAcad() ? '<span class="spr">⚡</span>' : ''}${r ? `<span class="wn">${esc(r.rows[0].code || '')}</span>` : i === G.round ? '<span class="wn nx">NEXT</span>' : ''}</div>`; }).join('');
   // records at this circuit (our simulated history)
   const best = rec.filter(x => x.fl).sort((a, b) => a.fl[0] - b.fl[0])[0];
   const lastW = rec.filter(x => x.w).slice(-1)[0], lastP = rec.filter(x => x.p).slice(-1)[0];
@@ -133,7 +142,7 @@ function deskCalendar() {
   return `<div class="dk dk-page dk-cal" id="dk"><div class="dk-pagehead"><div><h1>SCHEDULE</h1><div class="dk-mut">RACE WEEKEND PREVIEW</div></div><span class="sp"></span><span class="dk-yr">${G.year} SEASON</span>${btns}<button data-a="tab" data-v="home">Back</button></div>
   <div class="dkc-wrap"><section class="dkc-list"><div class="dk-h"><b>SEASON CALENDAR</b><span class="sp"></span><span class="dk-mut">${n} rounds</span></div><div class="dk-scroll">${list}</div></section>
   <div class="dkc-main">
-    <section class="dkc-hero"><div class="dkc-maptitle">${dkFlag(t.cc, 'lg')}<b>${esc(t.name)}</b>${isSprintRound(G, k) ? '<span class="pill" style="background:#f5c518;color:#000">⚡ Sprint</span>' : ''}</div><div class="dkc-mapbox"><canvas id="calmap"></canvas></div><div class="dkc-country">${dkFlag(t.cc)} ${esc(t.short.toUpperCase())}<span class="sp"></span>${res ? `<button class="pri" data-a="dkarch" data-v="${k}">View results ›</button>` : k === G.round ? '<span class="dk-mut">Next race</span>' : ''}</div></section>
+    <section class="dkc-hero"><div class="dkc-maptitle">${dkFlag(t.cc, 'lg')}<b>${esc(t.name)}</b>${isSprintRound(G, k) && !dkAcad() ? '<span class="pill" style="background:#f5c518;color:#000">⚡ Sprint</span>' : ''}</div><div class="dkc-mapbox"><canvas id="calmap"></canvas></div><div class="dkc-country">${dkFlag(t.cc)} ${esc(t.short.toUpperCase())}<span class="sp"></span>${res ? `<button class="pri" data-a="dkarch" data-v="${k}">View results ›</button>` : k === G.round ? '<span class="dk-mut">Next race</span>' : ''}</div></section>
     <section class="dkc-info"><h2>${esc(dkGpName(G, k, t).toUpperCase())}</h2><div class="dkc-circ">${dkFlag(t.cc)} ${esc(t.name.toUpperCase())}</div>${info.map(([a, b]) => `<div class="dkc-row"><span>${a}</span><b>${b}</b></div>`).join('')}</section>
     <section class="dkc-mix"><div class="dk-h"><b>TRACK ATTRIBUTE MIX</b></div><div class="dkc-body">${mixRows}</div></section>
     <section class="dkc-deg"><div class="dk-h"><b>TYRE DEGRADATION</b></div><div class="dkc-body"><div class="dkc-lvl ${lvl.toLowerCase()}">${lvl}</div><div class="dk-mut">Wear multiplier <b>${(0.7 + wear * 0.9).toFixed(2)}x</b></div><div class="dkc-bars">${[0, 1, 2, 3, 4].map(i => `<i class="${i < nb ? 'on' : ''}"></i>`).join('')}</div><div>${lvl === 'HIGH' ? 'Tyre management is a key focus' : lvl === 'MEDIUM' ? 'A balance of pace and tyre care' : 'Push hard — tyres last well here'}</div></div></section>
@@ -168,7 +177,7 @@ function dkCalDraw() { if (!document.getElementById('calmap')) return; const t =
 function dkSeasonData(y) {
   if (y == null || y === G.year) {
     const eng = t => { const e = G.engines[t.engine]; const owner = Object.values(G.teams).find(x => x.works && x.engine === t.engine) || t; return [e ? e.name : '', owner.color]; };
-    return { year: G.year, cur: true, n: G.cal.length, cal: G.cal.map((id, i) => { const t = roundTrack(G, i); return [t.short, t.cc]; }), results: G.results,
+    return { year: G.year, cur: true, acad: dkAcad(), n: G.cal.length, cal: G.cal.map((id, i) => { const t = roundTrack(G, i); return [t.short, t.cc]; }), results: G.results,
       drivers: standingsDrivers(G).filter(d => d.team || d.pts > 0 || G.results.some(r => r.rows.some(x => x.id === d.id))).map(d => ({ id: d.id, name: d.name, nat: d.nat, team: d.team, pts: d.pts })),
       teams: standingsTeams(G).map(t => ({ id: t.id, name: t.name, color: t.color, eng: eng(t)[0], engCol: eng(t)[1], pts: t.pts })) };
   }
@@ -180,7 +189,7 @@ function dkSeasonData(y) {
   drivers.sort((a, b) => b.pts - a.pts || cbCompare(a.cb, b.cb) || a.name.localeCompare(b.name));
   const teams = Object.entries(A0.t).map(([id, t]) => ({ id, name: t[0], color: t[1], eng: t[2], engCol: t[3], pts: t[4], cb: cb(x => x.team === id) }));
   teams.sort((a, b) => b.pts - a.pts || cbCompare(a.cb, b.cb) || a.name.localeCompare(b.name));
-  return { year: y, cur: false, n: A0.n, cal: A0.cal, results, drivers, teams };
+  return { year: y, cur: false, acad: !!A0.acad, n: A0.n, cal: A0.cal, results, drivers, teams };
 }
 deskStandings = function () {
   const years = (G.histYears || []).filter(y => y !== G.year).sort((a, b) => b - a);
@@ -189,18 +198,24 @@ deskStandings = function () {
   const tmOf = id => S.teams.find(t => t.id === id);
   const tcell = (id, extra = '') => { const t = tmOf(id); return t ? `<td class="l tcell ${extra}" style="--tc:${t.color};--ti:${dkInk(t.color)}">${esc(t.name)}</td>` : `<td class="l ${extra}">—</td>`; };
   const mode = DK2.st, done = S.results.length;
-  const flags = S.cal.map((c, i) => `<th class="fl ${i < done ? '' : 'todo'}" title="R${i + 1} ${esc(c[0])}">${dkFlag(c[1])}</th>`).join('');
+  const AC = !!S.acad;
+  const flags = S.cal.map((c, i) => AC ? `<th class="fl ac1 ${i < done ? '' : 'todo'}" title="R${i + 1} ${esc(c[0])} · Reverse Grid Race">${dkFlag(c[1])}<small>RG</small></th><th class="fl ac2 ${i < done ? '' : 'todo'}" title="R${i + 1} ${esc(c[0])} · Feature Race">${dkFlag(c[1])}<small>FR</small></th>` : `<th class="fl ${i < done ? '' : 'todo'}" title="R${i + 1} ${esc(c[0])}">${dkFlag(c[1])}</th>`).join('');
+  const nosp = res => Object.assign({}, res, { sprint: null }), rgRes = res => ({ fastest: null, sprint: null });
   const isMe = (team, id) => S.cur && (G.player ? team === G.player : id === G.follow);
   let body;
   if (DK2.panel === 'graph') body = S.cur ? dkPointsGraph(mode) : dkPointsGraphS(S, mode);
   else if (DK2.panel === 'hist') body = dkHistory();
   else if (mode === 'd') {
     body = `<div class="dk-h"><b>Driver Championship ${S.year}</b>${S.cur ? '' : '<span class="dk-mut">final standings</span>'}</div><div class="dk-scroll"><table class="dkst ${DK2.modern ? 'modern' : 'classic'}"><thead><tr><th class="stk0">Pos</th><th class="l stk1">Driver</th><th></th><th class="l">Team</th>${flags}<th class="pts">Pts</th></tr></thead><tbody>${S.drivers.map((d, i) => {
-      const cells = S.cal.map((_, k) => { const res = S.results[k]; const r = res && res.rows.find(x => x.id === d.id); return `<td class="rc ${dkResCls(r)}">${r ? dkResTxt(r, res) : ''}</td>`; }).join('');
+      const cells = S.cal.map((_, k) => { const res = S.results[k]; const r = res && res.rows.find(x => x.id === d.id);
+        if (AC) { const s = res && res.sprint && res.sprint.find(x => x.id === d.id); return `<td class="rc ac1 ${dkResCls(s)}">${s ? dkResTxt(s, rgRes(res)) : ''}</td><td class="rc ac2 ${dkResCls(r)}">${r ? dkResTxt(r, nosp(res)) : ''}</td>`; }
+        return `<td class="rc ${dkResCls(r)}">${r ? dkResTxt(r, res) : ''}</td>`; }).join('');
       const t = tmOf(d.team); return `<tr class="${isMe(d.team, d.id) ? 'me' : ''}"><td class="pos" style="border-left:3px solid ${t ? t.color : '#444'}">${i + 1}</td><td class="l nm">${esc(d.name)}</td><td class="flc">${dkFlag(d.nat)}</td>${d.team ? tcell(d.team) : '<td class="l dim">—</td>'}${cells}<td class="pts">${d.pts}</td></tr>`; }).join('')}</tbody></table></div>`;
   } else {
     body = `<div class="dk-h"><b>Constructor Championship ${S.year}</b>${S.cur ? '' : '<span class="dk-mut">final standings</span>'}</div><div class="dk-scroll"><table class="dkst cons ${DK2.modern ? 'modern' : 'classic'}"><thead><tr><th class="stk0">Pos</th><th class="l stk1">Team</th><th class="l">Engine</th>${flags}<th class="pts">Pts</th></tr></thead><tbody>${S.teams.map((t, i) => {
-      const cells = S.cal.map((_, k) => { const res = S.results[k]; if (!res) return '<td class="rc"></td>'; const rs = res.rows.filter(x => x.team === t.id).sort((a, b) => (a.out ? 99 : a.pos) - (b.out ? 99 : b.pos));
+      const srt = rs => rs.filter(x => x.team === t.id).sort((a, b) => (a.out ? 99 : a.pos) - (b.out ? 99 : b.pos));
+      const cells = S.cal.map((_, k) => { const res = S.results[k]; if (!res) return AC ? '<td class="rc ac1"></td><td class="rc ac2"></td>' : '<td class="rc"></td>'; const rs = srt(res.rows);
+        if (AC) { const ss = srt(res.sprint || []); return `<td class="rc2 ac1">${ss.map(r => `<div class="${dkResCls(r)}">${dkResTxt(r, rgRes(res))}</div>`).join('')}</td><td class="rc2 ac2">${rs.map(r => `<div class="${dkResCls(r)}">${dkResTxt(r, nosp(res))}</div>`).join('')}</td>`; }
         return `<td class="rc2">${rs.map(r => `<div class="${dkResCls(r)}">${dkResTxt(r, res)}</div>`).join('')}</td>`; }).join('');
       return `<tr class="${S.cur && t.id === G.player ? 'me' : ''}"><td class="pos" style="border-left:3px solid ${t.color}">${i + 1}</td>${tcell(t.id, 'stk1')}<td class="l tcell" style="--tc:${t.engCol};--ti:${dkInk(t.engCol)}">${esc(t.eng)}</td>${cells}<td class="pts">${t.pts}</td></tr>`; }).join('')}</tbody></table></div>`;
   }
@@ -211,7 +226,7 @@ deskStandings = function () {
     <button data-a="dkst2" data-v="legend">${DK2.legend ? 'Hide' : 'Show'} legend</button><button data-a="dkst2" data-v="color">${DK2.modern ? 'Modern' : 'Classic'} coloring</button><button data-a="dkst2" data-v="markers">Markers: ${DK_MARKERS[DK2.markers]}</button>
     <span class="sp"></span>${seasonSel}<button class="${DK2.panel === 'graph' ? 'on' : ''}" data-a="dkst2" data-v="graph">Points Graph</button><button class="${DK2.panel === 'hist' ? 'on' : ''}" data-a="dkst2" data-v="hist">Champions</button></div>
   <section class="dk-stbox">${body}</section>
-  ${DK2.legend && DK2.panel === 'grid' ? `<div class="dk-legend ${DK2.modern ? 'modern' : 'classic'}">${legend.map(([c, l]) => `<span class="${c}">${l}</span>`).join('')}${DK2.markers === 1 ? '<span class="dk-mut"><b>Bold</b> = pole · <i>Italic</i> = fastest lap</span>' : DK2.markers === 2 ? '<span class="dk-mut">Superscript = sprint finish</span>' : ''}${(G.histYears || []).length ? '' : '<span class="dk-mut">Past seasons appear in the season menu once they have been played with this version.</span>'}</div>` : ''}</div>`;
+  ${DK2.legend && DK2.panel === 'grid' ? `<div class="dk-legend ${DK2.modern ? 'modern' : 'classic'}">${legend.map(([c, l]) => `<span class="${c}">${l}</span>`).join('')}${DK2.markers === 1 ? '<span class="dk-mut"><b>Bold</b> = pole · <i>Italic</i> = fastest lap</span>' : DK2.markers === 2 && !AC ? '<span class="dk-mut">Superscript = sprint finish</span>' : ''}${AC ? '<span class="dk-mut">RG = Reverse Grid Race · FR = Feature Race</span>' : ''}${(G.histYears || []).length ? '' : '<span class="dk-mut">Past seasons appear in the season menu once they have been played with this version.</span>'}</div>` : ''}</div>`;
 };
 function dkPointsGraphS(S, mode) {
   const N = S.results.length; if (!N) return '<div class="dk-empty">No races in this season.</div>';
@@ -241,3 +256,67 @@ Object.assign(A, {
   dkreg2(el) { if (el.tagName !== 'SELECT' && el.tagName !== 'INPUT') return; G.regs = G.regs || Object.assign({}, DK_REG0); G.regs[el.dataset.k] = el.value; if (dkRegsActive(G.regs)) dkApplyRegs(G); else G.rules = G.timeline ? rulesFor(G.year) : null; autosave(); if (el.tagName === 'SELECT') render(); toast('Regulations updated'); },
 });
 const _dk3_loadSeason = loadSeason; loadSeason = function (G0) { const r = _dk3_loadSeason.apply(this, arguments); dkApplyRegs(G0); return r; };
+
+// ---------- F1 Academy weekend plumbing ----------
+const _dk3_isSprintRound = isSprintRound; isSprintRound = function (G0, i) { return dkAcad(G0) ? true : _dk3_isSprintRound.apply(this, arguments); };
+const _dk3_startWeekend2 = startWeekend;
+startWeekend = function () { const r = _dk3_startWeekend2.apply(this, arguments); if (dkAcad() && WK) { WK.sessions = 2; WK.academy = true; } return r; };
+const _dk3_qualiInfo = qualiInfo;
+qualiInfo = function (key) { const I = _dk3_qualiInfo.apply(this, arguments); if (dkAcad() && key === 'SQ') Object.assign(I, { single: true, dur: 1800, label: 'Qualifying', cut: 0, runs: 3 }); return I; };
+const _dk3_applyQualiStage = applyQualiStage;
+applyQualiStage = function (QS, res) {
+  if (dkAcad() && WK.stage === 'squali') {
+    QS.rounds.push({ stage: QS.stage, res }); QS.top = res; QS.stage = 4;
+    const order = res.map(r => r.e), top = order.slice(0, 8).reverse();
+    WK.sgrid = top.concat(order.slice(8));            // Race 1: top 8 reversed
+    WK.grid = order.slice();                           // Race 2: straight qualifying order
+    WK.Q.rounds = [{ stage: 1, res }]; WK.Q.top = res; WK.Q.stage = 4;
+    return;
+  }
+  return _dk3_applyQualiStage.apply(this, arguments);
+};
+const _dk3_applySprintResult = applySprintResult;
+applySprintResult = function (G0, race) {
+  const rows = _dk3_applySprintResult.apply(this, arguments);
+  if (dkAcad(G0) && race.fastest) { const r = rows.find(x => x.id === race.fastest.c.d.id); if (r && !r.out && r.pos <= 8) { r.pts += 1; r.fl = 1; race.fastest.c.d.pts += 1; if (G0.teams[r.team]) G0.teams[r.team].pts += 1; } }
+  return rows;
+};
+// Race 2 is a short race too
+const _dk3_startrace = A.startrace;
+A.startrace = function () {
+  if (dkAcad() && WK && WK.stage === 'grid') { const t = WK.track, keep = t.laps; t.laps = sprintLaps(t); try { return _dk3_startrace.apply(this, arguments); } finally { t.laps = keep; } }
+  return _dk3_startrace.apply(this, arguments);
+};
+// rename sessions on screen (F1 Academy has no "sprint" or "Grand Prix" — it has a Reverse Grid Race and a Feature Race)
+const DK_ACAD_TXT = [
+  [/\s*\((\d+) races, \d+ sprints?\)/g, ' ($1 races)'], [/(\d+) races, \d+ sprints?/g, '$1 races'], [/calendar & sprints/g, 'calendar'],
+  [/SPRINT QUALI(FYING)?/g, 'QUALIFYING'], [/Sprint Quali(fying)?/g, 'Qualifying'], [/sprint qualifying/g, 'qualifying'],
+  [/SPRINT WEEKEND/g, 'F1 ACADEMY WEEKEND'], [/Sprint weekend/g, 'F1 Academy weekend'], [/sprint weekends?/g, 'F1 Academy weekends'],
+  [/Sprint Grid/g, 'Reverse Grid'], [/SPRINT GRID/g, 'REVERSE GRID'], [/SPRINT CLASSIFICATION/g, 'REVERSE GRID RACE CLASSIFICATION'],
+  [/Race 1\b/g, 'Reverse Grid Race'], [/RACE 1\b/g, 'REVERSE GRID RACE'], [/Race 2\b/g, 'Feature Race'], [/RACE 2\b/g, 'FEATURE RACE'],
+  [/Grand Prix/g, 'Feature Race'], [/GRAND PRIX/g, 'FEATURE RACE'], [/grand prix/g, 'feature race'],
+  [/(?<!Grid |Feature |GRID |FEATURE )Race Results/g, 'Feature Race Results'], [/(?<!GRID |FEATURE )RACE PODIUM/g, 'FEATURE RACE PODIUM'], [/AFTER RACE\b/g, 'AFTER FEATURE RACE'],
+  [/Sprints/g, 'Reverse Grid Races'], [/SPRINTS/g, 'REVERSE GRID RACES'], [/sprints/g, 'reverse grid races'],
+  [/Sprint/g, 'Reverse Grid Race'], [/SPRINT/g, 'REVERSE GRID RACE'], [/sprint/g, 'reverse grid race'],
+];
+let DK_GP_KEEP = null; // real event names ("Australian Grand Prix") stay as they are
+function dkGpKeep() {
+  if (DK_GP_KEEP) return DK_GP_KEEP;
+  const n = new Set([...Object.values(GP_ADJ), ...Object.values(TRACK_BY_ID).map(t => t.short), ...Object.values(TRACK_BY_ID).map(t => t.name)].filter(Boolean));
+  const L = []; n.forEach(x => { L.push(x + ' Grand Prix', (x + ' Grand Prix').toUpperCase()); });
+  return DK_GP_KEEP = L.sort((a, b) => b.length - a.length);
+}
+function dkAcadNow() { if (!G) return !!(VIEW === 'setup' && SETUP && SETUP.regs && SETUP.regs.format === 'academy'); const P = typeof dkCurPast === 'function' ? dkCurPast() : null; return P ? dkAcad(P) : dkAcad(); }
+const _dk3_modal = modal; modal = function () { const r = _dk3_modal.apply(this, arguments); dkAcadText(document.getElementById('modal')); return r; };
+function dkAcadText(root) {
+  if (!root || !dkAcadNow()) return;
+  const tw = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, { acceptNode: n => /^(SCRIPT|STYLE|TEXTAREA)$/.test(n.parentNode && n.parentNode.nodeName) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT }); const nodes = []; while (tw.nextNode()) nodes.push(tw.currentNode);
+  nodes.forEach(n => { let v = n.nodeValue; const o = v; if (!/print|PRINT|Grand Prix|GRAND PRIX|grand prix|Race (Results|1|2)|RACE (PODIUM|1|2)|AFTER RACE/.test(v)) return;
+    const keep = []; if (/grand prix/i.test(v)) dkGpKeep().forEach(k => { if (v.includes(k)) v = v.split(k).join('\u0001' + (keep.push(k) - 1) + '\u0002'); });
+    DK_ACAD_TXT.forEach(([a, b]) => { v = v.replace(a, b); });
+    v = v.replace(/\u0001(\d+)\u0002/g, (m, i) => keep[+i]);
+    if (v !== o) n.nodeValue = v; });
+}
+const _dk3_render2 = render; render = function () { _dk3_render2(); dkAcadText(document.body); };
+const _dk3_updRace = updateRaceUI; updateRaceUI = function () { const r = _dk3_updRace.apply(this, arguments); if (dkAcad()) dkAcadText(document.getElementById('dk') || document.getElementById('app')); return r; };
+const _dk3_updQ = updateQualiUI; updateQualiUI = function () { const r = _dk3_updQ.apply(this, arguments); if (dkAcad()) dkAcadText(document.getElementById('dk') || document.getElementById('app')); return r; };
