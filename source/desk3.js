@@ -29,7 +29,7 @@ function dkArchiveSeason(G0) {
     standingsDrivers(G0).forEach(d => ids.add(d.id));
     const A0 = { year: G0.year, acad: dkAcad(G0), n: G0.cal.length, cal: G0.cal.map((id, i) => { const t = roundTrack(G0, i); return [t.short, t.cc]; }),
       res: G0.results.map(r => ({ r: r.rows.map(pack), s: r.sprint ? r.sprint.map(pack) : null, f: r.fastest ? r.fastest.code : null })),
-      d: Object.fromEntries([...ids].filter(id => G0.drivers[id]).map(id => { const d = G0.drivers[id]; return [id, [d.name, d.nat, d.code, d.team, d.pts]]; })),
+      d: Object.fromEntries([...ids].filter(id => G0.drivers[id]).map(id => { const d = G0.drivers[id]; return [id, [d.name, d.nat, d.code, d.team || d.hteam || null, d.pts]]; })),
       t: Object.fromEntries(Object.values(G0.teams).map(t => [t.id, [t.name, t.color, ...eng(t), t.pts]])) };
     localStorage.setItem('pitwall_hist_' + dkSid(G0) + '_' + G0.year, JSON.stringify(A0));
     G0.histYears = G0.histYears || []; if (!G0.histYears.includes(G0.year)) G0.histYears.push(G0.year);
@@ -40,9 +40,9 @@ function dkLoadSeason(y) { try { return JSON.parse(localStorage.getItem('pitwall
 // ---------- custom regulations (alternative history) ----------
 const DK_PTS = { era: null, p50: [8, 6, 4, 3, 2], p60: [8, 6, 4, 3, 2, 1], p61: [9, 6, 4, 3, 2, 1], p91: [10, 6, 4, 3, 2, 1], p03: [10, 8, 6, 5, 4, 3, 2, 1], p10: [25, 18, 15, 12, 10, 8, 6, 4, 2, 1], top15: [25, 20, 16, 13, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1] };
 const DK_PTS_NAMES = { era: 'Real rules of each season', p50: '1950–59 · 8-6-4-3-2', p60: '1960 · 8-6-4-3-2-1', p61: '1961–90 · 9-6-4-3-2-1', p91: '1991–2002 · 10-6-4-3-2-1', p03: '2003–09 · 10-8-6-5-4-3-2-1', p10: '2010–today · 25-18-15-12-10-8-6-4-2-1', top15: 'Points to 15th · 25-20-16-13-11…1', custom: 'Custom…' };
-const DK_REG0 = { format: 'f1', pts: 'era', custom: '25,18,15,12,10,8,6,4,2,1', pole: 0, fl: 'era', quali: 'era', drop: 'era' };
+const DK_REG0 = { format: 'f1', pts: 'era', custom: '25,18,15,12,10,8,6,4,2,1', pole: 0, fl: 'era', quali: 'era', drop: 'era', race: 'gp' };
 const dkAcad = (G0 = G) => !!(G0 && G0.regs && G0.regs.format === 'academy');
-function dkRegsActive(r) { return r && (r.format === 'academy' || r.pts !== 'era' || r.pole || r.fl !== 'era' || r.quali !== 'era' || r.drop !== 'era'); }
+function dkRegsActive(r) { return r && (r.format === 'academy' || r.pts !== 'era' || r.pole || r.fl !== 'era' || r.quali !== 'era' || r.drop !== 'era' || (r.race && r.race !== 'gp')); }
 function dkApplyRegs(G0) {
   if (!G0 || !G0.regs || !dkRegsActive(G0.regs)) return;
   const r = G0.regs;
@@ -51,6 +51,7 @@ function dkApplyRegs(G0) {
   else if (DK_PTS[r.pts]) base.points = DK_PTS[r.pts];
   if (r.fl !== 'era') base.fl = r.fl === 'off' ? null : r.fl;
   if (r.quali !== 'era') base.quali = r.quali;
+  base.endu = r.race === 'endu';
   if (r.drop === 'all') base.bestN = 0;
   base.polePts = +r.pole || 0;
   if (r.format === 'academy') { // F1 Academy: one qualifying, Reverse Grid Race (top 8 reversed), Feature Race
@@ -83,7 +84,8 @@ function dkRegsForm(r, act) {
   ${r.pts === 'custom' ? `<label class="small">Points for 1st, 2nd, 3rd… (comma separated)<input data-dkc="${act}" data-k="custom" value="${esc(r.custom)}" style="width:100%"></label>` : '<span></span>'}
   <label class="small">Pole position bonus${sel('pole', [[0, 'No points for pole'], [1, '1 point for pole'], [2, '2 points for pole'], [3, '3 points for pole']])}</label>
   <label class="small">Fastest lap bonus${sel('fl', [['era', 'Real rules of each season'], ['off', 'No fastest-lap point'], ['any', '1 point — any finisher'], ['top10', '1 point — only if in the top 10']])}</label>
-  <label class="small">Qualifying format${sel('quali', [['era', 'Real format of each season'], ['single', 'One session — fastest lap takes pole'], ['knockout', 'Knockout — Q1, Q2, Q3']])}</label>
+  <label class="small">Qualifying format${sel('quali', [['era', 'Real format of each season'], ['single', 'One session — fastest lap takes pole'], ['knockout', 'Knockout — Q1, Q2, Q3'], ['elim', '2016 elimination — slowest out every 90 seconds'], ['lapelim', 'Pole-lap elimination — one session, slowest out every pole lap time']])}</label>
+  <label class="small">Grand Prix format${sel('race', [['gp', 'Standard race distance'], ['endu', 'Endurance — 60 s clock, earn time with laps and overtakes']])}</label>
   <label class="small">Dropped scores${sel('drop', [['era', 'Real rules (some old seasons only count best results)'], ['all', 'Every result counts']])}</label></div>`;
 }
 const _dk3_viewSetup = viewSetup;
@@ -178,8 +180,11 @@ function dkSeasonData(y) {
   if (y == null || y === G.year) {
     const eng = t => { const e = G.engines[t.engine]; const owner = Object.values(G.teams).find(x => x.works && x.engine === t.engine) || t; return [e ? e.name : '', owner.color]; };
     return { year: G.year, cur: true, acad: dkAcad(), n: G.cal.length, cal: G.cal.map((id, i) => { const t = roundTrack(G, i); return [t.short, t.cc]; }), results: G.results,
-      drivers: standingsDrivers(G).filter(d => d.team || d.pts > 0 || G.results.some(r => r.rows.some(x => x.id === d.id))).map(d => ({ id: d.id, name: d.name, nat: d.nat, team: d.team, pts: d.pts })),
-      teams: standingsTeams(G).map(t => ({ id: t.id, name: t.name, color: t.color, eng: eng(t)[0], engCol: eng(t)[1], pts: t.pts })) };
+      drivers: (() => { const L = standingsDrivers(G), have = new Set(L.map(d => d.id)), ran = new Set(); G.results.forEach(r => [r.rows, r.sprint || []].forEach(rs => rs.forEach(x => ran.add(x.id))));
+        const all = L.concat([...ran].filter(id => !have.has(id) && G.drivers[id]).map(id => G.drivers[id])); const cb = new Map(all.map(d => [d.id, countback(G, x => x.id === d.id)]));
+        return all.sort((a, b) => b.pts - a.pts || cbCompare(cb.get(a.id), cb.get(b.id)) || a.name.localeCompare(b.name)); })().filter(d => d.team || d.pts > 0 || G.results.some(r => r.rows.some(x => x.id === d.id))).map(d => ({ id: d.id, name: d.name, nat: d.nat, team: d.team || d.hteam || null, pts: d.pts })),
+      teams: standingsTeams(G).map(t => ({ id: t.id, name: t.name, color: t.color, eng: eng(t)[0], engCol: eng(t)[1], pts: t.pts })),
+      allTeams: Object.values(G.teams).map(t => ({ id: t.id, name: t.name, color: t.color, eng: eng(t)[0], engCol: eng(t)[1], pts: t.pts })) };
   }
   const A0 = dkLoadSeason(y); if (!A0) return null;
   const un = r => ({ id: r[0], team: r[1], pos: r[2], out: r[3] ? 'RET' : null, pts: r[4], grid: r[5], code: r[6] });
@@ -189,13 +194,19 @@ function dkSeasonData(y) {
   drivers.sort((a, b) => b.pts - a.pts || cbCompare(a.cb, b.cb) || a.name.localeCompare(b.name));
   const teams = Object.entries(A0.t).map(([id, t]) => ({ id, name: t[0], color: t[1], eng: t[2], engCol: t[3], pts: t[4], cb: cb(x => x.team === id) }));
   teams.sort((a, b) => b.pts - a.pts || cbCompare(a.cb, b.cb) || a.name.localeCompare(b.name));
-  return { year: y, cur: false, acad: !!A0.acad, n: A0.n, cal: A0.cal, results, drivers, teams };
+  // occasional privateer entries stay out of the constructors' table unless they scored
+  const starts = {}; results.forEach(r => new Set(r.rows.map(x => x.team)).forEach(t => starts[t] = (starts[t] || 0) + 1));
+  const shown = teams.filter(t => t.pts > 0 || (starts[t.id] || 0) >= results.length * 0.3);
+  return { year: y, cur: false, acad: !!A0.acad, n: A0.n, cal: A0.cal, results, drivers, teams: shown, allTeams: teams };
 }
 deskStandings = function () {
   const years = (G.histYears || []).filter(y => y !== G.year).sort((a, b) => b - a);
   if (DK3.season != null && DK3.season !== G.year && !years.includes(DK3.season)) DK3.season = null;
   const S = dkSeasonData(DK3.season) || dkSeasonData(null);
-  const tmOf = id => S.teams.find(t => t.id === id);
+  const tmOf = id => (S.allTeams || S.teams).find(t => t.id === id);
+  // stand-ins / one-offs have no contracted team: use the team they raced for most this season
+  const raced = {}; S.results.forEach(r => r && [r.rows, r.sprint || []].forEach(rs => rs.forEach(x => { if (!x.team) return; const m = raced[x.id] = raced[x.id] || {}; m[x.team] = (m[x.team] || 0) + 1; })));
+  const teamOf = d => { if (d.team && tmOf(d.team)) return d.team; const m = raced[d.id]; const best = m ? Object.entries(m).sort((a, b) => b[1] - a[1]).find(([t]) => tmOf(t)) : null; return best ? best[0] : (d.hteam && tmOf(d.hteam) ? d.hteam : null); };
   const tcell = (id, extra = '') => { const t = tmOf(id); return t ? `<td class="l tcell ${extra}" style="--tc:${t.color};--ti:${dkInk(t.color)}">${esc(t.name)}</td>` : `<td class="l ${extra}">—</td>`; };
   const mode = DK2.st, done = S.results.length;
   const AC = !!S.acad;
@@ -210,7 +221,7 @@ deskStandings = function () {
       const cells = S.cal.map((_, k) => { const res = S.results[k]; const r = res && res.rows.find(x => x.id === d.id);
         if (AC) { const s = res && res.sprint && res.sprint.find(x => x.id === d.id); return `<td class="rc ac1 ${dkResCls(s)}">${s ? dkResTxt(s, rgRes(res)) : ''}</td><td class="rc ac2 ${dkResCls(r)}">${r ? dkResTxt(r, nosp(res)) : ''}</td>`; }
         return `<td class="rc ${dkResCls(r)}">${r ? dkResTxt(r, res) : ''}</td>`; }).join('');
-      const t = tmOf(d.team || d.hteam); return `<tr class="${isMe(d.team, d.id) ? 'me' : ''}" data-prof="${d.id}"><td class="pos" style="border-left:3px solid ${t ? t.color : '#444'}">${i + 1}</td><td class="l nm">${esc(d.name)}</td><td class="flc">${dkFlag(d.nat)}</td>${d.team ? tcell(d.team) : '<td class="l dim">—</td>'}${cells}<td class="pts">${d.pts}</td></tr>`; }).join('')}</tbody></table></div>`;
+      const tid = teamOf(d), t = tmOf(tid); return `<tr class="${isMe(d.team, d.id) ? 'me' : ''}" data-prof="${d.id}"><td class="pos" style="border-left:3px solid ${t ? t.color : '#444'}">${i + 1}</td><td class="l nm">${esc(d.name)}</td><td class="flc">${dkFlag(d.nat)}</td>${tid ? tcell(tid) : '<td class="l dim">—</td>'}${cells}<td class="pts">${d.pts}</td></tr>`; }).join('')}</tbody></table></div>`;
   } else {
     body = `<div class="dk-h"><b>Constructor Championship ${S.year}</b>${S.cur ? '' : '<span class="dk-mut">final standings</span>'}</div><div class="dk-scroll"><table class="dkst cons ${DK2.modern ? 'modern' : 'classic'}"><thead><tr><th class="stk0">Pos</th><th class="l stk1">Team</th><th class="l">Engine</th>${flags}<th class="pts">Pts</th></tr></thead><tbody>${S.teams.map((t, i) => {
       const srt = rs => rs.filter(x => x.team === t.id).sort((a, b) => (a.out ? 99 : a.pos) - (b.out ? 99 : b.pos));
@@ -230,7 +241,7 @@ deskStandings = function () {
 };
 function dkPointsGraphS(S, mode) {
   const N = S.results.length; if (!N) return '<div class="dk-empty">No races in this season.</div>';
-  const series = (mode === 'd' ? S.drivers.slice(0, 10).map(d => ({ name: d.name.split(' ').slice(-1)[0], col: (S.teams.find(t => t.id === d.team) || { color: '#888' }).color, f: x => x.id === d.id }))
+  const series = (mode === 'd' ? S.drivers.slice(0, 10).map(d => ({ name: d.name.split(' ').slice(-1)[0], col: ((S.allTeams || S.teams).find(t => t.id === d.team) || { color: '#888' }).color, f: x => x.id === d.id }))
     : S.teams.map(t => ({ name: t.name, col: t.color, f: x => x.team === t.id })));
   series.forEach(s => { let c = 0; s.cum = S.results.map(r => c += r.rows.filter(s.f).reduce((a, x) => a + x.pts, 0) + (r.sprint ? r.sprint.filter(s.f).reduce((a, x) => a + x.pts, 0) : 0)); });
   const max = Math.max(1, ...series.map(s => s.cum[N - 1])), W = 1000, H = 420, L = 50, R = 150, T = 20, B = 40;

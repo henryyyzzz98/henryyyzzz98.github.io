@@ -130,7 +130,7 @@ function dkCollect(kind, src) {
   const key = kind === 'race' ? 'r' + WK.round + (RACE.sprint ? 's' : '') + G.year : 'q' + WK.round + src.label + G.year;
   if (DK.key !== key) { DK.key = key; DK.ev = []; DK.seen = new WeakSet(); DK.prev = null; DK.vmax = {}; }
   for (let i = src.log.length - 1; i >= 0; i--) { const l = src.log[i]; if (DK.seen.has(l)) continue; DK.seen.add(l); if (/^⚔️ \w+ passes \w+/.test(l.s)) continue;
-    DK.ev.unshift({ lab: kind === 'race' ? 'L' + l.lap : fmtClock(src.dur - l.t), cat: dkCat(l.s), s: l.s.replace(/^\p{Extended_Pictographic}️?\s*/u, '') }); }
+    DK.ev.unshift({ lab: kind === 'race' ? 'L' + l.lap : fmtClock(src.elapsed ? l.t : src.dur - l.t), cat: dkCat(l.s), s: l.s.replace(/^\p{Extended_Pictographic}️?\s*/u, '') }); }
   if (kind === 'race' && RACE.started && !RACE.chequered) {
     const ord = RACE.order().filter(c => !c.out), pos = new Map(ord.map((c, i) => [c.d.id, i]));
     if (DK.prev) { let n = 0;

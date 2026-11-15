@@ -13,7 +13,7 @@ function dkSaveFull(G0) {
     const results = G0.results.map(r => { const o = {}; for (const k in r) if (!DK4_DROP.includes(k)) o[k] = r[k]; o.rows = slimRows(r.rows); o.sprint = slimRows(r.sprint); return o; });
     standingsDrivers(G0).forEach(d => { if (d.team || d.pts > 0) usedD.add(d.id); });
     const P = { v: 1, year: G0.year, cal: G0.cal.slice(), calInfo: G0.calInfo || null, results, rules: G0.rules || null, regs: G0.regs || null, timeline: !!G0.timeline,
-      drivers: Object.fromEntries([...usedD].filter(id => G0.drivers[id]).map(id => { const d = G0.drivers[id]; return [id, { id, name: d.name, nat: d.nat, code: d.code, team: d.team, pts: d.pts }]; })),
+      drivers: Object.fromEntries([...usedD].filter(id => G0.drivers[id]).map(id => { const d = G0.drivers[id]; return [id, { id, name: d.name, nat: d.nat, code: d.code, team: d.team || d.hteam || null, pts: d.pts }]; })),
       teams: Object.fromEntries([...usedT].filter(id => G0.teams[id]).map(id => { const t = G0.teams[id]; return [id, { id, name: t.name, color: t.color, engine: t.engine, works: t.works, pts: t.pts }]; })),
       engines: Object.fromEntries(Object.entries(G0.engines || {}).map(([k, e]) => [k, { name: e.name }])) };
     const str = JSON.stringify(P);

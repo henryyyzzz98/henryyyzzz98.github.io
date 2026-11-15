@@ -202,6 +202,7 @@ class Race {
     return r;
   }
   order() {
+    if (this.elim) { const out = this.elim.order.slice().reverse(); return this.cars.filter(c => !c.elim).sort((a, b) => (a.best ?? 1e9) - (b.best ?? 1e9) || (a.out ? 1 : 0) - (b.out ? 1 : 0)).concat(out); }
     return this.cars.slice().sort((a, b) => {
       if (!!a.out !== !!b.out) return a.out ? 1 : -1;
       if (a.out && b.out) return b.dist - a.dist;
@@ -311,12 +312,12 @@ class Race {
     // weather drift
     if (this.weatherOn) { const rate = 0.0022 * dt; if (this.wet < this.wetTarget) this.wet = Math.min(this.wetTarget, this.wet + rate * 1.6); else this.wet = Math.max(this.wetTarget, this.wet - rate * 0.6); }
     if (this.vsc) { this.vsc -= dt; if (this.vsc <= 0) { this.vsc = 0; this.flag = 'green'; this.msg('🟩 VSC ending — green flag', true); } }
-    const ord = this.order().filter(c => !c.out && !c.finished);
+    const ord = (this.physOrder ? this.physOrder() : this.order()).filter(c => !c.out && !c.finished);
     const base = this.track.base;
     let ahead = null;
     for (const c of ord) {
       if (c.pitT > 0) { c.pitT -= dt; continue; }
-      let v = this.L / c.curLT;
+      let v = this.L / c.curLT; const sm = xh('speedMul', this, c, dt); if (sm != null) v *= sm;
       if (c.spin > 0) { c.spin -= dt; v *= 0.25; }
       if (this.vsc) v = Math.min(v, this.L / (base * 1.4));
       if (this.sc) {
@@ -595,7 +596,9 @@ class QualiLive {
     this.base = base;
     const OL = base * 1.4, IL = base * 1.45;
     const nRuns = opts.runs || 2;
-    const windows = nRuns === 3 ? [[0.03, 0.22], [0.36, 0.55], [0.7, 0.84]] : [[0.04, 0.3], [0.66, 0.84]];
+    const windows = opts.windows || (nRuns === 3 ? [[0.03, 0.22], [0.36, 0.55], [0.7, 0.84]] : [[0.04, 0.3], [0.66, 0.84]]);
+    // 2016 elimination format: after a set time the slowest car is knocked out every 90 seconds
+    if (opts.elim) { const k = opts.elim; this.elim = { left: k, gap: 90, next: Math.max(120, this.dur - (k - 1) * 90), order: [] }; }
     this.cars = list.map(e => {
       const risk = (opts.risks && opts.risks[e.d.id]) || (G.player === e.t.id ? 'normal' : pick(['normal', 'normal', 'safe', 'all']));
       const runs = [];
@@ -610,6 +613,7 @@ class QualiLive {
       return { e, d: e.d, t: e.t, runs, phase: 'garage', frac: 0, best: null, last: null, out: false, pbT: -999, laps: 0, risk, fav: G.follow === e.d.id, player: !!G.player && e.t.id === G.player };
     });
     this.msg(`🟢 ${this.label} is under way — ${Math.round(this.dur / 60)} minutes on the clock`);
+    if (this.elim) this.msg(`⏱ Eliminations start at ${fmtClock(this.dur - this.elim.next)} to go — slowest driver out every 90 seconds`);
   }
   msg(s, imp) { this.log.unshift({ t: this.t, s }); if (this.log.length > 60) this.log.pop(); if (imp) this.events.push(s); }
   clock() { return Math.max(0, this.dur - this.t); }
@@ -634,9 +638,19 @@ class QualiLive {
         r.done = true;
       }
     }
+    if (this.elim) {
+      while (this.elim.left > 0 && this.t >= this.elim.next) {
+        const pool = this.order().filter(c => !c.elim); const c = pool[pool.length - 1]; if (!c) break;
+        const onLap = !c.out && c.phase === 'flying';
+        c.elim = true; c.out = true; c.phase = 'garage'; this.elim.order.push(c); this.elim.left--; this.elim.next += this.elim.gap;
+        this.msg(`⛔ ${c.d.name} is eliminated — P${pool.length}${onLap ? ' (lap in progress doesn\'t count)' : c.best == null ? ' without a time' : ''}`, c.fav || c.player || this.elim.left === 0);
+      }
+      if (this.elim.left === 0) { this.chequered = true; this.finish(); return; }
+    }
     if (this.chequered && !anyOnTrack) this.finish();
     if (this.t > this.dur * 1.6) this.finish();
   }
+  nextElim() { return this.elim && this.elim.left > 0 ? Math.max(0, this.elim.next - this.t) : null; }
   lapDone(c, lt) {
     c.last = lt; c.laps++;
     const pb = !c.best || lt < c.best;
@@ -652,10 +666,11 @@ class QualiLive {
     // everyone on a flying lap has it aborted
     this.cars.forEach(o => { if (o === c || o.out) return; o.runs.forEach(rr => { const t1 = rr.start + rr.OL; if (!rr.done && !rr.aborted && this.t >= t1 && this.t < t1 + rr.fly) { rr.aborted = true; rr.abortT = this.t; } }); });
     // session restarts after a pause: push back all future runs a little
-    const pause = 90; this.dur += pause * 0.5;
+    const pause = 90; this.dur += pause * 0.5; if (this.elim) this.elim.next += pause * 0.5;
     this.cars.forEach(o => o.runs.forEach(rr => { if (this.t < rr.start) rr.start += pause * 0.5; }));
   }
   order() {
+    if (this.elim) { const out = this.elim.order.slice().reverse(); return this.cars.filter(c => !c.elim).sort((a, b) => (a.best ?? 1e9) - (b.best ?? 1e9) || (a.out ? 1 : 0) - (b.out ? 1 : 0)).concat(out); }
     return this.cars.slice().sort((a, b) => {
       if (a.best != null && b.best != null) return a.best - b.best;
       if (a.best != null) return -1; if (b.best != null) return 1;

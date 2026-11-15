@@ -504,7 +504,7 @@ function updateQualiUI() {
   const st = c => c.out ? '<span class="bad">OUT</span>' : c.phase === 'flying' ? '<span class="qfly">FLYING LAP</span>' : c.phase === 'out' ? 'OUT LAP' : c.phase === 'in' ? 'IN LAP' : 'PIT';
   renderQualiTower(Q, ord, cutAt, lead);
   const feed = document.getElementById('feed');
-  if (feed) feed.innerHTML = Q.log.slice(0, 25).map(l => `<div><span class="mut">${fmtClock(Q.dur - l.t)}</span> ${esc(l.s)}</div>`).join('');
+  if (feed) feed.innerHTML = Q.log.slice(0, 25).map(l => `<div><span class="mut">${fmtClock(Q.elapsed ? l.t : Q.dur - l.t)}</span> ${esc(l.s)}</div>`).join('');
 }
 function drawTrackBase(ctx, w, h, track, opts = {}) {
   const g = trackGeometry(track); const pad = 30; const s = Math.min(w, h) - pad * 2; const ox = (w - s) / 2, oy = (h - s) / 2 + 8;
