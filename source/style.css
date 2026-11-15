@@ -677,3 +677,62 @@ img.dkfl.emj{height:.95em;width:auto;vertical-align:-.1em;margin:0 .1em}
 .dkst th.fl.ac1 .dkfl,.dkst th.fl.ac2 .dkfl{height:1.1em}
 .dk4-note{padding:.2em 1em .5em;font-size:.85em}
 .dk-cal .dk-pagehead .dk-season{margin-right:.4em}
+/* ---------- broadcast starting grid ---------- */
+.dk-sgr .dk-resgrid{grid-template-columns:minmax(0,1fr) 30vw}
+.dkg-body{padding:.6em .8em;display:flex;flex-direction:column;gap:.35em}
+.dkg-fc{font-weight:700;margin-bottom:.2em}
+.dkg-row{display:flex;justify-content:space-between;gap:1em;padding:.25em 0;border-bottom:1px solid #141e33;font-size:.95em}
+.dkg-row span{color:#8fb4ff;letter-spacing:.06em;font-size:.9em}
+.dkg-note{margin-top:.3em;line-height:1.4}
+.dkg-car{border-left:3px solid var(--tc);padding:.2em 0 .5em .7em;display:flex;flex-direction:column;gap:.35em}
+.dkg-car+.dkg-car{border-top:1px solid #141e33;padding-top:.6em}
+.dkg-seg{display:flex;align-items:center;gap:.35em;flex-wrap:wrap}
+.dk .dkg-seg button.on{background:#1d4ed8;border-color:#60a5fa;color:#fff}
+.dkg-chk{display:flex;align-items:center;gap:.5em;font-size:.9em;color:#cdd6e6}
+.dkg-pu{display:flex;align-items:center;justify-content:space-between;gap:.6em;padding:.25em 0}
+.dkg-tag{background:#0f5f2a;color:#d1fae5;border-radius:3px;padding:.1em .5em;font-size:.85em}
+.dkg-pred .grid{display:grid;grid-template-columns:1fr 1fr;gap:.6em}
+.dkg-pred label{font-size:.9em;color:#cdd6e6}
+.dkg-pred select{width:100%;background:#0d1424;color:#e6ebf5;border:1px solid #1f2d4a;border-radius:4px;padding:.3em;font-family:inherit;font-size:inherit;margin-top:.15em}
+.dkg-pred .small{font-size:.85em}.dkg-pred .mut{color:#7f8aa3}
+.dkg-sched{display:flex;gap:.4em}
+.dkg-sched span{border:1px solid #1f2d4a;border-radius:4px;padding:.3em .8em;display:flex;flex-direction:column;font-weight:700;font-size:.9em;color:#7f8aa3}
+.dkg-sched span small{font-size:.75em;letter-spacing:.12em;color:#5b6b8a}
+.dkg-sched span.done{color:#86efac;border-color:#1e4d33}
+.dkg-sched span.now{color:#fff;border-color:#dfe7f5;background:#10203d}
+.dk .dimc{opacity:.7}
+/* ---------- broadcast main menu ---------- */
+.dk-title{overflow:auto;background:radial-gradient(circle at 50% 0%,#0b1a3a 0%,#03050a 60%)}
+.dkt-wrap{width:min(1100px,94vw);margin:auto;display:flex;flex-direction:column;gap:1.1em;padding:2em 0}
+.dkt-head{display:flex;flex-direction:column;align-items:center;gap:.2em;margin-bottom:.6em}
+.dkt-head .logo{font-family:"Titillium Web",system-ui,sans-serif;font-weight:900;font-style:italic;font-size:clamp(44px,5vw,76px);letter-spacing:-1px}
+.dkt-head .dk-mut{letter-spacing:.4em;font-size:1em}
+.dkt-cbody{display:flex;align-items:center;gap:1.4em;padding:.9em 1.1em}
+.dkt-yr{font-size:2.2em;font-weight:800;line-height:1}
+.dk .dkt-cbody button.pri{padding:.8em 2.4em;font-size:1.1em}
+.dkt-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.8em;padding:.9em}
+.dkt-tiles.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.dk button.dkt-tile{display:flex;flex-direction:column;align-items:flex-start;gap:.5em;text-align:left;padding:1.1em 1.1em 1.2em;border:1px solid #1f2d4a;border-left:4px solid #3b82f6;border-radius:6px;background:#0b1222;white-space:normal}
+.dk button.dkt-tile:hover{background:#10203d;border-color:#3b82f6}
+.dk button.dkt-tile b{font-size:1.25em;letter-spacing:.02em}
+.dk button.dkt-tile span{color:#93a3bf;font-weight:400;line-height:1.45}
+.dk button.dkt-tile.red{border-left-color:#e10600}.dk button.dkt-tile.red:hover{border-color:#e10600}
+.dk button.dkt-tile.gold{border-left-color:#d4a843}.dk button.dkt-tile.gold:hover{border-color:#d4a843}
+.dkt-row2{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:1.1em}
+.dkt-row2>section:only-child{grid-column:1/-1}
+.dkt-hof{padding:.5em .9em}
+.dkt-hof div{display:flex;gap:.8em;padding:.3em 0;border-bottom:1px solid #141e33}
+.dkt-hof span{flex:1}.dkt-hof em{font-style:normal;color:#93a3bf}
+.dkt-foot{text-align:center;line-height:1.5}
+@media (max-width:899px){
+  .dkg-sched{display:none}
+  .dk-sgr .dk-resgrid{display:flex;flex-direction:column}
+  .dkt-tiles,.dkt-tiles.two,.dkt-row2{grid-template-columns:1fr}
+  .dkt-wrap{padding:1em 0}
+  .dkt-cbody{flex-wrap:wrap}
+  .dk .dkt-cbody button.pri{width:100%}
+  .dkg-pred .grid{grid-template-columns:1fr}
+}
+/* player rows keep their team colour (the generic dark "me" highlight is for plain tables only) */
+body.dt .dk .dkfp tr.me td{background:var(--tc);color:var(--ti)}
+body.dt .dk .dkst tr.me td.tcell{background:var(--tc);color:var(--ti)}
