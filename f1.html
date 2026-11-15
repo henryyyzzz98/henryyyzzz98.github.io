@@ -771,6 +771,18 @@ body.dt .dk .dkst tr.me td.tcell{background:var(--tc);color:var(--ti)}
 .dk-sgr .dk-fpbox{overflow-x:auto}
 .dkx-strip{display:flex;gap:1em;align-items:center;flex-wrap:wrap;padding:.1em .6em .3em;color:#93a3bf;font-size:.9em}
 .dkx-strip .sp{flex:1}.dkx-rw{color:#8fb4ff;letter-spacing:.08em;font-size:.9em}.dkx-strip span b+*{color:#e6ebf5}
+.q16{color:#fca5a5;font-weight:700}
+/* live header never wraps: long session info is cut with an ellipsis instead of pushing the layout */
+.dk-topbar .dk-sess{min-width:0;flex:0 1 auto}
+.dk-topbar .dk-sess>div{min-width:0}
+.dk-topbar .dk-sess small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:26vw}
+.dk-topbar button{white-space:nowrap}
+.dk-topbar b,.dk-topbar small{white-space:nowrap}
+/* endurance race */
+.endu-d{font-variant-numeric:tabular-nums}.endu-d.off{color:#fff;background:#dc2626;border-radius:3px;padding:0 .3em}
+.endu-c{position:relative;display:inline-block;width:5.2em;height:1.25em;background:#0008;border-radius:3px;overflow:hidden;vertical-align:middle}
+.endu-c i{position:absolute;left:0;top:0;bottom:0}.endu-c b{position:relative;display:block;text-align:center;font-size:.85em;line-height:1.45;color:#fff;text-shadow:0 0 3px #000}
+.endu-st.off{color:#fca5a5}.endu-st.coast{color:#fcd34d}.endu-st.stop{opacity:.7}
 </style></head><body><div id="app"></div><script>
 // ===== DATA: teams, drivers, tracks =====
 const ENGINES = {
@@ -1254,6 +1266,7 @@ class Race {
     return r;
   }
   order() {
+    if (this.elim) { const out = this.elim.order.slice().reverse(); return this.cars.filter(c => !c.elim).sort((a, b) => (a.best ?? 1e9) - (b.best ?? 1e9) || (a.out ? 1 : 0) - (b.out ? 1 : 0)).concat(out); }
     return this.cars.slice().sort((a, b) => {
       if (!!a.out !== !!b.out) return a.out ? 1 : -1;
       if (a.out && b.out) return b.dist - a.dist;
@@ -1363,12 +1376,12 @@ class Race {
     // weather drift
     if (this.weatherOn) { const rate = 0.0022 * dt; if (this.wet < this.wetTarget) this.wet = Math.min(this.wetTarget, this.wet + rate * 1.6); else this.wet = Math.max(this.wetTarget, this.wet - rate * 0.6); }
     if (this.vsc) { this.vsc -= dt; if (this.vsc <= 0) { this.vsc = 0; this.flag = 'green'; this.msg('🟩 VSC ending — green flag', true); } }
-    const ord = this.order().filter(c => !c.out && !c.finished);
+    const ord = (this.physOrder ? this.physOrder() : this.order()).filter(c => !c.out && !c.finished);
     const base = this.track.base;
     let ahead = null;
     for (const c of ord) {
       if (c.pitT > 0) { c.pitT -= dt; continue; }
-      let v = this.L / c.curLT;
+      let v = this.L / c.curLT; const sm = xh('speedMul', this, c, dt); if (sm != null) v *= sm;
       if (c.spin > 0) { c.spin -= dt; v *= 0.25; }
       if (this.vsc) v = Math.min(v, this.L / (base * 1.4));
       if (this.sc) {
@@ -1647,7 +1660,9 @@ class QualiLive {
     this.base = base;
     const OL = base * 1.4, IL = base * 1.45;
     const nRuns = opts.runs || 2;
-    const windows = nRuns === 3 ? [[0.03, 0.22], [0.36, 0.55], [0.7, 0.84]] : [[0.04, 0.3], [0.66, 0.84]];
+    const windows = opts.windows || (nRuns === 3 ? [[0.03, 0.22], [0.36, 0.55], [0.7, 0.84]] : [[0.04, 0.3], [0.66, 0.84]]);
+    // 2016 elimination format: after a set time the slowest car is knocked out every 90 seconds
+    if (opts.elim) { const k = opts.elim; this.elim = { left: k, gap: 90, next: Math.max(120, this.dur - (k - 1) * 90), order: [] }; }
     this.cars = list.map(e => {
       const risk = (opts.risks && opts.risks[e.d.id]) || (G.player === e.t.id ? 'normal' : pick(['normal', 'normal', 'safe', 'all']));
       const runs = [];
@@ -1662,6 +1677,7 @@ class QualiLive {
       return { e, d: e.d, t: e.t, runs, phase: 'garage', frac: 0, best: null, last: null, out: false, pbT: -999, laps: 0, risk, fav: G.follow === e.d.id, player: !!G.player && e.t.id === G.player };
     });
     this.msg(`🟢 ${this.label} is under way — ${Math.round(this.dur / 60)} minutes on the clock`);
+    if (this.elim) this.msg(`⏱ Eliminations start at ${fmtClock(this.dur - this.elim.next)} to go — slowest driver out every 90 seconds`);
   }
   msg(s, imp) { this.log.unshift({ t: this.t, s }); if (this.log.length > 60) this.log.pop(); if (imp) this.events.push(s); }
   clock() { return Math.max(0, this.dur - this.t); }
@@ -1686,9 +1702,19 @@ class QualiLive {
         r.done = true;
       }
     }
+    if (this.elim) {
+      while (this.elim.left > 0 && this.t >= this.elim.next) {
+        const pool = this.order().filter(c => !c.elim); const c = pool[pool.length - 1]; if (!c) break;
+        const onLap = !c.out && c.phase === 'flying';
+        c.elim = true; c.out = true; c.phase = 'garage'; this.elim.order.push(c); this.elim.left--; this.elim.next += this.elim.gap;
+        this.msg(`⛔ ${c.d.name} is eliminated — P${pool.length}${onLap ? ' (lap in progress doesn\'t count)' : c.best == null ? ' without a time' : ''}`, c.fav || c.player || this.elim.left === 0);
+      }
+      if (this.elim.left === 0) { this.chequered = true; this.finish(); return; }
+    }
     if (this.chequered && !anyOnTrack) this.finish();
     if (this.t > this.dur * 1.6) this.finish();
   }
+  nextElim() { return this.elim && this.elim.left > 0 ? Math.max(0, this.elim.next - this.t) : null; }
   lapDone(c, lt) {
     c.last = lt; c.laps++;
     const pb = !c.best || lt < c.best;
@@ -1704,10 +1730,11 @@ class QualiLive {
     // everyone on a flying lap has it aborted
     this.cars.forEach(o => { if (o === c || o.out) return; o.runs.forEach(rr => { const t1 = rr.start + rr.OL; if (!rr.done && !rr.aborted && this.t >= t1 && this.t < t1 + rr.fly) { rr.aborted = true; rr.abortT = this.t; } }); });
     // session restarts after a pause: push back all future runs a little
-    const pause = 90; this.dur += pause * 0.5;
+    const pause = 90; this.dur += pause * 0.5; if (this.elim) this.elim.next += pause * 0.5;
     this.cars.forEach(o => o.runs.forEach(rr => { if (this.t < rr.start) rr.start += pause * 0.5; }));
   }
   order() {
+    if (this.elim) { const out = this.elim.order.slice().reverse(); return this.cars.filter(c => !c.elim).sort((a, b) => (a.best ?? 1e9) - (b.best ?? 1e9) || (a.out ? 1 : 0) - (b.out ? 1 : 0)).concat(out); }
     return this.cars.slice().sort((a, b) => {
       if (a.best != null && b.best != null) return a.best - b.best;
       if (a.best != null) return -1; if (b.best != null) return 1;
@@ -2857,7 +2884,7 @@ function updateQualiUI() {
   const st = c => c.out ? '<span class="bad">OUT</span>' : c.phase === 'flying' ? '<span class="qfly">FLYING LAP</span>' : c.phase === 'out' ? 'OUT LAP' : c.phase === 'in' ? 'IN LAP' : 'PIT';
   renderQualiTower(Q, ord, cutAt, lead);
   const feed = document.getElementById('feed');
-  if (feed) feed.innerHTML = Q.log.slice(0, 25).map(l => `<div><span class="mut">${fmtClock(Q.dur - l.t)}</span> ${esc(l.s)}</div>`).join('');
+  if (feed) feed.innerHTML = Q.log.slice(0, 25).map(l => `<div><span class="mut">${fmtClock(Q.elapsed ? l.t : Q.dur - l.t)}</span> ${esc(l.s)}</div>`).join('');
 }
 function drawTrackBase(ctx, w, h, track, opts = {}) {
   const g = trackGeometry(track); const pad = 30; const s = Math.min(w, h) - pad * 2; const ox = (w - s) / 2, oy = (h - s) / 2 + 8;
@@ -5067,7 +5094,7 @@ function dkCollect(kind, src) {
   const key = kind === 'race' ? 'r' + WK.round + (RACE.sprint ? 's' : '') + G.year : 'q' + WK.round + src.label + G.year;
   if (DK.key !== key) { DK.key = key; DK.ev = []; DK.seen = new WeakSet(); DK.prev = null; DK.vmax = {}; }
   for (let i = src.log.length - 1; i >= 0; i--) { const l = src.log[i]; if (DK.seen.has(l)) continue; DK.seen.add(l); if (/^⚔️ \w+ passes \w+/.test(l.s)) continue;
-    DK.ev.unshift({ lab: kind === 'race' ? 'L' + l.lap : fmtClock(src.dur - l.t), cat: dkCat(l.s), s: l.s.replace(/^\p{Extended_Pictographic}️?\s*/u, '') }); }
+    DK.ev.unshift({ lab: kind === 'race' ? 'L' + l.lap : fmtClock(src.elapsed ? l.t : src.dur - l.t), cat: dkCat(l.s), s: l.s.replace(/^\p{Extended_Pictographic}️?\s*/u, '') }); }
   if (kind === 'race' && RACE.started && !RACE.chequered) {
     const ord = RACE.order().filter(c => !c.out), pos = new Map(ord.map((c, i) => [c.d.id, i]));
     if (DK.prev) { let n = 0;
@@ -5582,12 +5609,12 @@ function dkRaceView(o) {
   const sp = sprint ? null : o.sprintRows;
   const now = dkPts(prev.concat([sp, rows])), was = dkPts(prev.concat([sp]));
   const upNow = sprint ? k : k + 1, upWas = k;
-  const timeOf = r => r.time == null && !r.out ? (r.pos === 1 ? 'Winner' : 'Finished') : r.out ? `DNF (${r.out.length > 14 ? r.out.split(/[ (]/)[0] : r.out})` : r.pos === 1 ? fmtTime(r.time) : r.laps < lead.laps ? '+' + (lead.laps - r.laps) + ' Lap' + (lead.laps - r.laps > 1 ? 's' : '') : '+' + (r.time - lead.time).toFixed(3);
+  const timeOf = r => r.edist != null && typeof enduTimeTxt === 'function' ? enduTimeTxt(r, lead) : r.time == null && !r.out ? (r.pos === 1 ? 'Winner' : 'Finished') : r.out ? `DNF (${r.out.length > 14 ? r.out.split(/[ (]/)[0] : r.out})` : r.pos === 1 ? fmtTime(r.time) : r.laps < lead.laps ? '+' + (lead.laps - r.laps) + ' Lap' + (lead.laps - r.laps > 1 ? 's' : '') : '+' + (r.time - lead.time).toFixed(3);
   const ord = rows.filter(r => !r.out).concat(rows.filter(r => r.out));
   const table = `<table class="dkfp dkrr"><thead><tr><th>Pos</th><th>Grid</th><th class="l">Driver</th><th class="l hm">Team</th><th class="l hm">Engine</th><th class="hm">Stp</th><th class="hm">Laps</th><th class="ra">Time/Gap</th><th class="ra">Pts</th></tr></thead><tbody>${ord.map(r => { const tm = G.teams[r.team] || { color: '#444', name: '' }; const d = G.drivers[r.id];
     return `<tr class="${dkMine(r) ? 'me' : ''} ${r.out ? 'dnf' : ''}" data-prof="${r.id}" style="--tc:${tm.color};--ti:${dkInk(tm.color)}"><td class="pos">${r.out ? '' : String(r.pos).padStart(2, '0')}</td><td>${r.grid || ''}</td><td class="l">${d ? dkFlag(d.nat) : ''} ${dkNm(r.name)}${r.shared ? ` <small class="dkx-sh">shared with ${esc(r.shared.join(', '))}</small>` : ''}</td><td class="l hm">${esc(tm.name)}</td><td class="l hm">${esc(dkEngine(tm))}</td><td class="hm">${r.stops ?? ''}</td><td class="hm">${r.laps ?? ''}</td><td class="ra plain">${timeOf(r)}</td><td class="ra plain">${r.pts || 0}</td></tr>`; }).join('')}</tbody></table>`;
   const pod = [rows[1], rows[0], rows[2]].map((r, j) => { if (!r) return '<div></div>'; const tm = G.teams[r.team] || {}; const d = G.drivers[r.id]; const p = [2, 1, 3][j];
-    return `<div class="dkpod p${p}" style="--tc:${tm.color}"><div class="n">${p}</div><div class="f">${d ? dkFlag(d.nat, 'lg') : ''}</div><b>${esc(dkShort(r))}</b><span>${esc(tm.name || '')}</span><em>${p === 1 && r.time != null ? fmtTime(r.time) : timeOf(r)}</em></div>`; }).join('');
+    return `<div class="dkpod p${p}" style="--tc:${tm.color}"><div class="n">${p}</div><div class="f">${d ? dkFlag(d.nat, 'lg') : ''}</div><b>${esc(dkShort(r))}</b><span>${esc(tm.name || '')}</span><em>${p === 1 && r.time != null && r.edist == null ? fmtTime(r.time) : timeOf(r)}</em></div>`; }).join('');
   const dNow = dkRank(now.d, upNow, false), dWas = dkRank(was.d, upWas, false), teNow = dkRank(now.t, upNow, true), teWas = dkRank(was.t, upWas, true);
   const fresh = k === 0 && !sp && !sprint ? true : k === 0 && sprint;
   const delta = (id, a, b) => { if (fresh) return '<span class="dim">–</span>'; const dd = b.indexOf(id) - a.indexOf(id); return dd > 0 ? `<span class="g">▲+${dd}</span>` : dd < 0 ? `<span class="r">▼${dd}</span>` : '<span class="dim">–</span>'; };
@@ -5805,7 +5832,7 @@ function dkArchiveSeason(G0) {
     standingsDrivers(G0).forEach(d => ids.add(d.id));
     const A0 = { year: G0.year, acad: dkAcad(G0), n: G0.cal.length, cal: G0.cal.map((id, i) => { const t = roundTrack(G0, i); return [t.short, t.cc]; }),
       res: G0.results.map(r => ({ r: r.rows.map(pack), s: r.sprint ? r.sprint.map(pack) : null, f: r.fastest ? r.fastest.code : null })),
-      d: Object.fromEntries([...ids].filter(id => G0.drivers[id]).map(id => { const d = G0.drivers[id]; return [id, [d.name, d.nat, d.code, d.team, d.pts]]; })),
+      d: Object.fromEntries([...ids].filter(id => G0.drivers[id]).map(id => { const d = G0.drivers[id]; return [id, [d.name, d.nat, d.code, d.team || d.hteam || null, d.pts]]; })),
       t: Object.fromEntries(Object.values(G0.teams).map(t => [t.id, [t.name, t.color, ...eng(t), t.pts]])) };
     localStorage.setItem('pitwall_hist_' + dkSid(G0) + '_' + G0.year, JSON.stringify(A0));
     G0.histYears = G0.histYears || []; if (!G0.histYears.includes(G0.year)) G0.histYears.push(G0.year);
@@ -5816,9 +5843,9 @@ function dkLoadSeason(y) { try { return JSON.parse(localStorage.getItem('pitwall
 // ---------- custom regulations (alternative history) ----------
 const DK_PTS = { era: null, p50: [8, 6, 4, 3, 2], p60: [8, 6, 4, 3, 2, 1], p61: [9, 6, 4, 3, 2, 1], p91: [10, 6, 4, 3, 2, 1], p03: [10, 8, 6, 5, 4, 3, 2, 1], p10: [25, 18, 15, 12, 10, 8, 6, 4, 2, 1], top15: [25, 20, 16, 13, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1] };
 const DK_PTS_NAMES = { era: 'Real rules of each season', p50: '1950–59 · 8-6-4-3-2', p60: '1960 · 8-6-4-3-2-1', p61: '1961–90 · 9-6-4-3-2-1', p91: '1991–2002 · 10-6-4-3-2-1', p03: '2003–09 · 10-8-6-5-4-3-2-1', p10: '2010–today · 25-18-15-12-10-8-6-4-2-1', top15: 'Points to 15th · 25-20-16-13-11…1', custom: 'Custom…' };
-const DK_REG0 = { format: 'f1', pts: 'era', custom: '25,18,15,12,10,8,6,4,2,1', pole: 0, fl: 'era', quali: 'era', drop: 'era' };
+const DK_REG0 = { format: 'f1', pts: 'era', custom: '25,18,15,12,10,8,6,4,2,1', pole: 0, fl: 'era', quali: 'era', drop: 'era', race: 'gp' };
 const dkAcad = (G0 = G) => !!(G0 && G0.regs && G0.regs.format === 'academy');
-function dkRegsActive(r) { return r && (r.format === 'academy' || r.pts !== 'era' || r.pole || r.fl !== 'era' || r.quali !== 'era' || r.drop !== 'era'); }
+function dkRegsActive(r) { return r && (r.format === 'academy' || r.pts !== 'era' || r.pole || r.fl !== 'era' || r.quali !== 'era' || r.drop !== 'era' || (r.race && r.race !== 'gp')); }
 function dkApplyRegs(G0) {
   if (!G0 || !G0.regs || !dkRegsActive(G0.regs)) return;
   const r = G0.regs;
@@ -5827,6 +5854,7 @@ function dkApplyRegs(G0) {
   else if (DK_PTS[r.pts]) base.points = DK_PTS[r.pts];
   if (r.fl !== 'era') base.fl = r.fl === 'off' ? null : r.fl;
   if (r.quali !== 'era') base.quali = r.quali;
+  base.endu = r.race === 'endu';
   if (r.drop === 'all') base.bestN = 0;
   base.polePts = +r.pole || 0;
   if (r.format === 'academy') { // F1 Academy: one qualifying, Reverse Grid Race (top 8 reversed), Feature Race
@@ -5859,7 +5887,8 @@ function dkRegsForm(r, act) {
   ${r.pts === 'custom' ? `<label class="small">Points for 1st, 2nd, 3rd… (comma separated)<input data-dkc="${act}" data-k="custom" value="${esc(r.custom)}" style="width:100%"></label>` : '<span></span>'}
   <label class="small">Pole position bonus${sel('pole', [[0, 'No points for pole'], [1, '1 point for pole'], [2, '2 points for pole'], [3, '3 points for pole']])}</label>
   <label class="small">Fastest lap bonus${sel('fl', [['era', 'Real rules of each season'], ['off', 'No fastest-lap point'], ['any', '1 point — any finisher'], ['top10', '1 point — only if in the top 10']])}</label>
-  <label class="small">Qualifying format${sel('quali', [['era', 'Real format of each season'], ['single', 'One session — fastest lap takes pole'], ['knockout', 'Knockout — Q1, Q2, Q3']])}</label>
+  <label class="small">Qualifying format${sel('quali', [['era', 'Real format of each season'], ['single', 'One session — fastest lap takes pole'], ['knockout', 'Knockout — Q1, Q2, Q3'], ['elim', '2016 elimination — slowest out every 90 seconds'], ['lapelim', 'Pole-lap elimination — one session, slowest out every pole lap time']])}</label>
+  <label class="small">Grand Prix format${sel('race', [['gp', 'Standard race distance'], ['endu', 'Endurance — 60 s clock, earn time with laps and overtakes']])}</label>
   <label class="small">Dropped scores${sel('drop', [['era', 'Real rules (some old seasons only count best results)'], ['all', 'Every result counts']])}</label></div>`;
 }
 const _dk3_viewSetup = viewSetup;
@@ -5954,8 +5983,11 @@ function dkSeasonData(y) {
   if (y == null || y === G.year) {
     const eng = t => { const e = G.engines[t.engine]; const owner = Object.values(G.teams).find(x => x.works && x.engine === t.engine) || t; return [e ? e.name : '', owner.color]; };
     return { year: G.year, cur: true, acad: dkAcad(), n: G.cal.length, cal: G.cal.map((id, i) => { const t = roundTrack(G, i); return [t.short, t.cc]; }), results: G.results,
-      drivers: standingsDrivers(G).filter(d => d.team || d.pts > 0 || G.results.some(r => r.rows.some(x => x.id === d.id))).map(d => ({ id: d.id, name: d.name, nat: d.nat, team: d.team, pts: d.pts })),
-      teams: standingsTeams(G).map(t => ({ id: t.id, name: t.name, color: t.color, eng: eng(t)[0], engCol: eng(t)[1], pts: t.pts })) };
+      drivers: (() => { const L = standingsDrivers(G), have = new Set(L.map(d => d.id)), ran = new Set(); G.results.forEach(r => [r.rows, r.sprint || []].forEach(rs => rs.forEach(x => ran.add(x.id))));
+        const all = L.concat([...ran].filter(id => !have.has(id) && G.drivers[id]).map(id => G.drivers[id])); const cb = new Map(all.map(d => [d.id, countback(G, x => x.id === d.id)]));
+        return all.sort((a, b) => b.pts - a.pts || cbCompare(cb.get(a.id), cb.get(b.id)) || a.name.localeCompare(b.name)); })().filter(d => d.team || d.pts > 0 || G.results.some(r => r.rows.some(x => x.id === d.id))).map(d => ({ id: d.id, name: d.name, nat: d.nat, team: d.team || d.hteam || null, pts: d.pts })),
+      teams: standingsTeams(G).map(t => ({ id: t.id, name: t.name, color: t.color, eng: eng(t)[0], engCol: eng(t)[1], pts: t.pts })),
+      allTeams: Object.values(G.teams).map(t => ({ id: t.id, name: t.name, color: t.color, eng: eng(t)[0], engCol: eng(t)[1], pts: t.pts })) };
   }
   const A0 = dkLoadSeason(y); if (!A0) return null;
   const un = r => ({ id: r[0], team: r[1], pos: r[2], out: r[3] ? 'RET' : null, pts: r[4], grid: r[5], code: r[6] });
@@ -5965,13 +5997,19 @@ function dkSeasonData(y) {
   drivers.sort((a, b) => b.pts - a.pts || cbCompare(a.cb, b.cb) || a.name.localeCompare(b.name));
   const teams = Object.entries(A0.t).map(([id, t]) => ({ id, name: t[0], color: t[1], eng: t[2], engCol: t[3], pts: t[4], cb: cb(x => x.team === id) }));
   teams.sort((a, b) => b.pts - a.pts || cbCompare(a.cb, b.cb) || a.name.localeCompare(b.name));
-  return { year: y, cur: false, acad: !!A0.acad, n: A0.n, cal: A0.cal, results, drivers, teams };
+  // occasional privateer entries stay out of the constructors' table unless they scored
+  const starts = {}; results.forEach(r => new Set(r.rows.map(x => x.team)).forEach(t => starts[t] = (starts[t] || 0) + 1));
+  const shown = teams.filter(t => t.pts > 0 || (starts[t.id] || 0) >= results.length * 0.3);
+  return { year: y, cur: false, acad: !!A0.acad, n: A0.n, cal: A0.cal, results, drivers, teams: shown, allTeams: teams };
 }
 deskStandings = function () {
   const years = (G.histYears || []).filter(y => y !== G.year).sort((a, b) => b - a);
   if (DK3.season != null && DK3.season !== G.year && !years.includes(DK3.season)) DK3.season = null;
   const S = dkSeasonData(DK3.season) || dkSeasonData(null);
-  const tmOf = id => S.teams.find(t => t.id === id);
+  const tmOf = id => (S.allTeams || S.teams).find(t => t.id === id);
+  // stand-ins / one-offs have no contracted team: use the team they raced for most this season
+  const raced = {}; S.results.forEach(r => r && [r.rows, r.sprint || []].forEach(rs => rs.forEach(x => { if (!x.team) return; const m = raced[x.id] = raced[x.id] || {}; m[x.team] = (m[x.team] || 0) + 1; })));
+  const teamOf = d => { if (d.team && tmOf(d.team)) return d.team; const m = raced[d.id]; const best = m ? Object.entries(m).sort((a, b) => b[1] - a[1]).find(([t]) => tmOf(t)) : null; return best ? best[0] : (d.hteam && tmOf(d.hteam) ? d.hteam : null); };
   const tcell = (id, extra = '') => { const t = tmOf(id); return t ? `<td class="l tcell ${extra}" style="--tc:${t.color};--ti:${dkInk(t.color)}">${esc(t.name)}</td>` : `<td class="l ${extra}">—</td>`; };
   const mode = DK2.st, done = S.results.length;
   const AC = !!S.acad;
@@ -5986,7 +6024,7 @@ deskStandings = function () {
       const cells = S.cal.map((_, k) => { const res = S.results[k]; const r = res && res.rows.find(x => x.id === d.id);
         if (AC) { const s = res && res.sprint && res.sprint.find(x => x.id === d.id); return `<td class="rc ac1 ${dkResCls(s)}">${s ? dkResTxt(s, rgRes(res)) : ''}</td><td class="rc ac2 ${dkResCls(r)}">${r ? dkResTxt(r, nosp(res)) : ''}</td>`; }
         return `<td class="rc ${dkResCls(r)}">${r ? dkResTxt(r, res) : ''}</td>`; }).join('');
-      const t = tmOf(d.team || d.hteam); return `<tr class="${isMe(d.team, d.id) ? 'me' : ''}" data-prof="${d.id}"><td class="pos" style="border-left:3px solid ${t ? t.color : '#444'}">${i + 1}</td><td class="l nm">${esc(d.name)}</td><td class="flc">${dkFlag(d.nat)}</td>${d.team ? tcell(d.team) : '<td class="l dim">—</td>'}${cells}<td class="pts">${d.pts}</td></tr>`; }).join('')}</tbody></table></div>`;
+      const tid = teamOf(d), t = tmOf(tid); return `<tr class="${isMe(d.team, d.id) ? 'me' : ''}" data-prof="${d.id}"><td class="pos" style="border-left:3px solid ${t ? t.color : '#444'}">${i + 1}</td><td class="l nm">${esc(d.name)}</td><td class="flc">${dkFlag(d.nat)}</td>${tid ? tcell(tid) : '<td class="l dim">—</td>'}${cells}<td class="pts">${d.pts}</td></tr>`; }).join('')}</tbody></table></div>`;
   } else {
     body = `<div class="dk-h"><b>Constructor Championship ${S.year}</b>${S.cur ? '' : '<span class="dk-mut">final standings</span>'}</div><div class="dk-scroll"><table class="dkst cons ${DK2.modern ? 'modern' : 'classic'}"><thead><tr><th class="stk0">Pos</th><th class="l stk1">Team</th><th class="l">Engine</th>${flags}<th class="pts">Pts</th></tr></thead><tbody>${S.teams.map((t, i) => {
       const srt = rs => rs.filter(x => x.team === t.id).sort((a, b) => (a.out ? 99 : a.pos) - (b.out ? 99 : b.pos));
@@ -6006,7 +6044,7 @@ deskStandings = function () {
 };
 function dkPointsGraphS(S, mode) {
   const N = S.results.length; if (!N) return '<div class="dk-empty">No races in this season.</div>';
-  const series = (mode === 'd' ? S.drivers.slice(0, 10).map(d => ({ name: d.name.split(' ').slice(-1)[0], col: (S.teams.find(t => t.id === d.team) || { color: '#888' }).color, f: x => x.id === d.id }))
+  const series = (mode === 'd' ? S.drivers.slice(0, 10).map(d => ({ name: d.name.split(' ').slice(-1)[0], col: ((S.allTeams || S.teams).find(t => t.id === d.team) || { color: '#888' }).color, f: x => x.id === d.id }))
     : S.teams.map(t => ({ name: t.name, col: t.color, f: x => x.team === t.id })));
   series.forEach(s => { let c = 0; s.cum = S.results.map(r => c += r.rows.filter(s.f).reduce((a, x) => a + x.pts, 0) + (r.sprint ? r.sprint.filter(s.f).reduce((a, x) => a + x.pts, 0) : 0)); });
   const max = Math.max(1, ...series.map(s => s.cum[N - 1])), W = 1000, H = 420, L = 50, R = 150, T = 20, B = 40;
@@ -6111,7 +6149,7 @@ function dkSaveFull(G0) {
     const results = G0.results.map(r => { const o = {}; for (const k in r) if (!DK4_DROP.includes(k)) o[k] = r[k]; o.rows = slimRows(r.rows); o.sprint = slimRows(r.sprint); return o; });
     standingsDrivers(G0).forEach(d => { if (d.team || d.pts > 0) usedD.add(d.id); });
     const P = { v: 1, year: G0.year, cal: G0.cal.slice(), calInfo: G0.calInfo || null, results, rules: G0.rules || null, regs: G0.regs || null, timeline: !!G0.timeline,
-      drivers: Object.fromEntries([...usedD].filter(id => G0.drivers[id]).map(id => { const d = G0.drivers[id]; return [id, { id, name: d.name, nat: d.nat, code: d.code, team: d.team, pts: d.pts }]; })),
+      drivers: Object.fromEntries([...usedD].filter(id => G0.drivers[id]).map(id => { const d = G0.drivers[id]; return [id, { id, name: d.name, nat: d.nat, code: d.code, team: d.team || d.hteam || null, pts: d.pts }]; })),
       teams: Object.fromEntries([...usedT].filter(id => G0.teams[id]).map(id => { const t = G0.teams[id]; return [id, { id, name: t.name, color: t.color, engine: t.engine, works: t.works, pts: t.pts }]; })),
       engines: Object.fromEntries(Object.entries(G0.engines || {}).map(([k, e]) => [k, { name: e.name }])) };
     const str = JSON.stringify(P);
@@ -6621,4 +6659,269 @@ const HX_MECH_MUL = {"1950": 1.29, "1955": 1.3, "1960": 1.29, "1965": 1.14, "197
 const hxEraMul = (T, y) => { let e = Math.floor((y || 2026) / 5) * 5; while (T[e] == null && e > 1950) e -= 5; return T[e] || 1; };
 { const prev = XPH.relMul; XPH.relMul = function (race) { const a = prev ? prev.apply(this, arguments) : 1; return (a == null ? 1 : a) * hxEraMul(HX_MECH_MUL, race.G.year); }; }
 { const prev = XPH.crashMul; XPH.crashMul = function (race) { const a = prev ? prev.apply(this, arguments) : 1; return (a == null ? 1 : a) * hxEraMul(HX_CRASH_MUL, race.G.year); }; }
+// ===================== 2016 elimination qualifying =====================
+// Q1 16 min, Q2 15 min, Q3 14 min. From 7:00 / 6:00 / 5:00 in, the slowest driver is knocked out every 90 seconds
+// (a lap in progress doesn't count) until 15 / 8 remain, then Q3 runs down to the last car.
+function qElim() {
+  if (!G || !WK || WK.stage === 'squali') return false;
+  if (G.rules && G.rules.quali === 'elim') return true;
+  // real 2016 season, "real format of each season": used at the first two rounds (Australia, Bahrain)
+  const era = !G.regs || G.regs.quali === 'era', H = HIST.years[2016];
+  return !!(G.timeline && G.year === 2016 && era && G.rules && G.rules.quali === 'knockout' && H && WK.track && [H.cal[0][0], H.cal[1][0]].includes(WK.track.id));
+}
+const _q16_qCut = qCut;
+qCut = function (n) { if (!qElim() || n < 12) return _q16_qCut(n); const k1 = Math.ceil((n - 8) / 2); return WK.Q && WK.Q.stage >= 2 ? n - 8 - k1 : k1; }; // Q3 always has 8 cars
+const _q16_qualiInfo = qualiInfo;
+qualiInfo = function (key) {
+  const I = _q16_qualiInfo.apply(this, arguments);
+  if (key === 'Q' && qElim()) {
+    const st = Math.min(I.stage, 3);
+    I.elim = true; I.single = false; I.dur = [960, 900, 840][st - 1]; I.label = 'Q' + st;
+    I.cut = st >= 3 ? 0 : qCut(WK.entries.length); I.elimN = st >= 3 ? Math.max(1, I.n - 1) : I.cut; I.runs = 3;
+  }
+  return I;
+};
+const Q16_WIN = [[0, 0.12], [0.28, 0.48], [0.56, 0.84]];
+const _q16_QualiLive = QualiLive;
+QualiLive = class extends _q16_QualiLive {
+  constructor(G0, wk, list, opts) {
+    const lap = qLapElim() && !opts.elim;
+    if (lap) opts = Object.assign({}, opts, { dur: 1e6, label: 'Qualifying', cut: 0, runs: 1, elim: Math.max(1, list.length - 1), windows: [[0, 1e-6]] });
+    else if (qElim() && !opts.elim && WK.stage !== 'squali') { const I = qualiInfo('Q'); opts = Object.assign({}, opts, { dur: I.dur, label: I.label, cut: I.cut, runs: 3, elim: I.elimN, windows: Q16_WIN }); }
+    super(G0, wk, list, opts);
+    if (lap) this.lapSetup();
+  }
+  // ---- pole-lap elimination: one open-ended session; the slowest car goes every <current pole lap time> ----
+  lapSetup() {
+    this.lapMode = true; this.elapsed = true; this.armed = false; this.lastE = null; this.log = []; this.events = [];
+    const base = this.base, horizon = (this.cars.length + 6) * base * 1.1 + 900;
+    this.cars.forEach(c => {
+      const runs = []; let t = rnd(0, base * 0.8);
+      while (t < horizon) {
+        const n = pick([2, 3, 3, 4]);
+        for (let k = 0; k < n; k++) {
+          const q = qualiLap(this.G, c.e, this.track, this.wet, c.risk); const crash = q.crash && Math.random() < 0.35;
+          const evo = Math.min(0.6, t / 600 * 0.15), fade = k * 0.14;
+          const OL = k === 0 ? base * 1.4 * rnd(0.97, 1.05) : base * 1.22 * rnd(0.98, 1.04), IL = k === n - 1 ? base * 1.45 * rnd(0.97, 1.05) : 0.5;
+          const fly = crash ? base * rnd(1, 1.02) : (q.crash ? q.t || base : q.t) - evo + fade;
+          runs.push({ start: t, OL, IL, fly, crash, crashAt: rnd(0.2, 0.9), done: false, aborted: false });
+          t += OL + fly + IL;
+        }
+        t += rnd(40, 130); // in the garage: fresh tyres
+      }
+      c.runs = runs;
+    });
+    this.msg(`🟢 Qualifying is under way — no time limit: once everyone has a time, the slowest driver is out every pole-lap time`, true);
+  }
+  clock() { return this.lapMode ? this.t : super.clock(); }
+  nextElim() { if (!this.lapMode) return super.nextElim(); return this.armed && this.elim.left > 0 ? Math.max(0, this.elim.next - this.t) : null; }
+  crash(c, r) { super.crash(c, r); if (this.lapMode && this.lastE != null) this.lastE += 45; }
+  step(dt) {
+    if (!this.lapMode) return super.step(dt);
+    if (this.done) return;
+    if (!this.armed) {
+      const alive = this.cars.filter(c => !c.out);
+      if (alive.length && (alive.every(c => c.best != null) || this.t > this.base * 8)) {
+        this.armed = true; this.lastE = this.t;
+        this.msg(`⏱ Every car has a time — first elimination in ${fmtTime(this.best ? this.best.t : this.base)} (the pole lap)`, true);
+      }
+    }
+    this.elim.gap = this.best ? this.best.t : this.base;
+    this.elim.next = this.armed ? this.lastE + this.elim.gap : Infinity;
+    const k = this.elim.order.length; super.step(dt);
+    if (this.elim.order.length > k) this.lastE = this.t;
+  }
+};
+function qLapElim() { return !!(G && WK && WK.stage !== 'squali' && G.rules && G.rules.quali === 'lapelim'); }
+const _q16_qualiInfo2 = qualiInfo;
+qualiInfo = function (key) {
+  const I = _q16_qualiInfo2.apply(this, arguments);
+  if (key === 'Q' && qLapElim()) Object.assign(I, { single: true, lapElim: true, label: 'Qualifying', cut: 0, dur: 1800, runs: 1 });
+  return I;
+};
+const _q16_applyQualiStage = applyQualiStage;
+applyQualiStage = function (QS, res) {
+  if (!qLapElim()) return _q16_applyQualiStage.apply(this, arguments);
+  QS.rounds.push({ stage: QS.stage, res }); QS.top = res; QS.stage = 4; WK.grid = res.map(r => r.e);
+};
+// quick-simulated sessions run the same elimination clock
+const _q16_runQualiSession = runQualiSession;
+runQualiSession = function (G0, wk, list, stage, risks) {
+  if (!qElim() && !qLapElim()) return _q16_runQualiSession.apply(this, arguments);
+  const Q = new QualiLive(G0, wk, list, { risks: risks || {} }); let n = 0;
+  while (!Q.done && n++ < 40000) Q.step(0.5);
+  return Q.result;
+};
+// countdown to the next elimination on the live screens
+const _q16_updQ = updateQualiUI;
+updateQualiUI = function () {
+  const r = _q16_updQ.apply(this, arguments);
+  try {
+    const Q = curQS().live; if (!Q || !Q.elim) return r;
+    const nx = Q.nextElim(), left = Q.cars.filter(c => !c.elim).length;
+    // compact so the header keeps its size: "Q1 · 9:12 · OUT IN 0:45 · 18 LEFT"
+    let txt = nx == null ? '' : `OUT IN ${fmtClock(nx)}`;
+    if (Q.lapMode) txt = Q.armed ? `OUT IN ${fmtClock(nx)}` : 'SETTING TIMES';
+    const ds = document.getElementById('dksess');
+    if (ds) { const h = `${esc(Q.label === 'Qualifying' ? 'Q' : Q.label)} · ${fmtClock(Q.clock())} · ${left} left${txt ? ` · <span class="q16">${txt}</span>` : ''}${Q.lapMode && Q.armed ? ` · every ${fmtTime(Q.elim.gap)}` : ''}`; if (ds._q16 !== h || ds._q16src !== ds._h) { ds.innerHTML = h; ds._q16 = h; ds._q16src = ds._h; } ds.title = ds.textContent; }
+    const hud = document.getElementById('hud'); if (hud && nx != null) hud.insertAdjacentHTML('beforeend', `<span class="chip">⛔ Next out ${fmtClock(nx)} · ${left} left</span>`);
+  } catch (e) { }
+  return r;
+};
+// ===================== Endurance Grand Prix (custom regulation) =====================
+// Every car starts with 60 s on its clock (max 90 s). Completing a lap adds time (more on longer tracks),
+// every car overtaken adds 10 s. Off-track moments freeze the distance counter. Each lap the field gets faster and
+// more spread out, and mistakes become more likely. When the clock hits zero the car can no longer accelerate:
+// it coasts to a stop, and the distance it covered from the start line is its result.
+const ENDU = { start: 60, max: 90, pass: 10 };
+const enduOn = race => !!(race && race.endu);
+function enduLapBonus(track) { return Math.round(track.base * 1.06); }   // longer lap = more time
+const enduKm = c => (Math.max(0, c.edist || 0) / 1000).toFixed(3);
+
+hxChain('raceInit', race => {
+  if (race.sprint || !race.G.rules || !race.G.rules.endu) return;
+  race.endu = { bonus: enduLapBonus(race.track) };
+  race.laps = 999;
+  race.rules = Object.assign({}, race.rules, { sc: false, vsc: false, twoCompound: false });
+  race.cars.forEach(c => { c.clk = ENDU.start; c.edist = 0; c.off = 0; c.coastF = null; c.passes = 0; c._pd = c.dist; });
+  race.physOrder = function () { return this.cars.slice().sort((a, b) => (!!a.out !== !!b.out ? (a.out ? 1 : -1) : b.dist - a.dist)); };
+  race.msg(`⏱ Endurance race: ${ENDU.start}s on every clock (max ${ENDU.max}s) · +${race.endu.bonus}s per lap (a third at each sector) · +${ENDU.pass}s per overtake`, true);
+});
+// speed: off-track moments and coasting once the clock has run out
+{ const prev = XPH.speedMul; XPH.speedMul = function (race, c, dt) {
+  let m = prev ? (prev.apply(this, arguments) ?? 1) : 1;
+  if (!enduOn(race)) return prev ? m : undefined;
+  if (c.coastF != null) return m * c.coastF;
+  if (c.off > 0) return m * 0.18;
+  return m;
+}; }
+// progressively faster and more spread out
+{ const prev = XPH.lapDelta; XPH.lapDelta = function (race, c) {
+  const a = prev ? prev.apply(this, arguments) || 0 : 0;
+  if (!enduOn(race)) return a;
+  const L = c.laps || 0, base = race.track.base;
+  const raw = lapTimeFor(race.G, c, race.track, { lap: L, wet: race.wet, laps: race.laps });
+  const faster = raw * (Math.max(0.9, 1 - 0.006 * L) - 1);
+  const spread = Math.max(0, raw - base) * 0.06 * L;
+  return a + faster + spread;
+}; }
+// lap bonus, paid a third at a time at each sector line (a real F1 lap is longer than the 60 s starting clock)
+function enduSectors(race, c) {
+  const S = race.L / 3, n = Math.floor(Math.max(0, c.dist) / S);
+  if (c._sec == null) c._sec = 0;
+  while (c._sec < n && !c.out && c.coastF == null) {
+    c._sec++; const before = c.clk; c.clk = Math.min(ENDU.max, c.clk + race.endu.bonus / 3);
+    if ((c.player || c.fav) && c._sec % 3 === 0) race.msg(`⏱ ${c.d.code} completes lap ${c._sec / 3}: clock ${c.clk.toFixed(1)}s`, false);
+  }
+}
+// clock, distance counter, overtakes, off-track moments, coasting, end of race
+hxChain('onStep', (race, dt) => {
+  if (!enduOn(race) || race.done) return;
+  const run = race.cars.filter(c => !c.out);
+  for (const c of run) {
+    enduSectors(race, c);
+    const d0 = Math.max(0, c._pd), d1 = Math.max(0, c.dist);
+    if (!(c.off > 0) && d1 > d0) c.edist += d1 - d0;          // off-track or in reverse: no distance
+    if (c.off > 0) { c.off -= dt; if (c.off <= 0) { c.off = 0; if (c.player || c.fav) race.msg(`🟩 ${c.d.code} is back on track`, false); } }
+    if (c.coastF == null) {
+      c.clk -= dt;
+      if (c.clk <= 0) {
+        c.clk = 0;
+        if (c.pitT > 0) { enduStop(race, c, 'in the pit lane'); continue; }
+        c.coastF = 1; race.msg(`⌛ ${c.d.code} is out of time — coasting at ${enduKm(c)} km`, c.player || c.fav);
+      } else if (c.pitT <= 0 && !(c.off > 0)) {
+        // mistakes: more likely the further into the race (faster cars), for less consistent drivers and in the wet
+        const L = c.laps || 0, perLap = 0.03 * Math.pow(1.2, L) * (1 + (100 - c.d.cons) / 30) * (1 + race.wet * 3);
+        if (Math.random() < perLap * dt / Math.max(30, c.curLT)) {
+          if (L >= 12 && Math.random() < 0.025) { race.retire(c, 'Crashed out', null); c.stopT = race.t; continue; }
+          c.off = rnd(3, 9); race.msg(`🟥 ${c.d.code} runs off the track! Distance counter frozen`, c.player || c.fav);
+        }
+      }
+    } else {
+      c.coastF *= Math.exp(-dt / 2.6);
+      if (c.coastF < 0.03) enduStop(race, c);
+    }
+  }
+  // overtakes: +10 s for every running car passed on track (cars in the pits don't count)
+  for (const a of run) {
+    if (a.out || a.coastF != null) continue;
+    for (const b of run) {
+      if (a === b || b.out || b.pitT > 0) continue;
+      if (a._pd < b._pd && a.dist > b.dist) { a.passes++; const was = a.clk; a.clk = Math.min(ENDU.max, a.clk + ENDU.pass);
+        if (a.player || a.fav || b.player || b.fav) race.msg(`⚔️ ${a.d.code} passes ${b.d.code}: +${(a.clk - was).toFixed(0)}s`, false); }
+    }
+  }
+  race.cars.forEach(c => { c._pd = c.dist; });
+  if (race.cars.every(c => c.out)) race.finish();
+});
+function enduStop(race, c, where) {
+  c.out = 'Out of time'; c.stopT = race.t; c.coastF = 0; c.dnfLap = c.laps;
+  race.msg(`🛑 ${c.d.code} has stopped${where ? ' ' + where : ''} — ${enduKm(c)} km`, c.player || c.fav || race.cars.filter(x => !x.out).length <= 1);
+}
+// results: classified on distance; cars that ran out of time are classified, crashes/failures are DNFs
+const _endu_order = Race.prototype.order;
+Race.prototype.order = function () {
+  if (!this.endu) return _endu_order.apply(this, arguments);
+  return this.cars.slice().sort((a, b) => b.edist - a.edist); // the race ends for everyone when the car stops: furthest wins
+};
+hxChain('raceFinish', race => {
+  if (!enduOn(race)) return;
+  race.cars.forEach(c => { if (c.out) { if (c.out !== 'Out of time') c.why = c.out; c.out = null; c.finished = true; c.finishT = c.stopT || race.t; } });
+  const w = race.order()[0]; if (w) race.msg(`🏁 ${w.d.name} wins the endurance race — ${enduKm(w)} km`, true);
+});
+const _endu_applyRaceResult = applyRaceResult;
+applyRaceResult = function (G0, race, wk) {
+  const out = _endu_applyRaceResult.apply(this, arguments);
+  try { if (enduOn(race)) { const s = G0.results[G0.results.length - 1]; s.endu = true;
+    s.rows.forEach(r => { const c = race.cars.find(x => x.d.id === r.id && x.t.id === r.team); if (c) { r.edist = Math.round(c.edist); r.passes = c.passes; if (c.why) r.why = c.why; } }); } } catch (e) { }
+  return out;
+};
+
+// ---------- live screens ----------
+const _endu_dkOrderTable = dkOrderTable;
+dkOrderTable = function (kind, S, ord) {
+  if (kind !== 'race' || !enduOn(RACE) || DK.tab === 'tyres' || DK.tab === 'sectors') return _endu_dkOrderTable.apply(this, arguments);
+  const lead = ord[0];
+  return `<table class="dkt"><thead><tr><th>Pos</th><th class="l">Driver</th><th class="l hm">Team</th><th>Distance</th><th>Gap</th><th>Clock</th><th>Lap</th><th>Last</th><th>Tyre</th><th>Pass</th><th>St</th></tr></thead><tbody>${ord.map((c, i) => {
+    const gone = c.out && !c.finished, stopped = c.out === 'Out of time' || c.finished, clk = Math.max(0, c.clk || 0);
+    const st = gone && !stopped ? 'DNF' : stopped ? 'STOP' : c.coastF != null ? 'COAST' : c.off > 0 ? 'OFF' : c.pitT > 0 ? 'PIT' : '';
+    const col = clk > 30 ? '#3ddc84' : clk > 12 ? '#ffd23f' : '#ff4d4d';
+    return `<tr class="${c.player || c.fav ? 'me' : ''} ${c.out ? 'out' : ''}" style="--tc:${c.t.color};--ti:${dkInk(c.t.color)}" data-a="follow" data-v="${c.d.id}">
+    <td>${i + 1}</td><td class="l">${esc(dkShort(c.d))}</td><td class="l hm">${esc(c.t.name)}</td><td><span class="endu-d ${c.off > 0 ? 'off' : ''}">${enduKm(c)} km</span></td>
+    <td>${i === 0 ? '—' : '-' + ((lead.edist - c.edist) / 1000).toFixed(3)}</td>
+    <td>${c.out ? '' : `<span class="endu-c"><i style="width:${Math.round(clk / ENDU.max * 100)}%;background:${col}"></i><b>${clk.toFixed(1)}</b></span>`}</td>
+    <td>${c.laps}</td><td>${dkT(c.lastLap)}</td><td>${c.out ? '' : dkTy(c.tyre)}</td><td>${c.passes || 0}</td><td class="endu-st ${st.toLowerCase()}">${st}</td></tr>`; }).join('')}</tbody></table>`;
+};
+const _endu_updRace = updateRaceUI;
+updateRaceUI = function () {
+  const r = _endu_updRace.apply(this, arguments);
+  try {
+    if (!enduOn(RACE)) return r;
+    const lap = Math.max(0, ...RACE.cars.map(c => c.laps)), left = RACE.cars.filter(c => !c.out).length;
+    const h = `ENDURANCE · LAP ${lap} · ${left} RUNNING · +${RACE.endu.bonus}s/LAP`;
+    const ds = document.getElementById('dksess'); if (ds && (ds._e !== h || ds._esrc !== ds._h)) { ds.innerHTML = h; ds._e = h; ds._esrc = ds._h; }
+    const lc = document.getElementById('dklapc'); if (lc && lc._e !== 'LAP ' + lap) { lc.innerHTML = 'LAP ' + lap; lc._e = 'LAP ' + lap; }
+  } catch (e) { }
+  return r;
+};
+// results table: distance instead of race time
+function enduTimeTxt(r, lead) {
+  const km = x => (x.edist / 1000).toFixed(3) + ' km';
+  if (r.out) return `DNF · ${km(r)}`;
+  const why = r.why ? ` · ${r.why.length > 14 ? r.why.split(/[ (]/)[0] : r.why}` : '';
+  return (r === lead || !lead || lead.edist == null ? km(r) : `${km(r)} (-${((lead.edist - r.edist) / 1000).toFixed(3)})`) + why;
+}
+const _endu_dkRaceView = dkRaceView;
+dkRaceView = function (o) {
+  const html = _endu_dkRaceView.apply(this, arguments);
+  const s = G.results[o.k];
+  return s && s.endu && !o.sprint ? html.replace(/(<div class="dk-reshead">[\s\S]*?<h1>)Race Results/, '$1Endurance Results') : html;
+};
+// grid page: explain the format
+const _endu_deskGrid = deskGrid;
+deskGrid = function (sprint) {
+  let html = _endu_deskGrid.apply(this, arguments);
+  if (!sprint && G.rules && G.rules.endu) html = html.replace(/<div class="dk-mut dkg-note">[^<]*<\/div>/, `<div class="dk-mut dkg-note"><b>Endurance race:</b> every car starts with ${ENDU.start}s on its clock (max ${ENDU.max}s) · +${enduLapBonus(WK.track)}s for each lap (paid a third at each sector line) · +${ENDU.pass}s for each car overtaken · off-track driving doesn't count · when the clock hits zero the car coasts to a stop · furthest distance wins.</div>`).replace(/<div class="dkg-row"><span>DISTANCE<\/span><b>[^<]*<\/b><\/div>/, '<div class="dkg-row"><span>DISTANCE</span><b>Until every clock runs out</b></div>');
+  return html;
+};
 </script></body></html>
