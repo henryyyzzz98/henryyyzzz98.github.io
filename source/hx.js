@@ -29,7 +29,7 @@ function hxOfficial(G0, i) {
   return r.ry === G0.year ? r.o : r.o.replace(/\b(19|20)\d\d\b(?!.*\b(19|20)\d\d\b)/, String(G0.year));
 }
 function hxCar(G0, tid) {
-  const y = G0.timeline ? G0.year : G0.year; const H = HIST.years[y];
+  const y = G0.lineYear || G0.year; const H = HIST.years[y];
   return H && H.car ? H.car[hxCid(G0, tid)] || null : null;
 }
 
@@ -61,7 +61,7 @@ standingsTeams = function () { return _hx_standingsTeams.apply(this, arguments).
 const _hx_weekendEntries = weekendEntries;
 weekendEntries = function (G0) {
   let L = _hx_weekendEntries.apply(this, arguments);
-  if (!G0.timeline) return L;
+  if (!G0.timeline || G0.mix) return L; // mixed eras: the calendar year's stand-ins don't belong to this line-up
   const r = hxRound(G0, G0.round); if (!r || (!r.a && !r.x)) return L;
   const outs = new Set((r.x || []).map(i => HIST.drivers[i][0]));
   L = L.filter(e => e.t.id === G0.player || !outs.has(e.d.id));
@@ -78,7 +78,7 @@ weekendEntries = function (G0) {
 
 // ---------- tyre war: race-by-race form of each tyre maker (from how its cars really qualified there) ----------
 function hxTyreForm(G0, tid) {
-  if (!G0.timeline || !WK) return 0;
+  if (!G0.timeline || G0.mix || !WK) return 0;
   const r = hxRound(G0, WK.round); if (!r || !r.ty) return 0;
   if (!WK._tyf) { const v = Object.values(r.ty); const m = v.reduce((s, x) => s + x, 0) / v.length; WK._tyf = Object.fromEntries(Object.entries(r.ty).map(([k, x]) => [k, x - m])); }
   const car = hxCar(G0, tid); if (!car || !car[2]) return 0;
@@ -105,7 +105,7 @@ function dkWhy(G0, kind) {
 function hxChain(name, fn) { const prev = XPH[name]; XPH[name] = function () { const r = prev ? prev.apply(this, arguments) : undefined; const r2 = fn.apply(this, arguments); return r2 !== undefined ? r2 : r; }; }
 hxChain('raceInit', race => {
   try {
-    if (!G.timeline || !WK || race.sprint) return;
+    if (!G.timeline || G.mix || !WK || race.sprint) return;
     const r = hxRound(G, WK.round); if (!r || !r.s) return;
     r.s.forEach(([pi, cos]) => { const c = race.cars.find(c => c.d.id === HIST.drivers[pi][0]); if (c) c.share = cos.map(i => HIST.drivers[i][0]).filter(id => G.drivers[id]); });
   } catch (e) { }

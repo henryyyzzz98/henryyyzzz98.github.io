@@ -23,6 +23,11 @@ def pole_of(r):
     t = None
     if p:
         t = p.get('q3Millis') or p.get('q2Millis') or p.get('timeMillis') or p.get('q1Millis')
+        a1, a2 = p.get('q1Millis'), p.get('q2Millis')
+        if p.get('timeMillis') and a1 and a2 and abs(p['timeMillis'] - (a1 + a2)) < 5: t = min(a1, a2)
+        if r.get('qualifyingFormat') == 'AGGREGATE':  # 2005: pole decided on two laps added together; show the pole sitter's best single lap
+            laps_ = [x['timeMillis'] for k in ('qualifying1Results', 'qualifying2Results') for x in (r.get(k) or []) if x.get('driverId') == p['driverId'] and x.get('timeMillis')]
+            if laps_: t = min(laps_)
     if not p or not t:
         g = next((x for x in (r['startingGridPositions'] or []) if x.get('qualificationPositionNumber') == 1 and x.get('timeMillis')), None)
         if g: p, t = g, g['timeMillis']

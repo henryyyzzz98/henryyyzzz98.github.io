@@ -185,8 +185,16 @@ for s in d['seasons']:
     cal = []
     for r in rs:
         tid = track_id(r)
-        q = [x['timeMillis'] for x in (r['qualifyingResults'] or []) if x.get('timeMillis')]
-        q += [x['timeMillis'] for x in (r['startingGridPositions'] or []) if x.get('timeMillis')]
+        # aggregate qualifying (2005): the stored time is the sum of two laps; use the single laps instead
+        def lap_of(x):
+            t, a1, a2 = x.get('timeMillis'), x.get('q1Millis'), x.get('q2Millis')
+            if t and a1 and a2 and abs(t - (a1 + a2)) < 5: return min(a1, a2)
+            return t
+        if r.get('qualifyingFormat') == 'AGGREGATE':
+            q = [x['timeMillis'] for k in ('qualifying1Results', 'qualifying2Results') for x in (r.get(k) or []) if x.get('timeMillis')]
+        else:
+            q = [lap_of(x) for x in (r['qualifyingResults'] or []) if lap_of(x)]
+        q += [lap_of(x) for x in (r['startingGridPositions'] or []) if lap_of(x)]
         fl = [x['timeMillis'] for x in (r['fastestLaps'] or []) if x.get('timeMillis')]
         pole = min(q) / 1000 if q else (min(fl) / 1000 * 0.99 if fl else None)
         km = r['courseLength']; laps = r['laps'] or r['scheduledLaps'] or 40
