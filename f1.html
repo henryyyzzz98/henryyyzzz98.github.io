@@ -7182,7 +7182,7 @@ deskGrid = function (sprint) {
 // ===================== More alternative regulations =====================
 // Pre-season testing · equal cars (all season, or equal at the start and then developed) · weather setting ·
 // refuelling · team orders · no safety car. Every option can be switched on/off in the custom regulations.
-const XR0 = { testing: 'off', equal: 'off', weather: 'real', refuel: 'off', orders: 'off', scr: 'era', sprint: 'on' };
+const XR0 = { testing: 'off', equal: 'off', weather: 'real', refuel: 'off', orders: 'off', scr: 'era', sprint: 'on', dnf: 'on' };
 const xr = (G0, k) => { const r = (G0 && G0.regs) || {}; return r[k] == null ? XR0[k] : r[k]; };
 
 // ---------- settings form ----------
@@ -7206,7 +7206,8 @@ dkRegsForm = function (r, act) {
   <label class="small">Refuelling${sel('refuel', [['off', 'Off'], ['on', 'On — light fuel stints and refuelling stops (1994–2009 style)']])}</label>
   <label class="small">Team orders${sel('orders', [['off', 'Off'], ['on', 'On — teams swap their cars for the better-placed driver']])}</label>
   <label class="small">Safety car${sel('scr', [['era', 'Real rules of each season'], ['none', 'No safety car — yellow flags only']])}</label>
-  <label class="small">Sprint races${sel('sprint', [['on', 'On — sprint weekends as on the calendar'], ['off', 'Off — every round is a normal Grand Prix weekend']])}</label>`;
+  <label class="small">Sprint races${sel('sprint', [['on', 'On — sprint weekends as on the calendar'], ['off', 'Off — every round is a normal Grand Prix weekend']])}</label>
+  <label class="small">Retirements${sel('dnf', [['on', 'On — crashes, failures and other retirements'], ['off', 'Off — every car races to the finish']])}</label>`;
   const i = html.lastIndexOf('</div>');
   return html.slice(0, i) + more + html.slice(i);
 };
@@ -7393,6 +7394,18 @@ render = function () { if (VIEW !== 'hq' || TAB !== 'calendar') DK3.test = false
 // ---------- sprint races off: sprint rounds become normal Grand Prix weekends (F1 Academy keeps its two-race format) ----------
 const _xg_isSprintRound = isSprintRound;
 isSprintRound = function (G0, i) { if (G0 && !dkAcad(G0) && xr(G0, 'sprint') === 'off') return false; return _xg_isSprintRound.apply(this, arguments); };
+
+// ---------- retirements off: every car races to the finish. A crash or failure costs time instead of ending the race ----------
+const _xg_retire = Race.prototype.retire;
+Race.prototype.retire = function (c, why, flag) {
+  if (!this.G || xr(this.G, 'dnf') !== 'off') return _xg_retire.apply(this, arguments);
+  const crash = flag === 'sc' || /crash|collision|wall|spun|accident|gravel|barrier|tyre/i.test(String(why));
+  if (/fuel/i.test(String(why))) { c.fuelLaps = Math.max(c.fuelLaps || 0, 1.2); c.spin = Math.max(c.spin || 0, rnd(4, 8)); this.msg(`⛽ ${c.d.code} runs dry and limps to the pits`, true); return; }
+  c.spin = Math.max(c.spin || 0, crash ? rnd(12, 26) : rnd(6, 16));
+  if (/tyre/i.test(String(why))) c.pitReq = c.pitReq || (this.slick ? this.slick(c, this.laps - c.laps) : null) || 'M';
+  this.msg(crash ? `💥 ${c.d.code} has a big moment (${why}) — but recovers and carries on` : `⚠️ ${c.d.code} has a problem (${why}) — loses time but keeps going`, true);
+  if (crash && this.incidentsOn && this.rules.sc && Math.random() < 0.3) { if (this.rules.vsc) this.startVSC(); else this.msg('🟨 Yellow flags', false); }
+};
 // ===================== Alternative history: line-up of one year, calendar of another =====================
 // G.mix = { line0, cal0, mode }: line-up from year line0 (kept for the whole game, or advancing a year each season),
 // calendar, rules and real-world comparisons from year cal0 + seasons played.
