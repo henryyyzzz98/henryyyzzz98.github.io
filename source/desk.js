@@ -147,8 +147,8 @@ function dkSpd() {
   if (RACE && dkStage() === 'race' && !RACE.started) {
     return LIGHTS && LIGHTS.phase !== 'idle' ? '<button class="dk-go" disabled>LIGHTS…</button>' : '<button class="dk-go" data-a="lights" id="lightsbtn">● START THE LIGHTS</button>';
   }
-  const sp = [[1, 4], [2, 16], [3, 32], [4, 64], [5, 256]];
-  return sp.map(([n, v]) => `<button class="spd ${!PAUSED && SPEED === v ? 'on' : ''}" data-a="spd" data-v="${v}" title="${v}× speed">${n}</button>`).join('') + `<button class="spd ${PAUSED ? 'on' : ''}" data-a="spd" data-v="pause" title="Pause">❚❚</button>`
+  const sp = [[1, 1], [2, 4], [3, 16], [4, 64], [5, 256]];
+  return sp.map(([n, v]) => `<button class="spd ${!PAUSED && SPEED === v ? 'on' : ''}" data-a="spd" data-v="${v}" title="${v === 1 ? 'Real time (1 second = 1 second)' : v + '× real time'} · key ${n}">${v}×</button>`).join('') + `<button class="spd ${PAUSED ? 'on' : ''}" data-a="spd" data-v="pause" title="Pause">❚❚</button>`
     + (dkStage() === 'race' ? '<button class="spd wide" data-a="simend" title="Simulate to the flag">⏭</button>' : '<button class="spd wide" data-a="qskip" title="Skip to the end of the session">⏭</button>');
 }
 function dkFlagState(kind, S) {
@@ -373,6 +373,7 @@ function dkDrawMap(cv, kind, S, mini) {
   });
   for (let k = list.length - 1; k >= 0; k--) { const { c, x, y, dim, i } = list[k]; const hi = c.player || c.fav;
     ctx.globalAlpha = dim ? 0.55 : 1; ctx.beginPath(); ctx.arc(x, y, hi ? r0 + 2 : r0, 0, 6.283); ctx.fillStyle = c.t.color; ctx.fill(); ctx.lineWidth = hi ? 2.5 : 1.5; ctx.strokeStyle = hi ? '#ffd400' : '#fff'; ctx.stroke();
+    if (kind === 'race' && (c.off > 0 || c.coastF != null)) { ctx.beginPath(); ctx.arc(x, y, (hi ? r0 + 2 : r0) + 4, 0, 6.283); ctx.lineWidth = 2.5; ctx.strokeStyle = c.off > 0 ? '#ef4444' : '#f59e0b'; if (c.coastF != null) ctx.setLineDash([3, 3]); ctx.stroke(); ctx.setLineDash([]); }
     if (!mini) { ctx.fillStyle = dkInk(c.t.color); ctx.font = `bold ${hi ? 11 : 10}px ui-monospace,monospace`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(kind === 'race' ? String(i + 1) : String(c.d.num || c.d.code[0]), x, y + 0.5); ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; }
     else if (hi || i === 0) { ctx.fillStyle = '#fff'; ctx.font = '11px ui-monospace,monospace'; ctx.fillText(c.d.code, x + 7, y - 6); }
     ctx.globalAlpha = 1; }
@@ -526,5 +527,5 @@ document.addEventListener('keydown', e => {
   if (kind !== 'race' && kind !== 'quali') return;
   if (e.key === 't' || e.key === 'T') { DK.view = DK.view === 'tele' ? 'live' : 'tele'; render(); }
   else if (e.key === ' ') { e.preventDefault(); if (kind === 'race' && !RACE.started) A.lights(); else { PAUSED = !PAUSED; DK.rsig = ''; dkUpdate(); } }
-  else if (/^[1-5]$/.test(e.key) && !(kind === 'race' && !RACE.started)) { PAUSED = false; SPEED = [4, 16, 32, 64, 256][+e.key - 1]; raceBanner = ''; const b = document.getElementById('rbanner'); if (b) { b.className = ''; b.textContent = ''; } DK.rsig = ''; dkUpdate(); }
+  else if (/^[1-5]$/.test(e.key) && !(kind === 'race' && !RACE.started)) { PAUSED = false; SPEED = [1, 4, 16, 64, 256][+e.key - 1]; raceBanner = ''; const b = document.getElementById('rbanner'); if (b) { b.className = ''; b.textContent = ''; } DK.rsig = ''; dkUpdate(); }
 });

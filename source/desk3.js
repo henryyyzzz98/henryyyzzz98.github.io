@@ -84,7 +84,7 @@ function dkRegsForm(r, act) {
   ${r.pts === 'custom' ? `<label class="small">Points for 1st, 2nd, 3rd… (comma separated)<input data-dkc="${act}" data-k="custom" value="${esc(r.custom)}" style="width:100%"></label>` : '<span></span>'}
   <label class="small">Pole position bonus${sel('pole', [[0, 'No points for pole'], [1, '1 point for pole'], [2, '2 points for pole'], [3, '3 points for pole']])}</label>
   <label class="small">Fastest lap bonus${sel('fl', [['era', 'Real rules of each season'], ['off', 'No fastest-lap point'], ['any', '1 point — any finisher'], ['top10', '1 point — only if in the top 10']])}</label>
-  <label class="small">Qualifying format${sel('quali', [['era', 'Real format of each season'], ['single', 'One session — fastest lap takes pole'], ['knockout', 'Knockout — Q1, Q2, Q3'], ['elim', '2016 elimination — slowest out every 90 seconds'], ['lapelim', 'Pole-lap elimination — one session, slowest out every pole lap time']])}</label>
+  <label class="small">Qualifying format${sel('quali', [['era', 'Real format of each season'], ['single', 'One session — fastest lap takes pole'], ['knockout', 'Knockout — Q1, Q2, Q3'], ['elim', '2016 elimination — slowest out every 90 seconds'], ['lapelim', 'Pole-lap elimination — one session, slowest out every 2 × pole lap, shootout for pole']])}</label>
   <label class="small">Grand Prix format${sel('race', [['gp', 'Standard race distance'], ['endu', 'Endurance — 60 s clock, earn time with laps and overtakes'], ['elimr', 'Elimination — last car out every (laps ÷ cars) laps']])}</label>
   <label class="small">Dropped scores${sel('drop', [['era', 'Real rules (some old seasons only count best results)'], ['all', 'Every result counts']])}</label></div>`;
 }

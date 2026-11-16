@@ -3,7 +3,8 @@
 // every car overtaken adds 10 s. Off-track moments freeze the distance counter. Each lap the field gets faster and
 // more spread out, and mistakes become more likely. When the clock hits zero the car can no longer accelerate:
 // it coasts to a stop, and the distance it covered from the start line is its result.
-const ENDU = { start: 60, max: 90, pass: 10 };
+const ENDU = { start: 60, max: 90, minCap: 60, pass: 10 };
+const enduCap = race => Math.max(ENDU.minCap, ENDU.max - Math.max(0, ...race.cars.map(c => c.laps || 0)));
 const enduOn = race => !!(race && race.endu);
 function enduLapBonus(track) { return Math.round(track.base * 1.06); }   // longer lap = more time
 const enduKm = c => (Math.max(0, c.edist || 0) / 1000).toFixed(3);
@@ -13,9 +14,10 @@ hxChain('raceInit', race => {
   race.endu = { bonus: enduLapBonus(race.track) };
   race.laps = 999;
   race.rules = Object.assign({}, race.rules, { sc: false, vsc: false, twoCompound: false });
-  race.cars.forEach(c => { c.clk = ENDU.start; c.edist = 0; c.off = 0; c.coastF = null; c.passes = 0; c._pd = c.dist; });
+  race.cars.forEach(c => { c.clk = ENDU.start; c.edist = 0; c.off = 0; c.coastF = null; c.passes = 0; c._pd = c.dist; c.eLap = 0; c.ePass = 0; c.clkHist = [ENDU.start]; });
+  race.endu.pairT = {};
   race.physOrder = function () { return this.cars.slice().sort((a, b) => (!!a.out !== !!b.out ? (a.out ? 1 : -1) : b.dist - a.dist)); };
-  race.msg(`⏱ Endurance race: ${ENDU.start}s on every clock (max ${ENDU.max}s) · +${race.endu.bonus}s per lap (a third at each sector) · +${ENDU.pass}s per overtake`, true);
+  race.msg(`⏱ Endurance race: ${ENDU.start}s on every clock · +${race.endu.bonus}s per lap (a third at each sector) · +${ENDU.pass}s per real overtake (not on lap 1) · the ${ENDU.max}s cap drops 1s per lap to ${ENDU.minCap}s`, true);
 });
 // speed: off-track moments and coasting once the clock has run out
 { const prev = XPH.speedMul; XPH.speedMul = function (race, c, dt) {
@@ -31,7 +33,7 @@ hxChain('raceInit', race => {
   if (!enduOn(race)) return a;
   const L = c.laps || 0, base = race.track.base;
   const raw = lapTimeFor(race.G, c, race.track, { lap: L, wet: race.wet, laps: race.laps });
-  const faster = raw * (Math.max(0.9, 1 - 0.006 * L) - 1);
+  const faster = raw * (Math.max(0.9, 1 - 0.006 * L) - 1) + (c.enduMood === 'push' ? -raw * 0.006 : c.enduMood === 'ease' ? raw * 0.003 : 0);
   const spread = Math.max(0, raw - base) * 0.06 * L;
   return a + faster + spread;
 }; }
@@ -40,7 +42,8 @@ function enduSectors(race, c) {
   const S = race.L / 3, n = Math.floor(Math.max(0, c.dist) / S);
   if (c._sec == null) c._sec = 0;
   while (c._sec < n && !c.out && c.coastF == null) {
-    c._sec++; const before = c.clk; c.clk = Math.min(ENDU.max, c.clk + race.endu.bonus / 3);
+    c._sec++; const before = c.clk; c.clk = Math.min(enduCap(race), c.clk + race.endu.bonus / 3); c.eLap += Math.max(0, c.clk - before);
+    if (c._sec % 3 === 0) c.clkHist.push(+c.clk.toFixed(1));
     if ((c.player || c.fav) && c._sec % 3 === 0) race.msg(`⏱ ${c.d.code} completes lap ${c._sec / 3}: clock ${c.clk.toFixed(1)}s`, false);
   }
 }
@@ -61,7 +64,7 @@ hxChain('onStep', (race, dt) => {
         c.coastF = 1; race.msg(`⌛ ${c.d.code} is out of time — coasting at ${enduKm(c)} km`, c.player || c.fav);
       } else if (c.pitT <= 0 && !(c.off > 0)) {
         // mistakes: more likely the further into the race (faster cars), for less consistent drivers and in the wet
-        const L = c.laps || 0, perLap = 0.03 * Math.pow(1.2, L) * (1 + (100 - c.d.cons) / 30) * (1 + race.wet * 3);
+        const L = c.laps || 0, perLap = 0.03 * Math.pow(1.2, L) * (1 + (100 - c.d.cons) / 30) * (1 + race.wet * 3) * (c.enduMood === 'push' ? 1.8 : c.enduMood === 'ease' ? 0.6 : 1);
         if (Math.random() < perLap * dt / Math.max(30, c.curLT)) {
           if (L >= 12 && Math.random() < 0.025) { race.retire(c, 'Crashed out', null); c.stopT = race.t; continue; }
           c.off = rnd(3, 9); race.msg(`🟥 ${c.d.code} runs off the track! Distance counter frozen`, c.player || c.fav);
@@ -73,14 +76,24 @@ hxChain('onStep', (race, dt) => {
     }
   }
   // overtakes: +10 s for every running car passed on track (cars in the pits don't count)
+  // real overtakes only: same lap, the other car still racing (not in the pits, off track or coasting), not on lap 1,
+  // and not simply re-passing a car that passed you in the last minute
+  const cap = enduCap(race), P = race.endu.pairT;
   for (const a of run) {
     if (a.out || a.coastF != null) continue;
     for (const b of run) {
-      if (a === b || b.out || b.pitT > 0) continue;
-      if (a._pd < b._pd && a.dist > b.dist) { a.passes++; const was = a.clk; a.clk = Math.min(ENDU.max, a.clk + ENDU.pass);
-        if (a.player || a.fav || b.player || b.fav) race.msg(`⚔️ ${a.d.code} passes ${b.d.code}: +${(a.clk - was).toFixed(0)}s`, false); }
+      if (a === b || b.out) continue;
+      if (!(a._pd < b._pd && a.dist > b.dist)) continue;
+      const key = a.d.id + '>' + b.d.id, back = P[b.d.id + '>' + a.d.id]; P[key] = race.t;
+      const L = race.L, sameLap = Math.floor(Math.max(0, a._pd) / L) === Math.floor(Math.max(0, b._pd) / L);
+      if (b.pitT > 0 || b.off > 0 || b.coastF != null || !sameLap || a.laps < 1 || (back != null && race.t - back < 60)) continue;
+      a.passes++; const was = a.clk; a.clk = Math.min(cap, a.clk + ENDU.pass); a.ePass += Math.max(0, a.clk - was);
+      if (a.player || a.fav || b.player || b.fav) race.msg(`⚔️ ${a.d.code} passes ${b.d.code}: +${(a.clk - was).toFixed(0)}s`, false);
     }
   }
+  // the cap shrinks: clocks above it are cut back
+  for (const c of run) if (c.clk > cap) c.clk = cap;
+  if (cap !== race.endu.lastCap) { if (race.endu.lastCap != null && cap < race.endu.lastCap && cap % 5 === 0) race.msg(`⏱ Clock cap is now ${cap}s`, false); race.endu.lastCap = cap; }
   race.cars.forEach(c => { c._pd = c.dist; });
   if (race.cars.every(c => c.out)) race.finish();
 });
@@ -103,7 +116,7 @@ const _endu_applyRaceResult = applyRaceResult;
 applyRaceResult = function (G0, race, wk) {
   const out = _endu_applyRaceResult.apply(this, arguments);
   try { if (enduOn(race)) { const s = G0.results[G0.results.length - 1]; s.endu = true;
-    s.rows.forEach(r => { const c = race.cars.find(x => x.d.id === r.id && x.t.id === r.team); if (c) { r.edist = Math.round(c.edist); r.passes = c.passes; if (c.why) r.why = c.why; } }); } } catch (e) { }
+    s.rows.forEach(r => { const c = race.cars.find(x => x.d.id === r.id && x.t.id === r.team); if (c) { r.edist = Math.round(c.edist); r.passes = c.passes; r.eLap = Math.round(c.eLap); r.ePass = Math.round(c.ePass); r.clkHist = c.clkHist.concat([0]); if (c.why) r.why = c.why; } }); } } catch (e) { }
   return out;
 };
 
@@ -151,6 +164,44 @@ dkRaceView = function (o) {
 const _endu_deskGrid = deskGrid;
 deskGrid = function (sprint) {
   let html = _endu_deskGrid.apply(this, arguments);
-  if (!sprint && G.rules && G.rules.endu) html = html.replace(/<div class="dk-mut dkg-note">[^<]*<\/div>/, `<div class="dk-mut dkg-note"><b>Endurance race:</b> every car starts with ${ENDU.start}s on its clock (max ${ENDU.max}s) · +${enduLapBonus(WK.track)}s for each lap (paid a third at each sector line) · +${ENDU.pass}s for each car overtaken · off-track driving doesn't count · when the clock hits zero the car coasts to a stop · furthest distance wins.</div>`).replace(/<div class="dkg-row"><span>DISTANCE<\/span><b>[^<]*<\/b><\/div>/, '<div class="dkg-row"><span>DISTANCE</span><b>Until every clock runs out</b></div>');
+  if (!sprint && G.rules && G.rules.endu) html = html.replace(/<div class="dk-mut dkg-note">[^<]*<\/div>/, `<div class="dk-mut dkg-note"><b>Endurance race:</b> every car starts with ${ENDU.start}s on its clock · +${enduLapBonus(WK.track)}s for each lap (paid a third at each sector line) · +${ENDU.pass}s for each real overtake (same lap, not on lap 1) · the clock cap starts at ${ENDU.max}s and drops 1s per lap to ${ENDU.minCap}s · off-track driving doesn't count · when the clock hits zero the car coasts to a stop · furthest distance wins.</div>`).replace(/<div class="dkg-row"><span>DISTANCE<\/span><b>[^<]*<\/b><\/div>/, '<div class="dkg-row"><span>DISTANCE</span><b>Until every clock runs out</b></div>');
   return html;
+};
+
+// drivers react to their clock: low → push (faster, more mistakes); near the cap → ease off (tyres, fewer mistakes)
+hxChain('onLap', (race, c, n) => {
+  if (!enduOn(race) || c.out || c.coastF != null) return;
+  const cap = enduCap(race), mood = c.clk < 20 ? 'push' : c.clk > cap - 8 ? 'ease' : null;
+  c.enduMood = mood; if (c.auto && !c.player && mood) c.mode = mood === 'push' ? 'push' : 'save';
+  if (mood !== c._mood0 && (c.player || c.fav) && mood) race.msg(mood === 'push' ? `🔥 ${c.d.code} is low on time (${c.clk.toFixed(0)}s) — pushing hard` : `🧊 ${c.d.code} is near the cap — easing off to save tyres`, false);
+  c._mood0 = mood;
+});
+// pit stops: best when the clock is full (the stop only uses time you couldn't bank anyway)
+const _endu_aiPit = Race.prototype.aiPit;
+Race.prototype.aiPit = function (c) {
+  const comp = _endu_aiPit.apply(this, arguments);
+  if (!this.endu || c.coastF != null) return comp;
+  const cap = enduCap(this);
+  if (comp && c.clk < cap - 15 && c.wear < 0.85 && !(this.wet > 0.3)) return null;      // hold on until the clock is fuller
+  if (!comp && c.clk >= cap - 3 && c.wear > c.planStop - 0.2) return this.slick(c, 30);  // full clock: perfect time to stop
+  return comp;
+};
+// results: clock chart for the top drivers + where everyone's time came from
+function enduClockChart(rows) {
+  const top = rows.filter(r => r.clkHist && r.clkHist.length > 1).slice(0, 6); if (!top.length) return '';
+  const W = 520, H = 170, maxL = Math.max(...top.map(r => r.clkHist.length - 1)), X = l => 30 + l / Math.max(1, maxL) * (W - 40), Y = v => 10 + (1 - v / ENDU.max) * (H - 30);
+  const grid = [0, 30, 60, 90].map(v => `<line x1="30" x2="${W - 10}" y1="${Y(v)}" y2="${Y(v)}" stroke="#1f2d4a"/><text x="4" y="${Y(v) + 4}" fill="#7f8aa3" font-size="10">${v}s</text>`).join('');
+  const lines = top.map(r => { const tm = G.teams[r.team] || { color: '#888' }; return `<polyline fill="none" stroke="${tm.color}" stroke-width="2" points="${r.clkHist.map((v, i) => `${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(' ')}"/>`; }).join('');
+  const legend = top.map(r => `<span style="color:${(G.teams[r.team] || {}).color || '#888'}">■ ${esc(r.code)}</span>`).join(' ');
+  return `<section><div class="dk-h"><b>CLOCK BY LAP</b></div><div class="dkg-body"><svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto">${grid}<text x="${W - 60}" y="${H - 4}" fill="#7f8aa3" font-size="10">laps →</text>${lines}</svg><div class="endu-lg">${legend}</div></div></section>`;
+}
+function enduEarned(rows) {
+  const L = rows.filter(r => r.eLap != null).slice(0, 10); if (!L.length) return '';
+  return `<section><div class="dk-h"><b>TIME EARNED</b></div><table class="endu-earn"><thead><tr><th class="l">Driver</th><th>Laps</th><th>Overtakes</th><th>Passes</th></tr></thead><tbody>${L.map(r => `<tr><td class="l">${esc(r.code)}</td><td>+${r.eLap}s</td><td>+${r.ePass}s</td><td>${r.passes || 0}</td></tr>`).join('')}</tbody></table></section>`;
+}
+const _endu_dkRaceView2 = dkRaceView;
+dkRaceView = function (o) {
+  const html = _endu_dkRaceView2.apply(this, arguments);
+  const s = G.results[o.k]; if (!s || !s.endu || o.sprint) return html;
+  return html.replace('<div class="dk-resside">', '<div class="dk-resside">' + enduClockChart(s.rows) + enduEarned(s.rows));
 };

@@ -464,7 +464,7 @@ function wkQualiLive(I) {
   <div class="small mut" style="margin-top:6px">Tap a driver in the timing tower to follow them; tap again to stop.</div></div>
   <div class="tower" id="tower"></div></div>`;
 }
-function speedButtons() { return [['pause', '❚❚ Pause'], [4, '4×'], [16, '16×'], [64, '64×'], [256, '256×']].map(([v, l]) => `<button class="sm spd ${(v === 'pause' ? PAUSED : (!PAUSED && SPEED === v)) ? 'on' : ''}" data-a="spd" data-v="${v}">${l}</button>`).join(''); }
+function speedButtons() { return [['pause', '❚❚ Pause'], [1, '1× real time'], [4, '4×'], [16, '16×'], [64, '64×'], [256, '256×']].map(([v, l]) => `<button class="sm spd ${(v === 'pause' ? PAUSED : (!PAUSED && SPEED === v)) ? 'on' : ''}" data-a="spd" data-v="${v}">${l}</button>`).join(''); }
 function startQualiLoop() {
   const QS = curQS(), Q = QS.live; if (!Q) return;
   lastTs = performance.now(); lastUi = 0; sizeCanvas(); updateQualiUI();

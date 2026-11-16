@@ -33,42 +33,115 @@ QualiLive = class extends _q16_QualiLive {
   // ---- pole-lap elimination: one open-ended session; the slowest car goes every <current pole lap time> ----
   lapSetup() {
     this.lapMode = true; this.elapsed = true; this.armed = false; this.lastE = null; this.log = []; this.events = [];
-    const base = this.base, horizon = (this.cars.length + 6) * base * 1.1 + 900;
-    this.cars.forEach(c => {
-      const runs = []; let t = rnd(0, base * 0.8);
-      while (t < horizon) {
-        const n = pick([2, 3, 3, 4]);
-        for (let k = 0; k < n; k++) {
-          const q = qualiLap(this.G, c.e, this.track, this.wet, c.risk); const crash = q.crash && Math.random() < 0.35;
-          const evo = Math.min(0.6, t / 600 * 0.15), fade = k * 0.14;
-          const OL = k === 0 ? base * 1.4 * rnd(0.97, 1.05) : base * 1.22 * rnd(0.98, 1.04), IL = k === n - 1 ? base * 1.45 * rnd(0.97, 1.05) : 0.5;
-          const fly = crash ? base * rnd(1, 1.02) : (q.crash ? q.t || base : q.t) - evo + fade;
-          runs.push({ start: t, OL, IL, fly, crash, crashAt: rnd(0.2, 0.9), done: false, aborted: false });
-          t += OL + fly + IL;
-        }
-        t += rnd(40, 130); // in the garage: fresh tyres
-      }
-      c.runs = runs;
+    this.pend = null; this.so = null; this.sets = 4;
+    this.cars.forEach(c => { c.runs = []; c.sets = this.sets; c.stintEnd = 0; c.usedLaps = 0; this.planStint(c, rnd(0, this.base * 0.8)); });
+    this.msg(`🟢 Qualifying is under way — no time limit. Once everyone has a time, the slowest driver is out every 2 × pole lap. Laps already started still count. ${this.sets} sets of tyres each. Final three: one-lap shootout.`, true);
+  }
+  // one stint: out lap, push laps with cool-down laps between, in lap
+  planStint(c, t0) {
+    const base = this.base, fresh = c.sets > 0; if (fresh) { c.sets--; c.usedLaps = 0; }
+    const n = fresh ? pick([2, 2, 3]) : pick([2, 3]); let t = t0;
+    for (let k = 0; k < n; k++) {
+      const q = qualiLap(this.G, c.e, this.track, this.wet, c.risk); const crash = q.crash && Math.random() < 0.35;
+      const evo = Math.min(0.6, t / 600 * 0.15), fade = (c.usedLaps + k) * 0.14 + (fresh ? 0 : 0.45);
+      const OL = k === 0 ? base * 1.4 * rnd(0.97, 1.05) : base * 1.22 * rnd(0.98, 1.04), IL = k === n - 1 ? base * 1.45 * rnd(0.97, 1.05) : 0.5;
+      const fly = crash ? base * rnd(1, 1.02) : (q.crash ? q.t || base : q.t) - evo + fade;
+      c.runs.push({ start: t, OL, IL, fly, crash, crashAt: rnd(0.2, 0.9), done: false, aborted: false });
+      t += OL + fly + IL;
+    }
+    c.usedLaps += n; c.stintEnd = t;
+    if (!fresh && (c.player || c.fav)) this.msg(`🛞 ${c.d.code} is out on used tyres — no fresh sets left`, false);
+    else if (fresh && c.sets === 0 && (c.player || c.fav)) this.msg(`🛞 ${c.d.code} fits the last fresh set`, false);
+    return t;
+  }
+  aliveCars() { return this.cars.filter(c => !c.elim); }
+  idle(c) { return !c.out && c.runs.every(r => r.done || r.start > this.t + 1e6); }
+  // drivers who are safe wait in the garage (saving tyres); those near the drop zone go out
+  schedule() {
+    const alive = this.order().filter(c => !c.elim), N = alive.length, toNext = this.armed ? (this.elim.next - this.t) : 1e9;
+    alive.forEach((c, rank) => {
+      if (!this.idle(c) || this.t < c.stintEnd + 35) return;
+      const danger = c.best == null || rank >= N - 3, near = rank >= N - 6 && toNext < this.base * 3.2;
+      const go = danger || near || (c.sets > 0 && Math.random() < 0.0015);
+      if (go && !(c.sets === 0 && !danger)) this.planStint(c, this.t + rnd(3, 15));
     });
-    this.msg(`🟢 Qualifying is under way — no time limit: once everyone has a time, the slowest driver is out every pole-lap time`, true);
+  }
+  order() {
+    if (!this.lapMode || !this.so) return super.order();
+    const out = this.elim.order.slice().reverse(), A = this.so.cars;
+    const done = A.filter(c => c.so != null).sort((a, b) => a.so - b.so), rest = A.filter(c => c.so == null).sort((a, b) => (a.best ?? 1e9) - (b.best ?? 1e9));
+    return this.so.finished ? done.concat(A.filter(c => c.so == null)).concat(out) : done.concat(rest).concat(out);
   }
   clock() { return this.lapMode ? this.t : super.clock(); }
-  nextElim() { if (!this.lapMode) return super.nextElim(); return this.armed && this.elim.left > 0 ? Math.max(0, this.elim.next - this.t) : null; }
+  nextElim() { if (!this.lapMode) return super.nextElim(); return this.armed && !this.so && this.elim.left > 0 && !this.pend ? Math.max(0, this.lastE + this.elim.gap - this.t) : null; }
   crash(c, r) { super.crash(c, r); if (this.lapMode && this.lastE != null) this.lastE += 45; }
+  shootout() {
+    const S = this.so;
+    if (S.phase === 'wait') { // everyone back in the garage first
+      if (!S.cars.every(c => c.out || this.idle(c))) return;
+      S.queue = S.cars.slice().sort((a, b) => (b.best ?? 1e9) - (a.best ?? 1e9)); S.phase = 'run';
+      this.msg(`🎯 SHOOTOUT for pole — one flying lap each, slowest first: ${S.queue.map(c => c.d.code).join(', ')}`, true);
+      // staggered: each flying lap starts as the previous one ends, so there is only ever one car on a flying lap
+      let t = this.t + 5, prevEnd = 0;
+      S.queue.forEach(c => {
+        if (c.out) { c.soDone = true; c.so = null; return; }
+        const OL = this.base * 1.4 * rnd(0.98, 1.02); const start = Math.max(t, prevEnd + 2 - OL);
+        this.planStintOne(c, start, OL); c.soRun = c.runs[c.runs.length - 1]; prevEnd = start + OL + c.soRun.fly; t = start + 1;
+      });
+    }
+    if (S.phase !== 'run') return;
+    S.queue.forEach(c => {
+      if (c.soDone || !c.soRun) return;
+      if (c.soRun.timed || c.out || c.soRun.aborted) {
+        c.soDone = true; c.so = c.soRun.crash || c.soRun.aborted || !c.soRun.timed ? null : c.soRun.fly;
+        this.msg(c.so != null ? `🎯 ${c.d.name}: ${fmtTime(c.so)}` : `🎯 ${c.d.name}: no time`, true);
+      }
+    });
+    S.cur = S.queue.find(c => !c.soDone) || null;
+    if (S.queue.every(c => c.soDone)) {
+      S.finished = true; const p = this.order()[0];
+      this.msg(`🏆 POLE POSITION: ${p.d.name}${p.so != null ? ' — ' + fmtTime(p.so) : ''}`, true);
+      this.finish();
+      if (this.result) this.result.forEach(r => { const c = S.cars.find(x => x.e === r.e); if (c) r.t = c.so; });
+    }
+  }
+  planStintOne(c, t, OL) { // a single shootout lap
+    const base = this.base, fresh = c.sets > 0; if (fresh) c.sets--;
+    const q = qualiLap(this.G, c.e, this.track, this.wet, c.risk); const crash = q.crash && Math.random() < 0.3;
+    const fly = crash ? base : (q.crash ? q.t || base : q.t) - Math.min(0.6, t / 600 * 0.15) + (fresh ? 0 : 0.45);
+    c.runs.push({ start: t, OL: OL || base * 1.4, IL: base * 1.45, fly, crash, crashAt: rnd(0.2, 0.9), done: false, aborted: false });
+  }
   step(dt) {
     if (!this.lapMode) return super.step(dt);
     if (this.done) return;
+    const alive = this.aliveCars();
     if (!this.armed) {
-      const alive = this.cars.filter(c => !c.out);
-      if (alive.length && (alive.every(c => c.best != null) || this.t > this.base * 8)) {
+      const a2 = alive.filter(c => !c.out);
+      if (a2.length && (a2.every(c => c.best != null) || this.t > this.base * 8)) {
         this.armed = true; this.lastE = this.t;
-        this.msg(`⏱ Every car has a time — first elimination in ${fmtTime(this.best ? this.best.t : this.base)} (the pole lap)`, true);
+        this.msg(`⏱ Every car has a time — first elimination in ${fmtTime(2 * (this.best ? this.best.t : this.base))} (2 × the pole lap)`, true);
       }
     }
-    this.elim.gap = this.best ? this.best.t : this.base;
-    this.elim.next = this.armed ? this.lastE + this.elim.gap : Infinity;
-    const k = this.elim.order.length; super.step(dt);
-    if (this.elim.order.length > k) this.lastE = this.t;
+    this.elim.gap = 2 * (this.best ? this.best.t : this.base);
+    if (this.so) { this.elim.next = Infinity; super.step(dt); if (!this.done) this.shootout(); return; }
+    if (!this.done && this.t > 1) this.schedule();
+    // elimination due: laps already under way may finish first
+    if (this.armed && !this.pend && this.t >= this.lastE + this.elim.gap) {
+      this.pend = { due: this.lastE + this.elim.gap, wait: new Set(alive.filter(c => !c.out && c.phase === 'flying')) };
+      if (this.pend.wait.size) this.msg(`⏱ Elimination due — waiting for ${this.pend.wait.size} lap${this.pend.wait.size > 1 ? 's' : ''} in progress (${[...this.pend.wait].map(c => c.d.code).join(', ')})`, false);
+    }
+    this.elim.next = Infinity;
+    if (this.pend) {
+      for (const c of [...this.pend.wait]) if (c.out || c.phase !== 'flying') this.pend.wait.delete(c);
+      if (!this.pend.wait.size) { this.elim.next = this.t + dt / 2; this.lastE = this.pend.due; this.pend = null; }
+    }
+    super.step(dt);
+    const left = this.aliveCars();
+    if (!this.done && left.length <= 3 && !this.so) {
+      this.so = { phase: 'wait', cars: left, cur: null, queue: [] };
+      left.forEach(c => c.runs.forEach(r => { if (r.start > this.t) r.done = true; })); // cancel planned runs
+      this.msg(`🎯 Three drivers left — eliminations stop. They return to the pits for a one-lap shootout.`, true);
+    }
   }
 };
 function qLapElim() { return !!(G && WK && WK.stage !== 'squali' && G.rules && G.rules.quali === 'lapelim'); }
@@ -100,9 +173,9 @@ updateQualiUI = function () {
     const nx = Q.nextElim(), left = Q.cars.filter(c => !c.elim).length;
     // compact so the header keeps its size: "Q1 · 9:12 · OUT IN 0:45 · 18 LEFT"
     let txt = nx == null ? '' : `OUT IN ${fmtClock(nx)}`;
-    if (Q.lapMode) txt = Q.armed ? `OUT IN ${fmtClock(nx)}` : 'SETTING TIMES';
+    if (Q.lapMode) txt = Q.so ? (Q.so.cur && !Q.so.finished ? `SHOOTOUT: ${Q.so.cur.d.code}` : 'SHOOTOUT') : Q.pend ? 'ELIMINATION DUE: LAPS FINISHING' : Q.armed ? `OUT IN ${fmtClock(nx)}` : 'SETTING TIMES';
     const ds = document.getElementById('dksess');
-    if (ds) { const h = `${esc(Q.label === 'Qualifying' ? 'Q' : Q.label)} · ${fmtClock(Q.clock())} · ${left} left${txt ? ` · <span class="q16">${txt}</span>` : ''}${Q.lapMode && Q.armed ? ` · every ${fmtTime(Q.elim.gap)}` : ''}`; if (ds._q16 !== h || ds._q16src !== ds._h) { ds.innerHTML = h; ds._q16 = h; ds._q16src = ds._h; } ds.title = ds.textContent; }
+    if (ds) { const h = `${esc(Q.label === 'Qualifying' ? 'Q' : Q.label)} · ${fmtClock(Q.clock())} · ${left} left${txt ? ` · <span class="q16">${txt}</span>` : ''}${Q.lapMode && Q.armed && !Q.so ? ` · every ${fmtTime(Q.elim.gap)}` : ''}`; if (ds._q16 !== h || ds._q16src !== ds._h) { ds.innerHTML = h; ds._q16 = h; ds._q16src = ds._h; } ds.title = ds.textContent; }
     const hud = document.getElementById('hud'); if (hud && nx != null) hud.insertAdjacentHTML('beforeend', `<span class="chip">⛔ Next out ${fmtClock(nx)} · ${left} left</span>`);
   } catch (e) { }
   return r;
