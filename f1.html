@@ -5430,8 +5430,9 @@ const _dk_sizeCanvas = sizeCanvas; sizeCanvas = function () { if (document.getEl
 const _dk_updRace = updateRaceUI; updateRaceUI = function (f) { _dk_updRace(f); if (document.getElementById('dk')) dkUpdate(); };
 const _dk_updQuali = updateQualiUI; updateQualiUI = function () { _dk_updQuali(); if (document.getElementById('dk')) dkUpdate(); };
 window.addEventListener('resize', () => {
-  const on = !!document.getElementById('dk'), want = VIEW === 'weekend' && dkActive();
-  if (on !== want) { render(); return; }
+  // The layout never depends on the window size, so a resize only resizes the canvases. Re-rendering here rebuilt the
+  // page on phones (a resize fires whenever the address bar shows or hides while scrolling) and threw the scroll to the top.
+  const on = !!document.getElementById('dk');
   if (on) { DK._terr = null; dkSize(document.getElementById('cv')); dkSize(document.getElementById('tgps')); }
 });
 // practice rows remember the tyre they set their time on
