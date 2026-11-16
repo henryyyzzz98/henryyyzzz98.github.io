@@ -784,6 +784,8 @@ body.dt .dk .dkst tr.me td.tcell{background:var(--tc);color:var(--ti)}
 .endu-c i{position:absolute;left:0;top:0;bottom:0}.endu-c b{position:relative;display:block;text-align:center;font-size:.85em;line-height:1.45;color:#fff;text-shadow:0 0 3px #000}
 .endu-st.off{color:#fca5a5}.endu-st.coast{color:#fcd34d}.endu-st.stop{opacity:.7}
 .dk tr.elimr-danger td{box-shadow:inset 0 -2px 0 #ef4444,inset 0 2px 0 #ef4444}
+.endu-lg{display:flex;gap:.8em;flex-wrap:wrap;font-size:.85em}
+.endu-earn{width:100%;border-collapse:collapse;font-size:.9em}.endu-earn th,.endu-earn td{padding:.3em .6em;text-align:right;border-bottom:1px solid #141e33}.endu-earn th{color:#8fb4ff;font-size:.8em}.endu-earn .l{text-align:left}
 </style></head><body><div id="app"></div><script>
 // ===== DATA: teams, drivers, tracks =====
 const ENGINES = {
@@ -2845,7 +2847,7 @@ function wkQualiLive(I) {
   <div class="small mut" style="margin-top:6px">Tap a driver in the timing tower to follow them; tap again to stop.</div></div>
   <div class="tower" id="tower"></div></div>`;
 }
-function speedButtons() { return [['pause', '❚❚ Pause'], [4, '4×'], [16, '16×'], [64, '64×'], [256, '256×']].map(([v, l]) => `<button class="sm spd ${(v === 'pause' ? PAUSED : (!PAUSED && SPEED === v)) ? 'on' : ''}" data-a="spd" data-v="${v}">${l}</button>`).join(''); }
+function speedButtons() { return [['pause', '❚❚ Pause'], [1, '1× real time'], [4, '4×'], [16, '16×'], [64, '64×'], [256, '256×']].map(([v, l]) => `<button class="sm spd ${(v === 'pause' ? PAUSED : (!PAUSED && SPEED === v)) ? 'on' : ''}" data-a="spd" data-v="${v}">${l}</button>`).join(''); }
 function startQualiLoop() {
   const QS = curQS(), Q = QS.live; if (!Q) return;
   lastTs = performance.now(); lastUi = 0; sizeCanvas(); updateQualiUI();
@@ -5112,8 +5114,8 @@ function dkSpd() {
   if (RACE && dkStage() === 'race' && !RACE.started) {
     return LIGHTS && LIGHTS.phase !== 'idle' ? '<button class="dk-go" disabled>LIGHTS…</button>' : '<button class="dk-go" data-a="lights" id="lightsbtn">● START THE LIGHTS</button>';
   }
-  const sp = [[1, 4], [2, 16], [3, 32], [4, 64], [5, 256]];
-  return sp.map(([n, v]) => `<button class="spd ${!PAUSED && SPEED === v ? 'on' : ''}" data-a="spd" data-v="${v}" title="${v}× speed">${n}</button>`).join('') + `<button class="spd ${PAUSED ? 'on' : ''}" data-a="spd" data-v="pause" title="Pause">❚❚</button>`
+  const sp = [[1, 1], [2, 4], [3, 16], [4, 64], [5, 256]];
+  return sp.map(([n, v]) => `<button class="spd ${!PAUSED && SPEED === v ? 'on' : ''}" data-a="spd" data-v="${v}" title="${v === 1 ? 'Real time (1 second = 1 second)' : v + '× real time'} · key ${n}">${v}×</button>`).join('') + `<button class="spd ${PAUSED ? 'on' : ''}" data-a="spd" data-v="pause" title="Pause">❚❚</button>`
     + (dkStage() === 'race' ? '<button class="spd wide" data-a="simend" title="Simulate to the flag">⏭</button>' : '<button class="spd wide" data-a="qskip" title="Skip to the end of the session">⏭</button>');
 }
 function dkFlagState(kind, S) {
@@ -5338,6 +5340,7 @@ function dkDrawMap(cv, kind, S, mini) {
   });
   for (let k = list.length - 1; k >= 0; k--) { const { c, x, y, dim, i } = list[k]; const hi = c.player || c.fav;
     ctx.globalAlpha = dim ? 0.55 : 1; ctx.beginPath(); ctx.arc(x, y, hi ? r0 + 2 : r0, 0, 6.283); ctx.fillStyle = c.t.color; ctx.fill(); ctx.lineWidth = hi ? 2.5 : 1.5; ctx.strokeStyle = hi ? '#ffd400' : '#fff'; ctx.stroke();
+    if (kind === 'race' && (c.off > 0 || c.coastF != null)) { ctx.beginPath(); ctx.arc(x, y, (hi ? r0 + 2 : r0) + 4, 0, 6.283); ctx.lineWidth = 2.5; ctx.strokeStyle = c.off > 0 ? '#ef4444' : '#f59e0b'; if (c.coastF != null) ctx.setLineDash([3, 3]); ctx.stroke(); ctx.setLineDash([]); }
     if (!mini) { ctx.fillStyle = dkInk(c.t.color); ctx.font = `bold ${hi ? 11 : 10}px ui-monospace,monospace`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(kind === 'race' ? String(i + 1) : String(c.d.num || c.d.code[0]), x, y + 0.5); ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; }
     else if (hi || i === 0) { ctx.fillStyle = '#fff'; ctx.font = '11px ui-monospace,monospace'; ctx.fillText(c.d.code, x + 7, y - 6); }
     ctx.globalAlpha = 1; }
@@ -5491,7 +5494,7 @@ document.addEventListener('keydown', e => {
   if (kind !== 'race' && kind !== 'quali') return;
   if (e.key === 't' || e.key === 'T') { DK.view = DK.view === 'tele' ? 'live' : 'tele'; render(); }
   else if (e.key === ' ') { e.preventDefault(); if (kind === 'race' && !RACE.started) A.lights(); else { PAUSED = !PAUSED; DK.rsig = ''; dkUpdate(); } }
-  else if (/^[1-5]$/.test(e.key) && !(kind === 'race' && !RACE.started)) { PAUSED = false; SPEED = [4, 16, 32, 64, 256][+e.key - 1]; raceBanner = ''; const b = document.getElementById('rbanner'); if (b) { b.className = ''; b.textContent = ''; } DK.rsig = ''; dkUpdate(); }
+  else if (/^[1-5]$/.test(e.key) && !(kind === 'race' && !RACE.started)) { PAUSED = false; SPEED = [1, 4, 16, 64, 256][+e.key - 1]; raceBanner = ''; const b = document.getElementById('rbanner'); if (b) { b.className = ''; b.textContent = ''; } DK.rsig = ''; dkUpdate(); }
 });
 // ===================== Desktop: standings, results screens, global theme =====================
 const DK2 = { st: 'd', legend: true, modern: true, markers: 0, panel: 'grid' };
@@ -5610,7 +5613,7 @@ function dkRaceView(o) {
   const sp = sprint ? null : o.sprintRows;
   const now = dkPts(prev.concat([sp, rows])), was = dkPts(prev.concat([sp]));
   const upNow = sprint ? k : k + 1, upWas = k;
-  const timeOf = r => r.elimLap != null || (!sprint && G.results[k] && G.results[k].elimR && !r.out && r.pos === 1) ? elimTimeTxt(r) : r.edist != null && typeof enduTimeTxt === 'function' ? enduTimeTxt(r, lead) : r.time == null && !r.out ? (r.pos === 1 ? 'Winner' : 'Finished') : r.out ? `DNF (${r.out.length > 14 ? r.out.split(/[ (]/)[0] : r.out})` : r.pos === 1 ? fmtTime(r.time) : r.laps < lead.laps ? '+' + (lead.laps - r.laps) + ' Lap' + (lead.laps - r.laps > 1 ? 's' : '') : '+' + (r.time - lead.time).toFixed(3);
+  const timeOf = r => r.elimLap != null && typeof elimTimeTxt === 'function' ? elimTimeTxt(r) : r.edist != null && typeof enduTimeTxt === 'function' ? enduTimeTxt(r, lead) : r.time == null && !r.out ? (r.pos === 1 ? 'Winner' : 'Finished') : r.out ? `DNF (${r.out.length > 14 ? r.out.split(/[ (]/)[0] : r.out})` : r.pos === 1 ? fmtTime(r.time) : r.laps < lead.laps ? '+' + (lead.laps - r.laps) + ' Lap' + (lead.laps - r.laps > 1 ? 's' : '') : '+' + (r.time - lead.time).toFixed(3);
   const ord = rows.filter(r => !r.out).concat(rows.filter(r => r.out));
   const table = `<table class="dkfp dkrr"><thead><tr><th>Pos</th><th>Grid</th><th class="l">Driver</th><th class="l hm">Team</th><th class="l hm">Engine</th><th class="hm">Stp</th><th class="hm">Laps</th><th class="ra">Time/Gap</th><th class="ra">Pts</th></tr></thead><tbody>${ord.map(r => { const tm = G.teams[r.team] || { color: '#444', name: '' }; const d = G.drivers[r.id];
     return `<tr class="${dkMine(r) ? 'me' : ''} ${r.out ? 'dnf' : ''}" data-prof="${r.id}" style="--tc:${tm.color};--ti:${dkInk(tm.color)}"><td class="pos">${r.out ? '' : String(r.pos).padStart(2, '0')}</td><td>${r.grid || ''}</td><td class="l">${d ? dkFlag(d.nat) : ''} ${dkNm(r.name)}${r.shared ? ` <small class="dkx-sh">shared with ${esc(r.shared.join(', '))}</small>` : ''}</td><td class="l hm">${esc(tm.name)}</td><td class="l hm">${esc(dkEngine(tm))}</td><td class="hm">${r.stops ?? ''}</td><td class="hm">${r.laps ?? ''}</td><td class="ra plain">${timeOf(r)}</td><td class="ra plain">${r.pts || 0}</td></tr>`; }).join('')}</tbody></table>`;
@@ -5888,7 +5891,7 @@ function dkRegsForm(r, act) {
   ${r.pts === 'custom' ? `<label class="small">Points for 1st, 2nd, 3rd… (comma separated)<input data-dkc="${act}" data-k="custom" value="${esc(r.custom)}" style="width:100%"></label>` : '<span></span>'}
   <label class="small">Pole position bonus${sel('pole', [[0, 'No points for pole'], [1, '1 point for pole'], [2, '2 points for pole'], [3, '3 points for pole']])}</label>
   <label class="small">Fastest lap bonus${sel('fl', [['era', 'Real rules of each season'], ['off', 'No fastest-lap point'], ['any', '1 point — any finisher'], ['top10', '1 point — only if in the top 10']])}</label>
-  <label class="small">Qualifying format${sel('quali', [['era', 'Real format of each season'], ['single', 'One session — fastest lap takes pole'], ['knockout', 'Knockout — Q1, Q2, Q3'], ['elim', '2016 elimination — slowest out every 90 seconds'], ['lapelim', 'Pole-lap elimination — one session, slowest out every pole lap time']])}</label>
+  <label class="small">Qualifying format${sel('quali', [['era', 'Real format of each season'], ['single', 'One session — fastest lap takes pole'], ['knockout', 'Knockout — Q1, Q2, Q3'], ['elim', '2016 elimination — slowest out every 90 seconds'], ['lapelim', 'Pole-lap elimination — one session, slowest out every 2 × pole lap, shootout for pole']])}</label>
   <label class="small">Grand Prix format${sel('race', [['gp', 'Standard race distance'], ['endu', 'Endurance — 60 s clock, earn time with laps and overtakes'], ['elimr', 'Elimination — last car out every (laps ÷ cars) laps']])}</label>
   <label class="small">Dropped scores${sel('drop', [['era', 'Real rules (some old seasons only count best results)'], ['all', 'Every result counts']])}</label></div>`;
 }
@@ -6695,42 +6698,115 @@ QualiLive = class extends _q16_QualiLive {
   // ---- pole-lap elimination: one open-ended session; the slowest car goes every <current pole lap time> ----
   lapSetup() {
     this.lapMode = true; this.elapsed = true; this.armed = false; this.lastE = null; this.log = []; this.events = [];
-    const base = this.base, horizon = (this.cars.length + 6) * base * 1.1 + 900;
-    this.cars.forEach(c => {
-      const runs = []; let t = rnd(0, base * 0.8);
-      while (t < horizon) {
-        const n = pick([2, 3, 3, 4]);
-        for (let k = 0; k < n; k++) {
-          const q = qualiLap(this.G, c.e, this.track, this.wet, c.risk); const crash = q.crash && Math.random() < 0.35;
-          const evo = Math.min(0.6, t / 600 * 0.15), fade = k * 0.14;
-          const OL = k === 0 ? base * 1.4 * rnd(0.97, 1.05) : base * 1.22 * rnd(0.98, 1.04), IL = k === n - 1 ? base * 1.45 * rnd(0.97, 1.05) : 0.5;
-          const fly = crash ? base * rnd(1, 1.02) : (q.crash ? q.t || base : q.t) - evo + fade;
-          runs.push({ start: t, OL, IL, fly, crash, crashAt: rnd(0.2, 0.9), done: false, aborted: false });
-          t += OL + fly + IL;
-        }
-        t += rnd(40, 130); // in the garage: fresh tyres
-      }
-      c.runs = runs;
+    this.pend = null; this.so = null; this.sets = 4;
+    this.cars.forEach(c => { c.runs = []; c.sets = this.sets; c.stintEnd = 0; c.usedLaps = 0; this.planStint(c, rnd(0, this.base * 0.8)); });
+    this.msg(`🟢 Qualifying is under way — no time limit. Once everyone has a time, the slowest driver is out every 2 × pole lap. Laps already started still count. ${this.sets} sets of tyres each. Final three: one-lap shootout.`, true);
+  }
+  // one stint: out lap, push laps with cool-down laps between, in lap
+  planStint(c, t0) {
+    const base = this.base, fresh = c.sets > 0; if (fresh) { c.sets--; c.usedLaps = 0; }
+    const n = fresh ? pick([2, 2, 3]) : pick([2, 3]); let t = t0;
+    for (let k = 0; k < n; k++) {
+      const q = qualiLap(this.G, c.e, this.track, this.wet, c.risk); const crash = q.crash && Math.random() < 0.35;
+      const evo = Math.min(0.6, t / 600 * 0.15), fade = (c.usedLaps + k) * 0.14 + (fresh ? 0 : 0.45);
+      const OL = k === 0 ? base * 1.4 * rnd(0.97, 1.05) : base * 1.22 * rnd(0.98, 1.04), IL = k === n - 1 ? base * 1.45 * rnd(0.97, 1.05) : 0.5;
+      const fly = crash ? base * rnd(1, 1.02) : (q.crash ? q.t || base : q.t) - evo + fade;
+      c.runs.push({ start: t, OL, IL, fly, crash, crashAt: rnd(0.2, 0.9), done: false, aborted: false });
+      t += OL + fly + IL;
+    }
+    c.usedLaps += n; c.stintEnd = t;
+    if (!fresh && (c.player || c.fav)) this.msg(`🛞 ${c.d.code} is out on used tyres — no fresh sets left`, false);
+    else if (fresh && c.sets === 0 && (c.player || c.fav)) this.msg(`🛞 ${c.d.code} fits the last fresh set`, false);
+    return t;
+  }
+  aliveCars() { return this.cars.filter(c => !c.elim); }
+  idle(c) { return !c.out && c.runs.every(r => r.done || r.start > this.t + 1e6); }
+  // drivers who are safe wait in the garage (saving tyres); those near the drop zone go out
+  schedule() {
+    const alive = this.order().filter(c => !c.elim), N = alive.length, toNext = this.armed ? (this.elim.next - this.t) : 1e9;
+    alive.forEach((c, rank) => {
+      if (!this.idle(c) || this.t < c.stintEnd + 35) return;
+      const danger = c.best == null || rank >= N - 3, near = rank >= N - 6 && toNext < this.base * 3.2;
+      const go = danger || near || (c.sets > 0 && Math.random() < 0.0015);
+      if (go && !(c.sets === 0 && !danger)) this.planStint(c, this.t + rnd(3, 15));
     });
-    this.msg(`🟢 Qualifying is under way — no time limit: once everyone has a time, the slowest driver is out every pole-lap time`, true);
+  }
+  order() {
+    if (!this.lapMode || !this.so) return super.order();
+    const out = this.elim.order.slice().reverse(), A = this.so.cars;
+    const done = A.filter(c => c.so != null).sort((a, b) => a.so - b.so), rest = A.filter(c => c.so == null).sort((a, b) => (a.best ?? 1e9) - (b.best ?? 1e9));
+    return this.so.finished ? done.concat(A.filter(c => c.so == null)).concat(out) : done.concat(rest).concat(out);
   }
   clock() { return this.lapMode ? this.t : super.clock(); }
-  nextElim() { if (!this.lapMode) return super.nextElim(); return this.armed && this.elim.left > 0 ? Math.max(0, this.elim.next - this.t) : null; }
+  nextElim() { if (!this.lapMode) return super.nextElim(); return this.armed && !this.so && this.elim.left > 0 && !this.pend ? Math.max(0, this.lastE + this.elim.gap - this.t) : null; }
   crash(c, r) { super.crash(c, r); if (this.lapMode && this.lastE != null) this.lastE += 45; }
+  shootout() {
+    const S = this.so;
+    if (S.phase === 'wait') { // everyone back in the garage first
+      if (!S.cars.every(c => c.out || this.idle(c))) return;
+      S.queue = S.cars.slice().sort((a, b) => (b.best ?? 1e9) - (a.best ?? 1e9)); S.phase = 'run';
+      this.msg(`🎯 SHOOTOUT for pole — one flying lap each, slowest first: ${S.queue.map(c => c.d.code).join(', ')}`, true);
+      // staggered: each flying lap starts as the previous one ends, so there is only ever one car on a flying lap
+      let t = this.t + 5, prevEnd = 0;
+      S.queue.forEach(c => {
+        if (c.out) { c.soDone = true; c.so = null; return; }
+        const OL = this.base * 1.4 * rnd(0.98, 1.02); const start = Math.max(t, prevEnd + 2 - OL);
+        this.planStintOne(c, start, OL); c.soRun = c.runs[c.runs.length - 1]; prevEnd = start + OL + c.soRun.fly; t = start + 1;
+      });
+    }
+    if (S.phase !== 'run') return;
+    S.queue.forEach(c => {
+      if (c.soDone || !c.soRun) return;
+      if (c.soRun.timed || c.out || c.soRun.aborted) {
+        c.soDone = true; c.so = c.soRun.crash || c.soRun.aborted || !c.soRun.timed ? null : c.soRun.fly;
+        this.msg(c.so != null ? `🎯 ${c.d.name}: ${fmtTime(c.so)}` : `🎯 ${c.d.name}: no time`, true);
+      }
+    });
+    S.cur = S.queue.find(c => !c.soDone) || null;
+    if (S.queue.every(c => c.soDone)) {
+      S.finished = true; const p = this.order()[0];
+      this.msg(`🏆 POLE POSITION: ${p.d.name}${p.so != null ? ' — ' + fmtTime(p.so) : ''}`, true);
+      this.finish();
+      if (this.result) this.result.forEach(r => { const c = S.cars.find(x => x.e === r.e); if (c) r.t = c.so; });
+    }
+  }
+  planStintOne(c, t, OL) { // a single shootout lap
+    const base = this.base, fresh = c.sets > 0; if (fresh) c.sets--;
+    const q = qualiLap(this.G, c.e, this.track, this.wet, c.risk); const crash = q.crash && Math.random() < 0.3;
+    const fly = crash ? base : (q.crash ? q.t || base : q.t) - Math.min(0.6, t / 600 * 0.15) + (fresh ? 0 : 0.45);
+    c.runs.push({ start: t, OL: OL || base * 1.4, IL: base * 1.45, fly, crash, crashAt: rnd(0.2, 0.9), done: false, aborted: false });
+  }
   step(dt) {
     if (!this.lapMode) return super.step(dt);
     if (this.done) return;
+    const alive = this.aliveCars();
     if (!this.armed) {
-      const alive = this.cars.filter(c => !c.out);
-      if (alive.length && (alive.every(c => c.best != null) || this.t > this.base * 8)) {
+      const a2 = alive.filter(c => !c.out);
+      if (a2.length && (a2.every(c => c.best != null) || this.t > this.base * 8)) {
         this.armed = true; this.lastE = this.t;
-        this.msg(`⏱ Every car has a time — first elimination in ${fmtTime(this.best ? this.best.t : this.base)} (the pole lap)`, true);
+        this.msg(`⏱ Every car has a time — first elimination in ${fmtTime(2 * (this.best ? this.best.t : this.base))} (2 × the pole lap)`, true);
       }
     }
-    this.elim.gap = this.best ? this.best.t : this.base;
-    this.elim.next = this.armed ? this.lastE + this.elim.gap : Infinity;
-    const k = this.elim.order.length; super.step(dt);
-    if (this.elim.order.length > k) this.lastE = this.t;
+    this.elim.gap = 2 * (this.best ? this.best.t : this.base);
+    if (this.so) { this.elim.next = Infinity; super.step(dt); if (!this.done) this.shootout(); return; }
+    if (!this.done && this.t > 1) this.schedule();
+    // elimination due: laps already under way may finish first
+    if (this.armed && !this.pend && this.t >= this.lastE + this.elim.gap) {
+      this.pend = { due: this.lastE + this.elim.gap, wait: new Set(alive.filter(c => !c.out && c.phase === 'flying')) };
+      if (this.pend.wait.size) this.msg(`⏱ Elimination due — waiting for ${this.pend.wait.size} lap${this.pend.wait.size > 1 ? 's' : ''} in progress (${[...this.pend.wait].map(c => c.d.code).join(', ')})`, false);
+    }
+    this.elim.next = Infinity;
+    if (this.pend) {
+      for (const c of [...this.pend.wait]) if (c.out || c.phase !== 'flying') this.pend.wait.delete(c);
+      if (!this.pend.wait.size) { this.elim.next = this.t + dt / 2; this.lastE = this.pend.due; this.pend = null; }
+    }
+    super.step(dt);
+    const left = this.aliveCars();
+    if (!this.done && left.length <= 3 && !this.so) {
+      this.so = { phase: 'wait', cars: left, cur: null, queue: [] };
+      left.forEach(c => c.runs.forEach(r => { if (r.start > this.t) r.done = true; })); // cancel planned runs
+      this.msg(`🎯 Three drivers left — eliminations stop. They return to the pits for a one-lap shootout.`, true);
+    }
   }
 };
 function qLapElim() { return !!(G && WK && WK.stage !== 'squali' && G.rules && G.rules.quali === 'lapelim'); }
@@ -6762,9 +6838,9 @@ updateQualiUI = function () {
     const nx = Q.nextElim(), left = Q.cars.filter(c => !c.elim).length;
     // compact so the header keeps its size: "Q1 · 9:12 · OUT IN 0:45 · 18 LEFT"
     let txt = nx == null ? '' : `OUT IN ${fmtClock(nx)}`;
-    if (Q.lapMode) txt = Q.armed ? `OUT IN ${fmtClock(nx)}` : 'SETTING TIMES';
+    if (Q.lapMode) txt = Q.so ? (Q.so.cur && !Q.so.finished ? `SHOOTOUT: ${Q.so.cur.d.code}` : 'SHOOTOUT') : Q.pend ? 'ELIMINATION DUE: LAPS FINISHING' : Q.armed ? `OUT IN ${fmtClock(nx)}` : 'SETTING TIMES';
     const ds = document.getElementById('dksess');
-    if (ds) { const h = `${esc(Q.label === 'Qualifying' ? 'Q' : Q.label)} · ${fmtClock(Q.clock())} · ${left} left${txt ? ` · <span class="q16">${txt}</span>` : ''}${Q.lapMode && Q.armed ? ` · every ${fmtTime(Q.elim.gap)}` : ''}`; if (ds._q16 !== h || ds._q16src !== ds._h) { ds.innerHTML = h; ds._q16 = h; ds._q16src = ds._h; } ds.title = ds.textContent; }
+    if (ds) { const h = `${esc(Q.label === 'Qualifying' ? 'Q' : Q.label)} · ${fmtClock(Q.clock())} · ${left} left${txt ? ` · <span class="q16">${txt}</span>` : ''}${Q.lapMode && Q.armed && !Q.so ? ` · every ${fmtTime(Q.elim.gap)}` : ''}`; if (ds._q16 !== h || ds._q16src !== ds._h) { ds.innerHTML = h; ds._q16 = h; ds._q16src = ds._h; } ds.title = ds.textContent; }
     const hud = document.getElementById('hud'); if (hud && nx != null) hud.insertAdjacentHTML('beforeend', `<span class="chip">⛔ Next out ${fmtClock(nx)} · ${left} left</span>`);
   } catch (e) { }
   return r;
@@ -6774,7 +6850,8 @@ updateQualiUI = function () {
 // every car overtaken adds 10 s. Off-track moments freeze the distance counter. Each lap the field gets faster and
 // more spread out, and mistakes become more likely. When the clock hits zero the car can no longer accelerate:
 // it coasts to a stop, and the distance it covered from the start line is its result.
-const ENDU = { start: 60, max: 90, pass: 10 };
+const ENDU = { start: 60, max: 90, minCap: 60, pass: 10 };
+const enduCap = race => Math.max(ENDU.minCap, ENDU.max - Math.max(0, ...race.cars.map(c => c.laps || 0)));
 const enduOn = race => !!(race && race.endu);
 function enduLapBonus(track) { return Math.round(track.base * 1.06); }   // longer lap = more time
 const enduKm = c => (Math.max(0, c.edist || 0) / 1000).toFixed(3);
@@ -6784,9 +6861,10 @@ hxChain('raceInit', race => {
   race.endu = { bonus: enduLapBonus(race.track) };
   race.laps = 999;
   race.rules = Object.assign({}, race.rules, { sc: false, vsc: false, twoCompound: false });
-  race.cars.forEach(c => { c.clk = ENDU.start; c.edist = 0; c.off = 0; c.coastF = null; c.passes = 0; c._pd = c.dist; });
+  race.cars.forEach(c => { c.clk = ENDU.start; c.edist = 0; c.off = 0; c.coastF = null; c.passes = 0; c._pd = c.dist; c.eLap = 0; c.ePass = 0; c.clkHist = [ENDU.start]; });
+  race.endu.pairT = {};
   race.physOrder = function () { return this.cars.slice().sort((a, b) => (!!a.out !== !!b.out ? (a.out ? 1 : -1) : b.dist - a.dist)); };
-  race.msg(`⏱ Endurance race: ${ENDU.start}s on every clock (max ${ENDU.max}s) · +${race.endu.bonus}s per lap (a third at each sector) · +${ENDU.pass}s per overtake`, true);
+  race.msg(`⏱ Endurance race: ${ENDU.start}s on every clock · +${race.endu.bonus}s per lap (a third at each sector) · +${ENDU.pass}s per real overtake (not on lap 1) · the ${ENDU.max}s cap drops 1s per lap to ${ENDU.minCap}s`, true);
 });
 // speed: off-track moments and coasting once the clock has run out
 { const prev = XPH.speedMul; XPH.speedMul = function (race, c, dt) {
@@ -6802,7 +6880,7 @@ hxChain('raceInit', race => {
   if (!enduOn(race)) return a;
   const L = c.laps || 0, base = race.track.base;
   const raw = lapTimeFor(race.G, c, race.track, { lap: L, wet: race.wet, laps: race.laps });
-  const faster = raw * (Math.max(0.9, 1 - 0.006 * L) - 1);
+  const faster = raw * (Math.max(0.9, 1 - 0.006 * L) - 1) + (c.enduMood === 'push' ? -raw * 0.006 : c.enduMood === 'ease' ? raw * 0.003 : 0);
   const spread = Math.max(0, raw - base) * 0.06 * L;
   return a + faster + spread;
 }; }
@@ -6811,7 +6889,8 @@ function enduSectors(race, c) {
   const S = race.L / 3, n = Math.floor(Math.max(0, c.dist) / S);
   if (c._sec == null) c._sec = 0;
   while (c._sec < n && !c.out && c.coastF == null) {
-    c._sec++; const before = c.clk; c.clk = Math.min(ENDU.max, c.clk + race.endu.bonus / 3);
+    c._sec++; const before = c.clk; c.clk = Math.min(enduCap(race), c.clk + race.endu.bonus / 3); c.eLap += Math.max(0, c.clk - before);
+    if (c._sec % 3 === 0) c.clkHist.push(+c.clk.toFixed(1));
     if ((c.player || c.fav) && c._sec % 3 === 0) race.msg(`⏱ ${c.d.code} completes lap ${c._sec / 3}: clock ${c.clk.toFixed(1)}s`, false);
   }
 }
@@ -6832,7 +6911,7 @@ hxChain('onStep', (race, dt) => {
         c.coastF = 1; race.msg(`⌛ ${c.d.code} is out of time — coasting at ${enduKm(c)} km`, c.player || c.fav);
       } else if (c.pitT <= 0 && !(c.off > 0)) {
         // mistakes: more likely the further into the race (faster cars), for less consistent drivers and in the wet
-        const L = c.laps || 0, perLap = 0.03 * Math.pow(1.2, L) * (1 + (100 - c.d.cons) / 30) * (1 + race.wet * 3);
+        const L = c.laps || 0, perLap = 0.03 * Math.pow(1.2, L) * (1 + (100 - c.d.cons) / 30) * (1 + race.wet * 3) * (c.enduMood === 'push' ? 1.8 : c.enduMood === 'ease' ? 0.6 : 1);
         if (Math.random() < perLap * dt / Math.max(30, c.curLT)) {
           if (L >= 12 && Math.random() < 0.025) { race.retire(c, 'Crashed out', null); c.stopT = race.t; continue; }
           c.off = rnd(3, 9); race.msg(`🟥 ${c.d.code} runs off the track! Distance counter frozen`, c.player || c.fav);
@@ -6844,14 +6923,24 @@ hxChain('onStep', (race, dt) => {
     }
   }
   // overtakes: +10 s for every running car passed on track (cars in the pits don't count)
+  // real overtakes only: same lap, the other car still racing (not in the pits, off track or coasting), not on lap 1,
+  // and not simply re-passing a car that passed you in the last minute
+  const cap = enduCap(race), P = race.endu.pairT;
   for (const a of run) {
     if (a.out || a.coastF != null) continue;
     for (const b of run) {
-      if (a === b || b.out || b.pitT > 0) continue;
-      if (a._pd < b._pd && a.dist > b.dist) { a.passes++; const was = a.clk; a.clk = Math.min(ENDU.max, a.clk + ENDU.pass);
-        if (a.player || a.fav || b.player || b.fav) race.msg(`⚔️ ${a.d.code} passes ${b.d.code}: +${(a.clk - was).toFixed(0)}s`, false); }
+      if (a === b || b.out) continue;
+      if (!(a._pd < b._pd && a.dist > b.dist)) continue;
+      const key = a.d.id + '>' + b.d.id, back = P[b.d.id + '>' + a.d.id]; P[key] = race.t;
+      const L = race.L, sameLap = Math.floor(Math.max(0, a._pd) / L) === Math.floor(Math.max(0, b._pd) / L);
+      if (b.pitT > 0 || b.off > 0 || b.coastF != null || !sameLap || a.laps < 1 || (back != null && race.t - back < 60)) continue;
+      a.passes++; const was = a.clk; a.clk = Math.min(cap, a.clk + ENDU.pass); a.ePass += Math.max(0, a.clk - was);
+      if (a.player || a.fav || b.player || b.fav) race.msg(`⚔️ ${a.d.code} passes ${b.d.code}: +${(a.clk - was).toFixed(0)}s`, false);
     }
   }
+  // the cap shrinks: clocks above it are cut back
+  for (const c of run) if (c.clk > cap) c.clk = cap;
+  if (cap !== race.endu.lastCap) { if (race.endu.lastCap != null && cap < race.endu.lastCap && cap % 5 === 0) race.msg(`⏱ Clock cap is now ${cap}s`, false); race.endu.lastCap = cap; }
   race.cars.forEach(c => { c._pd = c.dist; });
   if (race.cars.every(c => c.out)) race.finish();
 });
@@ -6874,7 +6963,7 @@ const _endu_applyRaceResult = applyRaceResult;
 applyRaceResult = function (G0, race, wk) {
   const out = _endu_applyRaceResult.apply(this, arguments);
   try { if (enduOn(race)) { const s = G0.results[G0.results.length - 1]; s.endu = true;
-    s.rows.forEach(r => { const c = race.cars.find(x => x.d.id === r.id && x.t.id === r.team); if (c) { r.edist = Math.round(c.edist); r.passes = c.passes; if (c.why) r.why = c.why; } }); } } catch (e) { }
+    s.rows.forEach(r => { const c = race.cars.find(x => x.d.id === r.id && x.t.id === r.team); if (c) { r.edist = Math.round(c.edist); r.passes = c.passes; r.eLap = Math.round(c.eLap); r.ePass = Math.round(c.ePass); r.clkHist = c.clkHist.concat([0]); if (c.why) r.why = c.why; } }); } } catch (e) { }
   return out;
 };
 
@@ -6922,8 +7011,46 @@ dkRaceView = function (o) {
 const _endu_deskGrid = deskGrid;
 deskGrid = function (sprint) {
   let html = _endu_deskGrid.apply(this, arguments);
-  if (!sprint && G.rules && G.rules.endu) html = html.replace(/<div class="dk-mut dkg-note">[^<]*<\/div>/, `<div class="dk-mut dkg-note"><b>Endurance race:</b> every car starts with ${ENDU.start}s on its clock (max ${ENDU.max}s) · +${enduLapBonus(WK.track)}s for each lap (paid a third at each sector line) · +${ENDU.pass}s for each car overtaken · off-track driving doesn't count · when the clock hits zero the car coasts to a stop · furthest distance wins.</div>`).replace(/<div class="dkg-row"><span>DISTANCE<\/span><b>[^<]*<\/b><\/div>/, '<div class="dkg-row"><span>DISTANCE</span><b>Until every clock runs out</b></div>');
+  if (!sprint && G.rules && G.rules.endu) html = html.replace(/<div class="dk-mut dkg-note">[^<]*<\/div>/, `<div class="dk-mut dkg-note"><b>Endurance race:</b> every car starts with ${ENDU.start}s on its clock · +${enduLapBonus(WK.track)}s for each lap (paid a third at each sector line) · +${ENDU.pass}s for each real overtake (same lap, not on lap 1) · the clock cap starts at ${ENDU.max}s and drops 1s per lap to ${ENDU.minCap}s · off-track driving doesn't count · when the clock hits zero the car coasts to a stop · furthest distance wins.</div>`).replace(/<div class="dkg-row"><span>DISTANCE<\/span><b>[^<]*<\/b><\/div>/, '<div class="dkg-row"><span>DISTANCE</span><b>Until every clock runs out</b></div>');
   return html;
+};
+
+// drivers react to their clock: low → push (faster, more mistakes); near the cap → ease off (tyres, fewer mistakes)
+hxChain('onLap', (race, c, n) => {
+  if (!enduOn(race) || c.out || c.coastF != null) return;
+  const cap = enduCap(race), mood = c.clk < 20 ? 'push' : c.clk > cap - 8 ? 'ease' : null;
+  c.enduMood = mood; if (c.auto && !c.player && mood) c.mode = mood === 'push' ? 'push' : 'save';
+  if (mood !== c._mood0 && (c.player || c.fav) && mood) race.msg(mood === 'push' ? `🔥 ${c.d.code} is low on time (${c.clk.toFixed(0)}s) — pushing hard` : `🧊 ${c.d.code} is near the cap — easing off to save tyres`, false);
+  c._mood0 = mood;
+});
+// pit stops: best when the clock is full (the stop only uses time you couldn't bank anyway)
+const _endu_aiPit = Race.prototype.aiPit;
+Race.prototype.aiPit = function (c) {
+  const comp = _endu_aiPit.apply(this, arguments);
+  if (!this.endu || c.coastF != null) return comp;
+  const cap = enduCap(this);
+  if (comp && c.clk < cap - 15 && c.wear < 0.85 && !(this.wet > 0.3)) return null;      // hold on until the clock is fuller
+  if (!comp && c.clk >= cap - 3 && c.wear > c.planStop - 0.2) return this.slick(c, 30);  // full clock: perfect time to stop
+  return comp;
+};
+// results: clock chart for the top drivers + where everyone's time came from
+function enduClockChart(rows) {
+  const top = rows.filter(r => r.clkHist && r.clkHist.length > 1).slice(0, 6); if (!top.length) return '';
+  const W = 520, H = 170, maxL = Math.max(...top.map(r => r.clkHist.length - 1)), X = l => 30 + l / Math.max(1, maxL) * (W - 40), Y = v => 10 + (1 - v / ENDU.max) * (H - 30);
+  const grid = [0, 30, 60, 90].map(v => `<line x1="30" x2="${W - 10}" y1="${Y(v)}" y2="${Y(v)}" stroke="#1f2d4a"/><text x="4" y="${Y(v) + 4}" fill="#7f8aa3" font-size="10">${v}s</text>`).join('');
+  const lines = top.map(r => { const tm = G.teams[r.team] || { color: '#888' }; return `<polyline fill="none" stroke="${tm.color}" stroke-width="2" points="${r.clkHist.map((v, i) => `${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(' ')}"/>`; }).join('');
+  const legend = top.map(r => `<span style="color:${(G.teams[r.team] || {}).color || '#888'}">■ ${esc(r.code)}</span>`).join(' ');
+  return `<section><div class="dk-h"><b>CLOCK BY LAP</b></div><div class="dkg-body"><svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto">${grid}<text x="${W - 60}" y="${H - 4}" fill="#7f8aa3" font-size="10">laps →</text>${lines}</svg><div class="endu-lg">${legend}</div></div></section>`;
+}
+function enduEarned(rows) {
+  const L = rows.filter(r => r.eLap != null).slice(0, 10); if (!L.length) return '';
+  return `<section><div class="dk-h"><b>TIME EARNED</b></div><table class="endu-earn"><thead><tr><th class="l">Driver</th><th>Laps</th><th>Overtakes</th><th>Passes</th></tr></thead><tbody>${L.map(r => `<tr><td class="l">${esc(r.code)}</td><td>+${r.eLap}s</td><td>+${r.ePass}s</td><td>${r.passes || 0}</td></tr>`).join('')}</tbody></table></section>`;
+}
+const _endu_dkRaceView2 = dkRaceView;
+dkRaceView = function (o) {
+  const html = _endu_dkRaceView2.apply(this, arguments);
+  const s = G.results[o.k]; if (!s || !s.endu || o.sprint) return html;
+  return html.replace('<div class="dk-resside">', '<div class="dk-resside">' + enduClockChart(s.rows) + enduEarned(s.rows));
 };
 // ===================== Elimination Grand Prix (custom regulation) =====================
 // The car in last place is eliminated every (race laps ÷ starters) laps, timed on the leader crossing the line.
@@ -6933,9 +7060,9 @@ hxChain('raceInit', race => {
   if (race.sprint || !race.G.rules || !race.G.rules.elimRace) return;
   const N = race.cars.length, every = race.laps / N, sched = [];
   for (let k = 1; k < N; k++) sched.push(Math.max(1, Math.round(k * every)));
-  race.elimR = { every, sched, k: 0, seen: 0, credit: 0, out: [] };
+  race.elimR = { every, sched: sched.slice(0, Math.max(0, N - 2)), k: 0, seen: 0, credit: 0, post: 0, out: [], sweep: null, duel: false };
   race.rules = Object.assign({}, race.rules, { twoCompound: false });
-  race.msg(`⛔ Elimination race: the last-placed car is out every ${every.toFixed(1)} laps (${race.laps} laps ÷ ${N} cars) — first at the end of lap ${sched[0]}`, true);
+  race.msg(`⛔ Elimination race: every ${every.toFixed(1)} laps (${race.laps} laps ÷ ${N} cars) the last car across the line is out — first on lap ${sched[0]}. The final two race to the flag.`, true);
 });
 const _elimr_retire = Race.prototype.retire;
 Race.prototype.retire = function (c, why, flag) {
@@ -6943,24 +7070,60 @@ Race.prototype.retire = function (c, why, flag) {
   if (this.elimR && !c.elimd && !this.elimR.out.includes(c)) { this.elimR.out.push(c); c.elimLap = c.laps; this.elimR.credit++; }
   return r;
 };
+// Eliminations: when the leader completes a scheduled lap, that lap becomes an elimination lap and the LAST CAR
+// ACROSS THE LINE on it is out. Held under SC/VSC until the next green-flag lap. Stops when two are left: they race to the flag.
+function elimrAlive(race) { return race.order().filter(x => !x.out && !x.finished); }
+function elimrCheckSweep(race) {
+  const R = race.elimR, S = R.sweep; if (!S) return;
+  for (const x of [...S.pending]) if (x.out || x.finished) S.pending.delete(x);
+  while (S.k > 0 && R.credit > 0) { S.k--; R.credit--; }
+  if (S.k <= 0) { R.sweep = null; return; }
+  if (S.pending.size > S.k) return;
+  const victims = race.order().filter(x => S.pending.has(x));
+  R.sweep = null;
+  victims.forEach(v => {
+    const left = elimrAlive(race).length;
+    v.elimd = true; v.elimLap = S.lap; R.out.push(v); v.finishT = race.t;
+    _elimr_retire.call(race, v, 'Eliminated', null);
+    race.msg(`⛔ ${v.d.name} is last across the line on lap ${S.lap} — eliminated, P${left}`, v.player || v.fav || left <= 4);
+  });
+  const al = elimrAlive(race);
+  if (al.length === 2 && !R.duel) { R.duel = true; race.msg(`⚔️ Final duel: ${al[0].d.name} vs ${al[1].d.name} — no more eliminations, race to the flag!`, true); }
+}
 hxChain('onLap', (race, c, n) => {
-  const R = race.elimR; if (!R || race.done || n <= R.seen) return;
+  const R = race.elimR; if (!R || race.done) return;
+  if (R.sweep && R.sweep.pending.has(c)) { R.sweep.pending.delete(c); elimrCheckSweep(race); }
+  if (n <= R.seen) { elimrEnd(race); return; }
   R.seen = n; // the leader has just completed lap n
-  while (R.k < R.sched.length && R.sched[R.k] <= n) {
-    R.k++;
-    if (R.credit > 0) { R.credit--; race.msg(`⛔ Lap ${n}: no elimination — a retirement already took this interval's place`, false); continue; }
-    const alive = race.order().filter(x => !x.out && !x.finished); if (alive.length <= 1) break;
-    const last = alive[alive.length - 1];
-    last.elimd = true; last.elimLap = n; R.out.push(last); last.finishT = race.t;
-    _elimr_retire.call(race, last, 'Eliminated', null);
-    race.msg(`⛔ ${last.d.name} is eliminated at the end of lap ${n} — P${alive.length}`, last.player || last.fav || alive.length <= 4);
+  let due = R.post; R.post = 0;
+  while (R.k < R.sched.length && R.sched[R.k] <= n) { R.k++; due++; }
+  while (due > 0 && R.credit > 0) { due--; R.credit--; race.msg(`⛔ Lap ${n}: a retirement takes this interval's elimination`, false); }
+  const alive = elimrAlive(race);
+  due = Math.min(due, alive.length - 2);
+  if (due > 0 && !R.sweep) {
+    if (race.sc || race.vsc) { const was = R.post; R.post += due; if (R.post > was && !R.heldN) race.msg(`🟨 Elimination held — it will happen on the next green-flag lap`, false); R.heldN = R.post; }
+    else { R.heldN = 0; R.sweep = { lap: n, k: due, pending: new Set(alive.filter(x => x !== c)) }; race.msg(`⛔ Lap ${n} is an elimination lap: the last car across the line is out`, alive.slice(-3).some(x => x.player || x.fav)); elimrCheckSweep(race); }
   }
-  const alive = race.cars.filter(x => !x.out && !x.finished);
-  if (alive.length <= 1) {
-    if (alive[0]) { alive[0].finished = true; alive[0].finishT = race.t; race.msg(`🏁 ${alive[0].d.name} is the last car standing and wins!`, true); }
-    race.finish();
-  }
+  elimrEnd(race);
 });
+function elimrEnd(race) {
+  const alive = race.cars.filter(x => !x.out && !x.finished);
+  if (alive.length === 1 && !race.chequered) { alive[0].finished = true; alive[0].finishT = race.t; race.msg(`🏁 ${alive[0].d.name} is the last car running and wins!`, true); race.finish(); }
+}
+// strategy: don't pit just before an elimination lap when near the back; pit straight after one instead
+const _elimr_aiPit = Race.prototype.aiPit;
+Race.prototype.aiPit = function (c) {
+  const comp = _elimr_aiPit.apply(this, arguments);
+  const R = this.elimR; if (!R || R.duel) return comp;
+  const alive = elimrAlive(this), rank = alive.indexOf(c), danger = rank >= alive.length - 4;
+  const nextLap = R.sweep ? R.sweep.lap : (R.sched[R.k] != null ? R.sched[R.k] : 1e9);
+  // a stop at the end of lap L costs time on lap L+1: hold it if L+1 (or L+2) is an elimination lap
+  if (comp && danger && c.wear < 0.9 && nextLap - c.laps >= 1 && nextLap - c.laps <= 2) return null;
+  // just crossed the line safely on an elimination lap: the best moment to stop
+  const safeNow = R.sweep && R.sweep.lap === c.laps && R.sweep.pending.size - 1 >= R.sweep.k;
+  if (!comp && safeNow && c.wear > c.planStop - 0.15 && this.laps - c.laps > 5) return this.slick(c, this.laps - c.laps);
+  return comp;
+};
 // classification: survivors on track first, then in reverse order of elimination
 const _elimr_order = Race.prototype.order;
 Race.prototype.order = function () {
@@ -6980,7 +7143,7 @@ applyRaceResult = function (G0, race, wk) {
     s.rows.forEach(r => { const c = race.cars.find(x => x.d.id === r.id && x.t.id === r.team); if (c && c.elimLap != null) r.elimLap = c.elimLap; }); } } catch (e) { }
   return out;
 };
-function elimTimeTxt(r) { return r.out ? `DNF · lap ${r.elimLap}` : r.elimLap != null ? `Eliminated · lap ${r.elimLap}` : 'Last car standing'; }
+function elimTimeTxt(r) { return r.out ? `DNF · lap ${r.elimLap}` : `Eliminated · lap ${r.elimLap}`; }
 
 // ---------- screens ----------
 const _elimr_updRace = updateRaceUI;
@@ -6989,10 +7152,13 @@ updateRaceUI = function () {
   try {
     const R = RACE && RACE.elimR; if (!R) return r;
     const alive = RACE.order().filter(x => !x.out && !x.finished), lead = alive[0], lap = lead ? Math.min(RACE.laps, lead.laps + 1) : R.seen;
-    const nx = R.sched[R.k], danger = alive.length > 1 ? alive[alive.length - 1] : null;
-    const h = `ELIM · LAP ${lap} · ${alive.length} LEFT${nx ? ` · OUT AFTER L${nx}${R.credit ? ' (retirement covers it)' : danger ? ` · <span class="q16">⚠ ${danger.d.code}</span>` : ''}` : ''}`;
+    const pend = R.sweep ? alive.filter(x => R.sweep.pending.has(x)) : null;
+    const danger = R.duel ? null : pend ? pend[pend.length - 1] : alive.length > 2 ? alive[alive.length - 1] : null;
+    const nx = R.sweep ? R.sweep.lap : R.sched[R.k] != null ? R.sched[R.k] : null;
+    const st = R.duel ? ' · FINAL DUEL' : R.post ? ' · HELD (SAFETY CAR)' : R.sweep ? ` · ELIMINATION LAP` : nx ? ` · NEXT ELIM L${nx}` : '';
+    const h = `ELIM · LAP ${lap} · ${alive.length} LEFT${st}${danger && !R.credit ? ` · <span class="q16">⚠ ${danger.d.code}</span>` : ''}`;
     const ds = document.getElementById('dksess'); if (ds && (ds._x !== h || ds._xsrc !== ds._h)) { ds.innerHTML = h; ds._x = h; ds._xsrc = ds._h; ds.title = ds.textContent; }
-    if (danger && !R.credit) document.querySelectorAll('#dk tr[data-v]').forEach(tr => tr.classList.toggle('elimr-danger', tr.dataset.v === danger.d.id));
+    document.querySelectorAll('#dk tr[data-v]').forEach(tr => tr.classList.toggle('elimr-danger', !!danger && !R.credit && tr.dataset.v === danger.d.id));
   } catch (e) { }
   return r;
 };
@@ -7006,7 +7172,7 @@ const _elimr_deskGrid = deskGrid;
 deskGrid = function (sprint) {
   let html = _elimr_deskGrid.apply(this, arguments);
   if (!sprint && G.rules && G.rules.elimRace) { const n = WK.grid.length, every = WK.track.laps / n;
-    html = html.replace(/<div class="dk-mut dkg-note">[^<]*<\/div>/, `<div class="dk-mut dkg-note"><b>Elimination race:</b> ${WK.track.laps} laps ÷ ${n} cars = the last-placed car is eliminated every ${every.toFixed(1)} laps (first at the end of lap ${Math.max(1, Math.round(every))}) · a retirement counts as that interval's elimination · the last car standing wins.</div>`); }
+    html = html.replace(/<div class="dk-mut dkg-note">[^<]*<\/div>/, `<div class="dk-mut dkg-note"><b>Elimination race:</b> ${WK.track.laps} laps ÷ ${n} cars = every ${every.toFixed(1)} laps the last car across the line is eliminated (first on lap ${Math.max(1, Math.round(every))}) · no eliminations under the safety car · a retirement counts as that interval's elimination · the final two race to the chequered flag.</div>`); }
   return html;
 };
 </script></body></html>
