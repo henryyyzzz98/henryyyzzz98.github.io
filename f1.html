@@ -808,6 +808,52 @@ body.dt .dk .dkst tr.me td.tcell{background:var(--tc);color:var(--ti)}
 .heat-note{margin:.2em 0 .8em;line-height:1.5}
 .heat-strip{display:flex;flex-wrap:wrap;gap:.4em 1.4em;margin:.3em 0 .6em;font-size:.85em;color:#c9d2e3}
 .heat-strip b{color:#fff}
+/* ---------- TV broadcast layer ---------- */
+.bc-cam{position:absolute;right:10px;top:10px;width:min(44%,460px);aspect-ratio:16/10;border:2px solid #0b1220;border-radius:6px;overflow:hidden;box-shadow:0 6px 20px #0009;z-index:4;background:#2b4421}
+.bc-cam.off,.bc-show.off{display:none}
+.bc-cam canvas{position:absolute;inset:0;width:100%;height:100%}
+.bc-ctl{position:absolute;right:4px;bottom:4px;display:flex;gap:3px;flex-wrap:wrap;justify-content:flex-end}
+.bc-ctl button{font:700 10px ui-monospace,monospace;padding:3px 6px;background:#000a;color:#e6ebf5;border:1px solid #ffffff33;border-radius:3px;cursor:pointer}
+.bc-ctl button.on{background:#e10600;border-color:#e10600}
+.bc-ctl button:disabled{opacity:.4;cursor:default}
+.bc-show{position:absolute;right:10px;top:10px;z-index:4;font:700 11px ui-monospace,monospace;padding:4px 8px;background:#000b;color:#fff;border:1px solid #ffffff44;border-radius:4px;cursor:pointer}
+.bc-l3{position:absolute;left:12px;bottom:12px;max-width:calc(100% - 24px);display:none;align-items:center;gap:0;z-index:5;font:600 13px ui-monospace,monospace;box-shadow:0 4px 14px #0008}
+.bc-l3.on{display:flex}
+.bc-l3 .bc-tag{padding:7px 10px;font-weight:800;letter-spacing:.06em;white-space:nowrap}
+.bc-l3 .bc-txt{padding:7px 12px;background:#0b1220ee;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bc-l3 .bc-spark{width:64px;height:18px;padding:7px 8px;background:#0b1220ee;box-sizing:content-box}
+.bc-cap{position:absolute;left:12px;bottom:52px;max-width:min(70%,640px);z-index:5;display:none;padding:6px 10px;background:#000c;color:#f1f5f9;font:500 13px/1.4 system-ui,sans-serif;border-left:3px solid #f59e0b;border-radius:2px}
+.bc-cap.on{display:block}
+.bc-cap b{color:#fbbf24;font:700 11px ui-monospace,monospace;margin-right:4px}
+@media (max-width:899px){.bc-cam{width:52%;right:6px;top:6px}.bc-l3{left:6px;bottom:6px;font-size:11px}.bc-l3 .bc-spark{display:none}.bc-cap{left:6px;bottom:40px;max-width:calc(100% - 12px);font-size:12px}.bc-ctl button{font-size:9px;padding:2px 4px}}
+/* ---------- Storylines ---------- */
+.st-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 0 16px;overflow:auto;min-height:0}
+@media (max-width:899px){.st-grid{grid-template-columns:1fr}}
+.st-sec{border:1px solid #1b2742;border-radius:6px;background:#0b1220;min-width:0}
+.st-body{padding:8px 10px}
+.st-head{display:flex;gap:10px;padding:8px 6px;border-bottom:1px solid #ffffff10}
+.st-head.hot{background:linear-gradient(90deg,#e1060022,transparent)}
+.st-ic{font-size:20px;line-height:1}
+.st-q{border-left:3px solid var(--tc);padding:6px 10px;margin:0 0 8px;background:#ffffff08;border-radius:0 4px 4px 0;line-height:1.45}
+.st-qh{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;margin-bottom:2px}
+.st-qh a{cursor:pointer;color:inherit}
+.st-prnav{display:flex;gap:10px;align-items:center;margin-bottom:8px}
+.st-prnav button{padding:2px 9px}
+.st-mk{display:grid;grid-template-columns:auto auto 1fr;gap:8px;align-items:baseline;padding:5px 0;border-bottom:1px solid #ffffff0d}
+.st-tag{font:700 10px ui-monospace,monospace;padding:2px 6px;border-radius:3px;background:#1f9d55;color:#fff}
+.st-tag.rumour{background:#a16207}.st-tag.leave{background:#7f1d1d}
+.st-riv td a{cursor:pointer;color:inherit;font-weight:700}
+.st-sw{display:inline-block;width:4px;height:12px;margin:0 5px;vertical-align:middle}
+.st-pill{font:700 9px ui-monospace,monospace;padding:1px 5px;border-radius:3px;background:#334155;color:#cbd5e1}
+.st-note{margin-top:6px;font-size:11px}
+.st-riv{width:100%;border-collapse:collapse;font:13px ui-monospace,monospace}
+.st-riv th{font-size:11px;color:#7f8aa3;text-align:center;padding:4px;border-bottom:1px solid #1b2742}
+.st-riv td{padding:6px 4px;text-align:center;border-bottom:1px solid #ffffff0d}
+.st-riv .l{text-align:left}.st-riv .ra{text-align:right}
+@media (max-width:899px){.st-riv .hm{display:none}}
+.st-grid{flex:1;grid-template-rows:minmax(0,1fr) minmax(0,1fr);margin-top:10px}
+.st-body{overflow:auto;flex:1;min-height:0}
+@media (max-width:899px){.st-grid{display:block;overflow:visible}.st-sec{margin-bottom:12px}.st-body{overflow:visible}}
 </style></head><body><div id="app"></div><script>
 // ===== DATA: teams, drivers, tracks =====
 const ENGINES = {
@@ -2534,7 +2580,7 @@ function viewCalEditor() {
 // ---------- HQ ----------
 function viewHQ() {
   ensureXP(G);
-  return ({ home: hqHome, calendar: hqCalendar, standings: hqStandings, car: hqCar, drivers: hqDrivers, finance: hqFinance, menu: hqMenu, team: hqTeam, stats: hqStats, fan: hqFan }[TAB] || hqHome)();
+  return ({ home: hqHome, calendar: hqCalendar, standings: hqStandings, car: hqCar, drivers: hqDrivers, finance: hqFinance, menu: hqMenu, team: hqTeam, stats: hqStats, story: () => hqStory() }[TAB] || hqHome)();
 }
 function seatsOK() { return teamDrivers(G, G.player).length >= Math.min(2, G.teams[G.player].cars || 2); }
 function pickTeamView() {
@@ -4364,8 +4410,8 @@ const SND = (() => {
 // ===================================================================
 // PITWALL EXPANSION — screens & controls
 // ===================================================================
-const TAB_NAMES = { home: '🏠 Home', calendar: '📅 Calendar', standings: '🏆 Standings', car: '🔧 Car', team: '🏢 Team', drivers: '👤 Drivers', finance: '💰 Business', stats: '📊 Stats', fan: '🎯 Fan zone', menu: '☰ Menu' };
-function hqTabs() { return G.spectator ? ['home', 'calendar', 'standings', 'drivers', 'fan', 'stats', 'menu'] : ['home', 'calendar', 'standings', 'car', 'team', 'drivers', 'finance', 'stats', 'fan', 'menu']; }
+const TAB_NAMES = { home: '🏠 Home', calendar: '📅 Calendar', standings: '🏆 Standings', car: '🔧 Car', team: '🏢 Team', drivers: '👤 Drivers', finance: '💰 Business', stats: '📊 Stats', story: '📰 Storylines', menu: '☰ Menu' };
+function hqTabs() { return G.spectator ? ['home', 'calendar', 'standings', 'drivers', 'story', 'stats', 'menu'] : ['home', 'calendar', 'standings', 'car', 'team', 'drivers', 'finance', 'stats', 'story', 'menu']; }
 let CAM = { mode: null, x: 0, y: 0, z: 1 }, REPLAY = null, CHARTSEL = null;
 
 // ---------- HQ: Home additions ----------
@@ -4575,6 +4621,9 @@ runPractice = function (G, wk, session, programs) {
 // ---------- weekend: predictions on the quali & grid screens ----------
 function predKey() { return G.year + ':' + (WK.round + 1); }
 function predCard(kind) {
+  return ''; // fan zone removed
+}
+function predCardOld(kind) {
   ensureXP(G); const P = G.xp.fan.preds[predKey()] || (G.xp.fan.preds[predKey()] = { mine: {}, pundits: punditPicks(G, WK) });
   const opts = sel => WK.entries.slice().sort((a, b) => a.t.name.localeCompare(b.t.name)).map(e => `<option value="${e.d.id}" ${sel === e.d.id ? 'selected' : ''}>${esc(e.d.code)} · ${esc(e.d.name)}</option>`).join('');
   const s = (field, label, i) => { const v = i != null ? (P.mine.podium || [])[i] : P.mine[field]; return `<label class="small" style="display:block;margin:4px 0">${label}<select data-pred="${field}${i != null ? ':' + i : ''}" style="width:100%"><option value="">— pick —</option>${opts(v)}</select></label>`; };
@@ -6289,7 +6338,7 @@ function deskGrid(sprint) {
     ${(WK.penalties || []).length ? `<div class="dk-mut dkg-note">Grid penalties: ${WK.penalties.map(p => `${esc(p.code)} +${p.n} (${esc(p.why)})`).join(', ')}</div>` : ''}</div></section>`;
 
   let pred = '';
-  if (!sprint && typeof predCard === 'function') pred = `<section class="dkg-pred"><div class="dk-h"><b>PREDICTIONS</b></div><div class="dkg-body">${predCard('race').replace(/^<div class="card"[^>]*><h3>[^<]*<\/h3>/, '<div>')}</div></section>`;
+  if (!sprint && typeof predCard === 'function' && predCard('race')) pred = `<section class="dkg-pred"><div class="dk-h"><b>PREDICTIONS</b></div><div class="dkg-body">${predCard('race').replace(/^<div class="card"[^>]*><h3>[^<]*<\/h3>/, '<div>')}</div></section>`;
 
   const sched = weekendSchedule(), cur = sched.findIndex(s => s[2].includes(WK.stage));
   const schedHtml = `<div class="dkg-sched">${sched.map(([lab, day], i) => `<span class="${i < cur ? 'done' : i === cur ? 'now' : ''}"><small>${day}</small>${esc(lab)}${i < cur ? ' ✓' : ''}</span>`).join('')}</div>`;
@@ -7813,4 +7862,607 @@ dkRaceView = function (o) {
   }
   return html;
 };
+// ===================== TV broadcast layer (live race) =====================
+// • Director camera: a zoomed TV picture that cuts to incidents, overtakes, pit stops and the closest battle
+// • Lower-third graphics: battle banner with a gap-trend sparkline, pit-window projection, race leader, fastest lap
+// • Commentary: a play-by-play voice and an analyst, shown as captions and as a "Commentary" tab in the events panel
+// • Team radio: short messages between drivers and engineers, in the events panel under "Radio"
+// • Instant replay of the latest overtake or incident, slowed down, in the TV picture
+const BC_VOICES = { pbp: 'ROWE', ana: 'ORTEGA' };
+const BC = { race: null, buf: [], last: -1, prev: null, inPit: new Set(), outs: new Set(), spin: new Set(), worn: new Set(), leader: null, fl: null, sc: 0, vsc: 0,
+  clips: [], cam: null, replay: null, pendRep: null, comm: [], lastComm: 0, lastRadio: 0, cap: null, lastGfx: 0, nextAna: 0, started: false, ltg: {}, pairT: {}, q: [], lastS: '',
+  mode: 'auto', hidden: false, cc: true, autoRep: true, finished: false };
+try { const s = JSON.parse(localStorage.getItem('pitwall_bc') || '{}'); ['mode', 'hidden', 'cc', 'autoRep'].forEach(k => { if (s[k] != null) BC[k] = s[k]; }); } catch (e) { }
+function bcSave() { try { localStorage.setItem('pitwall_bc', JSON.stringify({ mode: BC.mode, hidden: BC.hidden, cc: BC.cc, autoRep: BC.autoRep })); } catch (e) { } }
+function bcReset(R) {
+  Object.assign(BC, { race: R, buf: [], last: -1, prev: null, inPit: new Set(), outs: new Set(), spin: new Set(), worn: new Set(), leader: null, fl: null, sc: 0, vsc: 0,
+    clips: [], cam: null, replay: null, pendRep: null, comm: [], lastComm: 0, lastRadio: 0, cap: null, lastGfx: 0, nextAna: 0, started: false, ltg: {}, finished: false, pairT: {}, q: [], lastS: '' });
+}
+const bcNow = () => performance.now();
+const bcCode = c => c.d.code;
+const bcName = c => dkShort(c.d);
+const bcLive = () => typeof RACE !== 'undefined' && RACE && WK && (WK.stage === 'race' || WK.stage === 'sprint') && document.getElementById('dk') && DK.view !== 'tele';
+
+// ---------- sampling (game time) ----------
+const _bc_step = Race.prototype.step;
+Race.prototype.step = function (dt) {
+  const r = _bc_step.apply(this, arguments);
+  if (this === (typeof RACE !== 'undefined' ? RACE : null)) { try { bcSample(this); } catch (e) { } }
+  return r;
+};
+function bcSample(R) {
+  if (BC.race !== R) bcReset(R);
+  if (R.t - BC.last < 0.5) return; BC.last = R.t;
+  BC.buf.push({ t: R.t, d: R.cars.map(c => c.pitT > 0 ? -c.dist : c.dist) });
+  while (BC.buf.length && BC.buf[0].t < R.t - 100) BC.buf.shift();
+  if (!R.started) return;
+  const ord = R.order().filter(c => !c.out), lead = ord[0];
+  if (!BC.started) { BC.started = true; bcComm('pbp', `And it's lights out and away we go at ${R.track.name}!`, 3); }
+  if (R.chequered) { if (!BC.finished) { BC.finished = true; bcFinish(R); } return; }
+  // overtakes (not through the pits, not under the safety car)
+  const pos = new Map(ord.map((c, i) => [c, i]));
+  if (BC.prev && !R.sc && !R.vsc) {
+    let n = 0;
+    ord.forEach((c, i) => {
+      const was = BC.prev.get(c); if (was == null || was <= i || c.pitT > 0 || BC.inPit.has(c)) return;
+      ord.slice(i + 1).forEach(b => { const wb = BC.prev.get(b); if (wb == null || wb >= was || b.pitT > 0 || BC.inPit.has(b) || n >= 3) return;
+        // side-by-side cars swap order back and forth: count one pass per pair every 10 s
+        const k = c.d.id < b.d.id ? c.d.id + b.d.id : b.d.id + c.d.id, lt = BC.pairT[k]; BC.pairT[k] = R.t; if (lt != null && R.t - lt < 10) return;
+        n++; bcEvent(R, { type: 'pass', a: c, b, pos: i + 1 }); });
+    });
+  }
+  BC.prev = pos;
+  R.cars.forEach(c => {
+    if (c.out && !BC.outs.has(c)) { BC.outs.add(c); bcEvent(R, { type: 'out', a: c, why: c.out }); }
+    if (c.out) return;
+    if (c.pitT > 0 && !BC.inPit.has(c)) { BC.inPit.add(c); bcEvent(R, { type: 'pit', a: c, pos: (pos.get(c) ?? 0) + 1 }); }
+    else if (c.pitT <= 0) BC.inPit.delete(c);
+    const sp = c.spin > 0 || c.off > 0;
+    if (sp && !BC.spin.has(c)) { BC.spin.add(c); bcEvent(R, { type: 'spin', a: c, pos: (pos.get(c) ?? 0) + 1 }); } else if (!sp) BC.spin.delete(c);
+    if (c.wear > 0.8 && !BC.worn.has(c) && (pos.get(c) ?? 99) < 12 && R.laps - c.laps > 3) { BC.worn.add(c); bcRadio(R, c, 'driver', pick(['The tyres are gone, mate.', 'No grip. Rears are finished.', "I can't keep this pace, the tyres are dead.", 'How much longer on these?'])); }
+    if (c.wear < 0.2) BC.worn.delete(c);
+  });
+  if (lead && BC.leader && lead !== BC.leader && !BC.inPit.has(BC.leader) && !BC.leader.out && R.t > 8) bcEvent(R, { type: 'lead', a: lead, b: BC.leader });
+  BC.leader = lead;
+  if (R.fastest && R.fastest.t !== BC.fl) { const first = BC.fl == null; BC.fl = R.fastest.t; if (!first || R.leaderLap > 3) bcEvent(R, { type: 'fl', a: R.fastest.c, t: R.fastest.t }); }
+  if (R.sc && !BC.sc) bcEvent(R, { type: 'sc' }); if (!R.sc && BC.sc) bcEvent(R, { type: 'scin' }); BC.sc = R.sc ? 1 : 0;
+  if (R.vsc && !BC.vsc) bcEvent(R, { type: 'vsc' }); BC.vsc = R.vsc ? 1 : 0;
+  const togo = R.laps - (lead ? lead.laps : 0);
+  [10, 5, 1].forEach(k => { if (togo === k && !BC.ltg[k] && R.laps > k + 2) { BC.ltg[k] = 1; bcEvent(R, { type: 'togo', k, a: lead }); } });
+}
+function bcGap(R, a, b) { return Math.max(0, (a.dist - b.dist) / (R.L / Math.max(40, b.curLT))); }
+
+// ---------- events → director, commentary, radio ----------
+function bcEvent(R, ev) {
+  ev.t = R.t; ev.lap = Math.min(R.laps, (R.leaderLap || 0) + 1);
+  const top = c => { const o = R.order(); return o.indexOf(c) < 10; };
+  const fav = c => c && (c.fav || c.player);
+  const tyre = c => TYRES[c.tyre] ? TYRES[c.tyre].name : '';
+  switch (ev.type) {
+    case 'pass': {
+      const { a, b, pos } = ev, lead = pos === 1;
+      bcClip(ev, [a, b], `${bcCode(a)} on ${bcCode(b)}`);
+      if (pos <= 10 || fav(a) || fav(b)) bcCut({ kind: 'pass', cars: [a, b], tag: lead ? 'NEW LEADER' : 'OVERTAKE', col: '#1f9d55', text: `${bcName(a)} passes ${bcName(b)} for P${pos}`, prio: lead ? 4 : 3, hold: 4500 });
+      if (lead) bcComm('pbp', pick([`${bcName(a)} takes the lead of the Grand Prix!`, `Into the lead goes ${bcName(a)}! ${bcName(b)} couldn't hold on.`]), 3);
+      else if (pos <= 10 || fav(a)) bcComm('pbp', pick([`${bcName(a)} goes past ${bcName(b)} — that's P${pos}.`, `Lovely move from ${bcName(a)}, up to P${pos} at ${bcName(b)}'s expense.`, `${bcName(a)} makes it stick on ${bcName(b)}!`, `And ${bcName(b)} has to give way — ${bcName(a)} through into P${pos}.`]), 2);
+      if (pos <= 8 && Math.random() < 0.45) {
+        const dAge = b.age - a.age;
+        bcComm('ana', dAge >= 6 ? `That's the tyre offset doing the work — ${bcName(a)}'s ${tyre(a)}s are ${dAge} laps fresher.` : a.tyre !== b.tyre && TYRES[a.tyre] && TYRES[b.tyre] ? `${tyre(a)} against ${tyre(b)} — different strategies, and right now it favours ${bcName(a)}.` : pick([`Brave, late on the brakes. ${bcName(b)} left the door open.`, `${bcName(a)} had been setting that up for a couple of laps.`, `Great racecraft from ${bcName(a)}.`]), 1);
+      }
+      if (Math.random() < 0.3) bcRadio(R, a, 'driver', pick(['Yes! Get in there!', 'Easy, easy.', `That's P${pos}!`, 'Mega. Keep pushing?']));
+      else if (Math.random() < 0.2) bcRadio(R, b, 'driver', pick(['He just pushed me off the track!', 'No grip, no grip.', "I can't hold him on these tyres.", 'Did you see that? He left me no room.']));
+      break;
+    }
+    case 'lead': break;
+    case 'pit': {
+      const { a, pos } = ev; if (pos <= 8 || fav(a)) bcCut({ kind: 'pit', cars: [a], tag: 'PIT STOP', col: '#2d6cdf', text: `${bcName(a)} pits from P${pos} → ${tyre(a)}s`, prio: 2, hold: 4500 });
+      if (pos <= 6 || fav(a)) bcComm('pbp', `${bcName(a)} peels into the pit lane from P${pos}.`, 1);
+      bcRadio(R, a, 'eng', pick([`Box, box. ${tyre(a)}s.`, 'Box this lap, box this lap.', `Pit confirm. ${tyre(a)}s, ${tyre(a)}s.`]));
+      break;
+    }
+    case 'out': {
+      const { a, why } = ev; bcClip(ev, [a], `${bcCode(a)} · ${why}`);
+      if (/^Eliminated/.test(why)) { bcCut({ kind: 'inc', cars: [a], tag: 'ELIMINATED', col: '#c0392b', text: `${bcName(a)} is eliminated`, prio: 5, hold: 4500 }); bcComm('pbp', `${bcName(a)} is eliminated!`, 2); break; }
+      bcCut({ kind: 'inc', cars: [a], tag: 'RETIREMENT', col: '#c0392b', text: `${bcName(a)} is out — ${why}`, prio: 5, hold: 5500 });
+      bcComm('pbp', pick([`Oh no — ${bcName(a)} is out of the race! ${why}.`, `That's the end of ${bcName(a)}'s afternoon. ${why}.`]), 3);
+      const ds = standingsDrivers(G), p = ds.findIndex(d => d.id === a.d.id);
+      if (p >= 0 && p < 3 && G.results.length) bcComm('ana', `A big blow for ${bcName(a)}'s championship — he came into this race P${p + 1} in the standings.`, 2);
+      bcRadio(R, a, /crash|collision|wall|accident|spun|barrier/i.test(why) ? 'driver' : 'eng', /crash|collision|wall|accident|spun|barrier/i.test(why) ? pick(["I'm OK. I'm sorry, guys.", 'I just lost it. Sorry.', 'He turned in on me!']) : pick(['Stop the car, stop the car.', "We've lost it, we need to retire the car.", "Sorry, it's over. Pull over safely."]));
+      break;
+    }
+    case 'spin': {
+      const { a, pos } = ev; bcClip(ev, [a], `${bcCode(a)} moment`);
+      if (pos <= 12 || fav(a)) bcCut({ kind: 'inc', cars: [a], tag: 'INCIDENT', col: '#c0392b', text: `${bcName(a)} has a moment from P${pos}`, prio: 4, hold: 4500 });
+      if (pos <= 12 || fav(a)) bcComm('pbp', pick([`${bcName(a)} has a moment! He's lost time there.`, `Big snap of oversteer for ${bcName(a)}!`, `${bcName(a)} off the road — he gets going again.`]), 2);
+      if (Math.random() < 0.6) bcRadio(R, a, 'driver', pick(['Sorry guys, I lost the rear.', 'Snap oversteer, no warning.', 'I locked up, sorry.']));
+      break;
+    }
+    case 'fl': if (ev.a && (top(ev.a) || fav(ev.a))) { bcComm('ana', `Fastest lap for ${bcName(ev.a)}, a ${fmtTime(ev.t)}.`, 1); bcRadio(R, ev.a, 'eng', pick(['Fastest lap, nice job.', 'Purple! Fastest lap.', 'Great lap, that is the fastest of the race.'])); } break;
+    case 'sc': bcComm('pbp', 'Safety car! The safety car is coming out, and the field will bunch right up.', 3); bcComm('ana', 'A cheap pit stop for anyone who still needs one — watch the pit lane.', 2); { const c = R.order().find(x => !x.out); if (c) bcRadio(R, c, 'eng', 'Safety car, safety car. Stay above the delta.'); } break;
+    case 'scin': bcComm('pbp', 'Safety car in this lap — get ready for the restart!', 2); break;
+    case 'vsc': bcComm('pbp', 'Virtual safety car deployed. Everyone has to slow down.', 2); break;
+    case 'togo': {
+      const o = R.order().filter(c => !c.out), a = o[0], b = o[1], g = a && b ? bcGap(R, a, b) : 0;
+      bcComm('pbp', ev.k === 1 ? `Last lap! ${a ? bcName(a) + ' leads' + (b ? ` by ${g.toFixed(1)} seconds.` : '.') : ''}` : `${ev.k} laps to go. ${a ? bcName(a) + ' leads' : ''}${b ? ` ${bcName(b)} by ${g.toFixed(1)} seconds.` : '.'}`, 2);
+      if (a && ev.k <= 5) bcRadio(R, a, 'eng', ev.k === 1 ? 'Last lap. Bring it home.' : `${ev.k} laps. Gap is ${g.toFixed(1)}, manage it.`);
+      break;
+    }
+  }
+}
+function bcFinish(R) {
+  const o = R.order().filter(c => c.finished), w = o[0]; if (!w) return;
+  const gp = WK.track.short;
+  bcComm('pbp', `${bcName(w)} wins the ${gp}${R.sprint ? ' Sprint' : ' Grand Prix'}!`, 3);
+  if (o[1] && o[2]) bcComm('ana', `${bcName(o[1])} second, ${bcName(o[2])} completes the podium.`, 2);
+  bcCut({ kind: 'lead', cars: [w], tag: 'CHEQUERED FLAG', col: '#e6ebf5', text: `${bcName(w)} wins${o[1] ? ` · ${bcName(o[1])} P2 · ` : ''}${o[2] ? bcName(o[2]) + ' P3' : ''}`, prio: 6, hold: 9000 });
+  bcRadio(R, w, 'eng', R.sprint ? 'P1 in the sprint! Great job.' : "P1! You've won the Grand Prix! Fantastic job!");
+  if (Math.random() < 0.7) bcRadio(R, w, 'driver', pick(['YES! Woohoo! Thank you, guys!', 'What a car, what a team. Thank you!', 'Come on! We did it!']));
+}
+function bcComm(who, s, prio = 1) {
+  const now = bcNow();
+  if (s === BC.lastS) return;
+  const LV = BC.lastV || (BC.lastV = {}), lastMe = LV[who] || 0;
+  if (prio < 3 && (now - lastMe < (prio >= 2 ? 1200 : 2600) || now - BC.lastComm < 700)) { if (who === 'ana' || prio >= 2) { BC.q.push({ who, s, prio, t: now }); if (BC.q.length > 3) BC.q.shift(); } return; }
+  LV[who] = now;
+  BC.lastS = s;
+  BC.lastComm = now;
+  const e = { lap: Math.min(RACE.laps, (RACE.leaderLap || 0) + 1), who, s, at: now };
+  BC.comm.unshift(e); if (BC.comm.length > 120) BC.comm.pop();
+  BC.cap = e;
+}
+function bcRadio(R, c, from, s) {
+  const now = bcNow(); if (!c || now - BC.lastRadio < 1100) return; BC.lastRadio = now;
+  R.msg(`📻 ${c.d.code} ${from === 'eng' ? '(engineer)' : ''}: "${s}"`.replace(' :', ':'), false);
+}
+function bcClip(ev, cars, label) {
+  BC.clips.unshift({ t: ev.t, lap: ev.lap, cars, label, kind: ev.type }); if (BC.clips.length > 12) BC.clips.pop();
+  if (BC.autoRep && SPEED <= 16 && (ev.type === 'out' || ev.type === 'spin' || (ev.type === 'pass' && ev.pos <= 3)) && !BC.replay) BC.pendRep = { clip: BC.clips[0], at: bcNow() + 3800 };
+}
+function bcCut(cam) {
+  const now = bcNow(), cur = BC.cam;
+  if (cur && now < cur.until && cam.prio < cur.prio) return;
+  if (BC.mode === 'follow' && RACE.cars.some(c => c.fav) && cam.prio < 5 && !cam.cars.some(c => c.fav)) return;
+  BC.cam = Object.assign(cam, { at: now, until: now + cam.hold });
+}
+
+// ---------- director idle choices (real time, on each UI update) ----------
+function bcDirect() {
+  const R = RACE, now = bcNow();
+  if (BC.pendRep && now >= BC.pendRep.at && !BC.replay) { bcStartReplay(BC.pendRep.clip); BC.pendRep = null; }
+  while (BC.q.length && now - BC.q[0].t > 9000) BC.q.shift();
+  if (BC.q.length && now - BC.lastComm > 1500) { const x = BC.q.shift(); bcComm(x.who, x.s, 3); }
+  if (BC.cam && now < BC.cam.until) { bcRefreshText(); return; }
+  const ord = R.order().filter(c => !c.out);
+  const fav = R.cars.find(c => c.fav && !c.out);
+  if (!R.started) { BC.cam = { kind: 'grid', cars: [ord[0]], tag: 'THE GRID', col: '#3b4252', text: `${bcName(ord[0])} on pole · ${R.laps} laps`, prio: 0, at: now, until: now + 3000 }; return; }
+  if (BC.mode === 'follow' && fav) { BC.cam = { kind: 'follow', cars: [fav], tag: 'ONBOARD', col: fav.t.color, prio: 0, at: now, until: now + 3000 }; bcRefreshText(); return; }
+  // pit-window graphic every ~30 s
+  if (now - BC.lastGfx > 30000 && R.laps - (ord[0] ? ord[0].laps : 0) > 6) {
+    const cand = ord.slice(0, 8).concat(fav ? [fav] : []).filter(c => c.pitT <= 0 && c.wear > 0.42 && !c.finished).sort((a, b) => b.wear - a.wear)[0];
+    if (cand) { BC.lastGfx = now; BC.cam = { kind: 'pitwin', cars: [cand], tag: 'PIT WINDOW', col: '#2d6cdf', prio: 1, at: now, until: now + 6500 }; bcRefreshText(); return; }
+  }
+  let best = null;
+  for (let i = 1; i < Math.min(ord.length, 14); i++) { const a = ord[i - 1], b = ord[i]; if (a.pitT > 0 || b.pitT > 0 || a.finished) continue; const g = bcGap(R, a, b); if (g < 1.1 && (!best || g - (i < 4 ? 0.3 : 0) < best.g)) best = { a, b, i, g }; }
+  if (best) BC.cam = { kind: 'battle', cars: [best.a, best.b], tag: `BATTLE FOR P${best.i}`, col: '#f59e0b', prio: 1, at: now, until: now + 7000 };
+  else if (fav && Math.random() < 0.4) BC.cam = { kind: 'follow', cars: [fav], tag: 'FOLLOWING', col: fav.t.color, prio: 0, at: now, until: now + 6000 };
+  else BC.cam = { kind: 'lead', cars: [ord[0]], tag: 'RACE LEADER', col: '#e6ebf5', prio: 0, at: now, until: now + 6000 };
+  bcRefreshText();
+  if (now > BC.nextAna) { BC.nextAna = now + 14000; bcAnalysis(); }
+}
+function bcTrend(a, b) {
+  const n1 = Math.min(a.cross.length, b.cross.length) - 1, pts = [];
+  for (let n = Math.max(1, n1 - 5); n <= n1; n++) if (a.cross[n] != null && b.cross[n] != null) pts.push(b.cross[n] - a.cross[n]);
+  return pts;
+}
+function bcSpark(v) {
+  if (v.length < 2) return '';
+  const max = Math.max(...v, 0.5), W = 64, H = 18, X = i => i / (v.length - 1) * W, Y = x => H - 2 - (Math.min(x, max) / max) * (H - 4);
+  return `<svg class="bc-spark" viewBox="0 0 ${W} ${H}"><polyline fill="none" stroke="#fff" stroke-width="1.6" points="${v.map((x, i) => X(i).toFixed(1) + ',' + Y(x).toFixed(1)).join(' ')}"/></svg>`;
+}
+function bcRefreshText() {
+  const R = RACE, C = BC.cam; if (!C) return;
+  const ord = R.order(), p = c => ord.indexOf(c) + 1;
+  if (C.kind === 'battle') {
+    const [a, b] = C.cars, g = bcGap(R, a, b), tr = bcTrend(a, b), d = tr.length >= 2 ? (tr[tr.length - 1] - tr[0]) / (tr.length - 1) : 0;
+    C.text = `${bcName(a)} vs ${bcName(b)} · ${g.toFixed(2)} s${Math.abs(d) > 0.05 ? ` · ${d < 0 ? 'closing' : 'pulling away'} ${Math.abs(d).toFixed(2)} s/lap` : ''}`;
+    C.spark = bcSpark(tr);
+    if (g < 0.6 && Math.random() < 0.2) bcRadio(R, b, 'eng', `Gap ${g.toFixed(1)}. DRS next lap, go for it.`);
+  } else C.spark = '';
+  if (C.kind === 'pitwin') {
+    const c = C.cars[0], loss = R.track.pit + 2.6, mine = p(c); let rp = mine, ahead = null;
+    ord.slice(mine).forEach(b => { if (!b.out && !b.finished && b.pitT <= 0 && bcGap(R, c, b) < loss) { rp++; ahead = b; } });
+    C.text = `${bcName(c)} · ${TYRES[c.tyre].name}s ${c.age} laps old (${Math.round(c.wear * 100)}% worn) · a stop now → rejoin P${rp}${ahead ? ` behind ${bcName(ahead)}` : ''}`;
+  }
+  if (C.kind === 'lead') { const a = C.cars[0], b = ord.filter(c => !c.out)[1]; if (C.tag === 'RACE LEADER') C.text = `${bcName(a)} · ${TYRES[a.tyre].name}s${b ? ` · leads by ${bcGap(R, a, b).toFixed(1)} s` : ''} · lap ${Math.min(R.laps, a.laps + 1)}/${R.laps}`; }
+  if (C.kind === 'follow') { const a = C.cars[0]; C.text = `P${p(a)} ${bcName(a)} · ${TYRES[a.tyre].name}s, ${a.age} laps · ${a.stops} stop${a.stops === 1 ? '' : 's'}${a.lastLap ? ' · last lap ' + fmtTime(a.lastLap) : ''}`; }
+}
+function bcAnalysis() {
+  const R = RACE, ord = R.order().filter(c => !c.out), lead = ord[0]; if (!lead || R.chequered) return;
+  const opts = [];
+  const toStop = ord.filter(c => c.stops === 0).length;
+  if (R.laps - lead.laps > 8 && toStop > 3 && lead.laps > R.laps * 0.25 && !R.sprint) opts.push(`${toStop} cars still haven't stopped — the strategy picture will shake out over the next few laps.`);
+  if (!R.sprint && G.results.length && G.rules && !(G.rules.heats)) {
+    const PT = (G.rules && G.rules.points) || POINTS, ds = standingsDrivers(G).slice(0, 3);
+    const live = ds.map(d => { const c = R.cars.find(x => x.d.id === d.id); const pos = c && !c.out ? ord.indexOf(c) + 1 : 0; return { d, pts: d.pts + (pos && pos <= PT.length ? PT[pos - 1] : 0) }; }).sort((a, b) => b.pts - a.pts);
+    if (live.length > 1) opts.push(`As they run, ${dkShort(live[0].d)} would ${live[0].d.id === ds[0].id ? 'extend the championship lead to' : 'take over the championship lead by'} ${live[0].pts - live[1].pts} point${live[0].pts - live[1].pts === 1 ? '' : 's'}.`);
+  }
+  const fresh = ord.slice(0, 10).filter(c => c.age < 5 && c.stops > 0 && ord.indexOf(c) > 0)[0];
+  if (fresh) opts.push(`Watch ${dkShort(fresh.d)} on fresh ${TYRES[fresh.tyre].name.toLowerCase()}s — he should be the fastest man on track for a few laps.`);
+  if (R.wet > 0.2) opts.push(R.wet > 0.6 ? 'Full wet conditions — visibility is terrible out there.' : 'Tricky intermediate conditions; one mistake and it is over.');
+  const old = ord.slice(0, 6).filter(c => c.wear > 0.6)[0];
+  if (old) opts.push(`${dkShort(old.d)}'s tyres are getting old — ${Math.round(old.wear * 100)}% worn. He'll be vulnerable.`);
+  if (opts.length) bcComm('ana', pick(opts), 1);
+}
+
+// ---------- replay ----------
+function bcStartReplay(clip) {
+  if (!clip || !BC.buf.length) return;
+  const t1 = Math.min(clip.t + 2.5, BC.buf[BC.buf.length - 1].t), t0 = Math.max(BC.buf[0].t, clip.t - 7);
+  if (t1 - t0 < 2) return;
+  BC.replay = { clip, t0, t1, start: bcNow(), rate: 0.7 };
+}
+function bcDistAt(i, t) {
+  const B = BC.buf; let lo = 0, hi = B.length - 1;
+  if (t <= B[0].t) return B[0].d[i]; if (t >= B[hi].t) return B[hi].d[i];
+  while (hi - lo > 1) { const m = (lo + hi) >> 1; if (B[m].t <= t) lo = m; else hi = m; }
+  const a = B[lo].d[i], b = B[hi].d[i], f = (t - B[lo].t) / (B[hi].t - B[lo].t || 1);
+  if ((a < 0) !== (b < 0)) return f < 0.5 ? a : b;
+  return a + (b - a) * f;
+}
+
+// ---------- drawing the TV picture ----------
+function bcDraw() {
+  const cv = document.getElementById('bccam'); if (!cv || BC.hidden || !RACE) return;
+  if (!cv._w) dkSize(cv); if (!cv._w) return;
+  const R = RACE, ctx = cv.getContext('2d'), w = cv._w, h = cv._h, dpr = cv._dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const g = trackGeometry(R.track), now = bcNow();
+  let rp = BC.replay, tt = null;
+  if (rp) { tt = rp.t0 + (now - rp.start) / 1000 * rp.rate; if (tt > rp.t1) { BC.replay = rp = null; tt = null; } }
+  const idx = new Map(R.cars.map((c, i) => [c, i]));
+  const distOf = c => { if (tt == null) return c.pitT > 0 ? -c.dist : c.dist; return bcDistAt(idx.get(c), tt); };
+  const focus = rp ? rp.clip.cars : (BC.cam ? BC.cam.cars : [R.order()[0]]);
+  const pts = focus.filter(Boolean).map(c => { const d = distOf(c); return pointAt(g, Math.abs(d) / R.L); });
+  if (!pts.length) return;
+  let cx = pts.reduce((s, p) => s + p[0], 0) / pts.length, cy = pts.reduce((s, p) => s + p[1], 0) / pts.length;
+  // smooth camera motion
+  const C = cv._cam || (cv._cam = { x: cx, y: cy });
+  const jump = Math.hypot(cx - C.x, cy - C.y) > 0.035; C.x = jump ? cx : C.x + (cx - C.x) * 0.5; C.y = jump ? cy : C.y + (cy - C.y) * 0.5;
+  const span = 0.075 + (pts.length > 1 ? Math.min(0.06, Math.hypot(pts[0][0] - pts[pts.length - 1][0], pts[0][1] - pts[pts.length - 1][1]) * 1.4) : 0);
+  const Z = w / span, X = p => (p[0] - C.x) * Z + w / 2, Y = p => (p[1] - C.y) * Z + h / 2;
+  // grass
+  const gr = ctx.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, '#3c5a2d'); gr.addColorStop(1, '#2b4421'); ctx.fillStyle = gr; ctx.fillRect(0, 0, w, h);
+  if (R.wet > 0.05) { ctx.fillStyle = `rgba(40,70,120,${R.wet * 0.35})`; ctx.fillRect(0, 0, w, h); }
+  const tw = Math.max(10, Z * 0.0065);
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  const path = () => { ctx.beginPath(); g.P.forEach((p, i) => i ? ctx.lineTo(X(p), Y(p)) : ctx.moveTo(X(p), Y(p))); ctx.closePath(); };
+  path(); ctx.strokeStyle = '#c9b48a'; ctx.lineWidth = tw * 2.2; ctx.stroke(); // run-off
+  path(); ctx.setLineDash([tw * 0.5, tw * 0.5]); ctx.strokeStyle = '#d33'; ctx.lineWidth = tw * 1.18; ctx.stroke(); ctx.setLineDash([]); // kerbs
+  path(); ctx.strokeStyle = '#eee'; ctx.lineWidth = tw * 1.08; ctx.stroke();
+  path(); ctx.strokeStyle = (R.sc || R.vsc) && !rp ? '#4d4419' : '#3a3d42'; ctx.lineWidth = tw; ctx.stroke();
+  // start line
+  const s0 = pointAt(g, 0); ctx.save(); ctx.translate(X(s0), Y(s0)); ctx.rotate(s0[2] + Math.PI / 2); const cw = tw / 6; for (let k = -3; k < 3; k++) for (let j = 0; j < 2; j++) { ctx.fillStyle = (k + j) % 2 ? '#fff' : '#111'; ctx.fillRect(k * cw, -cw + j * cw, cw, cw); } ctx.restore();
+  // cars
+  const ord = R.order();
+  ord.slice().reverse().forEach(c => {
+    if (c.out && tt == null) return;
+    const d = distOf(c); if (d == null) return;
+    const p = pointAt(g, Math.abs(d) / R.L); let x = X(p), y = Y(p);
+    if (d < 0) { const n = p[2] + Math.PI / 2; x += Math.cos(n) * tw * 1.6; y += Math.sin(n) * tw * 1.6; }
+    if (x < -40 || y < -40 || x > w + 40 || y > h + 40) return;
+    const L = tw * 0.95, Wd = tw * 0.38;
+    ctx.save(); ctx.translate(x, y); ctx.rotate(p[2]);
+    ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(-L / 2 + 2, -Wd / 2 + 2, L, Wd);
+    ctx.fillStyle = '#111'; ctx.fillRect(-L * 0.42, -Wd * 0.75, L * 0.18, Wd * 1.5); ctx.fillRect(L * 0.22, -Wd * 0.75, L * 0.18, Wd * 1.5); // wheels
+    ctx.fillStyle = c.t.color; ctx.fillRect(-L / 2, -Wd / 2, L, Wd); ctx.fillRect(L / 2 - 2, -Wd * 0.8, 3, Wd * 1.6); // body + front wing
+    ctx.fillStyle = dkInk(c.t.color) === '#fff' ? '#eee' : '#222'; ctx.fillRect(-L * 0.05, -Wd * 0.22, L * 0.18, Wd * 0.44); // halo
+    ctx.restore();
+    const hi = focus.includes(c) || c.fav;
+    ctx.font = `bold ${hi ? 12 : 10}px ui-monospace,monospace`; ctx.textAlign = 'center';
+    const lab = `${ord.indexOf(c) + 1} ${c.d.code}`, tw2 = ctx.measureText(lab).width + 8;
+    ctx.fillStyle = hi ? c.t.color : 'rgba(0,0,0,.6)'; ctx.fillRect(x - tw2 / 2, y - tw * 1.05 - 13, tw2, 15);
+    ctx.fillStyle = hi ? dkInk(c.t.color) : '#fff'; ctx.fillText(lab, x, y - tw * 1.05 - 2); ctx.textAlign = 'left';
+  });
+  // tags
+  ctx.font = 'bold 11px ui-monospace,monospace';
+  if (rp) { ctx.fillStyle = '#e10600'; ctx.fillRect(8, 8, 74, 18); ctx.fillStyle = '#fff'; ctx.fillText('⟲ REPLAY', 13, 21); ctx.fillStyle = 'rgba(0,0,0,.6)'; const s = `LAP ${rp.clip.lap} · ${rp.clip.label}`; ctx.fillRect(86, 8, ctx.measureText(s).width + 10, 18); ctx.fillStyle = '#fff'; ctx.fillText(s, 91, 21); }
+  else { ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fillRect(8, 8, 52, 18); ctx.fillStyle = '#ef4444'; ctx.beginPath(); ctx.arc(17, 17, 4, 0, 6.3); ctx.fill(); ctx.fillStyle = '#fff'; ctx.fillText('LIVE', 25, 21); }
+}
+
+// ---------- DOM ----------
+function bcCamHtml() {
+  return `<div class="bc-cam ${BC.hidden ? 'off' : ''}" id="bccamw"><canvas id="bccam"></canvas>
+    <div class="bc-ctl"><button data-a="bcmode" title="Camera: director picks the action, or stay with the driver you follow">${BC.mode === 'auto' ? '🎬 DIRECTOR' : '⭐ FOLLOW'}</button><button data-a="bcrep" id="bcrepb" title="Replay the latest overtake or incident">⟲ REPLAY</button><button data-a="bccc" class="${BC.cc ? 'on' : ''}" title="Commentary captions">CC</button><button data-a="bcauto" class="${BC.autoRep ? 'on' : ''}" title="Automatic replays of big moments">AUTO ⟲</button><button data-a="bchide" title="Hide the TV picture">✕</button></div></div>
+    <button class="bc-show ${BC.hidden ? '' : 'off'}" data-a="bchide" id="bcshow">📺 TV</button>
+    <div class="bc-l3" id="bcl3"></div><div class="bc-cap" id="bccap"></div>`;
+}
+const _bc_deskLive = deskLive;
+deskLive = function (kind) {
+  let html = _bc_deskLive.apply(this, arguments);
+  if (kind !== 'race' || DK.view === 'tele') return html;
+  html = html.replace('<div class="dk-mapbox"><canvas id="cv"></canvas>', '<div class="dk-mapbox"><canvas id="cv"></canvas>' + bcCamHtml());
+  html = html.replace('data-v="radio">Radio</button>', `data-v="radio">Radio</button><button class="${DK.evf === 'comm' ? 'on' : ''}" data-a="dkevf" data-v="comm">Commentary</button>`);
+  html = html.replace('<button data-a="dkmodal" data-v="weather">⛅ Weather Forecast</button>', '<button data-a="dkmodal" data-v="strategy">🛞 Tyre Strategy</button><button data-a="dkmodal" data-v="weather">⛅ Weather Forecast</button>');
+  return html;
+};
+const _bc_dkUpdate = dkUpdate;
+dkUpdate = function () {
+  const r = _bc_dkUpdate.apply(this, arguments);
+  try { if (bcLive()) bcUi(); } catch (e) { }
+  return r;
+};
+function bcUi() {
+  if (BC.race !== RACE) bcReset(RACE);
+  bcDirect();
+  const C = BC.cam, l3 = document.getElementById('bcl3');
+  const rp = BC.replay;
+  const html = rp ? `<span class="bc-tag" style="background:#e10600">REPLAY</span><span class="bc-txt">Lap ${rp.clip.lap} · ${esc(rp.clip.label)}</span>`
+    : C && C.text ? `<span class="bc-tag" style="background:${C.col};color:${dkInk(C.col)}">${esc(C.tag)}</span><span class="bc-txt">${esc(C.text)}</span>${C.spark || ''}` : '';
+  if (l3 && l3._h !== html) { l3.innerHTML = html; l3._h = html; l3.classList.toggle('on', !!html); }
+  const cap = document.getElementById('bccap'), show = BC.cc && BC.cap && bcNow() - BC.cap.at < 7000;
+  const ch = show ? `<b>${BC_VOICES[BC.cap.who]}:</b> ${esc(BC.cap.s)}` : '';
+  if (cap && cap._h !== ch) { cap.innerHTML = ch; cap._h = ch; cap.classList.toggle('on', !!ch); }
+  const rb = document.getElementById('bcrepb'); if (rb) rb.disabled = !BC.clips.length;
+  if (DK.evf === 'comm') {
+    const ev = document.getElementById('dkev');
+    const h = BC.comm.length ? BC.comm.slice(0, 60).map(e => `<div class="dkev bc-cm"><span class="tag" style="background:${e.who === 'pbp' ? '#b45309' : '#0e7490'}">${BC_VOICES[e.who]}</span><span class="lab">L${e.lap}</span><span>${esc(e.s)}</span></div>`).join('') : '<div class="dk-mut">The commentators will pick up the story once the lights go out.</div>';
+    if (ev && ev._h !== h) { ev.innerHTML = h; ev._h = h; }
+  }
+}
+const _bc_dkDraw = dkDraw;
+dkDraw = function () { const r = _bc_dkDraw.apply(this, arguments); try { if (bcLive()) bcDraw(); } catch (e) { } return r; };
+const _bc_render = render;
+render = function () { const r = _bc_render.apply(this, arguments); requestAnimationFrame(() => { const cv = document.getElementById('bccam'); if (cv) { cv._w = 0; dkSize(cv); } }); return r; };
+window.addEventListener('resize', () => { const cv = document.getElementById('bccam'); if (cv) dkSize(cv); });
+Object.assign(A, {
+  bcmode() { BC.mode = BC.mode === 'auto' ? 'follow' : 'auto'; if (BC.mode === 'follow' && !RACE.cars.some(c => c.fav)) { BC.mode = 'auto'; toast && toast('Click a driver in the order to follow them first.'); } BC.cam = null; bcSave(); const b = document.querySelector('[data-a=bcmode]'); if (b) b.textContent = BC.mode === 'auto' ? '🎬 DIRECTOR' : '⭐ FOLLOW'; },
+  bcrep() { BC.pendRep = null; bcStartReplay(BC.clips[0]); },
+  bccc(el) { BC.cc = !BC.cc; el.classList.toggle('on', BC.cc); bcSave(); },
+  bcauto(el) { BC.autoRep = !BC.autoRep; el.classList.toggle('on', BC.autoRep); bcSave(); },
+  bchide() { BC.hidden = !BC.hidden; bcSave(); const w = document.getElementById('bccamw'), s = document.getElementById('bcshow'); if (w) w.classList.toggle('off', BC.hidden); if (s) s.classList.toggle('off', !BC.hidden); if (!BC.hidden) { const cv = document.getElementById('bccam'); if (cv) dkSize(cv); } },
+});
+if (typeof toast !== 'function') window.toast = s => { try { RACE && RACE.msg(s); } catch (e) { } };
+// ===================== Storylines: rivalries, driver market, press room, season narratives =====================
+function stEnsure() {
+  const S = G.story || (G.story = {});
+  if (S.y !== G.year) Object.assign(S, { y: G.year, riv: {}, mkt: [], plan: null, press: {} });
+  return S;
+}
+const stPair = (a, b) => a < b ? a + '|' + b : b + '|' + a;
+const stD = id => G.drivers[id];
+const stNm = id => stD(id) ? stD(id).name : id;
+const stSh = id => stD(id) ? dkShort(stD(id)) : id;
+const stWins = id => typeof hxTotal === 'function' ? hxTotal('d', id, G).w : (stD(id) ? stD(id).careerWins || 0 : 0);
+const stTeamNm = tid => G.teams[tid] ? G.teams[tid].name : (typeof HIST !== 'undefined' && HIST.teams && HIST.teams[tid] ? HIST.teams[tid][0] : tid);
+function stRiv(S, a, b) { const k = stPair(a, b); return S.riv[k] || (S.riv[k] = { a: k.split('|')[0], b: k.split('|')[1], score: 0, battles: 0, close: 0, passes: 0, clashes: 0, last: 0 }); }
+
+// live overtakes feed rivalries (only races you watch)
+function storyPass(a, b) { try { const S = stEnsure(), r = stRiv(S, a.d.id, b.d.id); r.passes++; r.score += 0.5; r.last = G.results.length + 1; (r.pw || (r.pw = {}))[a.d.id] = ((r.pw || {})[a.d.id] || 0) + 1; } catch (e) { } }
+if (typeof bcEvent === 'function') { const _st_bcEvent = bcEvent; bcEvent = function (R, ev) { if (ev.type === 'pass' && !R.sprint && ev.pos <= 12) storyPass(ev.a, ev.b); return _st_bcEvent.apply(this, arguments); }; }
+
+// ---------- after every Grand Prix ----------
+const _st_applyRaceResult = applyRaceResult;
+applyRaceResult = function (G0, race, wk) {
+  const out = _st_applyRaceResult.apply(this, arguments);
+  try { if (G0 === G) stAfterRace(G0.results[G0.results.length - 1]); } catch (e) { console.warn('story', e); }
+  return out;
+};
+function stAfterRace(s) {
+  const S = stEnsure(), rows = s.rows, rd = G.results.length;
+  // rivalries: close finishes between neighbours, and clashes
+  const cls = rows.filter(r => !r.out && !r.heatOut).sort((a, b) => a.pos - b.pos);
+  for (let i = 1; i < cls.length && i < 10; i++) {
+    const A = cls[i - 1], B = cls[i], r = stRiv(S, A.id, B.id); r.battles++; r.score += i <= 3 ? 1.5 : 1; r.last = rd;
+    if (A.time != null && B.time != null && A.laps === B.laps && B.time - A.time < 1.2) { r.close++; r.score += 1; }
+    (r.ahead || (r.ahead = {}))[A.id] = (r.ahead[A.id] || 0) + 1;
+  }
+  const clash = rows.filter(r => r.out && /collision|contact|crash/i.test(r.out));
+  for (let i = 0; i < clash.length; i++) for (let j = i + 1; j < clash.length; j++) if (Math.abs(clash[i].laps - clash[j].laps) <= 0) { const r = stRiv(S, clash[i].id, clash[j].id); r.clashes++; r.score += 3; r.last = rd; }
+  s.press = stPress(s);
+  stMarketTick(S, rd);
+  const h = stHeadlines().find(x => x.hot); if (h) news(G, `📰 ${h.title}${h.text ? ' — ' + h.text : ''}`);
+}
+
+// ---------- press room ----------
+function stPress(s) {
+  const rows = s.rows, q = [], cls = rows.filter(r => !r.out), ds = standingsDrivers(G);
+  const champPos = id => ds.findIndex(d => d.id === id) + 1, lead = ds[0], second = ds[1];
+  const tm = r => stTeamNm(r.team);
+  const add = (r, role, text) => q.push({ id: r.id, team: r.team, role, q: text });
+  const w = cls[0], p2 = cls[1], p3 = cls[2];
+  if (w) {
+    const d = stD(w.id), mate = cls.find(r => r.team === w.team && r !== w);
+    let t = pick([`What a day. The car was mega and the team gave me everything I needed.`, `We controlled it from the front. A big thank-you to everyone at ${tm(w)}.`, `I'm really proud of this one. We managed the tyres perfectly.`]);
+    if (d && stWins(w.id) === 1) t = pick([`My first win in Formula 1… I don't have the words. I've dreamed about this since I was a kid.`, `First Grand Prix win! I'll need a few days for this to sink in.`]);
+    else if (w.grid >= 5) t = pick([`Starting P${w.grid}, I honestly didn't think this was possible today. The strategy was perfect.`, `From P${w.grid} to the top step — we stayed out of trouble and the pace came alive in the race.`]);
+    else if (mate && mate.pos === 2) t = `A one-two for ${tm(w)}! That's the best result we could ask for. Great job by everyone.`;
+    if (lead && lead.id === w.id && second) t += ` ${lead.pts - second.pts > 25 ? `The gap in the championship is nice, but we keep our feet on the ground.` : `It's tight at the top, so every point matters.`}`;
+    else if (champPos(w.id) > 1 && lead) t += ` We're chasing ${stSh(lead.id)} in the standings and today we took a bite out of that gap.`;
+    add(w, 'Winner', t);
+  }
+  if (p2) {
+    const gap = w && p2.time != null && w.time != null && p2.laps === w.laps ? p2.time - w.time : null;
+    add(p2, 'P2', gap != null && gap < 1.5 ? pick([`So close! One more lap and I think we'd have had him.`, `${gap.toFixed(1)} seconds… it hurts a little, but it was a great fight.`]) : pick([`Good points today. We didn't quite have the pace for the win, but it's a solid weekend.`, `P2 is a good result. We'll look at where we lost time to ${w ? stSh(w.id) : 'the leader'}.`]));
+  }
+  if (p3) add(p3, 'P3', p3.grid >= 8 ? `From P${p3.grid} to the podium — I'll take that every day.` : pick([`Nice to be back on the podium. The team deserves this.`, `A podium is always special. Tricky race with the tyres, but we managed it.`]));
+  // biggest climber outside the podium
+  const climb = cls.filter(r => r.pos > 3 && r.pos <= 10 && r.grid - r.pos >= 6).sort((a, b) => (b.grid - b.pos) - (a.grid - a.pos))[0];
+  if (climb) add(climb, `Driver of the climb (P${climb.grid} → P${climb.pos})`, pick([`We came alive in the race. Overtaking all afternoon — that was fun!`, `Bad qualifying, great race. That's the spirit of this team.`]));
+  // a championship contender who retired
+  const dnf = rows.filter(r => r.out && !r.heatOut && champPos(r.id) && champPos(r.id) <= 5).sort((a, b) => champPos(a.id) - champPos(b.id))[0];
+  if (dnf) add(dnf, `Retired · ${dnf.out}`, /collision|contact/i.test(dnf.out) ? pick([`I don't know what he was thinking. He just turned in on me.`, `Racing incident, maybe. But it cost us a lot of points.`]) : pick([`Very frustrating. We were on for a strong result and it's gone.`, `It hurts, especially in a championship this tight. We'll bounce back.`]));
+  // team-mate tension: neighbours on track, with live passes between them or a close finish
+  const S = stEnsure();
+  for (let i = 1; i < cls.length && i < 10; i++) {
+    const A = cls[i - 1], B = cls[i];
+    if (A.team !== B.team) continue;
+    const r = S.riv[stPair(A.id, B.id)];
+    const fought = (r && r.pw && r.pw[A.id] && G.results.length === r.last) || (A.time != null && B.time != null && B.time - A.time < 1.0);
+    if (fought) { add(B, `Team-mate tension with ${stSh(A.id)}`, pick([`I'd rather not comment. We'll talk about it inside the team.`, `We were told to hold position… I need to understand why.`, `He's fast, but he's not the only one in this team who wants to win.`])); break; }
+  }
+  return q;
+}
+
+// ---------- driver market ----------
+function stMarketPlan(S) {
+  const N = G.cal.length, plan = [], seed = seeded('mkt' + G.year + (G.seed || ''));
+  const at = (lo, hi) => Math.max(1, Math.min(N, Math.round(lo + seed() * (hi - lo))));
+  const ly = G.timeline && typeof HIST !== 'undefined' ? (typeof mixLineYear === 'function' && G.mix ? mixLineYear(G, G.year + 1) : G.year + 1) : null;
+  const curLine = G.lineYear || G.year;
+  if (ly && HIST.years[ly] && ly !== curLine) {
+    const nx = new Map(HIST.years[ly].drivers.map(row => [HIST.drivers[row[0]][0], row[1]]));
+    const act = Object.values(G.drivers).filter(d => d.team);
+    // team renames: every continuing driver of a team goes to the same, new team id
+    const ren = {}; act.forEach(d => { const nt = nx.get(d.id); if (nt && nt !== d.team) (ren[d.team] || (ren[d.team] = new Set())).add(nt); });
+    const nextTeams = new Set(HIST.years[ly].teams.map(t => t[0]));
+    const renamed = {}; Object.entries(ren).forEach(([t, s]) => { const mates = act.filter(d => d.team === t && nx.has(d.id)); if (s.size === 1 && mates.length >= 2 && mates.every(d => nx.get(d.id) === [...s][0]) && !G.teams[[...s][0]] && !nextTeams.has(t)) renamed[t] = [...s][0]; });
+    Object.entries(renamed).forEach(([t, n]) => plan.push({ kind: 'rename', team: t, to: n, at: at(N * 0.55, N * 0.9) }));
+    act.forEach(d => {
+      const nt = nx.get(d.id);
+      if (nt == null) plan.push({ kind: d.age >= 34 ? 'retire' : 'leave', id: d.id, team: d.team, at: at(N * 0.45, N), rum: 0 });
+      else if (nt !== d.team && renamed[d.team] !== nt) plan.push({ kind: 'move', id: d.id, team: d.team, to: nt, at: at(N * 0.4, N * 0.95) });
+    });
+    HIST.years[ly].drivers.forEach(row => { const D = HIST.drivers[row[0]]; if (!act.some(d => d.id === D[0])) plan.push({ kind: 'rookie', id: D[0], name: D[1], to: row[1], at: at(N * 0.6, N) }); });
+  } else if (!G.timeline) {
+    const exp = Object.values(G.drivers).filter(d => d.team && d.team !== G.player && d.until <= G.year);
+    const fate = {}; exp.forEach(d => { const o = overall(d); fate[d.id] = d.age >= 37 && Math.random() < 0.5 ? 'retire' : Math.random() < (o > 86 ? 0.8 : o > 83 ? 0.6 : 0.4) ? 'extend' : 'free'; });
+    const taken = new Set();
+    exp.filter(d => fate[d.id] === 'free').sort((a, b) => overall(b) - overall(a)).forEach(x => {
+      const y = exp.filter(o => o.team !== x.team && o.team !== G.player && (fate[o.id] === 'free' || fate[o.id] === 'retire') && !taken.has(o.id) && overall(o) < overall(x) - 0.5 && appeal(G, o.team) >= appeal(G, x.team) - 0.15).sort((a, b) => appeal(G, b.team) - appeal(G, a.team))[0];
+      if (y && Math.random() < 0.75) { taken.add(y.id); fate[x.id] = 'move'; plan.push({ kind: 'move', id: x.id, team: x.team, to: y.team, out: fate[y.id] === 'free' ? y.id : null, at: at(N * 0.4, N * 0.95) }); }
+    });
+    exp.forEach(d => { const f = fate[d.id]; if (f === 'extend') plan.push({ kind: 'extend', id: d.id, team: d.team, yrs: rint(1, 3), at: at(N * 0.25, N * 0.85), rum: 0 }); else if (f === 'retire') plan.push({ kind: 'retire', id: d.id, team: d.team, at: at(N * 0.5, N * 0.9), rum: 0 });
+      else if (f === 'free' && !taken.has(d.id)) plan.push({ kind: 'leave', id: d.id, team: d.team, at: at(N * 0.6, N), rum: 0 }); });
+    plan.filter(p => p.kind === 'move' && p.out).forEach(p => { if (!plan.some(x => x.id === p.out)) plan.push({ kind: 'leave', id: p.out, team: p.to, at: Math.min(N, p.at + 1), rum: 0 }); });
+  }
+  plan.forEach(p => { if (p.rum == null) p.rum = Math.max(1, p.at - rint(2, 4)); });
+  return plan;
+}
+function stMarketTick(S, rd) {
+  if (!S.plan) S.plan = stMarketPlan(S);
+  const ny = G.year + 1, items = [];
+  S.plan.forEach(p => {
+    if (p.rum && !p.rdone && rd >= p.rum && rd < p.at) {
+      p.rdone = true;
+      if (p.kind === 'move') items.push({ k: 'rumour', s: `${stNm(p.id)} is in talks with ${stTeamNm(p.to)} about a seat for ${ny}.` });
+      if (p.kind === 'rookie') items.push({ k: 'rumour', s: `${p.name} is tipped for a race seat at ${stTeamNm(p.to)}.` });
+    }
+    if (!p.done && rd >= p.at) {
+      p.done = true;
+      const d = stD(p.id);
+      if (p.kind === 'move') { items.push({ k: 'done', s: `Confirmed: ${stNm(p.id)} will leave ${stTeamNm(p.team)} and join ${stTeamNm(p.to)} for ${ny}.` }); if (!G.timeline && d) d.next = { team: p.to, salary: askingSalary(d), until: G.year + rint(2, 3) }; }
+      if (p.kind === 'extend') { items.push({ k: 'done', s: `${stNm(p.id)} signs a new deal with ${stTeamNm(p.team)} until ${G.year + p.yrs}.` }); if (d) d.until = G.year + p.yrs; }
+      if (p.kind === 'leave') { items.push({ k: 'leave', s: `${stNm(p.id)} will not be at ${stTeamNm(p.team)} in ${ny}.` }); if (!G.timeline && d) d.mkOut = true; }
+      if (p.kind === 'retire') { items.push({ k: 'leave', s: `${stNm(p.id)} announces he will retire from Formula 1 at the end of the season.` }); if (!G.timeline && d) d.mkRetire = true; }
+      if (p.kind === 'rookie') items.push({ k: 'done', s: `${p.name} will race for ${stTeamNm(p.to)} in ${ny}.` });
+      if (p.kind === 'rename') items.push({ k: 'done', s: `${stTeamNm(p.team)} will race as ${stTeamNm(p.to)} from ${ny}.` });
+    }
+  });
+  items.forEach(it => { S.mkt.unshift(Object.assign(it, { r: rd })); news(G, (it.k === 'rumour' ? '🗣️ Rumour: ' : '✍️ ') + it.s); });
+}
+// season end (free-running seasons): carry out the announced departures and retirements
+const _st_endSeason = endSeason;
+endSeason = function (G0) {
+  const marked = Object.values(G0.drivers).filter(d => d.mkOut || d.mkRetire).map(d => ({ d, out: d.mkOut, ret: d.mkRetire }));
+  const s = _st_endSeason.apply(this, arguments);
+  try {
+    let changed = false;
+    marked.forEach(({ d, out, ret }) => {
+      delete d.mkOut; delete d.mkRetire;
+      if (d.retired || G0.player && d.team === G0.player) return;
+      if (ret) { if (d.team) changed = true; d.retired = true; d.team = null; s.retired && s.retired.push(d.name); }
+      else if (out && d.team && !d.next) { s.moves && s.moves.push(`${d.name} leaves ${G0.teams[d.team] ? G0.teams[d.team].name : d.team}`); d.leftTeam = d.team; d.team = null; changed = true; }
+    });
+    // a team can end up with 3 drivers when an incoming signing meets a driver the AI kept: drop the extra one
+    Object.values(G0.teams).forEach(t => { if (t.id === G0.player) return; const ds = teamDrivers(G0, t.id); while (ds.length > 2) { const x = ds.sort((a, b) => overall(a) - overall(b)).shift(); x.team = null; changed = true; s.moves && s.moves.push(`${x.name} leaves ${t.name}`); } });
+    if (changed) { fillAISeats(G0, s); Object.values(G0.drivers).forEach(d => delete d.leftTeam); }
+  } catch (e) { console.warn('story season end', e); }
+  return s;
+};
+
+// ---------- season narratives ----------
+function stHeadlines() {
+  const out = [], done = G.results.length, N = G.cal.length, left = N - done, ds = standingsDrivers(G), ts = standingsTeams(G);
+  const PT = (G.rules && G.rules.points) || POINTS, per = PT[0] + (G.rules && G.rules.fl ? 1 : 0);
+  let spLeft = 0; for (let i = done; i < N; i++) if (isSprintRound(G, i)) spLeft++;
+  const maxLeft = left * per + spLeft * 8;
+  const nm = d => dkShort(d);
+  if (!done) {
+    const ch = G.history && G.history.length ? G.history[G.history.length - 1].champ : null;
+    out.push({ ic: '🏁', title: `${G.year} season preview`, text: `${N} races ahead.${ch ? ` ${ch.name} starts as the reigning champion.` : ''} Everyone starts on zero.`, hot: false });
+    return out;
+  }
+  const [a, b] = ds;
+  if (a && b) {
+    const gap = a.pts - b.pts;
+    if (!left) out.push({ ic: '🏆', title: `${a.name} is the ${G.year} world champion!`, text: gap ? `Champion by ${gap} point${gap === 1 ? '' : 's'}.` : `Level on points with ${nm(b)} — the title goes to ${nm(a)} on countback.`, hot: true });
+    else if (gap > maxLeft) out.push({ ic: '🏆', title: `${a.name} is the ${G.year} world champion!`, text: left ? `An unassailable ${gap}-point lead with ${left} race${left === 1 ? '' : 's'} still to go.` : `Champion by ${gap} points.`, hot: true });
+    else if (left && gap > maxLeft - per) out.push({ ic: '🎯', title: `Match point for ${nm(a)}`, text: `${gap} points clear of ${nm(b)}. Leave ${roundTrack(G, done).short} more than ${maxLeft - per} points ahead and the title is his.`, hot: true });
+    else out.push({ ic: '⚔️', title: gap <= per ? `Neck and neck: ${nm(a)} vs ${nm(b)}` : `${nm(a)} leads the championship`, text: `${a.pts} – ${b.pts} (${gap === 0 ? 'level on points' : gap + ' point' + (gap === 1 ? '' : 's')}) with ${left} race${left === 1 ? '' : 's'} left${ds[2] && a.pts - ds[2].pts <= per * 1.2 ? `, and ${nm(ds[2])} is still within ${a.pts - ds[2].pts}` : ''}.`, hot: gap <= per });
+  }
+  if (ts[0] && ts[1]) { const g = ts[0].pts - ts[1].pts; out.push({ ic: '🏗️', title: `Constructors: ${ts[0].name} ${g > maxLeft * 2 ? 'are champions' : g < 20 ? `vs ${ts[1].name} is on a knife edge` : `lead by ${g}`}`, text: `${ts[0].pts} – ${ts[1].pts}.`, hot: false }); }
+  // streaks
+  const winners = G.results.map(r => (r.rows.find(x => x.pos === 1 && !x.out) || {}).id);
+  let st = 1; for (let i = winners.length - 2; i >= 0 && winners[i] === winners[winners.length - 1]; i--) st++;
+  if (st >= 2 && winners[winners.length - 1]) out.push({ ic: '🔥', title: `${stNm(winners[winners.length - 1])} has won ${st} in a row`, text: st >= 4 ? 'Is anyone going to stop him?' : 'Momentum is building.', hot: st >= 3 });
+  const uniq = new Set(winners.filter(Boolean)); if (done >= 5 && uniq.size >= 5 && uniq.size / done >= 0.3) out.push({ ic: '🎲', title: `${uniq.size} different winners in ${done} races`, text: 'Nobody has been able to dominate.', hot: false });
+  const first = Object.values(G.drivers).filter(d => d.wins > 0 && stWins(d.id) === d.wins); if (first.length) out.push({ ic: '🌟', title: `First-time winner${first.length > 1 ? 's' : ''} this season`, text: first.map(d => d.name).join(', '), hot: false });
+  // form: points from the last three rounds
+  if (done >= 3) {
+    const last = G.results.slice(-3), pts = {}; last.forEach(r => { r.rows.forEach(x => pts[x.id] = (pts[x.id] || 0) + x.pts); (r.sprint || []).forEach(x => pts[x.id] = (pts[x.id] || 0) + (x.pts || 0)); });
+    const f = Object.entries(pts).sort((x, y) => y[1] - x[1])[0]; if (f && f[1] > 0) out.push({ ic: '📈', title: `Form driver: ${stNm(f[0])}`, text: `${f[1]} points from the last three races.`, hot: false });
+    const slump = ds.slice(0, 5).find(d => G.results.slice(-2).every(r => { const x = r.rows.find(y => y.id === d.id); return x && x.pts === 0; }));
+    if (slump) out.push({ ic: '📉', title: `${slump.name} is in a slump`, text: 'No points in the last two races.', hot: true });
+  }
+  // closest team-mate battle
+  const mates = Object.values(G.teams).map(t => teamDrivers(G, t.id)).filter(x => x.length === 2 && x[0].pts + x[1].pts >= 20).sort((x, y) => Math.abs(x[0].pts - x[1].pts) / (x[0].pts + x[1].pts) - Math.abs(y[0].pts - y[1].pts) / (y[0].pts + y[1].pts))[0];
+  const close = mates && Math.abs(mates[0].pts - mates[1].pts) / (mates[0].pts + mates[1].pts) < 0.1;
+  if (close) out.push({ ic: '🤜', title: `Civil war at ${G.teams[mates[0].team].name}`, text: `${nm(mates[0])} ${mates[0].pts} – ${mates[1].pts} ${nm(mates[1])}.`, hot: false });
+  const rook = ds.filter(d => d.rookie && d.team)[0]; if (rook) out.push({ ic: '🐣', title: `Rookie of the year race: ${rook.name} leads`, text: `P${ds.indexOf(rook) + 1} in the championship with ${rook.pts} points.`, hot: false });
+  return out;
+}
+
+// ---------- Storylines page ----------
+const STV = { press: null };
+function hqStory() {
+  const S = stEnsure(), done = G.results.length;
+  const heads = stHeadlines();
+  const card = h => `<div class="st-head ${h.hot ? 'hot' : ''}"><span class="st-ic">${h.ic}</span><div><b>${esc(h.title)}</b>${h.text ? `<div class="dk-mut">${esc(h.text)}</div>` : ''}</div></div>`;
+  const riv = Object.values(S.riv).filter(r => stD(r.a) && stD(r.b)).sort((x, y) => y.score - x.score).slice(0, 6);
+  const rivHtml = riv.length ? `<table class="st-riv"><thead><tr><th class="l">Rivalry</th><th>Fights</th><th class="hm">Close finishes</th><th class="hm">Passes seen</th><th>Clashes</th><th class="ra">Points</th></tr></thead><tbody>${riv.map(r => {
+    const A = stD(r.a), B = stD(r.b), same = A.team && A.team === B.team, ah = r.ahead || {};
+    const ca = G.teams[A.team] ? G.teams[A.team].color : '#666', cb = G.teams[B.team] ? G.teams[B.team].color : '#666';
+    return `<tr><td class="l"><span class="st-sw" style="background:${ca}"></span><a data-prof="${A.id}">${esc(dkShort(A))}</a> <span class="dk-mut">${ah[A.id] || 0}–${ah[B.id] || 0}</span> <a data-prof="${B.id}">${esc(dkShort(B))}</a><span class="st-sw" style="background:${cb}"></span>${same ? ' <span class="st-pill">TEAM-MATES</span>' : ''}</td><td>${r.battles}</td><td class="hm">${r.close}</td><td class="hm">${r.passes}</td><td>${r.clashes ? '💥 ' + r.clashes : '–'}</td><td class="ra">${A.pts}–${B.pts}</td></tr>`; }).join('')}</tbody></table><div class="dk-mut st-note">Fights = finished next to each other in the top 10 (the numbers between the names are who came out ahead). Passes = overtakes between the two on track.</div>`
+    : '<div class="dk-empty">Rivalries form as drivers finish next to each other, clash on track and fight for the same places.</div>';
+  const mkt = S.mkt.length ? S.mkt.slice(0, 30).map(m => `<div class="st-mk"><span class="st-tag ${m.k}">${m.k === 'rumour' ? 'RUMOUR' : m.k === 'leave' ? 'DEPARTURE' : 'CONFIRMED'}</span><span class="dk-mut">R${m.r}</span><span>${esc(m.s)}</span></div>`).join('')
+    : `<div class="dk-empty">${G.timeline && G.mix && G.mix.mode === 'stay' ? 'You chose to keep this line-up every season, so the driver market stays quiet.' : 'Quiet for now. Contract talk usually starts around a third of the way through the season.'}</div>`;
+  const pr = STV.press == null ? done - 1 : Math.min(done - 1, Math.max(0, STV.press)), R = G.results[pr];
+  let press = '<div class="dk-empty">The press room opens after the first race.</div>';
+  if (R) {
+    const Q = R.press || [];
+    press = `<div class="st-prnav"><button data-a="stpress" data-v="${pr - 1}" ${pr > 0 ? '' : 'disabled'}>‹</button><b>R${R.round} · ${esc(R.gp || '')}</b><button data-a="stpress" data-v="${pr + 1}" ${pr < done - 1 ? '' : 'disabled'}>›</button></div>`
+      + (Q.length ? Q.map(x => { const d = stD(x.id), tm = G.teams[x.team]; return `<div class="st-q" style="--tc:${tm ? tm.color : '#666'}"><div class="st-qh"><a data-prof="${x.id}"><b>${esc(d ? d.name : x.id)}</b></a><span class="dk-mut">${esc(x.role)}${tm ? ' · ' + esc(tm.name) : ''}</span></div><div>“${esc(x.q)}”</div></div>`; }).join('') : '<div class="dk-mut">No quotes were recorded for this race.</div>');
+  }
+  return `<div class="dk dk-page" id="dk"><div class="dk-pagehead"><h1>Storylines</h1><span class="sp"></span><span class="dk-mut">${G.year} · Round ${done} of ${G.cal.length}</span><button data-a="tab" data-v="home">Back</button></div>
+  <div class="st-grid">
+    <section class="st-sec"><div class="dk-h"><b>HEADLINES</b></div><div class="st-body">${heads.map(card).join('')}</div></section>
+    <section class="st-sec"><div class="dk-h"><b>PRESS ROOM</b></div><div class="st-body">${press}</div></section>
+    <section class="st-sec"><div class="dk-h"><b>RIVALRIES</b></div><div class="st-body">${rivHtml}</div></section>
+    <section class="st-sec"><div class="dk-h"><b>DRIVER MARKET · ${G.year + 1}</b></div><div class="st-body">${mkt}</div></section>
+  </div></div>`;
+}
+Object.assign(A, {
+  stpress(el) { STV.press = +el.dataset.v; render(); },
+  stpressmod() { const r = G.results[G.results.length - 1]; if (!r || !r.press) return; STV.press = G.results.length - 1;
+    hxOpen(`<div class="dkx-mod"><div class="dkx-hd"><div><h2>Press Room · ${esc(r.gp || '')}</h2><div class="dk-mut">What the drivers said after the race</div></div><span class="sp"></span><button class="dkx-x" data-a="hxclose">✕</button></div><div class="dkx-body"><section>${r.press.map(x => { const d = stD(x.id), tm = G.teams[x.team]; return `<div class="st-q" style="--tc:${tm ? tm.color : '#666'}"><div class="st-qh"><b>${esc(d ? d.name : x.id)}</b><span class="dk-mut">${esc(x.role)}${tm ? ' · ' + esc(tm.name) : ''}</span></div><div>“${esc(x.q)}”</div></div>`; }).join('')}</section></div></div>`); },
+});
+// press-room button on the race results page
+if (typeof deskRaceRes === 'function') {
+  const _st_deskRaceRes = deskRaceRes;
+  deskRaceRes = function (sprint) {
+    const html = _st_deskRaceRes.apply(this, arguments);
+    const r = G.results[G.results.length - 1];
+    if (sprint || !r || !r.press || !r.press.length) return html;
+    return html.replace('<button data-a="dkextras">', '<button data-a="stpressmod">📰 Press Room</button><button data-a="dkextras">');
+  };
+}
 </script></body></html>
