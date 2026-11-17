@@ -140,9 +140,10 @@
         <option value="owner">Who holds it now</option>
       </select></label>
     <label>OpenSea API key <input type="password" id="ctKey" placeholder="saved in this browser only" size="22"></label>
-    <button class="chip run" id="ctRun">Run</button>
+    <button class="chip run" id="ctRun">Run live</button>
     <button class="chip" id="ctCsv" disabled>⬇ CSV</button>
   </div>
+  <div id="ctSaved" class="note" style="margin-top:12px"></div>
   <div id="ctStatus"></div>
   <div id="ctResults"></div>
 </section>
@@ -172,6 +173,8 @@ const WS_RPCS   = ["wss://api.mainnet.abs.xyz/ws", "wss://abstract.api.onfinalit
 const OPENSEA_KEY = ""; // optional: or paste it into the 🏆 Contest panel (saved only in your browser)
 const osKey = () => { try { return OPENSEA_KEY || localStorage.getItem("osKey") || ""; } catch { return OPENSEA_KEY; } };
 const OPENSEA_SLUG = "objekt-2";
+// Standings precomputed hourly by GitHub Actions (scripts/contest.mjs). Path is relative to this page.
+const CONTEST_JSON = "data/contest.json";
 const HISTORY_BLOCKS = 600;    // how far back to load on page open
 const MAX_CARDS = 120;         // keep the page light
 const POLL_MS = 4000;          // fallback polling interval if WebSocket fails
@@ -770,7 +773,8 @@ $("ctRun").onclick = async () => {
   if (key) { try { localStorage.setItem("osKey", key); } catch {} }
   if (!osKey()) return ctSetStatus("Paste your OpenSea API key first.", null, true);
   if (!season || !colls.length) return ctSetStatus("Enter a season and at least one collection.", null, true);
-  $("ctResults").innerHTML = ""; $("ctCsv").disabled = true; ctData = null;
+  $("ctResults").innerHTML = ""; $("ctCsv").disabled = true; ctData = null; saved = null;
+  $("ctSaved").textContent = "Running live… (reopen the panel to go back to the saved standings)";
 
   try {
     // 1) every copy of each collection, all members
@@ -835,7 +839,7 @@ function renderContest(member) {
     const r = ranked(tally.get(member));
     table = `<table><tr><th>#</th><th>Wallet</th>${collHead}<th>Total</th></tr>${r.slice(0, 20).map(([w, e], i) =>
       `<tr><td>${i + 1}</td><td class="addr">${addr(w)}</td>${colls.map(c => `<td class="n">${e.per[c]}</td>`).join("")}<td class="tot">${e.total}</td></tr>`).join("")}</table>
-      <div class="note" style="margin-top:8px">${r.length.toLocaleString()} wallets have ${member}'s copies.</div>`;
+      <div class="note" style="margin-top:8px">${(ctData.walletCounts?.[member] ?? r.length).toLocaleString()} wallets have ${member}'s copies.</div>`;
   }
   $("ctResults").innerHTML = chips + table;
   $("ctResults").querySelectorAll("[data-m]").forEach(el => el.onclick = () => renderContest(el.dataset.m || null));
@@ -853,12 +857,51 @@ $("ctCsv").onclick = () => {
   a.click(); URL.revokeObjectURL(a.href);
 };
 
+/* ----- Saved standings (from GitHub Actions) ----- */
+let saved = null;
+const ago = iso => { const m = Math.round((Date.now() - new Date(iso)) / 60000);
+  return m < 1 ? "just now" : m < 60 ? `${m} min ago` : m < 1440 ? `${Math.round(m / 60)} h ago` : `${Math.round(m / 1440)} days ago`; };
+
+function showSaved() {
+  if (!saved) return;
+  const mode = saved.modes[$("ctMode").value] ? $("ctMode").value : "mint";
+  const md = saved.modes[mode], colls = saved.collections;
+  const tally = new Map(), walletCounts = {};
+  for (const [member, { wallets, top }] of Object.entries(md.members)) {
+    walletCounts[member] = wallets;
+    tally.set(member, new Map(top.map(row => [row[0], { total: row[row.length - 1],
+      per: Object.fromEntries(colls.map((c, i) => [c, row[1 + i]])) }])));
+  }
+  ctData = { season: saved.season, colls, mode, tally, walletCounts, copies: saved.copies, missing: 0, at: new Date(saved.updated) };
+  ctSetStatus(`${saved.season} ${colls.join(" + ")} · ${saved.copies.toLocaleString()} copies · ${md.label}`);
+  $("ctCsv").disabled = false;
+  renderContest(null);
+}
+
+async function loadSaved() {
+  try {
+    const r = await fetch(CONTEST_JSON + "?t=" + Date.now(), { cache: "no-store" });
+    if (!r.ok) throw new Error(r.status);
+    saved = await r.json();
+    $("ctSeason").value = saved.season; $("ctColls").value = saved.collections.join(", ");
+    $("ctMode").querySelector('option[value="owner"]').disabled = !saved.modes.owner;
+    $("ctSaved").innerHTML = `📌 Standings updated <b>${ago(saved.updated)}</b> (${new Date(saved.updated).toLocaleString()}) · refreshed hourly. ` +
+      `Change the fields and press <b>Run live</b> for a different contest.`;
+    showSaved();
+  } catch {
+    saved = null;
+    $("ctSaved").textContent = "No saved standings yet. Press Run live, or set up the hourly GitHub job.";
+  }
+}
+$("ctMode").onchange = () => { if (saved && !$("ctStatus").classList.contains("err")) showSaved(); };
+
 $("ctOpen").onclick = () => {
   $("contest").classList.add("open");
+  if (!saved) loadSaved();
   if (osKey()) $("ctKey").placeholder = "saved ✓ (paste to replace)";
   window.scrollTo({ top: 0, behavior: "smooth" });
 };
-$("ctClose").onclick = () => { ctRun++; $("contest").classList.remove("open"); };
+$("ctClose").onclick = () => { ctRun++; $("contest").classList.remove("open"); if (!ctData || !saved) saved = null; };
 
 /* ===== UI wiring ===== */
 document.querySelectorAll(".chip[data-type]").forEach(b => b.onclick = () => {
