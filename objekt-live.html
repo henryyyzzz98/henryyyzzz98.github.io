@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Objekt Live — tripleS on Abstract</title>
+<style>
+  :root {
+    --bg: #0d0d12; --panel: #17171f; --line: #26262f; --text: #ececf1; --dim: #8b8b99;
+    --mint: #3ddc97; --xfer: #7aa7ff; --burn: #ff6b6b; --accent: #d6b4ff;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  header { padding: 20px 24px 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px;
+    border-bottom: 1px solid var(--line); position: sticky; top: 0; background: rgba(13,13,18,.92); backdrop-filter: blur(8px); z-index: 2; }
+  h1 { margin: 0; font-size: 20px; letter-spacing: .02em; }
+  h1 span { color: var(--accent); }
+  .status { display: flex; align-items: center; gap: 8px; color: var(--dim); font-size: 13px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: #555; }
+  .dot.live { background: var(--mint); box-shadow: 0 0 0 0 rgba(61,220,151,.6); animation: pulse 1.6s infinite; }
+  .dot.poll { background: #f5c451; }
+  @keyframes pulse { 70% { box-shadow: 0 0 0 8px rgba(61,220,151,0); } 100% { box-shadow: 0 0 0 0 rgba(61,220,151,0); } }
+  .stats { display: flex; gap: 18px; margin-left: auto; font-size: 13px; color: var(--dim); }
+  .stats b { color: var(--text); font-variant-numeric: tabular-nums; }
+  .controls { width: 100%; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .chip { border: 1px solid var(--line); background: var(--panel); color: var(--text); padding: 6px 12px;
+    border-radius: 999px; cursor: pointer; font: inherit; font-size: 13px; }
+  .chip[aria-pressed="false"] { opacity: .45; }
+  input[type=search] { background: var(--panel); border: 1px solid var(--line); color: var(--text);
+    padding: 6px 12px; border-radius: 999px; font: inherit; font-size: 13px; min-width: 220px; }
+  main { padding: 20px 24px 60px; display: grid; gap: 14px;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; overflow: hidden;
+    display: flex; flex-direction: column; animation: drop .35s ease-out; }
+  @keyframes drop { from { opacity: 0; transform: translateY(-8px); } }
+  .thumb { aspect-ratio: 1083 / 1673; background: #1f1f29 center/cover no-repeat; position: relative; }
+  .thumb .ph { position: absolute; inset: 0; display: grid; place-items: center; color: var(--dim); font-size: 12px; }
+  .badge { position: absolute; top: 8px; left: 8px; font-size: 11px; font-weight: 700; letter-spacing: .05em;
+    padding: 3px 8px; border-radius: 6px; color: #0d0d12; }
+  .badge.mint { background: var(--mint); } .badge.transfer { background: var(--xfer); } .badge.burn { background: var(--burn); }
+  .info { padding: 10px 12px 12px; display: grid; gap: 4px; }
+  .card { border-top: 3px solid var(--card, var(--line)); }
+  .name { font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+  .name:hover { color: var(--card, var(--accent)); }
+  .sub { font-size: 11.5px; color: var(--dim); }
+  .addr { font-family: ui-monospace, Menlo, monospace; font-size: 11.5px; color: var(--dim); }
+  .addr a { color: var(--dim); text-decoration: none; } .addr a:hover { color: var(--text); }
+  .meta { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--dim); }
+  .meta a { color: var(--accent); text-decoration: none; }
+  .empty { grid-column: 1 / -1; text-align: center; color: var(--dim); padding: 60px 0; }
+  /* All-copies panel */
+  #copies { display: none; margin: 20px 24px 0; background: var(--panel); border: 1px solid var(--line);
+    border-top: 3px solid var(--card, var(--accent)); border-radius: 14px; padding: 16px 18px; }
+  #copies.open { display: block; }
+  #copies .head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  #copies h2 { margin: 0; font-size: 17px; }
+  #copies .count { color: var(--dim); font-size: 13px; }
+  #copies .close { margin-left: auto; }
+  #copies .list { margin-top: 12px; display: grid; gap: 6px; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    max-height: 340px; overflow: auto; }
+  #copies .cp { font-family: ui-monospace, Menlo, monospace; font-size: 12px; background: #1f1f29; border-radius: 8px;
+    padding: 6px 9px; display: flex; justify-content: space-between; gap: 6px; }
+  #copies .cp a { color: var(--text); text-decoration: none; } #copies .cp a:hover { color: var(--accent); }
+  #copies .cp span { color: var(--dim); }
+  #copies .note { color: var(--dim); font-size: 12px; margin-top: 10px; }
+  #copies .note a { color: var(--accent); }
+  #holders { margin-top: 14px; display: none; }
+  #holders.open { display: block; }
+  #holders h3 { margin: 0 0 8px; font-size: 14px; }
+  #holders table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  #holders td, #holders th { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: left; }
+  #holders th { color: var(--dim); font-weight: 500; font-size: 12px; }
+  #holders td.n { font-variant-numeric: tabular-nums; font-weight: 600; }
+  #holders td.addr a { font-family: ui-monospace, Menlo, monospace; color: var(--text); text-decoration: none; }
+  #holders td.addr a:hover { color: var(--accent); }
+  #holders .bar { height: 6px; border-radius: 3px; background: var(--card, var(--accent)); min-width: 2px; }
+  #holders .ids { color: var(--dim); font-family: ui-monospace, Menlo, monospace; font-size: 11px; }
+  #contest { display: none; margin: 20px 24px 0; background: var(--panel); border: 1px solid var(--line);
+    border-top: 3px solid #f5c451; border-radius: 14px; padding: 16px 18px; }
+  #contest.open { display: block; }
+  #contest .head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  #contest h2 { margin: 0; font-size: 17px; }
+  #contest .form { display: flex; flex-wrap: wrap; gap: 10px 14px; margin-top: 12px; align-items: end; }
+  #contest label { display: grid; gap: 4px; font-size: 12px; color: var(--dim); }
+  #contest input[type=text], #contest input[type=password], #contest select { background: #1f1f29; border: 1px solid var(--line);
+    color: var(--text); padding: 7px 10px; border-radius: 8px; font: inherit; font-size: 13px; }
+  #contest .run { background: #f5c451; color: #0d0d12; border-color: #f5c451; font-weight: 600; }
+  #ctStatus { margin-top: 12px; font-size: 13px; color: var(--dim); white-space: pre-wrap; }
+  #ctStatus.err { color: var(--burn); }
+  .prog { height: 6px; background: #1f1f29; border-radius: 3px; margin-top: 6px; overflow: hidden; }
+  .prog div { height: 100%; background: #f5c451; width: 0; transition: width .2s; }
+  #ctResults { margin-top: 14px; }
+  #ctResults .members { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  #ctResults .members .chip[aria-pressed="true"] { background: #f5c451; color: #0d0d12; border-color: #f5c451; }
+  #ctResults table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  #ctResults td, #ctResults th { padding: 7px 8px; border-bottom: 1px solid var(--line); text-align: left; }
+  #ctResults th { color: var(--dim); font-weight: 500; font-size: 12px; }
+  #ctResults td.n { font-variant-numeric: tabular-nums; }
+  #ctResults td.tot { font-weight: 700; font-variant-numeric: tabular-nums; }
+  #ctResults td.addr a { font-family: ui-monospace, Menlo, monospace; color: var(--text); text-decoration: none; }
+  #ctResults td.addr a:hover { color: #f5c451; }
+  #ctResults td.mem { font-weight: 600; cursor: pointer; } #ctResults td.mem:hover { color: #f5c451; }
+  .tie { color: #f5c451; font-size: 11px; margin-left: 6px; }
+  .chip:disabled { opacity: .45; cursor: default; }
+  footer { text-align: center; color: var(--dim); font-size: 12px; padding: 0 0 30px; }
+  footer a { color: var(--dim); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Objekt <span>Live</span></h1>
+  <div class="status"><div class="dot" id="dot"></div><span id="statusText">Connecting…</span></div>
+  <div class="stats">
+    <div>Mints <b id="sMint">0</b></div>
+    <div>Transfers <b id="sXfer">0</b></div>
+    <div>Block <b id="sBlock">—</b></div>
+  </div>
+  <div class="controls">
+    <button class="chip" data-type="mint" aria-pressed="true">🆕 Mints</button>
+    <button class="chip" data-type="transfer" aria-pressed="true">🔁 Transfers</button>
+    <button class="chip" data-type="burn" aria-pressed="true">🔥 Burns</button>
+    <input type="search" id="q" placeholder="Filter: e.g. ChaeWon, Atom02, 113Z, First…">
+    <button class="chip" id="pause" aria-pressed="true">⏸ Pause</button>
+    <button class="chip" id="ctOpen">🏆 Contest</button>
+  </div>
+</header>
+
+<section id="contest">
+  <div class="head">
+    <h2>🏆 Top buyer per member</h2>
+    <button class="chip close" id="ctClose" style="margin-left:auto">✕ Close</button>
+  </div>
+  <div class="form">
+    <label>Season <input type="text" id="ctSeason" value="Cream02" size="9"></label>
+    <label>Collections (comma-separated) <input type="text" id="ctColls" value="372Z, 373Z, 374Z" size="20"></label>
+    <label>Count each copy for
+      <select id="ctMode">
+        <option value="mint">Who it was minted to (buyer)</option>
+        <option value="owner">Who holds it now</option>
+      </select></label>
+    <label>OpenSea API key <input type="password" id="ctKey" placeholder="saved in this browser only" size="22"></label>
+    <button class="chip run" id="ctRun">Run</button>
+    <button class="chip" id="ctCsv" disabled>⬇ CSV</button>
+  </div>
+  <div id="ctStatus"></div>
+  <div id="ctResults"></div>
+</section>
+
+<section id="copies">
+  <div class="head">
+    <h2 id="cpTitle"></h2><span class="count" id="cpCount"></span>
+    <button class="chip" id="cpHolders" disabled>👑 Top holders</button>
+    <button class="chip close" id="cpClose">✕ Close</button>
+  </div>
+  <div class="list" id="cpList"></div>
+  <div class="note" id="cpNote"></div>
+  <div id="holders"><h3 id="hdTitle"></h3><div id="hdBody"></div></div>
+</section>
+
+<main id="feed"><div class="empty" id="empty">Waiting for Objekt activity…</div></main>
+<footer>Data from the Abstract blockchain · Explorer links via <a href="https://abscan.org" target="_blank" rel="noopener">Abscan</a></footer>
+
+<script>
+/* ===== Config ===== */
+const CONTRACT = "0x99bb83ae9bb0c0a6be865cacf67760947f91cb70"; // tripleS Objekt (ERC-721) on Abstract
+// Public endpoints, tried in order. For heavier use, put your own Alchemy/QuickNode URL first.
+const HTTP_RPCS = ["https://api.mainnet.abs.xyz", "https://abstract.api.onfinality.io/public"];
+const WS_RPCS   = ["wss://api.mainnet.abs.xyz/ws", "wss://abstract.api.onfinality.io/public-ws"];
+// "All copies" lookup via OpenSea. Get a free key at https://opensea.io/settings/developer (or docs.opensea.io).
+// Leave empty to just link to OpenSea's search instead.
+const OPENSEA_KEY = ""; // optional: or paste it into the 🏆 Contest panel (saved only in your browser)
+const osKey = () => { try { return OPENSEA_KEY || localStorage.getItem("osKey") || ""; } catch { return OPENSEA_KEY; } };
+const OPENSEA_SLUG = "objekt-2";
+const HISTORY_BLOCKS = 600;    // how far back to load on page open
+const MAX_CARDS = 120;         // keep the page light
+const POLL_MS = 4000;          // fallback polling interval if WebSocket fails
+
+const TRANSFER = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
+const ZERO = "0x0000000000000000000000000000000000000000";
+
+/* ===== State ===== */
+const seen = new Set();          // txHash:logIndex, avoids duplicates
+const metaCache = new Map();     // tokenId -> metadata promise
+// Cosmo's metadata endpoint: token details are at this URL + tokenId (no chain lookup needed)
+let uriPattern = { prefix: "https://api.cosmo.fans/bff/v3/objekts/nft-metadata/", suffix: "" };
+let paused = false, queue = [];
+let counts = { mint: 0, transfer: 0 };
+const show = { mint: true, transfer: true, burn: true };
+const $ = id => document.getElementById(id);
+
+/* ===== RPC helpers =====
+   Public endpoints allow only a few requests per second. Going over the limit makes the
+   browser report "Failed to fetch", so every call goes through a throttled queue with
+   retries, and switches to a backup endpoint when one keeps failing. */
+let rpcId = 1, rpcIdx = 0, lastCall = 0;
+const MIN_GAP_MS = 300; // ~3 requests/sec max
+let rpcChain = Promise.resolve();
+
+function rpc(method, params) {
+  const run = async () => {
+    for (let attempt = 0; attempt < 4; attempt++) {
+      const wait = lastCall + MIN_GAP_MS - Date.now();
+      if (wait > 0) await new Promise(r => setTimeout(r, wait));
+      lastCall = Date.now();
+      const url = HTTP_RPCS[rpcIdx];
+      try {
+        const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ jsonrpc: "2.0", id: rpcId++, method, params }) });
+        if (r.status === 429) throw new Error("rate limited");
+        const j = await r.json();
+        if (j.error) {
+          if (/limit|too many|range/i.test(j.error.message)) throw new Error(j.error.message);
+          throw Object.assign(new Error(j.error.message), { fatal: true });
+        }
+        return j.result;
+      } catch (e) {
+        if (e.fatal) throw e;
+        console.warn(`RPC ${method} via ${url} failed (${e.message}), retrying…`);
+        rpcIdx = (rpcIdx + 1) % HTTP_RPCS.length;            // try the backup endpoint next
+        await new Promise(r => setTimeout(r, 800 * 2 ** attempt)); // back off: 0.8s, 1.6s, 3.2s…
+      }
+    }
+    throw new Error(`${method} failed on all endpoints`);
+  };
+  const p = rpcChain.then(run, run);
+  rpcChain = p.catch(() => {});
+  return p;
+}
+const hex = n => "0x" + n.toString(16);
+const short = a => a.slice(0, 6) + "…" + a.slice(-4);
+
+function decodeString(h) { // ABI-decode a single `string` return value
+  const data = h.slice(2);
+  const len = parseInt(data.slice(64, 128), 16);
+  const bytes = data.slice(128, 128 + len * 2).match(/../g) || [];
+  return new TextDecoder().decode(new Uint8Array(bytes.map(b => parseInt(b, 16))));
+}
+
+let learning = null; // the one in-flight tokenURI call used to learn the URL pattern
+async function fetchTokenURI(id) {
+  const data = "0xc87b56dd" + BigInt(id).toString(16).padStart(64, "0"); // tokenURI(uint256)
+  return decodeString(await rpc("eth_call", [{ to: CONTRACT, data }, "latest"]));
+}
+async function tokenURI(id) {
+  if (uriPattern) return uriPattern.prefix + id + uriPattern.suffix;
+  // Ask the chain once, learn the URL pattern, then build every other URL locally (no more RPC calls)
+  if (!learning) learning = fetchTokenURI(id).then(uri => {
+    const i = uri.lastIndexOf(id);
+    if (i !== -1) uriPattern = { prefix: uri.slice(0, i), suffix: uri.slice(i + id.length) };
+    return { id, uri };
+  }).catch(e => { learning = null; throw e; });
+  const first = await learning;
+  if (uriPattern) return uriPattern.prefix + id + uriPattern.suffix;
+  return first.id === id ? first.uri : fetchTokenURI(id);
+}
+
+function getMeta(id) {
+  if (!metaCache.has(id)) {
+    metaCache.set(id, (async () => {
+      try {
+        let uri = await tokenURI(id);
+        if (uri.startsWith("ipfs://")) uri = "https://ipfs.io/ipfs/" + uri.slice(7);
+        const m = await (await fetch(uri)).json();
+        // Cosmo metadata: name "Atom02 ChaeWon 113Z #14908813", attributes Artist/Class/Member/Season/Collection
+        const season = attr(m, "Season"), member = attr(m, "Member"), coll = attr(m, "Collection");
+        return {
+          name: (season && member && coll) ? `${season} ${member} ${coll}` : (m.name || `Objekt #${id}`).replace(/\s*#\d+$/, ""),
+          image: m.image || null,
+          season, member, coll,
+          cls: attr(m, "Class"),
+          artist: attr(m, "Artist"),
+          color: m.background_color || null,
+        };
+      } catch { return { name: `Objekt #${id}`, image: null }; }
+    })());
+  }
+  return metaCache.get(id);
+}
+const attr = (m, k) => (m.attributes || []).find(a => a.trait_type === k)?.value;
+
+/* ===== Rendering ===== */
+function parseLog(log) {
+  if (log.topics.length !== 4) return null;
+  const from = "0x" + log.topics[1].slice(26), to = "0x" + log.topics[2].slice(26);
+  return {
+    key: log.transactionHash + ":" + log.logIndex,
+    type: from === ZERO ? "mint" : to === ZERO ? "burn" : "transfer",
+    from, to, id: BigInt(log.topics[3]).toString(),
+    tx: log.transactionHash, block: parseInt(log.blockNumber, 16), time: Date.now(),
+  };
+}
+
+async function addEvent(ev, { live = true } = {}) {
+  if (!ev || seen.has(ev.key)) return;
+  seen.add(ev.key);
+  if (ev.type === "mint") counts.mint++; else counts.transfer++;
+  $("sMint").textContent = counts.mint; $("sXfer").textContent = counts.transfer;
+  $("sBlock").textContent = ev.block.toLocaleString();
+  if (paused && live) { queue.push(ev); return; }
+  render(ev);
+}
+
+function render(ev) {
+  $("empty")?.remove();
+  const label = { mint: "MINT", transfer: "TRANSFER", burn: "BURN" }[ev.type];
+  const card = document.createElement("article");
+  card.className = "card"; card.dataset.type = ev.type;
+  card.dataset.search = `${ev.id} ${ev.from} ${ev.to}`.toLowerCase();
+  card.innerHTML = `
+    <div class="thumb"><div class="ph">Loading…</div><span class="badge ${ev.type}">${label}</span></div>
+    <div class="info">
+      <div class="name">Objekt #${ev.id}</div>
+      <div class="sub">#${ev.id}</div>
+      <div class="addr">${ev.type === "mint" ? "minted" : `<a href="https://abscan.org/address/${ev.from}" target="_blank" rel="noopener">${short(ev.from)}</a>`}
+        → ${ev.type === "burn" ? "burned" : `<a href="https://abscan.org/address/${ev.to}" target="_blank" rel="noopener">${short(ev.to)}</a>`}</div>
+      <div class="meta"><span class="ago" data-t="${ev.time}">just now</span>
+        <a href="https://abscan.org/tx/${ev.tx}" target="_blank" rel="noopener">tx ↗</a></div>
+    </div>`;
+  $("feed").prepend(card);
+  applyFilter(card);
+  while ($("feed").children.length > MAX_CARDS) $("feed").lastElementChild.remove();
+
+  getMeta(ev.id).then(m => {
+    const nameEl = card.querySelector(".name");
+    nameEl.textContent = m.name;
+    nameEl.title = "Click to follow this collection";
+    nameEl.onclick = () => { $("q").value = m.name; applyAll(); showCopies(m); window.scrollTo({ top: 0, behavior: "smooth" }); };
+    card.querySelector(".sub").textContent = [m.artist, m.cls && m.cls + " Class", "#" + ev.id].filter(Boolean).join(" · ");
+    if (m.color) card.style.setProperty("--card", m.color);
+    card.dataset.search += " " + [m.name, m.member, m.season, m.coll, m.cls, m.artist].join(" ").toLowerCase();
+    const t = card.querySelector(".thumb");
+    if (m.image) { t.style.backgroundImage = `url("${m.image}")`; t.querySelector(".ph").remove(); }
+    else t.querySelector(".ph").textContent = "No image";
+    applyFilter(card);
+  });
+}
+
+function applyFilter(card) {
+  const q = $("q").value.trim().toLowerCase();
+  card.style.display = show[card.dataset.type] && (!q || card.dataset.search.includes(q)) ? "" : "none";
+}
+const applyAll = () => document.querySelectorAll(".card").forEach(applyFilter);
+
+function setStatus(mode, text) { $("dot").className = "dot " + mode; $("statusText").textContent = text; }
+
+/* ===== Data sources ===== */
+let lastBlock = 0;
+
+async function loadHistory() {
+  try {
+    const latest = parseInt(await rpc("eth_blockNumber", []), 16);
+    lastBlock = latest;
+    const logs = await rpc("eth_getLogs", [{ address: CONTRACT, topics: [TRANSFER],
+      fromBlock: hex(Math.max(0, latest - HISTORY_BLOCKS)), toBlock: hex(latest) }]);
+    logs.slice(-60).forEach(l => addEvent(parseLog(l), { live: false })); // newest end up on top
+  } catch (e) { console.warn("History load failed:", e); }
+}
+
+let wsTry = 0;
+function connectWS() {
+  if (polling) return;
+  if (wsTry >= WS_RPCS.length * 2) return startPolling(); // every WebSocket failed twice → poll instead
+  const url = WS_RPCS[wsTry++ % WS_RPCS.length];
+  let ws, gotAck = false;
+  try { ws = new WebSocket(url); } catch { return connectWS(); }
+  let moved = false;
+  const next = () => { if (!moved) { moved = true; setTimeout(connectWS, 1500); } };
+  const giveUp = setTimeout(() => { if (!gotAck) { ws.close(); next(); } }, 8000);
+  ws.onopen = () => ws.send(JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_subscribe",
+    params: ["logs", { address: CONTRACT, topics: [TRANSFER] }] }));
+  ws.onmessage = e => {
+    const d = JSON.parse(e.data);
+    if (d.id === 1) {
+      clearTimeout(giveUp);
+      if (d.error) { console.warn("Subscribe refused:", d.error.message); ws.close(); return next(); }
+      gotAck = true; wsTry = 0; setStatus("live", "Live (WebSocket)"); return;
+    }
+    const log = d.params?.result;
+    if (log) { addEvent(parseLog(log)); lastBlock = Math.max(lastBlock, parseInt(log.blockNumber, 16)); }
+  };
+  ws.onclose = () => { clearTimeout(giveUp); if (gotAck) setStatus("", "Reconnecting…"); next(); };
+  ws.onerror = () => console.warn("WebSocket error on", url);
+}
+
+let polling = false;
+function startPolling() {
+  if (polling) return; polling = true;
+  setStatus("poll", `Live (polling every ${POLL_MS / 1000}s)`);
+  let fails = 0;
+  const tick = async () => {
+    try {
+      const latest = parseInt(await rpc("eth_blockNumber", []), 16);
+      if (!lastBlock) lastBlock = latest - 1;
+      if (latest > lastBlock) {
+        const from = Math.max(lastBlock + 1, latest - 500); // keep the range small for public RPCs
+        const logs = await rpc("eth_getLogs", [{ address: CONTRACT, topics: [TRANSFER],
+          fromBlock: hex(from), toBlock: hex(latest) }]);
+        logs.forEach(l => addEvent(parseLog(l)));
+        lastBlock = latest;
+      }
+      if (fails) setStatus("poll", `Live (polling every ${POLL_MS / 1000}s)`);
+      fails = 0;
+    } catch (e) {
+      fails++;
+      console.warn("Poll failed:", e);
+      setStatus("", `Can't reach Abstract — retrying (${fails})`);
+    }
+    setTimeout(tick, POLL_MS * Math.min(2 ** fails, 8)); // slow down while failing
+  };
+  tick();
+}
+
+/* ===== All copies (OpenSea trait filter) ===== */
+let copiesRun = 0;
+async function showCopies(m) {
+  const run = ++copiesRun;
+  const panel = $("copies"), list = $("cpList");
+  panel.classList.add("open");
+  if (m.color) panel.style.setProperty("--card", m.color);
+  $("cpTitle").textContent = `All copies of ${m.name}`;
+  list.innerHTML = ""; $("cpCount").textContent = "";
+  currentIds = []; $("cpHolders").disabled = true;
+  $("holders").classList.remove("open"); $("hdBody").innerHTML = "";
+  const searchUrl = `https://opensea.io/collection/${OPENSEA_SLUG}?sortBy=created_date&sortDirection=desc&searchQuery=${encodeURIComponent(m.name)}`;
+  $("cpNote").innerHTML = `Copy numbers follow token ID order (≈ mint order), not official serials. · <a href="${searchUrl}" target="_blank" rel="noopener">View on OpenSea ↗</a>`;
+
+  if (!osKey() || !(m.season && m.member && m.coll)) {
+    $("cpCount").textContent = osKey() ? "Card details missing" : "Add an OpenSea API key (🏆 Contest panel) to list copies here";
+    return;
+  }
+  // OpenSea's trait-filter format isn't fully documented, so try a few variants in order.
+  // Every result is also checked against the card name, so a looser filter can't add wrong cards.
+  const T = (k, list) => JSON.stringify(list.map(([t, v]) => ({ [k]: t, value: v })));
+  // OpenSea allows max 2 traits, keyed "traitType". Member + Collection is the narrowest pair
+  // (e.g. ChaeWon 113Z across all seasons); the name check below keeps only the right season.
+  const attempts = [
+    { traits: T("traitType", [["Member", m.member], ["Collection", m.coll]]), limit: 50 },
+    { traits: T("traitType", [["Member", m.member], ["Collection", m.coll]]), limit: 20 },
+    { traits: T("traitType", [["Season", m.season], ["Collection", m.coll]]), limit: 50 },
+  ];
+  const want = m.name.toLowerCase();
+  const ids = [];
+  let next = null, lastErr = "";
+
+  for (const a of attempts) {
+    ids.length = 0; next = null;
+    let page = 0, ok = true, retries = 0;
+    while (page < 400) {
+      const url = new URL(`https://api.opensea.io/api/v2/collection/${OPENSEA_SLUG}/nfts`);
+      url.searchParams.set("limit", a.limit);
+      url.searchParams.set("traits", a.traits);
+      if (next) url.searchParams.set("next", next);
+      let r;
+      try { r = await fetch(url, { headers: { "X-API-KEY": osKey(), accept: "application/json" } }); }
+      catch (e) { lastErr += `Attempt ${attempts.indexOf(a) + 1} → ${e.message}\n`; ok = false; break; }
+      if (r.status === 429) { await new Promise(res => setTimeout(res, 2000)); continue; }
+      // OpenSea 5xx errors are often temporary: retry the same page twice before giving up
+      if (r.status >= 500 && retries < 2) { retries++; await new Promise(res => setTimeout(res, 1500 * retries)); continue; }
+      if (!r.ok) {
+        lastErr += `Attempt ${attempts.indexOf(a) + 1} (page ${page + 1}) → OpenSea ${r.status}: ${(await r.text()).slice(0, 300)}\n`;
+        console.warn("Attempt failed", a, lastErr);
+        ok = false; break;
+      }
+      retries = 0;
+      const j = await r.json();
+      if (run !== copiesRun) return; // user opened another collection meanwhile
+      (j.nfts || []).forEach(n => {
+        const nm = (n.name || "").toLowerCase().replace(/\s*#\d+$/, "");
+        if (!n.name || nm === want) ids.push(BigInt(n.identifier));
+      });
+      next = j.next || null; page++;
+      $("cpCount").textContent = `${ids.length.toLocaleString()} found${next ? " · loading…" : ""}`;
+      if (!next) break;
+      await new Promise(res => setTimeout(res, 350)); // stay under OpenSea rate limits
+    }
+    if (ok) { lastErr = ""; break; }
+  }
+  if (lastErr) {
+    $("cpCount").textContent = "Couldn't load from OpenSea";
+    $("cpNote").insertAdjacentHTML("afterbegin",
+      `<div style="color:var(--burn);margin-bottom:6px;white-space:pre-wrap">${lastErr.replace(/</g, "&lt;")}</div>`);
+    return;
+  }
+  if (run !== copiesRun) return;
+  ids.sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+  $("cpCount").textContent = `${ids.length.toLocaleString()} cop${ids.length === 1 ? "y" : "ies"}${next ? "+ (stopped at 20,000)" : ""}`;
+  list.innerHTML = ids.map((id, i) =>
+    `<div class="cp"><span>#${i + 1}</span><a href="https://abscan.org/nft/${CONTRACT}/${id}" target="_blank" rel="noopener">${id}</a></div>`).join("");
+  currentIds = ids.slice();
+  $("cpHolders").disabled = !ids.length;
+}
+
+/* ===== Top holders: ask the chain who owns each copy (ownerOf), then rank wallets ===== */
+let currentIds = [];
+
+async function rpcBatch(calls) { // one HTTP request carrying many JSON-RPC calls
+  const body = calls.map((c, i) => ({ jsonrpc: "2.0", id: i, method: c.method, params: c.params }));
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const wait = lastCall + MIN_GAP_MS - Date.now();
+    if (wait > 0) await new Promise(r => setTimeout(r, wait));
+    lastCall = Date.now();
+    try {
+      const r = await fetch(HTTP_RPCS[rpcIdx], { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      if (r.status === 429) throw new Error("rate limited");
+      const j = await r.json();
+      if (!Array.isArray(j)) throw Object.assign(new Error("batch not supported"), { noBatch: true });
+      const out = new Array(calls.length);
+      j.forEach(x => { out[x.id] = x.error ? null : x.result; });
+      return out;
+    } catch (e) {
+      if (e.noBatch) throw e;
+      rpcIdx = (rpcIdx + 1) % HTTP_RPCS.length;
+      await new Promise(r => setTimeout(r, 1000 * 2 ** attempt));
+    }
+  }
+  throw new Error("batch failed");
+}
+
+async function ownersOf(ids, onProgress) {
+  const call = id => ({ method: "eth_call", params: [{ to: CONTRACT, data: "0x6352211e" + id.toString(16).padStart(64, "0") }, "latest"] });
+  const owners = new Map(); // id -> address (burned/failed tokens are skipped)
+  let batching = true;
+  for (let i = 0; i < ids.length; ) {
+    const chunk = ids.slice(i, i + (batching ? 25 : 1));
+    let results;
+    if (batching) {
+      try { results = await rpcBatch(chunk.map(call)); }
+      catch (e) { if (e.noBatch) { batching = false; continue; } throw e; }
+    } else {
+      try { results = [await rpc("eth_call", call(chunk[0]).params)]; } catch { results = [null]; }
+    }
+    chunk.forEach((id, k) => { const r = results[k]; if (r && r.length >= 66) owners.set(id, "0x" + r.slice(-40)); });
+    i += chunk.length;
+    onProgress(i, ids.length);
+  }
+  return owners;
+}
+
+let holdersRun = 0;
+$("cpHolders").onclick = async () => {
+  const run = ++holdersRun, ids = currentIds.slice();
+  if (!ids.length) return;
+  $("holders").classList.add("open");
+  $("cpHolders").disabled = true;
+  $("hdTitle").textContent = "Top holders";
+  $("hdBody").innerHTML = `<div class="note">Checking owners… 0 / ${ids.length}</div>`;
+  let owners;
+  try {
+    owners = await ownersOf(ids, (done, total) => {
+      if (run === holdersRun) $("hdBody").innerHTML = `<div class="note">Checking owners… ${done} / ${total}</div>`;
+    });
+  } catch (e) {
+    $("hdBody").innerHTML = `<div class="note" style="color:var(--burn)">Couldn't check owners (${e.message}). Try again in a moment.</div>`;
+    $("cpHolders").disabled = false; return;
+  }
+  if (run !== holdersRun) return;
+  $("cpHolders").disabled = false;
+
+  // copy number (#n) by token-ID order, matching the list above
+  const copyNo = new Map(ids.map((id, i) => [id, i + 1]));
+  const tally = new Map();
+  owners.forEach((addr, id) => {
+    if (!tally.has(addr)) tally.set(addr, []);
+    tally.get(addr).push(id);
+  });
+  const ranked = [...tally.entries()].sort((a, b) => b[1].length - a[1].length);
+  const max = ranked[0]?.[1].length || 1;
+  const holders = ranked.length, held = owners.size;
+
+  $("hdTitle").textContent = `Top holders · ${held.toLocaleString()} copies across ${holders.toLocaleString()} wallets`;
+  $("hdBody").innerHTML = `<table>
+    <tr><th>#</th><th>Wallet</th><th>Copies</th><th style="width:30%"></th><th>Copy numbers</th></tr>
+    ${ranked.slice(0, 25).map(([addr, list], i) => {
+      const nos = list.map(id => copyNo.get(id)).sort((a, b) => a - b);
+      const shown = nos.slice(0, 12).map(n => "#" + n).join(" ") + (nos.length > 12 ? ` +${nos.length - 12}` : "");
+      return `<tr>
+        <td>${i + 1}</td>
+        <td class="addr"><a href="https://abscan.org/address/${addr}" target="_blank" rel="noopener" title="${addr}">${short(addr)}</a></td>
+        <td class="n">${list.length}</td>
+        <td><div class="bar" style="width:${(list.length / max * 100).toFixed(1)}%"></div></td>
+        <td class="ids">${shown}</td></tr>`;
+    }).join("")}
+  </table>
+  <div class="note">${ids.length - held ? `${ids.length - held} cop${ids.length - held === 1 ? "y" : "ies"} couldn't be checked (possibly burned). ` : ""}A wallet near the top with a huge count may be a Modhaus/Cosmo system wallet rather than a fan.</div>`;
+};
+$("cpClose").onclick = () => { copiesRun++; holdersRun++; $("copies").classList.remove("open"); $("q").value = ""; applyAll(); };
+
+/* ===== Contest: top buyer per member across several collections ===== */
+const ZERO32 = "0x" + "0".repeat(64);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+let ctRun = 0, ctData = null;
+
+function ctSetStatus(text, frac, err) {
+  $("ctStatus").className = err ? "err" : "";
+  $("ctStatus").innerHTML = text.replace(/</g, "&lt;") +
+    (frac != null ? `<div class="prog"><div style="width:${(frac * 100).toFixed(1)}%"></div></div>` : "");
+}
+
+// Every copy of one collection (all members), e.g. Season=Cream02 + Collection=372Z
+async function osAllCopies(season, coll, run, onPage) {
+  const traits = JSON.stringify([{ traitType: "Season", value: season }, { traitType: "Collection", value: coll }]);
+  const out = [];
+  let next = null, page = 0, retries = 0;
+  while (page < 2000) {
+    const url = new URL(`https://api.opensea.io/api/v2/collection/${OPENSEA_SLUG}/nfts`);
+    url.searchParams.set("limit", "50");
+    url.searchParams.set("traits", traits);
+    if (next) url.searchParams.set("next", next);
+    const r = await fetch(url, { headers: { "X-API-KEY": osKey(), accept: "application/json" } });
+    if (run !== ctRun) throw new Error("cancelled");
+    if (r.status === 429) { await sleep(2000); continue; }
+    if (r.status >= 500 && retries < 3) { retries++; await sleep(1500 * retries); continue; }
+    if (!r.ok) throw new Error(`OpenSea ${r.status} on ${coll}: ${(await r.text()).slice(0, 200)}`);
+    retries = 0;
+    const j = await r.json();
+    for (const n of j.nfts || []) {
+      // name looks like "Cream02 ChaeWon 372Z #12345" → member is the middle part
+      const base = (n.name || "").replace(/\s*#\d+$/, "").trim();
+      const pre = season + " ", suf = " " + coll;
+      if (!base.toLowerCase().startsWith(pre.toLowerCase()) || !base.toLowerCase().endsWith(suf.toLowerCase())) continue;
+      out.push({ id: BigInt(n.identifier), member: base.slice(pre.length, base.length - suf.length).trim() || "Unknown", coll });
+    }
+    next = j.next || null; page++;
+    onPage(out.length);
+    if (!next) break;
+    await sleep(350);
+  }
+  return out;
+}
+
+// For many token IDs, run one chain lookup each (batched 25 per request)
+async function chainLookup(ids, makeCall, parse, run, onProgress) {
+  const res = new Map();
+  let batching = true;
+  for (let i = 0; i < ids.length; ) {
+    if (run !== ctRun) throw new Error("cancelled");
+    const chunk = ids.slice(i, i + (batching ? 25 : 1));
+    let results;
+    if (batching) {
+      try { results = await rpcBatch(chunk.map(makeCall)); }
+      catch (e) { if (e.noBatch) { batching = false; continue; } throw e; }
+    } else {
+      const c = makeCall(chunk[0]);
+      try { results = [await rpc(c.method, c.params)]; } catch { results = [null]; }
+    }
+    chunk.forEach((id, k) => { const v = results[k] != null ? parse(results[k]) : null; if (v) res.set(id, v); });
+    i += chunk.length;
+    onProgress(i, ids.length);
+  }
+  return res;
+}
+const ownerCall = id => ({ method: "eth_call", params: [{ to: CONTRACT, data: "0x6352211e" + id.toString(16).padStart(64, "0") }, "latest"] });
+const ownerParse = r => (r && r.length >= 66 ? "0x" + r.slice(-40) : null);
+const mintCall = id => ({ method: "eth_getLogs", params: [{ address: CONTRACT, fromBlock: "0x0", toBlock: "latest",
+  topics: [TRANSFER, ZERO32, null, "0x" + id.toString(16).padStart(64, "0")] }] });
+const mintParse = logs => (Array.isArray(logs) && logs[0] ? "0x" + logs[0].topics[2].slice(26) : null);
+
+$("ctRun").onclick = async () => {
+  const run = ++ctRun;
+  const season = $("ctSeason").value.trim();
+  const colls = $("ctColls").value.split(/[,\s]+/).map(c => c.trim()).filter(Boolean);
+  const mode = $("ctMode").value;
+  const key = $("ctKey").value.trim();
+  if (key) { try { localStorage.setItem("osKey", key); } catch {} }
+  if (!osKey()) return ctSetStatus("Paste your OpenSea API key first.", null, true);
+  if (!season || !colls.length) return ctSetStatus("Enter a season and at least one collection.", null, true);
+  $("ctResults").innerHTML = ""; $("ctCsv").disabled = true; ctData = null;
+
+  try {
+    // 1) every copy of each collection, all members
+    const copies = [];
+    for (const [ci, coll] of colls.entries()) {
+      const before = copies.length;
+      const got = await osAllCopies(season, coll, run, n =>
+        ctSetStatus(`Step 1/2 · Listing copies from OpenSea… ${season} ${coll}: ${n.toLocaleString()} found`, (ci + 0.5) / colls.length));
+      copies.push(...got);
+      ctSetStatus(`Step 1/2 · ${season} ${coll}: ${(copies.length - before).toLocaleString()} copies`, (ci + 1) / colls.length);
+    }
+    if (!copies.length) throw new Error(`No copies found for ${season} ${colls.join(", ")}. Check the spelling (e.g. Cream02, 372Z).`);
+
+    // 2) who each copy was minted to / is held by
+    const ids = copies.map(c => c.id);
+    const label = mode === "mint" ? "Finding who each copy was minted to" : "Checking current owners";
+    const t0 = Date.now();
+    const wallets = await chainLookup(ids, mode === "mint" ? mintCall : ownerCall, mode === "mint" ? mintParse : ownerParse, run, (d, t) => {
+      const eta = d ? Math.round((Date.now() - t0) / d * (t - d) / 1000) : 0;
+      ctSetStatus(`Step 2/2 · ${label}… ${d.toLocaleString()} / ${t.toLocaleString()}${d > 25 ? ` · ~${eta}s left` : ""}`, d / t);
+    });
+
+    // 3) tally: member → wallet → per-collection counts
+    const tally = new Map();
+    let missing = 0;
+    for (const c of copies) {
+      const w = wallets.get(c.id);
+      if (!w) { missing++; continue; }
+      if (!tally.has(c.member)) tally.set(c.member, new Map());
+      const m = tally.get(c.member);
+      if (!m.has(w)) m.set(w, { total: 0, per: Object.fromEntries(colls.map(x => [x, 0])) });
+      const e = m.get(w); e.total++; e.per[c.coll]++;
+    }
+    ctData = { season, colls, mode, tally, copies: copies.length, missing, at: new Date() };
+    ctSetStatus(`Done · ${copies.length.toLocaleString()} copies across ${tally.size} members · ${mode === "mint" ? "counting who each copy was minted to" : "counting current holders"}` +
+      (missing ? ` · ${missing} cop${missing === 1 ? "y" : "ies"} couldn't be checked` : "") + ` · ${ctData.at.toLocaleTimeString()}`);
+    $("ctCsv").disabled = false;
+    renderContest(null);
+  } catch (e) {
+    if (e.message !== "cancelled") { console.warn(e); ctSetStatus(e.message, null, true); }
+  }
+};
+
+function ranked(m) { return [...m.entries()].sort((a, b) => b[1].total - a[1].total); }
+
+function renderContest(member) {
+  const { colls, tally } = ctData;
+  const members = [...tally.keys()].sort((a, b) => a.localeCompare(b));
+  const chips = `<div class="members"><button class="chip" data-m="" aria-pressed="${!member}">All members</button>${members
+    .map(m => `<button class="chip" data-m="${m}" aria-pressed="${m === member}">${m}</button>`).join("")}</div>`;
+  const collHead = colls.map(c => `<th>${c}</th>`).join("");
+  const addr = w => `<a href="https://abscan.org/address/${w}" target="_blank" rel="noopener" title="${w}">${short(w)}</a>`;
+  let table;
+  if (!member) { // overview: #1 wallet for every member
+    table = `<table><tr><th>Member</th><th>Top buyer</th>${collHead}<th>Total</th><th>Runner-up</th></tr>${members.map(m => {
+      const r = ranked(tally.get(m)); const [w, e] = r[0]; const second = r[1];
+      const tie = second && second[1].total === e.total ? `<span class="tie">tie</span>` : "";
+      return `<tr><td class="mem" data-m="${m}">${m}</td><td class="addr">${addr(w)}${tie}</td>${colls.map(c => `<td class="n">${e.per[c]}</td>`).join("")}
+        <td class="tot">${e.total}</td><td class="n">${second ? second[1].total : "—"}</td></tr>`;
+    }).join("")}</table>`;
+  } else { // one member: full top 20
+    const r = ranked(tally.get(member));
+    table = `<table><tr><th>#</th><th>Wallet</th>${collHead}<th>Total</th></tr>${r.slice(0, 20).map(([w, e], i) =>
+      `<tr><td>${i + 1}</td><td class="addr">${addr(w)}</td>${colls.map(c => `<td class="n">${e.per[c]}</td>`).join("")}<td class="tot">${e.total}</td></tr>`).join("")}</table>
+      <div class="note" style="margin-top:8px">${r.length.toLocaleString()} wallets have ${member}'s copies.</div>`;
+  }
+  $("ctResults").innerHTML = chips + table;
+  $("ctResults").querySelectorAll("[data-m]").forEach(el => el.onclick = () => renderContest(el.dataset.m || null));
+}
+
+$("ctCsv").onclick = () => {
+  if (!ctData) return;
+  const { colls, tally, season, mode } = ctData;
+  const rows = [["member", "rank", "wallet", ...colls, "total"]];
+  [...tally.keys()].sort().forEach(m => ranked(tally.get(m)).forEach(([w, e], i) =>
+    rows.push([m, i + 1, w, ...colls.map(c => e.per[c]), e.total])));
+  const blob = new Blob([rows.map(r => r.join(",")).join("\n")], { type: "text/csv" });
+  const a = Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob),
+    download: `${season}-${colls.join("-")}-${mode === "mint" ? "buyers" : "holders"}.csv` });
+  a.click(); URL.revokeObjectURL(a.href);
+};
+
+$("ctOpen").onclick = () => {
+  $("contest").classList.add("open");
+  if (osKey()) $("ctKey").placeholder = "saved ✓ (paste to replace)";
+  window.scrollTo({ top: 0, behavior: "smooth" });
+};
+$("ctClose").onclick = () => { ctRun++; $("contest").classList.remove("open"); };
+
+/* ===== UI wiring ===== */
+document.querySelectorAll(".chip[data-type]").forEach(b => b.onclick = () => {
+  const on = b.getAttribute("aria-pressed") !== "true";
+  b.setAttribute("aria-pressed", on); show[b.dataset.type] = on; applyAll();
+});
+$("q").oninput = applyAll;
+$("pause").onclick = () => {
+  paused = !paused;
+  $("pause").textContent = paused ? "▶ Resume" : "⏸ Pause";
+  if (!paused) { queue.forEach(render); queue = []; }
+};
+setInterval(() => document.querySelectorAll(".ago").forEach(el => {
+  const s = Math.round((Date.now() - +el.dataset.t) / 1000);
+  el.textContent = s < 5 ? "just now" : s < 60 ? `${s}s ago` : `${Math.round(s / 60)}m ago`;
+}), 5000);
+
+loadHistory().then(connectWS);
+</script>
+</body>
+</html>
