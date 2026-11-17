@@ -1,0 +1,44 @@
+name: Update Objekt contest standings
+
+on:
+  schedule:
+    - cron: "17 * * * *"   # every hour at :17 (UTC)
+  workflow_dispatch:         # lets you run it by hand from the Actions tab
+
+permissions:
+  contents: write            # needed to commit data/contest.json back to the repo
+
+concurrency:
+  group: contest
+  cancel-in-progress: false  # never run two updates at once
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Calculate standings
+        env:
+          OPENSEA_KEY: ${{ secrets.OPENSEA_KEY }}
+          # Optional: a faster private RPC (e.g. Alchemy). Add RPC_URL as a secret to use it.
+          RPC_URLS: ${{ secrets.RPC_URL && format('{0},https://api.mainnet.abs.xyz', secrets.RPC_URL) || 'https://api.mainnet.abs.xyz,https://abstract.api.onfinality.io/public' }}
+        run: node scripts/contest.mjs
+
+      - name: Save results
+        run: |
+          git config user.name "contest-bot"
+          git config user.email "contest-bot@users.noreply.github.com"
+          git add data/contest.json data/contest-state.json
+          if git diff --cached --quiet; then
+            echo "No changes"
+          else
+            git commit -m "Update contest standings"
+            git pull --rebase
+            git push
+          fi
