@@ -1,8 +1,8 @@
 // ===================================================================
 // PITWALL EXPANSION — screens & controls
 // ===================================================================
-const TAB_NAMES = { home: '🏠 Home', calendar: '📅 Calendar', standings: '🏆 Standings', car: '🔧 Car', team: '🏢 Team', drivers: '👤 Drivers', finance: '💰 Business', stats: '📊 Stats', fan: '🎯 Fan zone', menu: '☰ Menu' };
-function hqTabs() { return G.spectator ? ['home', 'calendar', 'standings', 'drivers', 'fan', 'stats', 'menu'] : ['home', 'calendar', 'standings', 'car', 'team', 'drivers', 'finance', 'stats', 'fan', 'menu']; }
+const TAB_NAMES = { home: '🏠 Home', calendar: '📅 Calendar', standings: '🏆 Standings', car: '🔧 Car', team: '🏢 Team', drivers: '👤 Drivers', finance: '💰 Business', stats: '📊 Stats', story: '📰 Storylines', menu: '☰ Menu' };
+function hqTabs() { return G.spectator ? ['home', 'calendar', 'standings', 'drivers', 'story', 'stats', 'menu'] : ['home', 'calendar', 'standings', 'car', 'team', 'drivers', 'finance', 'stats', 'story', 'menu']; }
 let CAM = { mode: null, x: 0, y: 0, z: 1 }, REPLAY = null, CHARTSEL = null;
 
 // ---------- HQ: Home additions ----------
@@ -212,6 +212,9 @@ runPractice = function (G, wk, session, programs) {
 // ---------- weekend: predictions on the quali & grid screens ----------
 function predKey() { return G.year + ':' + (WK.round + 1); }
 function predCard(kind) {
+  return ''; // fan zone removed
+}
+function predCardOld(kind) {
   ensureXP(G); const P = G.xp.fan.preds[predKey()] || (G.xp.fan.preds[predKey()] = { mine: {}, pundits: punditPicks(G, WK) });
   const opts = sel => WK.entries.slice().sort((a, b) => a.t.name.localeCompare(b.t.name)).map(e => `<option value="${e.d.id}" ${sel === e.d.id ? 'selected' : ''}>${esc(e.d.code)} · ${esc(e.d.name)}</option>`).join('');
   const s = (field, label, i) => { const v = i != null ? (P.mine.podium || [])[i] : P.mine[field]; return `<label class="small" style="display:block;margin:4px 0">${label}<select data-pred="${field}${i != null ? ':' + i : ''}" style="width:100%"><option value="">— pick —</option>${opts(v)}</select></label>`; };

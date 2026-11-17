@@ -41,7 +41,7 @@ function deskGrid(sprint) {
     ${(WK.penalties || []).length ? `<div class="dk-mut dkg-note">Grid penalties: ${WK.penalties.map(p => `${esc(p.code)} +${p.n} (${esc(p.why)})`).join(', ')}</div>` : ''}</div></section>`;
 
   let pred = '';
-  if (!sprint && typeof predCard === 'function') pred = `<section class="dkg-pred"><div class="dk-h"><b>PREDICTIONS</b></div><div class="dkg-body">${predCard('race').replace(/^<div class="card"[^>]*><h3>[^<]*<\/h3>/, '<div>')}</div></section>`;
+  if (!sprint && typeof predCard === 'function' && predCard('race')) pred = `<section class="dkg-pred"><div class="dk-h"><b>PREDICTIONS</b></div><div class="dkg-body">${predCard('race').replace(/^<div class="card"[^>]*><h3>[^<]*<\/h3>/, '<div>')}</div></section>`;
 
   const sched = weekendSchedule(), cur = sched.findIndex(s => s[2].includes(WK.stage));
   const schedHtml = `<div class="dkg-sched">${sched.map(([lab, day], i) => `<span class="${i < cur ? 'done' : i === cur ? 'now' : ''}"><small>${day}</small>${esc(lab)}${i < cur ? ' ✓' : ''}</span>`).join('')}</div>`;

@@ -129,7 +129,7 @@ function viewCalEditor() {
 // ---------- HQ ----------
 function viewHQ() {
   ensureXP(G);
-  return ({ home: hqHome, calendar: hqCalendar, standings: hqStandings, car: hqCar, drivers: hqDrivers, finance: hqFinance, menu: hqMenu, team: hqTeam, stats: hqStats, fan: hqFan }[TAB] || hqHome)();
+  return ({ home: hqHome, calendar: hqCalendar, standings: hqStandings, car: hqCar, drivers: hqDrivers, finance: hqFinance, menu: hqMenu, team: hqTeam, stats: hqStats, story: () => hqStory() }[TAB] || hqHome)();
 }
 function seatsOK() { return teamDrivers(G, G.player).length >= Math.min(2, G.teams[G.player].cars || 2); }
 function pickTeamView() {
