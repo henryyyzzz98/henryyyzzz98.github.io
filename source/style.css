@@ -802,3 +802,6 @@ body.dt .dk .dkst tr.me td.tcell{background:var(--tc);color:var(--ti)}
 .qg-dcol{border:1px solid #ffffff1a;border-radius:6px;padding:.4em}
 .qg-dh{display:flex;gap:1em;align-items:baseline;margin:.2em 0 .5em}
 .qg-intro{margin:.2em 0 .8em;line-height:1.5}
+.heat-note{margin:.2em 0 .8em;line-height:1.5}
+.heat-strip{display:flex;flex-wrap:wrap;gap:.4em 1.4em;margin:.3em 0 .6em;font-size:.85em;color:#c9d2e3}
+.heat-strip b{color:#fff}
