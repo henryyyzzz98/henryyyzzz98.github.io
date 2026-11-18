@@ -1,7 +1,7 @@
 // ===================== More alternative regulations =====================
 // Pre-season testing · equal cars (all season, or equal at the start and then developed) · weather setting ·
 // refuelling · team orders · no safety car. Every option can be switched on/off in the custom regulations.
-const XR0 = { testing: 'off', equal: 'off', weather: 'real', refuel: 'off', orders: 'off', scr: 'era', sprint: 'on', dnf: 'on' };
+const XR0 = { testing: 'off', equal: 'off', weather: 'real', refuel: 'off', orders: 'off', scr: 'era', sprint: 'on', dnf: 'on', standins: 'real', heatpts: 'weighted', express: 'off' };
 const xr = (G0, k) => { const r = (G0 && G0.regs) || {}; return r[k] == null ? XR0[k] : r[k]; };
 
 // ---------- settings form ----------
@@ -26,7 +26,10 @@ dkRegsForm = function (r, act) {
   <label class="small">Team orders${sel('orders', [['off', 'Off'], ['on', 'On — teams swap their cars for the better-placed driver']])}</label>
   <label class="small">Safety car${sel('scr', [['era', 'Real rules of each season'], ['none', 'No safety car — yellow flags only']])}</label>
   <label class="small">Sprint races${sel('sprint', [['on', 'On — sprint weekends as on the calendar'], ['off', 'Off — every round is a normal Grand Prix weekend']])}</label>
-  <label class="small">Retirements${sel('dnf', [['on', 'On — crashes, failures and other retirements'], ['off', 'Off — every car races to the finish']])}</label>`;
+  <label class="small">Retirements${sel('dnf', [['on', 'On — crashes, failures and other retirements'], ['off', 'Off — every car races to the finish']])}</label>
+  <label class="small">Stand-in &amp; reserve drivers${sel('standins', [['real', 'As in real history — stand-ins and one-off entries race'], ['off', 'Off — the season line-up races every round']])}</label>
+  <label class="small">Three-part GP points${sel('heatpts', [['weighted', 'Weighted — Race 1 ⅓, Race 2 ⅔, Race 3 full points'], ['standard', 'Standard — normal points for the final classification only']])}</label>
+  <label class="small">Express pass race${sel('express', [['off', 'Off'], ['on', 'On — one random race: its winner skips the next race, which pays half points']])}</label>`;
   const i = html.lastIndexOf('</div>');
   return html.slice(0, i) + more + html.slice(i);
 };

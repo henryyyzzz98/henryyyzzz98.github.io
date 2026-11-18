@@ -233,7 +233,7 @@ function dkOrderTable(kind, S, ord) {
       <td>${i + 1}</td><td>${st}</td><td class="l">${esc(dkShort(c.d))}</td><td class="l hm">${esc(c.t.name)}</td><td class="${purple ? 'pu' : ''}">${dkT(c.best)}</td><td>${c.best == null || i === 0 ? '—' : '+' + (c.best - leader.best).toFixed(3)}</td><td>${dkT(c.last)}</td><td>${c.laps || c.phase !== 'garage' ? dkTy(S.wet > 0.65 ? 'W' : S.wet > 0.25 ? 'I' : 'S') : '-'}</td><td>${c.laps}</td></tr>`; }).join('')}</tbody></table>`;
   }
   const gapOf = (c, i) => {
-    if (c.out) return 'OUT'; if (i === 0) return 'Leader'; if (c.pitT > 0) return 'PIT';
+    if (c.out) return 'OUT'; if (i === 0) return 'Leader'; if (c.parked) return 'GARAGE'; if (c.pitT > 0) return 'PIT';
     const lapped = leader.dist - c.dist > RACE.L && leader.laps - c.laps >= 1;
     if (DK.gap === 'leader') return lapped ? '+' + Math.floor((leader.dist - c.dist) / RACE.L) + ' Lap' : '+' + gapSeconds(c, leader).toFixed(1) + 's';
     const p = ord[i - 1]; return p.dist - c.dist > RACE.L ? '+1 Lap' : '+' + Math.max(0.1, (p.dist - c.dist) / (RACE.L / c.curLT)).toFixed(1) + 's';
@@ -241,7 +241,7 @@ function dkOrderTable(kind, S, ord) {
   return `<table class="dkt"><thead><tr><th>Pos</th><th class="l">Driver</th><th class="l hm">Team</th><th><button class="dkgap" data-a="dkgap">‹ ${DK.gap === 'leader' ? 'Gap' : 'Int'} ›</button></th><th>Lap</th><th>Last</th><th>Tyre</th><th>%</th><th>Fuel</th><th>Pit</th><th>Stp</th></tr></thead><tbody>${ord.map((c, i) => {
     const gain = c.grid - (i + 1);
     return `<tr class="${c.player || c.fav ? 'me' : ''} ${c.out ? 'out' : ''}" style="--tc:${c.t.color};--ti:${dkInk(c.t.color)}" data-a="follow" data-v="${c.d.id}">
-    <td>${i + 1}</td><td class="l"><span class="dkmv ${gain > 0 ? 'up' : gain < 0 ? 'dn' : ''}">${gain > 0 ? '▲' : gain < 0 ? '▼' : '•'}</span>${esc(dkShort(c.d))}</td><td class="l hm">${esc(c.t.name)}</td><td>${gapOf(c, i)}</td><td>${Math.min(RACE.laps, c.laps)}/${RACE.laps}</td><td>${dkT(c.lastLap)}</td><td>${c.out ? '' : dkTy(c.tyre)}</td><td>${c.out ? '' : Math.round(c.wear * 100) + '%'}</td><td>${c.out ? '' : dkFuel(c, RACE).toFixed(1)}</td><td>${c.pitReq ? 'BOX' : c.pitT > 0 ? 'IN' : ''}</td><td>${c.stops}</td></tr>`; }).join('')}</tbody></table>`;
+    <td>${i + 1}</td><td class="l"><span class="dkmv ${gain > 0 ? 'up' : gain < 0 ? 'dn' : ''}">${gain > 0 ? '▲' : gain < 0 ? '▼' : '•'}</span>${esc(dkShort(c.d))}</td><td class="l hm">${esc(c.t.name)}</td><td>${gapOf(c, i)}</td><td>${Math.min(RACE.laps, c.laps)}/${RACE.laps}</td><td>${dkT(c.lastLap)}</td><td>${c.out ? '' : dkTy(c.tyre)}</td><td>${c.out ? '' : Math.round(c.wear * 100) + '%'}</td><td>${c.out ? '' : dkFuel(c, RACE).toFixed(1)}</td><td>${c.pitReq ? 'BOX' : c.parked ? '' : c.pitT > 0 ? 'IN' : ''}</td><td>${c.stops}</td></tr>`; }).join('')}</tbody></table>`;
 }
 function dkChars(kind, S) {
   const t = WK.track, prog = kind === 'race' ? Math.min(1, (RACE.leaderLap || 0) / RACE.laps) : Math.min(1, S.t / S.dur);

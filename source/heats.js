@@ -93,6 +93,7 @@ applyRaceResult = function (G0, race, wk) {
       s.rows.forEach(r => { const x = race.result.find(y => y.id === r.id && y.team === r.team); if (x && x.heatOut) { r.heatOut = x.heatOut; r.elimLap = 'R' + x.heatOut; } });
       s.leaders = H.parts.flatMap(p => p.leaders);
       s.heatInfo = H.parts.map(p => ({ k: p.k, laps: p.laps, win: p.rows[0] && p.rows[0].e.d.id, out: p.rows.filter(r => p.k < 3 && !r.adv).map(r => r.e.d.id) }));
+      if (!(G0.regs && G0.regs.heatpts === 'standard')) {
       // weighted points: replace the normal table with Race 1 + Race 2 + Race 3 points (fastest-lap bonus kept)
       const PT = (G0.rules && G0.rules.points) || POINTS;
       s.rows.forEach(r => {
@@ -102,6 +103,7 @@ applyRaceResult = function (G0, race, wk) {
         if (delta) { const d = G0.drivers[r.id]; if (d) { d.pts += delta; if (d.res && d.res.length) d.res[d.res.length - 1] += delta; } if (G0.teams[r.team]) G0.teams[r.team].pts += delta; r.pts = np; }
       });
       s.heatTables = [1, 2, 3].map(heatTable);
+      }
       if (G0.rules && G0.rules.bestN && typeof recomputePoints === 'function') recomputePoints(G0);
     }
   } catch (e) { }
@@ -148,10 +150,10 @@ function heatBreakPage() {
   const timeTxt = r => r.out ? `DNF (${String(r.out).split(/[ (]/)[0]})` : r === lead ? fmtTime(r.time) : r.laps < lead.laps ? `+${lead.laps - r.laps} Lap${lead.laps - r.laps > 1 ? 's' : ''}` : r.time != null && lead.time != null ? '+' + (r.time - lead.time).toFixed(3) : '';
   const cut = P.rows.filter(r => r.adv).length;
   const table = `<table class="dkfp"><thead><tr><th>Pos</th><th class="l">Driver</th><th class="l hm">Team</th><th class="ra hm">Best lap</th><th class="ra">Time/Gap</th><th class="ra">Pts</th><th class="l">Status</th></tr></thead><tbody>${P.rows.map((r, i) => {
-    const e = r.e; return `<tr class="${mine(e) ? 'me' : ''} ${r.adv ? '' : 'elim'} ${i === cut ? 'cut' : ''}" data-prof="${e.d.id}" style="--tc:${e.t.color};--ti:${dkInk(e.t.color)}"><td class="pos">P${String(i + 1).padStart(2, '0')}</td><td class="l">${dkFlag(e.d.nat)} ${dkNm(e.d.name)}</td><td class="l hm">${esc(e.t.name)}</td><td class="ra hm">${r.best ? fmtTime(r.best) : ''}</td><td class="ra">${timeTxt(r)}</td><td class="ra">${heatPts(k, r.pos, r.out) || ''}</td><td class="l">${r.adv ? `Race ${H.k} grid P${H.gridNow.indexOf(e) + 1}` : r.out ? 'Out — retired' : 'ELIMINATED'}</td></tr>`; }).join('')}</tbody></table>`;
+    const e = r.e; return `<tr class="${mine(e) ? 'me' : ''} ${r.adv ? '' : 'elim'} ${i === cut ? 'cut' : ''}" data-prof="${e.d.id}" style="--tc:${e.t.color};--ti:${dkInk(e.t.color)}"><td class="pos">P${String(i + 1).padStart(2, '0')}</td><td class="l">${dkFlag(e.d.nat)} ${dkNm(e.d.name)}</td><td class="l hm">${esc(e.t.name)}</td><td class="ra hm">${r.best ? fmtTime(r.best) : ''}</td><td class="ra">${timeTxt(r)}</td><td class="ra">${G.regs && G.regs.heatpts === 'standard' ? '' : heatPts(k, r.pos, r.out) || ''}</td><td class="l">${r.adv ? `Race ${H.k} grid P${H.gridNow.indexOf(e) + 1}` : r.out ? 'Out — retired' : 'ELIMINATED'}</td></tr>`; }).join('')}</tbody></table>`;
   const nextTxt = H.k === 3 ? `Race 3 decides the Grand Prix: ${nextLaps} laps, ${H.gridNow.length} cars.` : `Race ${H.k}: ${nextLaps} laps, ${H.gridNow.length} cars — the slowest ${H.elim[H.k - 1]} will be eliminated.`;
   return `<div class="dk dk-fp" id="dk"><div class="dk-fptitle">Race ${k} Results - ${esc(t.short)}<span class="dk-mut">ROUND ${WK.round + 1} · ${G.year} · ${H.brk[k - 1]}-MINUTE BREAK · NEXT: RACE ${H.k} · ${nextLaps} LAPS · ${H.gridNow.length} CARS</span></div>
-  <div class="dk-fpbox"><div class="dk-mut heat-note">🏅 Race ${k} points (⅓ … full table by race length): ${heatTable(k).join('-')}.<br>⏸️ ${H.brk[k - 1]}-minute break. Teams fit fresh tyres and the cars form up on the grid in Race ${k} finishing order. ${nextTxt}</div>${table}</div>
+  <div class="dk-fpbox"><div class="dk-mut heat-note">${G.regs && G.regs.heatpts === 'standard' ? '🏅 Points are awarded only for the final classification after Race 3.' : `🏅 Race ${k} points (⅓ … full table by race length): ${heatTable(k).join('-')}.`}<br>⏸️ ${H.brk[k - 1]}-minute break. Teams fit fresh tyres and the cars form up on the grid in Race ${k} finishing order. ${nextTxt}</div>${table}</div>
   <div class="dk-fpfoot"><span class="dk-mut kbhint">Press ENTER/SPACE or click Form up.</span><span class="sp"></span><button class="pri" data-a="startrace" data-enter="1">Form up for Race ${H.k} →</button></div></div>`;
 }
 const _heat_viewWeekend = viewWeekend;
@@ -166,7 +168,7 @@ if (typeof deskGrid === 'function') {
   deskGrid = function (sprint) {
     let html = _heat_deskGrid.apply(this, arguments);
     if (!sprint && heatsOn()) { const P = heatPlan(WK.track.laps, WK.grid.length);
-      html = html.replace(/<div class="dk-mut dkg-note">[^<]*<\/div>/, `<div class="dk-mut dkg-note"><b>Three-part Grand Prix:</b> Race 1 · ${P.laps[0]} laps, slowest ${P.elim[0]} out → 20-min break → Race 2 · ${P.laps[1]} laps, slowest ${P.elim[1]} out → 40-min break → Race 3 · ${P.laps[2]} laps decides the Grand Prix. Each race forms up in the previous race's finishing order. Points from all three races add up: Race 1 ⅓ of the table, Race 2 ⅔, Race 3 the full table.</div>`); }
+      html = html.replace(/<div class="dk-mut dkg-note">[^<]*<\/div>/, `<div class="dk-mut dkg-note"><b>Three-part Grand Prix:</b> Race 1 · ${P.laps[0]} laps, slowest ${P.elim[0]} out → 20-min break → Race 2 · ${P.laps[1]} laps, slowest ${P.elim[1]} out → 40-min break → Race 3 · ${P.laps[2]} laps decides the Grand Prix. Each race forms up in the previous race's finishing order. ${G.regs && G.regs.heatpts === 'standard' ? 'Normal points for the final classification.' : 'Points from all three races add up: Race 1 ⅓ of the table, Race 2 ⅔, Race 3 the full table.'}</div>`); }
     return html;
   };
 }
@@ -178,7 +180,7 @@ dkRaceView = function (o) {
     html = html.replace(/(<div class="dk-reshead">[\s\S]*?<h1>)Race Results/, '$1Grand Prix Results');
     if (s.heatInfo) {
       const nm = id => G.drivers[id] ? G.drivers[id].code || G.drivers[id].name : id;
-      const tabs = s.heatTables ? `<span><b>Points</b> · Race 1 ${s.heatTables[0].join('-')} · Race 2 ${s.heatTables[1].join('-')} · Race 3 ${s.heatTables[2].join('-')} · totals add up all three</span>` : '';
+      const tabs = s.heatTables && !(G.regs && G.regs.heatpts === 'standard') ? `<span><b>Points</b> · Race 1 ${s.heatTables[0].join('-')} · Race 2 ${s.heatTables[1].join('-')} · Race 3 ${s.heatTables[2].join('-')} · totals add up all three</span>` : '';
       const strip = `<div class="heat-strip">${tabs}${s.heatInfo.map(h => `<span><b>Race ${h.k}</b> · ${h.laps} laps · won by ${esc(nm(h.win))}${h.out.length ? ` · out: ${h.out.map(x => esc(nm(x))).join(', ')}` : ''}</span>`).join('')}</div>`;
       html = html.replace('<table class="dkfp dkrr">', strip + '<table class="dkfp dkrr">');
     }

@@ -877,5 +877,7 @@ body.dt .dk .dkst tr.me td.tcell{background:var(--tc);color:var(--ti)}
 .lot-slot.on{animation:lotin .5s ease-out}.lot-slot.me{background:#ffffff14}
 @keyframes lotin{from{background:#ffffff40}to{background:transparent}}
 .lot-num{flex:0 0 auto;width:1.8em;height:1.8em;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font:800 .8em ui-monospace,monospace;background:#fff;color:#111;box-shadow:0 0 0 3px var(--gc)}
-button.on{outline:2px solid #e10600}
 @media (max-width:899px){.lot-wrap{grid-template-columns:1fr}.lot-mach{min-height:300px}.lot-cols{grid-template-columns:1fr}.lot-slot .hm{display:none}}
+.dkcl .exp{font:800 .62em ui-monospace,monospace;padding:.1em .4em;border-radius:3px;margin-left:.4em;white-space:nowrap}
+.dkcl .exp.x1{background:#7c3aed;color:#fff}.dkcl .exp.x2{background:#334155;color:#e2e8f0}
+.exp-note{border-left:3px solid #7c3aed;padding-left:.6em}

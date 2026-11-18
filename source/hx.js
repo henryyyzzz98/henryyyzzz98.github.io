@@ -61,7 +61,7 @@ standingsTeams = function () { return _hx_standingsTeams.apply(this, arguments).
 const _hx_weekendEntries = weekendEntries;
 weekendEntries = function (G0) {
   let L = _hx_weekendEntries.apply(this, arguments);
-  if (!G0.timeline || G0.mix) return L; // mixed eras: the calendar year's stand-ins don't belong to this line-up
+  if (!G0.timeline || G0.mix || (G0.regs && G0.regs.standins === 'off')) return L; // mixed eras: the calendar year's stand-ins don't belong to this line-up; or stand-ins switched off
   const r = hxRound(G0, G0.round); if (!r || (!r.a && !r.x)) return L;
   const outs = new Set((r.x || []).map(i => HIST.drivers[i][0]));
   L = L.filter(e => e.t.id === G0.player || !outs.has(e.d.id));
