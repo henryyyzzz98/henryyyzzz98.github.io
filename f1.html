@@ -1039,6 +1039,7 @@ body.dt .dk .dkst tr.me td.tcell{background:var(--tc);color:var(--ti)}
 .tp-hd button{background:#e6ebf5 !important;color:#000 !important}
 @media (max-width:1100px){.tp-mod{height:auto;max-height:100vh;width:100vw;border-radius:0}.tp-grid{display:flex;flex-direction:column;overflow:visible}.tp-main{overflow:visible;padding-right:0}.tp-hist table{max-height:50vh}.tp-top{font-size:16px;flex-wrap:wrap}.tp-mono{display:none}.tp-hd{padding-right:90px}.tp-hd h2{font-size:18px}}
 @media (max-width:1100px){.tp-list{flex:0 0 auto;padding-bottom:4px}.tp-li{flex:0 0 auto}}
+.xr-lock{color:#f59e0b;font-size:11px}
 </style></head><body><div id="app"></div><script>
 // ===== DATA: teams, drivers, tracks =====
 const ENGINES = {
@@ -6119,7 +6120,7 @@ function dkApplyRegs(G0) {
   else if (DK_PTS[r.pts]) base.points = DK_PTS[r.pts];
   if (r.fl !== 'era') base.fl = r.fl === 'off' ? null : r.fl;
   if (r.quali !== 'era') base.quali = r.quali;
-  base.endu = r.race === 'endu'; base.elimRace = r.race === 'elimr'; base.heats = r.race === 'heats'; base.intruder = r.race === 'intruder';
+  base.endu = r.race === 'endu'; base.elimRace = r.race === 'elimr'; base.heats = r.race === 'heats' || r.race === 'hybrid'; base.hybrid = r.race === 'hybrid'; base.intruder = r.race === 'intruder'; base.poleElim = r.race === 'polelim';
   if (r.drop === 'all') base.bestN = 0;
   base.polePts = +r.pole || 0;
   if (r.format === 'academy') { // F1 Academy: one qualifying, Reverse Grid Race (top 8 reversed), Feature Race
@@ -6153,7 +6154,7 @@ function dkRegsForm(r, act) {
   <label class="small">Pole position bonus${sel('pole', [[0, 'No points for pole'], [1, '1 point for pole'], [2, '2 points for pole'], [3, '3 points for pole']])}</label>
   <label class="small">Fastest lap bonus${sel('fl', [['era', 'Real rules of each season'], ['off', 'No fastest-lap point'], ['any', '1 point — any finisher'], ['top10', '1 point — only if in the top 10']])}</label>
   <label class="small">Qualifying format${sel('quali', [['era', 'Real format of each season'], ['single', 'One session — fastest lap takes pole'], ['knockout', 'Knockout — Q1, Q2, Q3'], ['elim', '2016 elimination — slowest out every 90 seconds'], ['lapelim', 'Pole-lap elimination — one session, slowest out every 2 × pole lap, shootout for pole'], ['groups', 'Group lottery — 3 groups drawn by lottery, 3 timed laps each, grid built from each group in turn']])}</label>
-  <label class="small">Grand Prix format${sel('race', [['gp', 'Standard race distance'], ['endu', 'Endurance — 60 s clock, earn time with laps and overtakes'], ['elimr', 'Elimination — last car out every (laps ÷ cars) laps'], ['heats', 'Three-part GP — 3 races (1/6, 1/3, 1/2 of the laps), slowest cars eliminated after races 1 and 2'], ['intruder', 'Intruder — slowest qualifier starts alone, the next car joins every (laps ÷ cars) laps']])}</label>
+  <label class="small">Grand Prix format${sel('race', [['gp', 'Standard race distance'], ['endu', 'Endurance — 60 s clock, earn time with laps and overtakes'], ['elimr', 'Elimination — last car out every (laps ÷ cars) laps'], ['heats', 'Three-part GP — 3 races (1/6, 1/3, 1/2 of the laps), slowest cars eliminated after races 1 and 2'], ['intruder', 'Intruder — slowest qualifier starts alone, the next car joins every (laps ÷ cars) laps'], ['polelim', 'Pole-lap elimination — last car out each time the pole sitter completes (laps ÷ cars) more laps'], ['hybrid', 'Hybrid — three-part GP with pole-lap eliminations inside each race']])}</label>
   <label class="small">Dropped scores${sel('drop', [['era', 'Real rules (some old seasons only count best results)'], ['all', 'Every result counts']])}</label></div>`;
 }
 const _dk3_viewSetup = viewSetup;
@@ -7454,7 +7455,8 @@ dkApplyRegs = function (G0) {
 };
 const _xg_dkRegsForm = dkRegsForm;
 dkRegsForm = function (r, act) {
-  const html = _xg_dkRegsForm.apply(this, arguments);
+  let html = _xg_dkRegsForm.apply(this, arguments);
+  if (r.heatpts === 'fixed' && (r.race === 'heats' || r.race === 'hybrid')) html = html.replace(`<select data-dkc="${act}" data-k="pts"`, `<select disabled title="Set by the fixed three-part GP points" data-dkc="${act}" data-k="pts"`).replace('Points system<select', 'Points system <span class="xr-lock">· locked: fixed three-part GP points</span><select');
   const sel = (k, opts) => `<select data-dkc="${act}" data-k="${k}" style="width:100%">${opts.map(([v, l]) => `<option value="${v}" ${String(r[k] == null ? XR0[k] : r[k]) === String(v) ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>`;
   const more = `<div class="small xr-h" style="grid-column:1/-1">MORE ALTERNATIVE RULES</div>
   <label class="small">Pre-season testing${sel('testing', [['off', 'Off'], ['on', 'On — 3 days of testing before round 1, with statistics']])}</label>
@@ -7466,7 +7468,7 @@ dkRegsForm = function (r, act) {
   <label class="small">Sprint races${sel('sprint', [['on', 'On — sprint weekends as on the calendar'], ['off', 'Off — every round is a normal Grand Prix weekend']])}</label>
   <label class="small">Retirements${sel('dnf', [['on', 'On — crashes, failures and other retirements'], ['off', 'Off — every car races to the finish']])}</label>
   <label class="small">Stand-in &amp; reserve drivers${sel('standins', [['real', 'As in real history — stand-ins and one-off entries race'], ['off', 'Off — the season line-up races every round']])}</label>
-  <label class="small">Three-part GP points${sel('heatpts', [['weighted', 'Weighted — Race 1 ⅓, Race 2 ⅔, Race 3 full points'], ['standard', 'Standard — normal points for the final classification only']])}</label>
+  <label class="small">Three-part GP points${sel('heatpts', [['weighted', 'Weighted — Race 1 ⅓, Race 2 ⅔, Race 3 full points'], ['standard', 'Standard — normal points for the final classification only'], ['fixed', 'Fixed — Race 1 5-4-3-2-1, Race 2 10-8-6-4-2, Race 3 15-12-9-6-3 (replaces the points system)']])}</label>
   <label class="small">Express pass race${sel('express', [['off', 'Off'], ['on', 'On — a quarter of the races: each winner skips the next race, which pays half points']])}</label>`;
   const i = html.lastIndexOf('</div>');
   return html.slice(0, i) + more + html.slice(i);
@@ -7926,19 +7928,19 @@ function qgLotteryBox() {
 }
 function lotInit(cv) {
   const D = WK.Q.draw, key = WK.round + ':' + G.year;
-  if (LOT.key !== key) { Object.assign(LOT, { key, balls: [], phase: null, ball: null, auto: false, shown: null }); }
+  if (LOT.key !== key) { Object.assign(LOT, { key, balls: [], phase: null, ball: null, auto: false, shown: null, started: false }); }
   const used = new Set(D.picks.map(p => p.n));
   if (!LOT.balls.length || LOT.balls.some(b => used.has(b.n))) {
     LOT.balls = [...Array(WK.entries.length)].map((_, i) => i + 1).filter(n => !used.has(n) && !(LOT.ball && LOT.ball.n === n))
-      .map(n => ({ n, x: rnd(-0.6, 0.6), y: rnd(0.1, 0.75), vx: rnd(-0.5, 0.5), vy: rnd(-0.5, 0.5) }));
+      .map(n => ({ n, x: rnd(-0.6, 0.6), y: rnd(0.3, 0.8), vx: 0, vy: 0 }));
   }
 }
 function lotStep(dt, strong) {
-  const B = LOT.balls, r = 0.105, g = 3.2;
+  const B = LOT.balls, r = 0.105, g = 3.2, idle = !LOT.started; // the blower is off until the first draw
   B.forEach(b => {
     b.vy += g * dt;
     // air jets from the bottom of the drum keep the balls dancing
-    if (b.y > 0.45 && Math.random() < (strong ? 0.5 : 0.12)) { b.vy -= rnd(1.2, strong ? 4.2 : 2.6); b.vx += rnd(-1.2, 1.2); }
+    if (!idle && b.y > 0.45 && Math.random() < (strong ? 0.5 : 0.12)) { b.vy -= rnd(1.2, strong ? 4.2 : 2.6); b.vx += rnd(-1.2, 1.2); }
     b.x += b.vx * dt; b.y += b.vy * dt;
     const d = Math.hypot(b.x, b.y), lim = 1 - r;
     if (d > lim) { const nx = b.x / d, ny = b.y / d, vn = b.vx * nx + b.vy * ny; b.x = nx * lim; b.y = ny * lim; if (vn > 0) { b.vx -= 1.8 * vn * nx; b.vy -= 1.8 * vn * ny; } b.vx += -ny * 0.4 * dt * 10; b.vy += nx * 0.4 * dt * 10; b.vx *= 0.97; b.vy *= 0.97; }
@@ -7989,6 +7991,7 @@ function lotFrame(now) {
   LOT.balls.forEach(b => lotBall(ctx, X(b.x), Y(b.y), br, b.n));
   ctx.strokeStyle = '#cfd8ea'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 6.3); ctx.stroke();
   ctx.strokeStyle = '#ffffff30'; ctx.lineWidth = 1.5; for (let k = 1; k < 4; k++) { ctx.beginPath(); ctx.ellipse(cx, cy, R, R * k / 4, 0, 0, 6.3); ctx.stroke(); }
+  if (!LOT.started) { ctx.fillStyle = '#9fb0cf'; ctx.font = '700 12px ui-monospace,monospace'; ctx.textAlign = 'center'; ctx.fillText('PRESS DRAW BALL OR AUTO DRAW TO START', cx, cy + R + 18); ctx.textAlign = 'left'; }
   if (LOT.phase === 'mix') { ctx.fillStyle = '#9fb0cf'; ctx.font = '700 12px ui-monospace,monospace'; ctx.textAlign = 'center'; ctx.fillText('MIXING…', cx, cy + R + 18); ctx.textAlign = 'left'; }
   // the drawn ball
   if (LOT.ball && (LOT.phase === 'lift' || LOT.phase === 'show')) {
@@ -8002,7 +8005,7 @@ function lotFrame(now) {
 }
 function lotStart() {
   if (LOT.phase || !lotNextDriver() || !LOT.balls.length) return;
-  LOT.phase = 'mix'; LOT.t = 0; const bt = document.getElementById('lotdrawb'); if (bt) bt.disabled = true;
+  LOT.started = true; LOT.phase = 'mix'; LOT.t = 0; const bt = document.getElementById('lotdrawb'); if (bt) bt.disabled = true;
 }
 function lotCommit() {
   const QS = WK.Q, D = QS.draw, e = lotNextDriver(), b = LOT.ball;
@@ -8014,7 +8017,7 @@ function lotCommit() {
 }
 Object.assign(A, {
   lotdraw() { lotStart(); },
-  lotauto(el) { LOT.auto = !LOT.auto; LOT.autoT = 0; el.classList.toggle('on', LOT.auto); el.textContent = LOT.auto ? '⏸ Stop auto draw' : '▶ Auto draw'; },
+  lotauto(el) { LOT.auto = !LOT.auto; if (LOT.auto) LOT.started = true; LOT.autoT = 0; el.classList.toggle('on', LOT.auto); el.textContent = LOT.auto ? '⏸ Stop auto draw' : '▶ Auto draw'; },
   lotall() { LOT.phase = null; LOT.ball = null; LOT.auto = false; qgFinishDraw(WK.Q); autosave(); render(); },
 });
 const _lot_render = render;
@@ -8037,7 +8040,8 @@ function heatPlan(laps, n) {
 // Points: every race scores on its own finishing order, weighted by its share of the distance.
 // Race 1 = 1/3 of the normal points table, Race 2 = 2/3, Race 3 = the full table (Race 1 + Race 2 together are worth as much as Race 3).
 const HEAT_W = [1 / 3, 2 / 3, 1];
-function heatTable(k) { const PT = (G.rules && G.rules.points) || POINTS; return PT.map(p => Math.round(p * HEAT_W[k - 1])).filter((p, i, a) => p > 0 || a.slice(i).some(x => x > 0)); }
+const HEAT_FIXED = [[5, 4, 3, 2, 1], [10, 8, 6, 4, 2], [15, 12, 9, 6, 3]];
+function heatTable(k) { if (G && G.regs && G.regs.heatpts === 'fixed') return HEAT_FIXED[k - 1].slice(); const PT = (G.rules && G.rules.points) || POINTS; return PT.map(p => Math.round(p * HEAT_W[k - 1])).filter((p, i, a) => p > 0 || a.slice(i).some(x => x > 0)); }
 function heatPts(k, pos, out) { if (out) return 0; const T = heatTable(k); return pos <= T.length ? T[pos - 1] : 0; }
 function heatNew() {
   const P = heatPlan(WK.track.laps, WK.grid.length);
@@ -8056,7 +8060,7 @@ hxChain('raceInit', race => {
     race.cars.forEach(c => { if (race.wet > 0.6) c.tyre = 'W'; else if (race.wet > 0.22) c.tyre = 'I'; c.used = new Set([c.tyre]); });
   } else H.plan0 = race.plan.slice();
   const out = H.elim[H.k - 1];
-  race.msg(H.k < 3 ? `🏁 Race ${H.k} of 3: ${race.laps} laps · ${race.cars.length} cars · the slowest ${out} at the flag are eliminated, then a ${H.brk[H.k - 1]}-minute break.`
+  if (!G.rules.hybrid) race.msg(H.k < 3 ? `🏁 Race ${H.k} of 3: ${race.laps} laps · ${race.cars.length} cars · the slowest ${out} at the flag are eliminated, then a ${H.brk[H.k - 1]}-minute break.`
     : `🏁 Race 3 of 3: ${race.laps} laps · ${race.cars.length} cars · this chequered flag decides the Grand Prix.`, true);
 });
 
@@ -8119,7 +8123,7 @@ applyRaceResult = function (G0, race, wk) {
       const PT = (G0.rules && G0.rules.points) || POINTS;
       s.rows.forEach(r => {
         const hp = [1, 2, 3].map(k => { const P = H.parts[k - 1]; const x = P && P.rows.find(y => y.e.d.id === r.id); return x ? heatPts(k, x.pos, x.out) : 0; });
-        const base = !r.out && r.pos <= PT.length ? PT[r.pos - 1] : 0, fl = Math.max(0, r.pts - base), np = hp[0] + hp[1] + hp[2] + fl, delta = np - r.pts;
+        const base = !r.out && r.pos <= PT.length ? PT[r.pos - 1] : 0, fl = G0.regs && G0.regs.heatpts === 'fixed' ? 0 : Math.max(0, r.pts - base), np = hp[0] + hp[1] + hp[2] + fl, delta = np - r.pts;
         r.hp = hp;
         if (delta) { const d = G0.drivers[r.id]; if (d) { d.pts += delta; if (d.res && d.res.length) d.res[d.res.length - 1] += delta; } if (G0.teams[r.team]) G0.teams[r.team].pts += delta; r.pts = np; }
       });
@@ -8151,7 +8155,7 @@ const _heat_updRace = updateRaceUI;
 updateRaceUI = function () {
   const r = _heat_updRace.apply(this, arguments);
   try {
-    if (!RACE || !RACE.heat || !WK.heat) return r;
+    if (!RACE || !RACE.heat || !WK.heat || RACE.pe) return r;
     const H = WK.heat, k = RACE.heat, alive = RACE.order().filter(x => !x.out), lead = alive[0];
     const lap = lead ? Math.min(RACE.laps, lead.laps + (lead.finished ? 0 : 1)) : 0;
     const drop = H.elim[k - 1], dnf = RACE.cars.filter(x => x.out).length, zone = k < 3 ? Math.max(0, drop - dnf) : 0;
@@ -8172,9 +8176,9 @@ function heatBreakPage() {
   const cut = P.rows.filter(r => r.adv).length;
   const table = `<table class="dkfp"><thead><tr><th>Pos</th><th class="l">Driver</th><th class="l hm">Team</th><th class="ra hm">Best lap</th><th class="ra">Time/Gap</th><th class="ra">Pts</th><th class="l">Status</th></tr></thead><tbody>${P.rows.map((r, i) => {
     const e = r.e; return `<tr class="${mine(e) ? 'me' : ''} ${r.adv ? '' : 'elim'} ${i === cut ? 'cut' : ''}" data-prof="${e.d.id}" style="--tc:${e.t.color};--ti:${dkInk(e.t.color)}"><td class="pos">P${String(i + 1).padStart(2, '0')}</td><td class="l">${dkFlag(e.d.nat)} ${dkNm(e.d.name)}</td><td class="l hm">${esc(e.t.name)}</td><td class="ra hm">${r.best ? fmtTime(r.best) : ''}</td><td class="ra">${timeTxt(r)}</td><td class="ra">${G.regs && G.regs.heatpts === 'standard' ? '' : heatPts(k, r.pos, r.out) || ''}</td><td class="l">${r.adv ? `Race ${H.k} grid P${H.gridNow.indexOf(e) + 1}` : r.out ? 'Out — retired' : 'ELIMINATED'}</td></tr>`; }).join('')}</tbody></table>`;
-  const nextTxt = H.k === 3 ? `Race 3 decides the Grand Prix: ${nextLaps} laps, ${H.gridNow.length} cars.` : `Race ${H.k}: ${nextLaps} laps, ${H.gridNow.length} cars — the slowest ${H.elim[H.k - 1]} will be eliminated.`;
+  const nextTxt = H.k === 3 ? `Race 3 decides the Grand Prix: ${nextLaps} laps, ${H.gridNow.length} cars${G.rules.hybrid ? ' — the last-placed car is out every time the pole sitter has done another ' + (nextLaps / H.gridNow.length).toFixed(1) + ' laps, until two are left' : ''}.` : `Race ${H.k}: ${nextLaps} laps, ${H.gridNow.length} cars — ${H.elim[H.k - 1]} will be eliminated${G.rules.hybrid ? ', one at a time when the pole sitter crosses the line' : ''}.`;
   return `<div class="dk dk-fp" id="dk"><div class="dk-fptitle">Race ${k} Results - ${esc(t.short)}<span class="dk-mut">ROUND ${WK.round + 1} · ${G.year} · ${H.brk[k - 1]}-MINUTE BREAK · NEXT: RACE ${H.k} · ${nextLaps} LAPS · ${H.gridNow.length} CARS</span></div>
-  <div class="dk-fpbox"><div class="dk-mut heat-note">${G.regs && G.regs.heatpts === 'standard' ? '🏅 Points are awarded only for the final classification after Race 3.' : `🏅 Race ${k} points (⅓ … full table by race length): ${heatTable(k).join('-')}.`}<br>⏸️ ${H.brk[k - 1]}-minute break. Teams fit fresh tyres and the cars form up on the grid in Race ${k} finishing order. ${nextTxt}</div>${table}</div>
+  <div class="dk-fpbox"><div class="dk-mut heat-note">${G.regs && G.regs.heatpts === 'standard' ? '🏅 Points are awarded only for the final classification after Race 3.' : `🏅 Race ${k} points: ${heatTable(k).join('-')}.`}<br>⏸️ ${H.brk[k - 1]}-minute break. Teams fit fresh tyres and the cars form up on the grid in Race ${k} finishing order. ${nextTxt}</div>${table}</div>
   <div class="dk-fpfoot"><span class="dk-mut kbhint">Press ENTER/SPACE or click Form up.</span><span class="sp"></span><button class="pri" data-a="startrace" data-enter="1">Form up for Race ${H.k} →</button></div></div>`;
 }
 const _heat_viewWeekend = viewWeekend;
@@ -8189,7 +8193,7 @@ if (typeof deskGrid === 'function') {
   deskGrid = function (sprint) {
     let html = _heat_deskGrid.apply(this, arguments);
     if (!sprint && heatsOn()) { const P = heatPlan(WK.track.laps, WK.grid.length);
-      html = html.replace(/<div class="dk-mut dkg-note">[^<]*<\/div>/, `<div class="dk-mut dkg-note"><b>Three-part Grand Prix:</b> Race 1 · ${P.laps[0]} laps, slowest ${P.elim[0]} out → 20-min break → Race 2 · ${P.laps[1]} laps, slowest ${P.elim[1]} out → 40-min break → Race 3 · ${P.laps[2]} laps decides the Grand Prix. Each race forms up in the previous race's finishing order. ${G.regs && G.regs.heatpts === 'standard' ? 'Normal points for the final classification.' : 'Points from all three races add up: Race 1 ⅓ of the table, Race 2 ⅔, Race 3 the full table.'}</div>`); }
+      html = html.replace(/<div class="dk-mut dkg-note">[^<]*<\/div>/, `<div class="dk-mut dkg-note"><b>Three-part Grand Prix:</b> Race 1 · ${P.laps[0]} laps, slowest ${P.elim[0]} out → 20-min break → Race 2 · ${P.laps[1]} laps, slowest ${P.elim[1]} out → 40-min break → Race 3 · ${P.laps[2]} laps decides the Grand Prix. Each race forms up in the previous race's finishing order. ${G.regs && G.regs.heatpts === 'standard' ? 'Normal points for the final classification.' : 'Points from all three races add up: ' + (G.regs && G.regs.heatpts === 'fixed' ? 'Race 1 5-4-3-2-1, Race 2 10-8-6-4-2, Race 3 15-12-9-6-3.' : 'Race 1 ⅓ of the table, Race 2 ⅔, Race 3 the full table.')}</div>`); }
     return html;
   };
 }
@@ -8954,6 +8958,104 @@ if (typeof deskGrid === 'function') {
     return note ? html.replace('<div class="dk-mut dkg-note">', `<div class="dk-mut dkg-note exp-note">${note}</div><div class="dk-mut dkg-note">`) : html;
   };
 }
+// ===================== Pole-lap elimination Grand Prix (+ the Hybrid three-part version) =====================
+// Pole-lap elimination: every (race laps ÷ starters) laps — counted on the POLE SITTER's own laps — the car in last
+// place at the moment the pole sitter crosses the start/finish line is eliminated. If the pole sitter is out, the leader
+// takes over as the timekeeper. Retirements count as eliminations. The final two race to the flag.
+// Hybrid: the three-part Grand Prix, but each race's eliminations happen during the race the same way (timed on that
+// race's pole sitter): Race 1 and Race 2 drop their quota spread evenly through the race; Race 3 drops one car every
+// (laps ÷ cars) laps until two are left to fight for the win.
+hxChain('raceInit', race => {
+  const R0 = race.G && race.G.rules; if (race.sprint || !R0) return;
+  const hybrid = R0.hybrid && race.heat && WK.heat, solo = R0.poleElim;
+  if (!hybrid && !solo) return;
+  const N = race.cars.length, pole = race.cars.find(c => c.grid === 1) || race.cars[0];
+  let sched = [], every;
+  if (hybrid && race.heat < 3) { const q = WK.heat.elim[race.heat - 1]; every = race.laps / (q + 1); for (let k = 1; k <= q; k++) sched.push(Math.max(1, Math.round(k * every))); }
+  else { every = race.laps / N; for (let k = 1; k <= N - 2; k++) sched.push(Math.max(1, Math.round(k * every))); }
+  race.pe = { pole, timer: pole, sched, k: 0, credit: 0, post: 0, out: [], duel: false, every, hybrid: !!hybrid };
+  race.rules = Object.assign({}, race.rules, { twoCompound: false });
+  const head = hybrid ? `🏁 Race ${race.heat} of 3 · ${race.laps} laps · ${N} cars` : '⛔ Pole-lap elimination';
+  race.msg(`${head}: each time ${pole.d.name} (pole) completes lap ${sched.slice(0, 4).join(', ')}${sched.length > 4 ? '…' : ''} the car in last place is out${sched.length ? ` — ${sched.length} elimination${sched.length === 1 ? '' : 's'}` : ''}.${hybrid && race.heat < 3 ? '' : ' The final two race to the flag.'}`, true);
+});
+const _pe_retire = Race.prototype.retire;
+Race.prototype.retire = function (c, why, flag) {
+  const r = _pe_retire.apply(this, arguments);
+  if (this.pe && !c.elimd && !this.pe.out.includes(c)) { this.pe.out.push(c); c.elimLap = c.laps; this.pe.credit++; }
+  return r;
+};
+function peAlive(race) { return race.order().filter(x => !x.out && !x.finished); }
+hxChain('onLap', (race, c, n) => {
+  const E = race.pe; if (!E || race.done) return;
+  if (E.timer.out) { E.timer = peAlive(race)[0] || E.timer; if (E.timer !== c) return; }
+  if (c !== E.timer) return;
+  let due = E.post; E.post = 0;
+  while (E.k < E.sched.length && E.sched[E.k] <= n) { E.k++; due++; }
+  while (due > 0 && E.credit > 0) { due--; E.credit--; race.msg(`⛔ Lap ${n}: a retirement takes this elimination`, false); }
+  const alive = peAlive(race); due = Math.min(due, alive.length - 2);
+  if (due <= 0) return;
+  if (race.sc || race.vsc) { E.post += due; race.msg(`🟨 Elimination held — it happens on the next green-flag lap of the timekeeper`, false); return; }
+  for (let i = 0; i < due; i++) {
+    const al = peAlive(race), v = al[al.length - 1]; if (!v || al.length <= 2) break;
+    v.elimd = true; v.elimLap = v.laps; E.out.push(v); v.finishT = race.t;
+    _pe_retire.call(race, v, 'Eliminated', null);
+    race.msg(`⛔ ${E.timer.d.code} crosses the line (lap ${n}) — ${v.d.name} is last and eliminated, P${al.length}${v === E.pole ? ' (the pole sitter himself!)' : ''}`, v.player || v.fav || al.length <= 5);
+    if (v === E.timer) E.timer = peAlive(race)[0] || E.timer;
+  }
+  const al = peAlive(race);
+  if (al.length === 2 && !E.duel && (!E.hybrid || race.heat === 3)) { E.duel = true; race.msg(`⚔️ Final duel: ${al[0].d.name} vs ${al[1].d.name} — race to the flag!`, true); }
+});
+const _pe_order = Race.prototype.order;
+Race.prototype.order = function () {
+  const o = _pe_order.apply(this, arguments);
+  if (!this.pe) return o;
+  const out = this.pe.out.slice().reverse(), el = out.filter(c => c.elimd), dnf = out.filter(c => !c.elimd);
+  return o.filter(c => !out.includes(c)).concat(el, dnf);
+};
+hxChain('raceFinish', race => {
+  if (!race.pe) return;
+  race.cars.forEach(c => { if (c.elimd) { c.out = null; c.finished = true; c.finishT = c.finishT || race.t; } });
+});
+const _pe_applyRaceResult = applyRaceResult;
+applyRaceResult = function (G0, race, wk) {
+  const out = _pe_applyRaceResult.apply(this, arguments);
+  try { if (race && race.pe) { const s = G0.results[G0.results.length - 1]; s.elimR = s.elimR || !race.heat;
+    s.rows.forEach(r => { if (r.heatOut) return; const c = race.cars.find(x => x.d.id === r.id && x.t.id === r.team); if (c && c.elimLap != null && (c.elimd || c.out)) r.elimLap = c.elimLap + (race.heat && wk.heat ? wk.heat.lapOff : 0); }); } } catch (e) { }
+  return out;
+};
+// AI: near the back, don't pit just before the pole sitter's elimination lap
+const _pe_aiPit = Race.prototype.aiPit;
+Race.prototype.aiPit = function (c) {
+  const comp = _pe_aiPit.apply(this, arguments), E = this.pe; if (!E || E.duel || !comp) return comp;
+  const alive = peAlive(this), rank = alive.indexOf(c), nxt = E.sched[E.k];
+  if (nxt != null && rank >= alive.length - 4 && c.wear < 0.9 && nxt - E.timer.laps <= 1) return null;
+  return comp;
+};
+// header + danger highlight
+const _pe_upd = updateRaceUI;
+updateRaceUI = function () {
+  const r = _pe_upd.apply(this, arguments);
+  try {
+    const E = RACE && RACE.pe; if (!E) return r;
+    const alive = peAlive(RACE), lead = alive[0], lap = lead ? Math.min(RACE.laps, lead.laps + 1) : 0, nx = E.sched[E.k];
+    const danger = E.duel || nx == null ? null : alive[alive.length - 1];
+    const pre = E.hybrid ? `RACE ${RACE.heat}/3 · ` : 'POLE ELIM · ';
+    const h = `${pre}L${lap}/${RACE.laps} · ${alive.length} LEFT${E.duel ? ' · FINAL DUEL' : E.post ? ' · HELD (SC)' : nx != null ? ` · NEXT: ${E.timer.d.code} L${nx}` : ''}${danger && !E.credit ? ` · <span class="q16">⚠ ${danger.d.code}</span>` : ''}`;
+    const ds = document.getElementById('dksess'); if (ds && (ds._x !== h || ds._xsrc !== ds._h)) { ds.innerHTML = h; ds._x = h; ds._xsrc = ds._h; ds.title = ds.textContent; }
+    document.querySelectorAll('#dk tr[data-v]').forEach(tr => tr.classList.toggle('elimr-danger', !!danger && !E.credit && tr.dataset.v === danger.d.id));
+  } catch (e) { }
+  return r;
+};
+const _pe_deskGrid = deskGrid;
+deskGrid = function (sprint) {
+  let html = _pe_deskGrid.apply(this, arguments);
+  if (sprint || !G.rules) return html;
+  if (G.rules.poleElim) { const n = WK.grid.length, every = WK.track.laps / n;
+    html = html.replace(/<div class="dk-mut dkg-note">[^<]*<\/div>/, `<div class="dk-mut dkg-note"><b>Pole-lap elimination:</b> every ${every.toFixed(1)} laps (${WK.track.laps} ÷ ${n}) — counted on ${esc(WK.grid[0].d.name)}'s laps from pole — the car in last place when he crosses the line is eliminated. Held under the safety car · retirements count · the final two race to the flag.</div>`); }
+  if (G.rules.hybrid) { const P = heatPlan(WK.track.laps, WK.grid.length);
+    html = html.replace(/<div class="dk-mut dkg-note">[\s\S]*?<\/div>/, `<div class="dk-mut dkg-note"><b>Hybrid Grand Prix:</b> Race 1 · ${P.laps[0]} laps, ${P.elim[0]} cars out one at a time when the pole sitter crosses the line → 20-min break → Race 2 · ${P.laps[1]} laps, ${P.elim[1]} out the same way → 40-min break → Race 3 · ${P.laps[2]} laps, last car out every ${(P.laps[2] / (WK.grid.length - P.elim[0] - P.elim[1])).toFixed(1)} laps of the pole sitter until two are left. Each race forms up in the previous race's finishing order.</div>`); }
+  return html;
+};
 // ===================== UI refresh: points progression, weather forecast, GPS data, driver profile =====================
 
 // ---------- Points progression (full page) ----------
