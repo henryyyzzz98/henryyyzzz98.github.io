@@ -203,19 +203,19 @@ function qgLotteryBox() {
 }
 function lotInit(cv) {
   const D = WK.Q.draw, key = WK.round + ':' + G.year;
-  if (LOT.key !== key) { Object.assign(LOT, { key, balls: [], phase: null, ball: null, auto: false, shown: null }); }
+  if (LOT.key !== key) { Object.assign(LOT, { key, balls: [], phase: null, ball: null, auto: false, shown: null, started: false }); }
   const used = new Set(D.picks.map(p => p.n));
   if (!LOT.balls.length || LOT.balls.some(b => used.has(b.n))) {
     LOT.balls = [...Array(WK.entries.length)].map((_, i) => i + 1).filter(n => !used.has(n) && !(LOT.ball && LOT.ball.n === n))
-      .map(n => ({ n, x: rnd(-0.6, 0.6), y: rnd(0.1, 0.75), vx: rnd(-0.5, 0.5), vy: rnd(-0.5, 0.5) }));
+      .map(n => ({ n, x: rnd(-0.6, 0.6), y: rnd(0.3, 0.8), vx: 0, vy: 0 }));
   }
 }
 function lotStep(dt, strong) {
-  const B = LOT.balls, r = 0.105, g = 3.2;
+  const B = LOT.balls, r = 0.105, g = 3.2, idle = !LOT.started; // the blower is off until the first draw
   B.forEach(b => {
     b.vy += g * dt;
     // air jets from the bottom of the drum keep the balls dancing
-    if (b.y > 0.45 && Math.random() < (strong ? 0.5 : 0.12)) { b.vy -= rnd(1.2, strong ? 4.2 : 2.6); b.vx += rnd(-1.2, 1.2); }
+    if (!idle && b.y > 0.45 && Math.random() < (strong ? 0.5 : 0.12)) { b.vy -= rnd(1.2, strong ? 4.2 : 2.6); b.vx += rnd(-1.2, 1.2); }
     b.x += b.vx * dt; b.y += b.vy * dt;
     const d = Math.hypot(b.x, b.y), lim = 1 - r;
     if (d > lim) { const nx = b.x / d, ny = b.y / d, vn = b.vx * nx + b.vy * ny; b.x = nx * lim; b.y = ny * lim; if (vn > 0) { b.vx -= 1.8 * vn * nx; b.vy -= 1.8 * vn * ny; } b.vx += -ny * 0.4 * dt * 10; b.vy += nx * 0.4 * dt * 10; b.vx *= 0.97; b.vy *= 0.97; }
@@ -266,6 +266,7 @@ function lotFrame(now) {
   LOT.balls.forEach(b => lotBall(ctx, X(b.x), Y(b.y), br, b.n));
   ctx.strokeStyle = '#cfd8ea'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 6.3); ctx.stroke();
   ctx.strokeStyle = '#ffffff30'; ctx.lineWidth = 1.5; for (let k = 1; k < 4; k++) { ctx.beginPath(); ctx.ellipse(cx, cy, R, R * k / 4, 0, 0, 6.3); ctx.stroke(); }
+  if (!LOT.started) { ctx.fillStyle = '#9fb0cf'; ctx.font = '700 12px ui-monospace,monospace'; ctx.textAlign = 'center'; ctx.fillText('PRESS DRAW BALL OR AUTO DRAW TO START', cx, cy + R + 18); ctx.textAlign = 'left'; }
   if (LOT.phase === 'mix') { ctx.fillStyle = '#9fb0cf'; ctx.font = '700 12px ui-monospace,monospace'; ctx.textAlign = 'center'; ctx.fillText('MIXING…', cx, cy + R + 18); ctx.textAlign = 'left'; }
   // the drawn ball
   if (LOT.ball && (LOT.phase === 'lift' || LOT.phase === 'show')) {
@@ -279,7 +280,7 @@ function lotFrame(now) {
 }
 function lotStart() {
   if (LOT.phase || !lotNextDriver() || !LOT.balls.length) return;
-  LOT.phase = 'mix'; LOT.t = 0; const bt = document.getElementById('lotdrawb'); if (bt) bt.disabled = true;
+  LOT.started = true; LOT.phase = 'mix'; LOT.t = 0; const bt = document.getElementById('lotdrawb'); if (bt) bt.disabled = true;
 }
 function lotCommit() {
   const QS = WK.Q, D = QS.draw, e = lotNextDriver(), b = LOT.ball;
@@ -291,7 +292,7 @@ function lotCommit() {
 }
 Object.assign(A, {
   lotdraw() { lotStart(); },
-  lotauto(el) { LOT.auto = !LOT.auto; LOT.autoT = 0; el.classList.toggle('on', LOT.auto); el.textContent = LOT.auto ? '⏸ Stop auto draw' : '▶ Auto draw'; },
+  lotauto(el) { LOT.auto = !LOT.auto; if (LOT.auto) LOT.started = true; LOT.autoT = 0; el.classList.toggle('on', LOT.auto); el.textContent = LOT.auto ? '⏸ Stop auto draw' : '▶ Auto draw'; },
   lotall() { LOT.phase = null; LOT.ball = null; LOT.auto = false; qgFinishDraw(WK.Q); autosave(); render(); },
 });
 const _lot_render = render;

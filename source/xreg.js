@@ -16,7 +16,8 @@ dkApplyRegs = function (G0) {
 };
 const _xg_dkRegsForm = dkRegsForm;
 dkRegsForm = function (r, act) {
-  const html = _xg_dkRegsForm.apply(this, arguments);
+  let html = _xg_dkRegsForm.apply(this, arguments);
+  if (r.heatpts === 'fixed' && (r.race === 'heats' || r.race === 'hybrid')) html = html.replace(`<select data-dkc="${act}" data-k="pts"`, `<select disabled title="Set by the fixed three-part GP points" data-dkc="${act}" data-k="pts"`).replace('Points system<select', 'Points system <span class="xr-lock">· locked: fixed three-part GP points</span><select');
   const sel = (k, opts) => `<select data-dkc="${act}" data-k="${k}" style="width:100%">${opts.map(([v, l]) => `<option value="${v}" ${String(r[k] == null ? XR0[k] : r[k]) === String(v) ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>`;
   const more = `<div class="small xr-h" style="grid-column:1/-1">MORE ALTERNATIVE RULES</div>
   <label class="small">Pre-season testing${sel('testing', [['off', 'Off'], ['on', 'On — 3 days of testing before round 1, with statistics']])}</label>
@@ -28,7 +29,7 @@ dkRegsForm = function (r, act) {
   <label class="small">Sprint races${sel('sprint', [['on', 'On — sprint weekends as on the calendar'], ['off', 'Off — every round is a normal Grand Prix weekend']])}</label>
   <label class="small">Retirements${sel('dnf', [['on', 'On — crashes, failures and other retirements'], ['off', 'Off — every car races to the finish']])}</label>
   <label class="small">Stand-in &amp; reserve drivers${sel('standins', [['real', 'As in real history — stand-ins and one-off entries race'], ['off', 'Off — the season line-up races every round']])}</label>
-  <label class="small">Three-part GP points${sel('heatpts', [['weighted', 'Weighted — Race 1 ⅓, Race 2 ⅔, Race 3 full points'], ['standard', 'Standard — normal points for the final classification only']])}</label>
+  <label class="small">Three-part GP points${sel('heatpts', [['weighted', 'Weighted — Race 1 ⅓, Race 2 ⅔, Race 3 full points'], ['standard', 'Standard — normal points for the final classification only'], ['fixed', 'Fixed — Race 1 5-4-3-2-1, Race 2 10-8-6-4-2, Race 3 15-12-9-6-3 (replaces the points system)']])}</label>
   <label class="small">Express pass race${sel('express', [['off', 'Off'], ['on', 'On — a quarter of the races: each winner skips the next race, which pays half points']])}</label>`;
   const i = html.lastIndexOf('</div>');
   return html.slice(0, i) + more + html.slice(i);
