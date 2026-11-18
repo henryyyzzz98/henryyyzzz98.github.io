@@ -7928,7 +7928,7 @@ function qgLotteryBox() {
 }
 function lotInit(cv) {
   const D = WK.Q.draw, key = WK.round + ':' + G.year;
-  if (LOT.key !== key) { Object.assign(LOT, { key, balls: [], phase: null, ball: null, auto: false, shown: null, started: false }); }
+  if (LOT.key !== key) { Object.assign(LOT, { key, balls: [], phase: null, ball: null, auto: false, shown: null, started: false, idleT: 0 }); }
   const used = new Set(D.picks.map(p => p.n));
   if (!LOT.balls.length || LOT.balls.some(b => used.has(b.n))) {
     LOT.balls = [...Array(WK.entries.length)].map((_, i) => i + 1).filter(n => !used.has(n) && !(LOT.ball && LOT.ball.n === n))
@@ -7943,12 +7943,16 @@ function lotStep(dt, strong) {
     if (!idle && b.y > 0.45 && Math.random() < (strong ? 0.5 : 0.12)) { b.vy -= rnd(1.2, strong ? 4.2 : 2.6); b.vx += rnd(-1.2, 1.2); }
     b.x += b.vx * dt; b.y += b.vy * dt;
     const d = Math.hypot(b.x, b.y), lim = 1 - r;
-    if (d > lim) { const nx = b.x / d, ny = b.y / d, vn = b.vx * nx + b.vy * ny; b.x = nx * lim; b.y = ny * lim; if (vn > 0) { b.vx -= 1.8 * vn * nx; b.vy -= 1.8 * vn * ny; } b.vx += -ny * 0.4 * dt * 10; b.vy += nx * 0.4 * dt * 10; b.vx *= 0.97; b.vy *= 0.97; }
+    if (d > lim) { const nx = b.x / d, ny = b.y / d, vn = b.vx * nx + b.vy * ny; b.x = nx * lim; b.y = ny * lim;
+      if (vn > 0) { const e = idle ? 1.25 : 1.8; b.vx -= e * vn * nx; b.vy -= e * vn * ny; }
+      if (!idle) { b.vx += -ny * 0.4 * dt * 10; b.vy += nx * 0.4 * dt * 10; b.vx *= 0.97; b.vy *= 0.97; } // the spinning drum drags balls along the wall only while it runs
+      else { const vt = -b.vx * ny + b.vy * nx; b.vx -= -ny * vt * 0.08; b.vy -= nx * vt * 0.08; } } // wall friction at rest
+    if (idle) { b.vx *= 0.96; b.vy *= 0.96; }
   });
   for (let i = 0; i < B.length; i++) for (let j = i + 1; j < B.length; j++) {
     const a = B[i], b = B[j], dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy);
     if (d > 0 && d < 2 * r) { const nx = dx / d, ny = dy / d, o = (2 * r - d) / 2; a.x -= nx * o; a.y -= ny * o; b.x += nx * o; b.y += ny * o;
-      const rv = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny; if (rv < 0) { const k = -0.9 * rv; a.vx -= k * nx; a.vy -= k * ny; b.vx += k * nx; b.vy += k * ny; } }
+      const rv = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny; if (rv < 0) { const k = -(idle ? 0.65 : 0.9) * rv; a.vx -= k * nx; a.vy -= k * ny; b.vx += k * nx; b.vy += k * ny; } }
   }
 }
 function lotBall(ctx, x, y, R, n) {
@@ -7966,7 +7970,9 @@ function lotFrame(now) {
   lotInit(cv);
   const dt = Math.min(0.033, (now - (LOT.last || now)) / 1000); LOT.last = now;
   const strong = LOT.phase === 'mix';
-  lotStep(dt / 2, strong); lotStep(dt / 2, strong);
+  // at rest the pile settles for a moment, then stays put (no creeping) until the blower starts
+  if (LOT.started) LOT.idleT = 0; else LOT.idleT = (LOT.idleT || 0) + dt;
+  if (LOT.started || LOT.idleT < 2.5) { lotStep(dt / 2, strong); lotStep(dt / 2, strong); }
   // drawing phases: mix → the ball nearest the hatch is sucked up the tube → shown → recorded
   if (LOT.phase) {
     LOT.t += dt;
@@ -7991,8 +7997,8 @@ function lotFrame(now) {
   LOT.balls.forEach(b => lotBall(ctx, X(b.x), Y(b.y), br, b.n));
   ctx.strokeStyle = '#cfd8ea'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 6.3); ctx.stroke();
   ctx.strokeStyle = '#ffffff30'; ctx.lineWidth = 1.5; for (let k = 1; k < 4; k++) { ctx.beginPath(); ctx.ellipse(cx, cy, R, R * k / 4, 0, 0, 6.3); ctx.stroke(); }
-  if (!LOT.started) { ctx.fillStyle = '#9fb0cf'; ctx.font = '700 12px ui-monospace,monospace'; ctx.textAlign = 'center'; ctx.fillText('PRESS DRAW BALL OR AUTO DRAW TO START', cx, cy + R + 18); ctx.textAlign = 'left'; }
-  if (LOT.phase === 'mix') { ctx.fillStyle = '#9fb0cf'; ctx.font = '700 12px ui-monospace,monospace'; ctx.textAlign = 'center'; ctx.fillText('MIXING…', cx, cy + R + 18); ctx.textAlign = 'left'; }
+  if (!LOT.started) { ctx.fillStyle = '#9fb0cf'; ctx.font = '700 12px ui-monospace,monospace'; ctx.textAlign = 'center'; ctx.fillText('PRESS DRAW BALL OR AUTO DRAW TO START', cx, Math.min(cy + R + 18, h - 6)); ctx.textAlign = 'left'; }
+  if (LOT.phase === 'mix') { ctx.fillStyle = '#9fb0cf'; ctx.font = '700 12px ui-monospace,monospace'; ctx.textAlign = 'center'; ctx.fillText('MIXING…', cx, Math.min(cy + R + 18, h - 6)); ctx.textAlign = 'left'; }
   // the drawn ball
   if (LOT.ball && (LOT.phase === 'lift' || LOT.phase === 'show')) {
     const b = LOT.ball; let x, y, s = 1;
