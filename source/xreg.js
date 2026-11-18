@@ -221,7 +221,7 @@ isSprintRound = function (G0, i) { if (G0 && !dkAcad(G0) && xr(G0, 'sprint') ===
 // ---------- retirements off: every car races to the finish. A crash or failure costs time instead of ending the race ----------
 const _xg_retire = Race.prototype.retire;
 Race.prototype.retire = function (c, why, flag) {
-  if (!this.G || xr(this.G, 'dnf') !== 'off') return _xg_retire.apply(this, arguments);
+  if (!this.G || xr(this.G, 'dnf') !== 'off' || /^Eliminated/.test(String(why))) return _xg_retire.apply(this, arguments); // format eliminations always remove the car
   const crash = flag === 'sc' || /crash|collision|wall|spun|accident|gravel|barrier|tyre/i.test(String(why));
   if (/fuel/i.test(String(why))) { c.fuelLaps = Math.max(c.fuelLaps || 0, 1.2); c.spin = Math.max(c.spin || 0, rnd(4, 8)); this.msg(`⛽ ${c.d.code} runs dry and limps to the pits`, true); return; }
   c.spin = Math.max(c.spin || 0, crash ? rnd(12, 26) : rnd(6, 16));
