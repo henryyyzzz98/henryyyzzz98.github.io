@@ -6,17 +6,32 @@
 // P4–P6, and so on — so the slowest of each group make up the back of the grid.
 function qGroups() { return !!(G && WK && WK.stage === 'quali' && G.rules && G.rules.quali === 'groups'); }
 const QG_NAMES = ['A', 'B', 'C'];
-function qgEnsure() {
+// The draw: drivers come up one at a time (championship order) and each draws a numbered ball from the lottery machine.
+// Numbers 1..n1 are Group A, then Group B, then Group C. qgEnsure(true) finishes any draw still in progress at random.
+function qgDrawState(QS) {
+  if (!QS.draw) {
+    const ds = typeof standingsDrivers === 'function' ? standingsDrivers(G) : [];
+    const rank = e => { if (!G.results.length) return 0; const i = ds.findIndex(d => d.id === e.d.id); return i < 0 ? 999 : i; }; // round 1: team order
+    const order = WK.entries.slice().sort((a, b) => rank(a) - rank(b) || WK.entries.indexOf(a) - WK.entries.indexOf(b));
+    QS.draw = { order, picks: [] };
+  }
+  return QS.draw;
+}
+function qgSizes(N) { const base = Math.floor(N / 3), extra = N % 3; return [0, 1, 2].map(k => base + (k < extra ? 1 : 0)); }
+function qgGroupOfNum(n, N) { const s = qgSizes(N); return n <= s[0] ? 0 : n <= s[0] + s[1] ? 1 : 2; }
+function qgFinishDraw(QS) {
+  const D = qgDrawState(QS), N = WK.entries.length, used = new Set(D.picks.map(p => p.n));
+  const left = shuffle([...Array(N)].map((_, i) => i + 1).filter(n => !used.has(n)));
+  D.order.slice(D.picks.length).forEach((e, i) => D.picks.push({ e, n: left[i] }));
+  const lot = D.picks.map(p => ({ e: p.e, n: p.n })).sort((a, b) => a.n - b.n);
+  let k = 0; QS.groups = qgSizes(N).map(sz => { const g = lot.slice(k, k + sz); k += sz; return g; });
+  QS.groups.forEach((g, gi) => g.forEach(x => { x.g = gi; }));
+  QS.lot = lot; QS.gres = QS.gres || [];
+}
+function qgEnsure(force = true) {
   if (!qGroups()) return null;
   const QS = WK.Q;
-  if (!QS.lot) {
-    const N = WK.entries.length, nums = shuffle(WK.entries.map((_, i) => i + 1));
-    const lot = WK.entries.map((e, i) => ({ e, n: nums[i] })).sort((a, b) => a.n - b.n);
-    const base = Math.floor(N / 3), extra = N % 3, sizes = [0, 1, 2].map(k => base + (k < extra ? 1 : 0));
-    let k = 0; QS.groups = sizes.map(s => { const g = lot.slice(k, k + s); k += s; return g; });
-    QS.groups.forEach((g, gi) => g.forEach(x => { x.g = gi; }));
-    QS.lot = lot; QS.gres = [];
-  }
+  if (!QS.lot) { qgDrawState(QS); if (!force) return QS; qgFinishDraw(QS); }
   if (QS.stage <= 3) QS.alive = QS.groups[QS.stage - 1].map(x => x.e);
   return QS;
 }
@@ -26,11 +41,11 @@ const _qg_qCut = qCut;
 qCut = function (n) { return qGroups() ? 0 : _qg_qCut.apply(this, arguments); };
 const _qg_qualiInfo = qualiInfo;
 qualiInfo = function (key) {
-  if (key === 'Q') qgEnsure();
+  if (key === 'Q') qgEnsure(false);
   const I = _qg_qualiInfo.apply(this, arguments);
   if (key === 'Q' && qGroups()) {
     const st = Math.min(I.stage, 3);
-    Object.assign(I, { groups: true, single: false, cut: 0, runs: 3, label: 'Group ' + QG_NAMES[st - 1], n: (WK.Q.groups[st - 1] || []).length, dur: 600 });
+    Object.assign(I, { groups: true, single: false, cut: 0, runs: 3, label: 'Group ' + QG_NAMES[st - 1], n: WK.Q.groups ? (WK.Q.groups[st - 1] || []).length : qgSizes(WK.entries.length)[st - 1], dur: 600 });
   }
   return I;
 };
@@ -39,6 +54,7 @@ const _qg_QualiLive = QualiLive;
 QualiLive = class extends _qg_QualiLive {
   constructor(G0, wk, list, opts) {
     const grp = qGroups() && !opts.elim;
+    if (grp) { qgEnsure(true); list = WK.Q.alive; }
     if (grp) { const st = Math.min(WK.Q.stage, 3); opts = Object.assign({}, opts, { label: 'Group ' + QG_NAMES[st - 1], cut: 0, runs: 1, dur: 600 }); }
     super(G0, wk, list, opts);
     if (grp) this.groupSetup(WK.Q.stage);
@@ -152,6 +168,8 @@ if (typeof deskQualiRes === 'function') {
   deskQualiRes = function (key) {
     const html = _qg_deskQualiRes.apply(this, arguments);
     if (key !== 'Q' || !qGroups()) return html;
+    const Q0 = qgEnsure(false);
+    if (Q0 && !Q0.lot && Q0.stage === 1) { const a0 = html.indexOf('<div class="dk-fpbox">'); if (a0 >= 0) return html.slice(0, a0).replace(/Q1 [^<]*?- /, 'Qualifying Lottery - ').replace(/ · \d+ MIN · /, ' · ') + qgLotteryBox() + '</div>'; }
     const QS = qgEnsure(), a = html.indexOf('<div class="dk-fpbox">'), b = html.indexOf('<div class="dk-fpfoot">'); if (a < 0 || b < 0) return html;
     let out = html.slice(0, a) + qgDeskBox() + '\n  ' + html.slice(b);
     const t = esc(WK.track.short);
@@ -160,3 +178,121 @@ if (typeof deskQualiRes === 'function') {
     return out.replace(/ · \d+ MIN · /, ' · ');
   };
 }
+
+
+// ===================== The lottery machine =====================
+const LOT = { balls: [], key: null, raf: 0, last: 0, phase: null, t: 0, ball: null, auto: false, shown: null, autoT: 0 };
+const LOT_COL = ['#e10600', '#f5c400', '#1e6fff'];
+function lotNextDriver() { const D = WK.Q.draw; return D.order[D.picks.length]; }
+function lotBoard() {
+  const QS = WK.Q, D = QS.draw, N = WK.entries.length, sz = qgSizes(N), mine = e => (G.player && e.t.id === G.player) || G.follow === e.d.id;
+  const cols = [0, 1, 2].map(g => {
+    const nums = [...Array(sz[g])].map((_, i) => (g ? sz.slice(0, g).reduce((x, y) => x + y, 0) : 0) + i + 1);
+    return `<div class="lot-col"><div class="lot-ch" style="--gc:${LOT_COL[g]}">GROUP ${QG_NAMES[g]} <span class="dk-mut">balls ${nums[0]}–${nums[nums.length - 1]}</span></div>${nums.map(n => { const p = D.picks.find(x => x.n === n);
+      return `<div class="lot-slot ${p ? 'on' : ''} ${p && mine(p.e) ? 'me' : ''}"><span class="lot-num" style="--gc:${LOT_COL[g]}">${n}</span>${p ? `${dkFlag(p.e.d.nat)} <b>${esc(dkShort(p.e.d))}</b> <span class="dk-mut hm">${esc(p.e.t.name)}</span>` : '<span class="dk-mut">—</span>'}</div>`; }).join('')}</div>`;
+  }).join('');
+  const nx = lotNextDriver(), left = D.order.length - D.picks.length;
+  const queue = D.order.slice(D.picks.length, D.picks.length + 6).map((e, i) => `<span class="${i ? '' : 'lot-now'}">${esc(dkShort(e.d))}</span>`).join(' › ');
+  return `<div class="lot-status">${nx ? `<b>Next to draw:</b> ${dkFlag(nx.d.nat)} ${esc(nx.d.name)} <span class="dk-mut">(${esc(nx.t.name)}) · ${left} ball${left === 1 ? '' : 's'} left</span><div class="dk-mut lot-q">Draw order: ${queue}${left > 6 ? ' …' : ''}</div>` : '<b>Draw complete!</b>'}</div><div class="lot-cols">${cols}</div>`;
+}
+function qgLotteryBox() {
+  const D = WK.Q.draw, busy = !!LOT.phase;
+  return `<div class="dk-fpbox lot-box"><div class="dk-mut lot-intro">🎱 Before qualifying, every driver draws a numbered ball from the lottery machine${G.results.length ? ', in championship order' : ''}. Balls 1–${qgSizes(WK.entries.length)[0]} go into Group A, the next into Group B, the rest into Group C. Groups run one after another; within a group, cars go out in ball order.</div>
+  <div class="lot-wrap"><div class="lot-mach"><canvas id="qglot"></canvas></div><div class="lot-board" id="qglotb">${lotBoard()}</div></div></div>
+  <div class="dk-fpfoot"><span class="dk-mut kbhint">ENTER/SPACE draws the next ball.</span><span class="sp"></span><button data-a="lotall">Finish the draw instantly</button><button data-a="lotauto" id="lotautob" class="${LOT.auto ? 'on' : ''}">${LOT.auto ? '⏸ Stop auto draw' : '▶ Auto draw'}</button><button class="pri" data-a="lotdraw" data-enter="1" id="lotdrawb" ${busy ? 'disabled' : ''}>🎱 Draw ball</button></div>`;
+}
+function lotInit(cv) {
+  const D = WK.Q.draw, key = WK.round + ':' + G.year;
+  if (LOT.key !== key) { Object.assign(LOT, { key, balls: [], phase: null, ball: null, auto: false, shown: null }); }
+  const used = new Set(D.picks.map(p => p.n));
+  if (!LOT.balls.length || LOT.balls.some(b => used.has(b.n))) {
+    LOT.balls = [...Array(WK.entries.length)].map((_, i) => i + 1).filter(n => !used.has(n) && !(LOT.ball && LOT.ball.n === n))
+      .map(n => ({ n, x: rnd(-0.6, 0.6), y: rnd(0.1, 0.75), vx: rnd(-0.5, 0.5), vy: rnd(-0.5, 0.5) }));
+  }
+}
+function lotStep(dt, strong) {
+  const B = LOT.balls, r = 0.105, g = 3.2;
+  B.forEach(b => {
+    b.vy += g * dt;
+    // air jets from the bottom of the drum keep the balls dancing
+    if (b.y > 0.45 && Math.random() < (strong ? 0.5 : 0.12)) { b.vy -= rnd(1.2, strong ? 4.2 : 2.6); b.vx += rnd(-1.2, 1.2); }
+    b.x += b.vx * dt; b.y += b.vy * dt;
+    const d = Math.hypot(b.x, b.y), lim = 1 - r;
+    if (d > lim) { const nx = b.x / d, ny = b.y / d, vn = b.vx * nx + b.vy * ny; b.x = nx * lim; b.y = ny * lim; if (vn > 0) { b.vx -= 1.8 * vn * nx; b.vy -= 1.8 * vn * ny; } b.vx += -ny * 0.4 * dt * 10; b.vy += nx * 0.4 * dt * 10; b.vx *= 0.97; b.vy *= 0.97; }
+  });
+  for (let i = 0; i < B.length; i++) for (let j = i + 1; j < B.length; j++) {
+    const a = B[i], b = B[j], dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy);
+    if (d > 0 && d < 2 * r) { const nx = dx / d, ny = dy / d, o = (2 * r - d) / 2; a.x -= nx * o; a.y -= ny * o; b.x += nx * o; b.y += ny * o;
+      const rv = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny; if (rv < 0) { const k = -0.9 * rv; a.vx -= k * nx; a.vy -= k * ny; b.vx += k * nx; b.vy += k * ny; } }
+  }
+}
+function lotBall(ctx, x, y, R, n) {
+  const col = LOT_COL[qgGroupOfNum(n, WK.entries.length)];
+  const gr = ctx.createRadialGradient(x - R * 0.35, y - R * 0.35, R * 0.1, x, y, R); gr.addColorStop(0, '#fff'); gr.addColorStop(0.25, col); gr.addColorStop(1, '#00000099');
+  ctx.fillStyle = col; ctx.beginPath(); ctx.arc(x, y, R, 0, 6.3); ctx.fill(); ctx.fillStyle = gr; ctx.fill();
+  ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(x, y, R * 0.55, 0, 6.3); ctx.fill();
+  ctx.fillStyle = '#111'; ctx.font = `800 ${Math.round(R * 0.68)}px ui-monospace,monospace`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(n, x, y + 1); ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+}
+function lotFrame(now) {
+  const cv = document.getElementById('qglot');
+  if (!cv || !WK || !WK.Q || !WK.Q.draw) { LOT.raf = 0; return; }
+  LOT.raf = requestAnimationFrame(lotFrame);
+  if (!cv._w) dkSize(cv); if (!cv._w) return;
+  lotInit(cv);
+  const dt = Math.min(0.033, (now - (LOT.last || now)) / 1000); LOT.last = now;
+  const strong = LOT.phase === 'mix';
+  lotStep(dt / 2, strong); lotStep(dt / 2, strong);
+  // drawing phases: mix → the ball nearest the hatch is sucked up the tube → shown → recorded
+  if (LOT.phase) {
+    LOT.t += dt;
+    if (LOT.phase === 'mix' && LOT.t > 1.1) {
+      let best = null; LOT.balls.forEach(b => { const d = Math.hypot(b.x, b.y + 1); if (!best || d < best.d) best = { b, d }; });
+      if (best) { LOT.ball = best.b; LOT.balls = LOT.balls.filter(b => b !== best.b); LOT.phase = 'lift'; LOT.t = 0; LOT.ball.sx = LOT.ball.x; LOT.ball.sy = LOT.ball.y; }
+    } else if (LOT.phase === 'lift' && LOT.t > 0.9) { LOT.phase = 'show'; LOT.t = 0; }
+    else if (LOT.phase === 'show' && LOT.t > (LOT.auto ? 0.9 : 1.3)) lotCommit();
+  } else if (LOT.auto && now > LOT.autoT && lotNextDriver()) lotStart();
+  // draw
+  const ctx = cv.getContext('2d'), w = cv._w, h = cv._h; ctx.setTransform(cv._dpr, 0, 0, cv._dpr, 0, 0); ctx.clearRect(0, 0, w, h);
+  const R = Math.min(w * 0.42, h * 0.36), cx = w * 0.5, cy = h * 0.6, X = x => cx + x * R, Y = y => cy + y * R, br = 0.105 * R;
+  // stand
+  ctx.fillStyle = '#1b2742'; ctx.beginPath(); ctx.moveTo(cx - R * 0.5, cy + R * 0.9); ctx.lineTo(cx + R * 0.5, cy + R * 0.9); ctx.lineTo(cx + R * 0.7, h - 4); ctx.lineTo(cx - R * 0.7, h - 4); ctx.closePath(); ctx.fill();
+  // tube to the top tray
+  const ty = Math.max(br * 2.4, cy - R * 1.75);
+  ctx.strokeStyle = '#9fb0cf55'; ctx.lineWidth = br * 2.6; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(cx, cy - R); ctx.lineTo(cx, ty); ctx.stroke();
+  ctx.strokeStyle = '#0b1220'; ctx.lineWidth = br * 2.2; ctx.beginPath(); ctx.moveTo(cx, cy - R); ctx.lineTo(cx, ty); ctx.stroke();
+  // drum
+  const gl = ctx.createRadialGradient(cx - R * 0.3, cy - R * 0.4, R * 0.1, cx, cy, R); gl.addColorStop(0, '#ffffff22'); gl.addColorStop(1, '#ffffff08');
+  ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 6.3); ctx.fill();
+  LOT.balls.forEach(b => lotBall(ctx, X(b.x), Y(b.y), br, b.n));
+  ctx.strokeStyle = '#cfd8ea'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 6.3); ctx.stroke();
+  ctx.strokeStyle = '#ffffff30'; ctx.lineWidth = 1.5; for (let k = 1; k < 4; k++) { ctx.beginPath(); ctx.ellipse(cx, cy, R, R * k / 4, 0, 0, 6.3); ctx.stroke(); }
+  if (LOT.phase === 'mix') { ctx.fillStyle = '#9fb0cf'; ctx.font = '700 12px ui-monospace,monospace'; ctx.textAlign = 'center'; ctx.fillText('MIXING…', cx, cy + R + 18); ctx.textAlign = 'left'; }
+  // the drawn ball
+  if (LOT.ball && (LOT.phase === 'lift' || LOT.phase === 'show')) {
+    const b = LOT.ball; let x, y, s = 1;
+    if (LOT.phase === 'lift') { const f = Math.min(1, LOT.t / 0.9), e = f < 0.4 ? f / 0.4 : 1; const hx = X(b.sx) + (cx - X(b.sx)) * e, hy = Y(b.sy) + (cy - R - Y(b.sy)) * e; x = hx; y = f < 0.4 ? hy : (cy - R) + (ty - (cy - R)) * ((f - 0.4) / 0.6); }
+    else { x = cx; y = ty; s = 1 + Math.min(1, LOT.t / 0.25) * 0.9; }
+    lotBall(ctx, x, y, br * s, b.n);
+    if (LOT.phase === 'show') { const e = lotNextDriver(); ctx.fillStyle = '#fff'; ctx.font = '800 13px ui-monospace,monospace'; ctx.textAlign = 'left'; const g = qgGroupOfNum(b.n, WK.entries.length);
+      if (e) { ctx.fillText(`${e.d.code} → BALL ${b.n}`, cx + br * 2.4, ty - 4); ctx.fillStyle = LOT_COL[g]; ctx.fillText(`GROUP ${QG_NAMES[g]}`, cx + br * 2.4, ty + 13); } }
+  }
+}
+function lotStart() {
+  if (LOT.phase || !lotNextDriver() || !LOT.balls.length) return;
+  LOT.phase = 'mix'; LOT.t = 0; const bt = document.getElementById('lotdrawb'); if (bt) bt.disabled = true;
+}
+function lotCommit() {
+  const QS = WK.Q, D = QS.draw, e = lotNextDriver(), b = LOT.ball;
+  if (e && b) D.picks.push({ e, n: b.n });
+  LOT.ball = null; LOT.phase = null; LOT.t = 0; LOT.autoT = performance.now() + 450;
+  const bd = document.getElementById('qglotb'); if (bd) bd.innerHTML = lotBoard();
+  const bt = document.getElementById('lotdrawb'); if (bt) bt.disabled = false;
+  if (!lotNextDriver()) { qgFinishDraw(QS); LOT.auto = false; autosave(); setTimeout(() => { render(); }, 1200); }
+}
+Object.assign(A, {
+  lotdraw() { lotStart(); },
+  lotauto(el) { LOT.auto = !LOT.auto; LOT.autoT = 0; el.classList.toggle('on', LOT.auto); el.textContent = LOT.auto ? '⏸ Stop auto draw' : '▶ Auto draw'; },
+  lotall() { LOT.phase = null; LOT.ball = null; LOT.auto = false; qgFinishDraw(WK.Q); autosave(); render(); },
+});
+const _lot_render = render;
+render = function () { const r = _lot_render.apply(this, arguments); if (document.getElementById('qglot') && !LOT.raf) { LOT.last = 0; LOT.raf = requestAnimationFrame(lotFrame); } return r; };

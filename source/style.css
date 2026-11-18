@@ -851,3 +851,31 @@ body.dt .dk .dkst tr.me td.tcell{background:var(--tc);color:var(--ti)}
 .st-grid{flex:1;grid-template-rows:minmax(0,1fr) minmax(0,1fr);margin-top:10px}
 .st-body{overflow:auto;flex:1;min-height:0}
 @media (max-width:899px){.st-grid{display:block;overflow:visible}.st-sec{margin-bottom:12px}.st-body{overflow:visible}}
+/* session line: full row on phones so the format info is never cut off */
+@media (max-width:899px){
+  .dk-topbar .dk-sess{flex:1 1 100%;order:2;border-top:1px solid #18233b;padding-top:6px}
+  .dk-topbar .dk-sess>div{flex:1}
+  .dk-topbar .dk-sess small{max-width:none;white-space:normal;overflow:visible}
+  .dk-topbar .dk-loc{order:1;flex:1 1 100%}
+  .dk-topbar .dk-btns{order:4}
+  .dk-topbar>div{order:3}
+}
+.dk-gpsinfo{display:flex;flex-wrap:wrap;gap:.3em .8em;align-items:baseline;padding:.35em .7em;border-bottom:1px solid #18233b;font:600 .85em ui-monospace,monospace;letter-spacing:.04em}
+.dk-gpsinfo b{color:#fff}.dk-gpsinfo span{color:#9fb0cf}
+/* ---------- qualifying lottery ---------- */
+.lot-box{display:flex;flex-direction:column;min-height:0}
+.lot-intro{margin:.2em 0 .7em;line-height:1.5}
+.lot-wrap{display:grid;grid-template-columns:minmax(260px,38%) 1fr;gap:1em;flex:1;min-height:0}
+.lot-mach{position:relative;min-height:340px;background:radial-gradient(circle at 50% 60%,#13213d,#070b14 70%);border:1px solid #1b2742;border-radius:8px}
+.lot-mach canvas{position:absolute;inset:0;width:100%;height:100%}
+.lot-board{overflow:auto;min-height:0}
+.lot-status{padding:.4em .2em .7em;line-height:1.5}
+.lot-q{font-size:.85em}.lot-now{color:#fff;font-weight:700}
+.lot-cols{display:grid;grid-template-columns:repeat(3,1fr);gap:.6em}
+.lot-ch{font:800 .85em ui-monospace,monospace;letter-spacing:.06em;padding:.3em .5em;border-left:4px solid var(--gc);background:#ffffff08;margin-bottom:.3em}
+.lot-slot{display:flex;align-items:center;gap:.45em;padding:.28em .3em;border-bottom:1px solid #ffffff0d;font-size:.9em;min-height:1.9em;white-space:nowrap;overflow:hidden}
+.lot-slot.on{animation:lotin .5s ease-out}.lot-slot.me{background:#ffffff14}
+@keyframes lotin{from{background:#ffffff40}to{background:transparent}}
+.lot-num{flex:0 0 auto;width:1.8em;height:1.8em;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font:800 .8em ui-monospace,monospace;background:#fff;color:#111;box-shadow:0 0 0 3px var(--gc)}
+button.on{outline:2px solid #e10600}
+@media (max-width:899px){.lot-wrap{grid-template-columns:1fr}.lot-mach{min-height:300px}.lot-cols{grid-template-columns:1fr}.lot-slot .hm{display:none}}
