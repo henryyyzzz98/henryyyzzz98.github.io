@@ -222,7 +222,9 @@ function dkOrderTable(kind, S, ord) {
       if (v == null) return `<td>${live ? '<span class="dk-mut">···</span>' : '-.-'}</td>`;
       const cls = SB[i] != null && Math.abs(v - SB[i]) < 1e-6 ? 'pu' : c._bs && Math.abs(v - c._bs[i]) < 1e-6 ? 'gr' : 'ye';
       return `<td><span class="dksec ${cls}">${v.toFixed(3)}</span></td>`; };
-    return `<table class="dkt"><thead><tr><th>Pos</th><th class="l">Driver</th><th>S1</th><th>S2</th><th>S3</th><th>Last</th><th>Best</th></tr></thead><tbody>${ord.map((c, i) => `<tr class="${c.player || c.fav ? 'me' : ''} ${c.out ? 'out' : ''}" style="--tc:${c.t.color};--ti:${dkInk(c.t.color)}" data-a="follow" data-v="${c.d.id}"><td>${i + 1}</td><td class="l">${esc(dkShort(c.d))}</td>${cell(c, 0)}${cell(c, 1)}${cell(c, 2)}<td>${dkT(kind === 'race' ? c.lastLap : c.last)}</td><td>${dkT(c.best)}</td></tr>`).join('')}</tbody></table>`;
+    const sgap = (c, i) => { if (kind === 'race') { if (c.out) return 'OUT'; if (i === 0) return 'Leader'; if (c.parked) return 'GARAGE'; if (c.pitT > 0) return 'PIT'; return leader.dist - c.dist > RACE.L ? '+' + Math.floor((leader.dist - c.dist) / RACE.L) + 'L' : '+' + gapSeconds(c, leader).toFixed(1) + 's'; }
+      return c.best == null ? '—' : i === 0 ? '—' : leader.best != null ? '+' + (c.best - leader.best).toFixed(3) : '—'; };
+    return `<table class="dkt dksec-t"><thead><tr><th>Pos</th><th class="l">Driver</th><th class="l hm">Team</th><th>Gap</th><th>Lap</th><th>Last</th><th>S1</th><th>S2</th><th>S3</th></tr></thead><tbody>${ord.map((c, i) => `<tr class="${c.player || c.fav ? 'me' : ''} ${c.out ? 'out' : ''}" style="--tc:${c.t.color};--ti:${dkInk(c.t.color)}" data-a="follow" data-v="${c.d.id}"><td>${i + 1}</td><td class="l">${esc(dkShort(c.d))}</td><td class="l hm">${esc(c.t.full || c.t.name)}</td><td>${sgap(c, i)}</td><td>${kind === 'race' ? Math.min(RACE.laps, c.laps) : c.laps}</td><td>${dkT(kind === 'race' ? c.lastLap : c.last)}</td>${cell(c, 0)}${cell(c, 1)}${cell(c, 2)}</tr>`).join('')}</tbody></table>`;
   }
   if (kind === 'quali') {
     const cut = S.cut ? ord.length - S.cut : null;
@@ -486,7 +488,9 @@ Object.assign(A, {
     if (v === 'settings') {
       modal(`<h3>Display settings</h3><label class="row" style="margin:8px 0"><input type="checkbox" data-a="dkclassic"> Use the classic layout on this device</label>
       <label class="row" style="margin:8px 0"><input type="checkbox" data-a="dkautop" ${G.autoPause ? 'checked' : ''}> Auto-pause for safety cars, rain and my car's problems</label>
-      <div class="small mut">Keyboard: <b>T</b> telemetry / broadcast · <b>Space</b> pause · <b>1–5</b> speed</div><div class="row" style="margin-top:12px"><span class="sp"></span><button data-a="close">Close</button></div>`); return;
+      <div class="small mut">Keyboard: <b>T</b> telemetry / broadcast · <b>Space</b> pause · <b>1–5</b> speed</div>
+      ${kind === 'race' || kind === 'quali' ? `<div class="dk-homebox"><b>Leave this session?</b><div class="small mut">The ${kind === 'race' ? (RACE && RACE.sprint ? 'sprint' : 'race') : 'session'} is saved exactly where it is. Press <b>Continue</b> on the main menu to pick it up again.</div><button data-a="dkhome">🏠 Back to main menu</button></div>` : ''}
+      <div class="row" style="margin-top:12px"><span class="sp"></span><button data-a="close">Close</button></div>`); return;
     }
     if (v === 'weather') {
       const env = dkEnv(S ? S.wet || 0 : 0, S ? S.t / 3000 : 0);

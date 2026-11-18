@@ -202,7 +202,7 @@ function bcRefreshText() {
     const [a, b] = C.cars, g = bcGap(R, a, b), tr = bcTrend(a, b), d = tr.length >= 2 ? (tr[tr.length - 1] - tr[0]) / (tr.length - 1) : 0;
     C.text = `${bcName(a)} vs ${bcName(b)} · ${g.toFixed(2)} s${Math.abs(d) > 0.05 ? ` · ${d < 0 ? 'closing' : 'pulling away'} ${Math.abs(d).toFixed(2)} s/lap` : ''}`;
     C.spark = bcSpark(tr);
-    if (g < 0.6 && Math.random() < 0.2) bcRadio(R, b, 'eng', `Gap ${g.toFixed(1)}. DRS next lap, go for it.`);
+    if (g < 0.6 && C.drs !== b.laps && Math.random() < 0.3) { C.drs = b.laps; bcRadio(R, b, 'eng', `Gap ${g.toFixed(1)}. DRS next lap, go for it.`); }
   } else C.spark = '';
   if (C.kind === 'pitwin') {
     const c = C.cars[0], loss = R.track.pit + 2.6, mine = p(c); let rp = mine, ahead = null;
