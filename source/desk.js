@@ -233,7 +233,7 @@ function dkOrderTable(kind, S, ord) {
       <td>${i + 1}</td><td>${st}</td><td class="l">${esc(dkShort(c.d))}</td><td class="l hm">${esc(c.t.name)}</td><td class="${purple ? 'pu' : ''}">${dkT(c.best)}</td><td>${c.best == null || i === 0 ? '—' : '+' + (c.best - leader.best).toFixed(3)}</td><td>${dkT(c.last)}</td><td>${c.laps || c.phase !== 'garage' ? dkTy(S.wet > 0.65 ? 'W' : S.wet > 0.25 ? 'I' : 'S') : '-'}</td><td>${c.laps}</td></tr>`; }).join('')}</tbody></table>`;
   }
   const gapOf = (c, i) => {
-    if (c.out) return 'OUT'; if (i === 0) return 'Leader'; if (c.parked) return 'GARAGE'; if (c.pitT > 0) return 'PIT';
+    if (c.out) return 'OUT'; if (i === 0) return 'Leader'; if (c.parked) return c.fly ? 'FLY LAP' : 'GARAGE'; if (c.pitT > 0) return 'PIT';
     const lapped = leader.dist - c.dist > RACE.L && leader.laps - c.laps >= 1;
     if (DK.gap === 'leader') return lapped ? '+' + Math.floor((leader.dist - c.dist) / RACE.L) + ' Lap' : '+' + gapSeconds(c, leader).toFixed(1) + 's';
     const p = ord[i - 1]; return p.dist - c.dist > RACE.L ? '+1 Lap' : '+' + Math.max(0.1, (p.dist - c.dist) / (RACE.L / c.curLT)).toFixed(1) + 's';

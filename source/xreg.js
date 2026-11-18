@@ -29,7 +29,7 @@ dkRegsForm = function (r, act) {
   <label class="small">Retirements${sel('dnf', [['on', 'On — crashes, failures and other retirements'], ['off', 'Off — every car races to the finish']])}</label>
   <label class="small">Stand-in &amp; reserve drivers${sel('standins', [['real', 'As in real history — stand-ins and one-off entries race'], ['off', 'Off — the season line-up races every round']])}</label>
   <label class="small">Three-part GP points${sel('heatpts', [['weighted', 'Weighted — Race 1 ⅓, Race 2 ⅔, Race 3 full points'], ['standard', 'Standard — normal points for the final classification only']])}</label>
-  <label class="small">Express pass race${sel('express', [['off', 'Off'], ['on', 'On — one random race: its winner skips the next race, which pays half points']])}</label>`;
+  <label class="small">Express pass race${sel('express', [['off', 'Off'], ['on', 'On — a quarter of the races: each winner skips the next race, which pays half points']])}</label>`;
   const i = html.lastIndexOf('</div>');
   return html.slice(0, i) + more + html.slice(i);
 };
