@@ -6154,7 +6154,7 @@ function dkRegsForm(r, act) {
   <label class="small">Pole position bonus${sel('pole', [[0, 'No points for pole'], [1, '1 point for pole'], [2, '2 points for pole'], [3, '3 points for pole']])}</label>
   <label class="small">Fastest lap bonus${sel('fl', [['era', 'Real rules of each season'], ['off', 'No fastest-lap point'], ['any', '1 point — any finisher'], ['top10', '1 point — only if in the top 10']])}</label>
   <label class="small">Qualifying format${sel('quali', [['era', 'Real format of each season'], ['single', 'One session — fastest lap takes pole'], ['knockout', 'Knockout — Q1, Q2, Q3'], ['elim', '2016 elimination — slowest out every 90 seconds'], ['lapelim', 'Pole-lap elimination — one session, slowest out every 2 × pole lap, shootout for pole'], ['groups', 'Group lottery — 3 groups drawn by lottery, 3 timed laps each, grid built from each group in turn']])}</label>
-  <label class="small">Grand Prix format${sel('race', [['gp', 'Standard race distance'], ['endu', 'Endurance — 60 s clock, earn time with laps and overtakes'], ['elimr', 'Elimination — last car out every (laps ÷ cars) laps'], ['heats', 'Three-part GP — 3 races (1/6, 1/3, 1/2 of the laps), slowest cars eliminated after races 1 and 2'], ['intruder', 'Intruder — slowest qualifier starts alone, the next car joins every (laps ÷ cars) laps'], ['polelim', 'Pole-lap elimination — last car out each time the pole sitter completes (laps ÷ cars) more laps'], ['hybrid', 'Hybrid — three-part GP with pole-lap eliminations inside each race']])}</label>
+  <label class="small">Grand Prix format${sel('race', [['gp', 'Standard race distance'], ['endu', 'Endurance — 60 s clock, earn time with laps and overtakes'], ['elimr', 'Elimination — last car out every (laps ÷ cars) laps'], ['heats', 'Three-part GP — 3 races (1/6, 1/3, 1/2 of the laps), slowest cars eliminated after races 1 and 2'], ['intruder', 'Intruder — slowest qualifier starts alone, the next car joins every (laps ÷ cars) laps'], ['polelim', 'Pole-lap elimination — last car out each time the leader completes (laps ÷ cars) more laps'], ['hybrid', 'Hybrid — three-part GP with eliminations inside each race']])}</label>
   <label class="small">Dropped scores${sel('drop', [['era', 'Real rules (some old seasons only count best results)'], ['all', 'Every result counts']])}</label></div>`;
 }
 const _dk3_viewSetup = viewSetup;
@@ -7660,7 +7660,7 @@ isSprintRound = function (G0, i) { if (G0 && !dkAcad(G0) && xr(G0, 'sprint') ===
 // ---------- retirements off: every car races to the finish. A crash or failure costs time instead of ending the race ----------
 const _xg_retire = Race.prototype.retire;
 Race.prototype.retire = function (c, why, flag) {
-  if (!this.G || xr(this.G, 'dnf') !== 'off') return _xg_retire.apply(this, arguments);
+  if (!this.G || xr(this.G, 'dnf') !== 'off' || /^Eliminated/.test(String(why))) return _xg_retire.apply(this, arguments); // format eliminations always remove the car
   const crash = flag === 'sc' || /crash|collision|wall|spun|accident|gravel|barrier|tyre/i.test(String(why));
   if (/fuel/i.test(String(why))) { c.fuelLaps = Math.max(c.fuelLaps || 0, 1.2); c.spin = Math.max(c.spin || 0, rnd(4, 8)); this.msg(`⛽ ${c.d.code} runs dry and limps to the pits`, true); return; }
   c.spin = Math.max(c.spin || 0, crash ? rnd(12, 26) : rnd(6, 16));
@@ -8182,7 +8182,7 @@ function heatBreakPage() {
   const cut = P.rows.filter(r => r.adv).length;
   const table = `<table class="dkfp"><thead><tr><th>Pos</th><th class="l">Driver</th><th class="l hm">Team</th><th class="ra hm">Best lap</th><th class="ra">Time/Gap</th><th class="ra">Pts</th><th class="l">Status</th></tr></thead><tbody>${P.rows.map((r, i) => {
     const e = r.e; return `<tr class="${mine(e) ? 'me' : ''} ${r.adv ? '' : 'elim'} ${i === cut ? 'cut' : ''}" data-prof="${e.d.id}" style="--tc:${e.t.color};--ti:${dkInk(e.t.color)}"><td class="pos">P${String(i + 1).padStart(2, '0')}</td><td class="l">${dkFlag(e.d.nat)} ${dkNm(e.d.name)}</td><td class="l hm">${esc(e.t.name)}</td><td class="ra hm">${r.best ? fmtTime(r.best) : ''}</td><td class="ra">${timeTxt(r)}</td><td class="ra">${G.regs && G.regs.heatpts === 'standard' ? '' : heatPts(k, r.pos, r.out) || ''}</td><td class="l">${r.adv ? `Race ${H.k} grid P${H.gridNow.indexOf(e) + 1}` : r.out ? 'Out — retired' : 'ELIMINATED'}</td></tr>`; }).join('')}</tbody></table>`;
-  const nextTxt = H.k === 3 ? `Race 3 decides the Grand Prix: ${nextLaps} laps, ${H.gridNow.length} cars${G.rules.hybrid ? ' — the last-placed car is out every time the pole sitter has done another ' + (nextLaps / H.gridNow.length).toFixed(1) + ' laps, until two are left' : ''}.` : `Race ${H.k}: ${nextLaps} laps, ${H.gridNow.length} cars — ${H.elim[H.k - 1]} will be eliminated${G.rules.hybrid ? ', one at a time when the pole sitter crosses the line' : ''}.`;
+  const nextTxt = H.k === 3 ? `Race 3 decides the Grand Prix: ${nextLaps} laps, ${H.gridNow.length} cars${G.rules.hybrid ? ' — the last-placed car is out every time the leader has done another ' + (nextLaps / H.gridNow.length).toFixed(1) + ' laps, until two are left' : ''}.` : `Race ${H.k}: ${nextLaps} laps, ${H.gridNow.length} cars — ${H.elim[H.k - 1]} will be eliminated${G.rules.hybrid ? ', one at a time when the leader crosses the line' : ''}.`;
   return `<div class="dk dk-fp" id="dk"><div class="dk-fptitle">Race ${k} Results - ${esc(t.short)}<span class="dk-mut">ROUND ${WK.round + 1} · ${G.year} · ${H.brk[k - 1]}-MINUTE BREAK · NEXT: RACE ${H.k} · ${nextLaps} LAPS · ${H.gridNow.length} CARS</span></div>
   <div class="dk-fpbox"><div class="dk-mut heat-note">${G.regs && G.regs.heatpts === 'standard' ? '🏅 Points are awarded only for the final classification after Race 3.' : `🏅 Race ${k} points: ${heatTable(k).join('-')}.`}<br>⏸️ ${H.brk[k - 1]}-minute break. Teams fit fresh tyres and the cars form up on the grid in Race ${k} finishing order. ${nextTxt}</div>${table}</div>
   <div class="dk-fpfoot"><span class="dk-mut kbhint">Press ENTER/SPACE or click Form up.</span><span class="sp"></span><button class="pri" data-a="startrace" data-enter="1">Form up for Race ${H.k} →</button></div></div>`;
@@ -8965,11 +8965,11 @@ if (typeof deskGrid === 'function') {
   };
 }
 // ===================== Pole-lap elimination Grand Prix (+ the Hybrid three-part version) =====================
-// Pole-lap elimination: every (race laps ÷ starters) laps — counted on the POLE SITTER's own laps — the car in last
-// place at the moment the pole sitter crosses the start/finish line is eliminated. If the pole sitter is out, the leader
-// takes over as the timekeeper. Retirements count as eliminations. The final two race to the flag.
+// Pole-lap elimination: every (race laps ÷ starters) laps — counted on the RACE LEADER's laps — the car in last place
+// at the moment the leader crosses the start/finish line is eliminated. Retirements count as eliminations.
+// The final two race to the flag.
 // Hybrid: the three-part Grand Prix, but each race's eliminations happen during the race the same way (timed on that
-// race's pole sitter): Race 1 and Race 2 drop their quota spread evenly through the race; Race 3 drops one car every
+// race's leader): Race 1 and Race 2 drop their quota spread evenly through the race; Race 3 drops one car every
 // (laps ÷ cars) laps until two are left to fight for the win.
 hxChain('raceInit', race => {
   const R0 = race.G && race.G.rules; if (race.sprint || !R0) return;
@@ -8979,10 +8979,10 @@ hxChain('raceInit', race => {
   let sched = [], every;
   if (hybrid && race.heat < 3) { const q = WK.heat.elim[race.heat - 1]; every = race.laps / (q + 1); for (let k = 1; k <= q; k++) sched.push(Math.max(1, Math.round(k * every))); }
   else { every = race.laps / N; for (let k = 1; k <= N - 2; k++) sched.push(Math.max(1, Math.round(k * every))); }
-  race.pe = { pole, timer: pole, sched, k: 0, credit: 0, post: 0, out: [], duel: false, every, hybrid: !!hybrid };
+  race.pe = { pole, lastN: 0, sched, k: 0, credit: 0, post: 0, out: [], duel: false, every, hybrid: !!hybrid };
   race.rules = Object.assign({}, race.rules, { twoCompound: false });
   const head = hybrid ? `🏁 Race ${race.heat} of 3 · ${race.laps} laps · ${N} cars` : '⛔ Pole-lap elimination';
-  race.msg(`${head}: each time ${pole.d.name} (pole) completes lap ${sched.slice(0, 4).join(', ')}${sched.length > 4 ? '…' : ''} the car in last place is out${sched.length ? ` — ${sched.length} elimination${sched.length === 1 ? '' : 's'}` : ''}.${hybrid && race.heat < 3 ? '' : ' The final two race to the flag.'}`, true);
+  race.msg(`${head}: each time the leader completes lap ${sched.slice(0, 4).join(', ')}${sched.length > 4 ? '…' : ''} the car in last place is out${sched.length ? ` — ${sched.length} elimination${sched.length === 1 ? '' : 's'}` : ''}.${hybrid && race.heat < 3 ? '' : ' The final two race to the flag.'}`, true);
 });
 const _pe_retire = Race.prototype.retire;
 Race.prototype.retire = function (c, why, flag) {
@@ -8993,20 +8993,20 @@ Race.prototype.retire = function (c, why, flag) {
 function peAlive(race) { return race.order().filter(x => !x.out && !x.finished); }
 hxChain('onLap', (race, c, n) => {
   const E = race.pe; if (!E || race.done) return;
-  if (E.timer.out) { E.timer = peAlive(race)[0] || E.timer; if (E.timer !== c) return; }
-  if (c !== E.timer) return;
+  if (n !== race.leaderLap || E.lastN === n || c.out) return; // only the leader's crossing (first car to complete lap n)
+  E.lastN = n;
   let due = E.post; E.post = 0;
   while (E.k < E.sched.length && E.sched[E.k] <= n) { E.k++; due++; }
   while (due > 0 && E.credit > 0) { due--; E.credit--; race.msg(`⛔ Lap ${n}: a retirement takes this elimination`, false); }
   const alive = peAlive(race); due = Math.min(due, alive.length - 2);
   if (due <= 0) return;
-  if (race.sc || race.vsc) { E.post += due; race.msg(`🟨 Elimination held — it happens on the next green-flag lap of the timekeeper`, false); return; }
+  if (race.sc || race.vsc) { E.post += due; race.msg(`🟨 Elimination held — it happens on the next green-flag lap`, false); return; }
   for (let i = 0; i < due; i++) {
     const al = peAlive(race), v = al[al.length - 1]; if (!v || al.length <= 2) break;
-    v.elimd = true; v.elimLap = v.laps; E.out.push(v); v.finishT = race.t;
+    v.elimd = true; v.elimLap = v.laps; if (!E.out.includes(v)) E.out.push(v); v.finishT = race.t;
     _pe_retire.call(race, v, 'Eliminated', null);
-    race.msg(`⛔ ${E.timer.d.code} crosses the line (lap ${n}) — ${v.d.name} is last and eliminated, P${al.length}${v === E.pole ? ' (the pole sitter himself!)' : ''}`, v.player || v.fav || al.length <= 5);
-    if (v === E.timer) E.timer = peAlive(race)[0] || E.timer;
+    if (!v.out) v.out = 'Eliminated'; // never let a car stay on track after it is eliminated
+    race.msg(`⛔ ${c.d.code} leads across the line (lap ${n}) — ${v.d.name} is last and eliminated, P${al.length}`, v.player || v.fav || al.length <= 5);
   }
   const al = peAlive(race);
   if (al.length === 2 && !E.duel && (!E.hybrid || race.heat === 3)) { E.duel = true; race.msg(`⚔️ Final duel: ${al[0].d.name} vs ${al[1].d.name} — race to the flag!`, true); }
@@ -9015,7 +9015,7 @@ const _pe_order = Race.prototype.order;
 Race.prototype.order = function () {
   const o = _pe_order.apply(this, arguments);
   if (!this.pe) return o;
-  const out = this.pe.out.slice().reverse(), el = out.filter(c => c.elimd), dnf = out.filter(c => !c.elimd);
+  const out = [...new Set(this.pe.out)].reverse(), el = out.filter(c => c.elimd), dnf = out.filter(c => !c.elimd);
   return o.filter(c => !out.includes(c)).concat(el, dnf);
 };
 hxChain('raceFinish', race => {
@@ -9034,7 +9034,7 @@ const _pe_aiPit = Race.prototype.aiPit;
 Race.prototype.aiPit = function (c) {
   const comp = _pe_aiPit.apply(this, arguments), E = this.pe; if (!E || E.duel || !comp) return comp;
   const alive = peAlive(this), rank = alive.indexOf(c), nxt = E.sched[E.k];
-  if (nxt != null && rank >= alive.length - 4 && c.wear < 0.9 && nxt - E.timer.laps <= 1) return null;
+  if (nxt != null && rank >= alive.length - 4 && c.wear < 0.9 && alive[0] && nxt - alive[0].laps <= 1) return null;
   return comp;
 };
 // header + danger highlight
@@ -9046,7 +9046,7 @@ updateRaceUI = function () {
     const alive = peAlive(RACE), lead = alive[0], lap = lead ? Math.min(RACE.laps, lead.laps + 1) : 0, nx = E.sched[E.k];
     const danger = E.duel || nx == null ? null : alive[alive.length - 1];
     const pre = E.hybrid ? `RACE ${RACE.heat}/3 · ` : 'POLE ELIM · ';
-    const h = `${pre}L${lap}/${RACE.laps} · ${alive.length} LEFT${E.duel ? ' · FINAL DUEL' : E.post ? ' · HELD (SC)' : nx != null ? ` · NEXT: ${E.timer.d.code} L${nx}` : ''}${danger && !E.credit ? ` · <span class="q16">⚠ ${danger.d.code}</span>` : ''}`;
+    const h = `${pre}L${lap}/${RACE.laps} · ${alive.length} LEFT${E.duel ? ' · FINAL DUEL' : E.post ? ' · HELD (SC)' : nx != null ? ` · NEXT ELIM L${nx}` : ''}${danger && !E.credit ? ` · <span class="q16">⚠ ${danger.d.code}</span>` : ''}`;
     const ds = document.getElementById('dksess'); if (ds && (ds._x !== h || ds._xsrc !== ds._h)) { ds.innerHTML = h; ds._x = h; ds._xsrc = ds._h; ds.title = ds.textContent; }
     document.querySelectorAll('#dk tr[data-v]').forEach(tr => tr.classList.toggle('elimr-danger', !!danger && !E.credit && tr.dataset.v === danger.d.id));
   } catch (e) { }
@@ -9057,9 +9057,9 @@ deskGrid = function (sprint) {
   let html = _pe_deskGrid.apply(this, arguments);
   if (sprint || !G.rules) return html;
   if (G.rules.poleElim) { const n = WK.grid.length, every = WK.track.laps / n;
-    html = html.replace(/<div class="dk-mut dkg-note">[^<]*<\/div>/, `<div class="dk-mut dkg-note"><b>Pole-lap elimination:</b> every ${every.toFixed(1)} laps (${WK.track.laps} ÷ ${n}) — counted on ${esc(WK.grid[0].d.name)}'s laps from pole — the car in last place when he crosses the line is eliminated. Held under the safety car · retirements count · the final two race to the flag.</div>`); }
+    html = html.replace(/<div class="dk-mut dkg-note">[^<]*<\/div>/, `<div class="dk-mut dkg-note"><b>Pole-lap elimination:</b> every ${every.toFixed(1)} laps (${WK.track.laps} ÷ ${n}) — counted on the race leader's laps — the car in last place when the leader crosses the line is eliminated. Held under the safety car · retirements count · the final two race to the flag.</div>`); }
   if (G.rules.hybrid) { const P = heatPlan(WK.track.laps, WK.grid.length);
-    html = html.replace(/<div class="dk-mut dkg-note">[\s\S]*?<\/div>/, `<div class="dk-mut dkg-note"><b>Hybrid Grand Prix:</b> Race 1 · ${P.laps[0]} laps, ${P.elim[0]} cars out one at a time when the pole sitter crosses the line → 20-min break → Race 2 · ${P.laps[1]} laps, ${P.elim[1]} out the same way → 40-min break → Race 3 · ${P.laps[2]} laps, last car out every ${(P.laps[2] / (WK.grid.length - P.elim[0] - P.elim[1])).toFixed(1)} laps of the pole sitter until two are left. Each race forms up in the previous race's finishing order.</div>`); }
+    html = html.replace(/<div class="dk-mut dkg-note">[\s\S]*?<\/div>/, `<div class="dk-mut dkg-note"><b>Hybrid Grand Prix:</b> Race 1 · ${P.laps[0]} laps, ${P.elim[0]} cars out one at a time when the leader crosses the line → 20-min break → Race 2 · ${P.laps[1]} laps, ${P.elim[1]} out the same way → 40-min break → Race 3 · ${P.laps[2]} laps, last car out every ${(P.laps[2] / (WK.grid.length - P.elim[0] - P.elim[1])).toFixed(1)} laps of the leader until two are left. Each race forms up in the previous race's finishing order.</div>`); }
   return html;
 };
 // ===================== UI refresh: points progression, weather forecast, GPS data, driver profile =====================
