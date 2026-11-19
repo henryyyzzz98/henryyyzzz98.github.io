@@ -1090,6 +1090,18 @@ body.dt .dk .dkst tr.me td.tcell{background:var(--tc);color:var(--ti)}
 .pot-tn{border-left:4px solid var(--tc);padding-left:.5em;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
 .pot-team .pot-grid{margin-top:.4em}
 .pot-all{gap:6px;flex-wrap:wrap;margin-top:.6em}
+/* pop-ups on phones: pin to the top of the visible screen so the close button is always reachable */
+.dp-hd{position:sticky;top:0;z-index:2;background:#000;border-bottom:1px solid #141e33}
+.dkx-ov{overscroll-behavior:contain}
+.dkx-mod{overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+@media (max-width:899px){
+  .dkx-ov{align-items:flex-start;overflow-y:auto;height:100vh;height:100dvh}
+  .dkx-mod{max-height:100vh;max-height:100dvh;margin:0}
+  .dp-hd{padding:10px 12px}
+  .dp-hd button{padding:6px 14px;font-size:14px}
+}
+.tp-hd{position:sticky;top:0;z-index:2;background:#060a14}
+@media (max-width:1100px){.tp-mod{max-height:100vh;max-height:100dvh}}
 </style></head><body><div id="app"></div><script>
 // ===== DATA: teams, drivers, tracks =====
 const ENGINES = {
@@ -2966,7 +2978,7 @@ function hqMenu() {
   <div class="card"><h3>Settings</h3>
   <label class="row"><input type="checkbox" data-a="set" data-v="weatherOn" ${G.weatherOn !== false ? 'checked' : ''}> Weather (rain)</label>
   <label class="row"><input type="checkbox" data-a="set" data-v="incidentsOn" ${G.incidentsOn !== false ? 'checked' : ''}> Crashes, failures & safety cars</label>
-  <label class="row"><input type="checkbox" data-a="set" data-v="autoPause" ${G.autoPause ? 'checked' : ''}> Auto-pause race on safety car, rain or your retirement</label>
+  <label class="row"><input type="checkbox" data-a="set" data-v="autoPause" ${G.autoPause ? 'checked' : ''}> Auto-pause race on safety car or your retirement</label>
   ${G.spectator ? '' : `<div class="row" style="margin-top:6px"><span class="mut">Difficulty</span>${['easy', 'normal', 'hard'].map(d => `<button class="sm ${G.difficulty === d ? 'on' : ''}" data-a="setdiff" data-v="${d}">${d}</button>`).join('')}</div>`}</div>
   <div class="card"><h3>Tracks</h3><button data-a="studio">✏️ Track Studio</button><div class="small mut" style="margin-top:6px">Trace circuit layouts from images, or create your own circuits.</div></div>
   <div class="card"><h3>Career</h3><button data-a="totitle">Main menu</button></div></div>`;
@@ -3419,7 +3431,7 @@ function checkAutoPause() {
   const ev = RACE.events.splice(0);
   if (!G.autoPause) return false;
   const mine = myEntries().map(e => e.d.code); if (G.follow && G.drivers[G.follow]) mine.push(G.drivers[G.follow].code);
-  const hit = ev.find(s => /SAFETY CAR|VIRTUAL|Rain is starting|stopped/.test(s) || mine.some(c => s.includes(c) && /❌|Puncture/.test(s)));
+  const hit = ev.find(s => /SAFETY CAR|VIRTUAL|stopped/.test(s) || mine.some(c => s.includes(c) && /❌|Puncture/.test(s)));
   if (hit) { PAUSED = true; raceBanner = hit + ' — paused. Pick a speed to continue.'; const b = document.getElementById('rbanner'); if (b) { b.className = 'banner'; b.textContent = raceBanner; } document.querySelectorAll('.spd').forEach(x => x.classList.toggle('on', x.dataset.v === 'pause')); return true; }
   return false;
 }
@@ -3610,6 +3622,16 @@ const A = {
   togrid(q) { WK.stage = WK.stage === 'squali' ? 'sgrid' : 'grid'; if (q !== true) render(); },
   stt(el) { const e = WK.entries.find(e => e.d.id === el.dataset.d); if (WK.stage === 'sgrid') e.sStartTyre = el.dataset.v; else e.startTyre = el.dataset.v; render(); },
   autostrat(el) { WK.entries.find(e => e.d.id === el.dataset.d).auto = el.checked; },
+  skipgp() {
+    if (!WK || (WK.stage !== 'grid' && WK.stage !== 'sgrid' && WK.stage !== 'hbreak' && WK.stage !== 'gbreak')) return;
+    let guard = 0;
+    do {
+      A.startrace(true); cancelAnimationFrame(raf);
+      RACE.started = true; LIGHTS = null; PAUSED = false; let n = 0;
+      while (!RACE.done && n++ < 3000000) { RACE.step(0.25); RACE.events.length = 0; }
+      finishRace();
+    } while ((WK.stage === 'hbreak' || WK.stage === 'gbreak') && guard++ < 6);
+  },
   startrace(q) {
     const sprint = WK.stage === 'sgrid';
     const grid = sprint ? WK.sgrid : WK.grid;
@@ -5486,7 +5508,7 @@ function deskLive(kind) {
   <div class="dk-grid">
     <section class="dk-map"><div class="dk-bar"><span class="dk-flagst" id="dkflag"></span><span class="sp"></span><span class="dk-spd" id="rctl">${dkSpd()}</span><span class="dk-km">${t.km.toFixed(3)} km · ${dkTurns(t)} turns</span></div>
       <div class="dk-mapbox"><canvas id="cv"></canvas>
-        <div class="dk-maptitle">${dkFlag(t.cc, 'xl')}<span>${esc(t.short)}</span></div>
+        <div class="dk-maptitle">${dkFlag(t.cc, 'xl')}<span>${esc(t.name || t.short)}</span></div>
         ${kind === 'race' ? `<div class="gantry dk-gantry ${RACE.started && !(LIGHTS && LIGHTS.phase === 'out') ? 'gone' : ''}" id="gantry">${[0, 1, 2, 3, 4].map(() => '<div class="glamp"><i></i><i></i></div>').join('')}</div><div class="lomsg" id="lomsg"></div>` : ''}
         <div id="rbanner" class="${raceBanner ? 'banner' : ''}">${raceBanner ? esc(raceBanner) : ''}</div></div></section>
     <section class="dk-order"><div class="dk-tabs">${tabs.map(([k, v]) => `<button class="${DK.tab === k ? 'on' : ''}" data-a="dktab" data-v="${k}">${v}</button>`).join('')}</div><div class="dk-table" id="dktable"></div></section>
@@ -5775,7 +5797,7 @@ Object.assign(A, {
     const v = el.dataset.v, kind = dkStage(), S = kind === 'race' ? RACE : kind === 'quali' ? curQS().live : null;
     if (v === 'settings') {
       modal(`<h3>Display settings</h3><label class="row" style="margin:8px 0"><input type="checkbox" data-a="dkclassic"> Use the classic layout on this device</label>
-      <label class="row" style="margin:8px 0"><input type="checkbox" data-a="dkautop" ${G.autoPause ? 'checked' : ''}> Auto-pause for safety cars, rain and my car's problems</label>
+      <label class="row" style="margin:8px 0"><input type="checkbox" data-a="dkautop" ${G.autoPause ? 'checked' : ''}> Auto-pause for safety cars and my car's problems</label>
       <div class="small mut">Keyboard: <b>T</b> telemetry / broadcast · <b>Space</b> pause · <b>1–5</b> speed</div>
       ${kind === 'race' || kind === 'quali' ? `<div class="dk-homebox"><b>Leave this session?</b><div class="small mut">The ${kind === 'race' ? (RACE && RACE.sprint ? 'sprint' : 'race') : 'session'} is saved exactly where it is. Press <b>Continue</b> on the main menu to pick it up again.</div><button data-a="dkhome">🏠 Back to main menu</button></div>` : ''}
       <div class="row" style="margin-top:12px"><span class="sp"></span><button data-a="close">Close</button></div>`); return;
@@ -6599,7 +6621,7 @@ function deskGrid(sprint) {
 
   return `<div class="dk dk-fp dk-res dk-sgr" id="dk"><div class="dk-reshead">${dkFlag(t.cc, 'lg')}<div><h1>Starting Grid - ${esc(t.short)}</h1><div class="dk-mut">${esc(t.name)} | Round ${WK.round + 1} of ${G.cal.length} | ${G.year} | ${name}${ac && sprint ? ' | top 8 from qualifying reversed' : ''}</div></div><span class="sp"></span>${schedHtml}</div>
   <div class="dk-resgrid"><div class="dk-fpbox">${table}</div><div class="dk-resside">${preview}${strat}${pu}${pred}</div></div>
-  <div class="dk-fpfoot"><span class="dk-mut kbhint">Press ENTER or click Cars to the grid.</span><span class="sp"></span><button class="pri" data-a="startrace" data-enter="1">Cars to the grid</button></div></div>`;
+  <div class="dk-fpfoot"><span class="dk-mut kbhint">Press ENTER or click Cars to the grid.</span><span class="sp"></span><button data-a="skipgp" title="Simulate the whole race instantly and go straight to the results">⏭ Skip ${sprint ? 'sprint' : 'Grand Prix'} — show result</button><button class="pri" data-a="startrace" data-enter="1">Cars to the grid</button></div></div>`;
 }
 const _dk5_viewWeekend = viewWeekend;
 viewWeekend = function () {
@@ -6620,10 +6642,9 @@ function deskTitle() {
   return `<div class="dk dk-page dk-title" id="dk"><div class="dkt-wrap">
     <div class="dkt-head"><div class="logo">PIT<b>WALL</b></div><div class="dk-mut">F1 TEAM MANAGER</div></div>
     ${cont}
-    <section><div class="dk-h"><b>NEW GAME</b></div><div class="dkt-tiles">
+    <section><div class="dk-h"><b>NEW GAME</b></div><div class="dkt-tiles two">
       ${tile('newgame', 'Manager career', 'Run a real 2026 team: drivers, contracts, car development and race strategy.', 'red')}
-      ${tile('newspec', 'Spectator season', 'Pick a favourite driver, set your own rules and watch the season unfold.')}
-      ${tile('newhist', 'Historic timeline 1950–', 'Real line-ups, calendars and points rules from any season since 1950.', 'gold')}</div></section>
+      ${tile('newspec', 'Spectator season', 'Pick a favourite driver, set your own rules and watch the season unfold.')}</div></section>
     <div class="dkt-row2"><section><div class="dk-h"><b>TOOLS</b></div><div class="dkt-tiles two">
       ${tile('importui', 'Import save code', 'Load a game exported from another device.')}
       ${tile('studio', 'Track Studio', 'Trace circuit layouts from images, or draw your own.')}</div></section>
@@ -7696,7 +7717,7 @@ function xrTestPage() {
   const left = 3 - T.days.length;
   return `<div class="dk dk-page dk-fp dk-res" id="dk"><div class="dk-reshead">${dkFlag(track.cc, 'lg')}<div><h1>Pre-Season Testing - ${esc(track.short)}</h1><div class="dk-mut">${esc(track.name)} | ${G.year} | Day ${T.days.length} of 3</div></div><span class="sp"></span><div class="dk-tabs">${tabs}</div></div>
   <div class="dk-resgrid"><div class="dk-fpbox">${table}</div><div class="dk-resside">${side}${ev ? `<section><div class="dk-h"><b>STOPPAGES</b></div><div class="dkg-body">${ev}</div></section>` : ''}${notes}</div></div>
-  <div class="dk-fpfoot"><button data-a="xrtback">‹ Calendar</button><span class="sp"></span>${left > 0 ? `<button data-a="xrtrun" data-v="1">Run day ${T.days.length + 1}</button><button class="pri" data-a="xrtrun" data-v="${left}" data-enter="1">Run ${left > 1 ? 'all remaining days' : 'final day'}</button>` : '<span class="dk-mut">Testing complete — the season starts with round 1.</span>'}</div></div>`;
+  <div class="dk-fpfoot"><button data-a="xrtback">‹ Calendar</button><span class="sp"></span>${left > 0 ? `<button data-a="xrtrun" data-v="1">Run day ${T.days.length + 1}</button><button class="pri" data-a="xrtrun" data-v="${left}" data-enter="1">Run ${left > 1 ? 'all remaining days' : 'final day'}</button>` : '<span class="dk-mut">Testing complete — the season starts with round 1.</span><button class="pri" data-a="gowk" data-enter="1">Round 1 weekend →</button>'}</div></div>`;
 }
 Object.assign(A, {
   xrtest() { DK3.test = true; DK2.arch = null; render(); },
@@ -7732,6 +7753,20 @@ Race.prototype.retire = function (c, why, flag) {
   if (/tyre/i.test(String(why))) c.pitReq = c.pitReq || (this.slick ? this.slick(c, this.laps - c.laps) : null) || 'M';
   this.msg(crash ? `💥 ${c.d.code} has a big moment (${why}) — but recovers and carries on` : `⚠️ ${c.d.code} has a problem (${why}) — loses time but keeps going`, true);
   if (crash && this.incidentsOn && this.rules.sc && Math.random() < 0.3) { if (this.rules.vsc) this.startVSC(); else this.msg('🟨 Yellow flags', false); }
+};
+
+// ---------- testing comes first: the season opens with pre-season testing, not round 1 ----------
+function xrTestGo() { VIEW = 'hq'; TAB = 'calendar'; DK3.test = true; if (typeof DK2 !== 'undefined') DK2.arch = null; render(); window.scrollTo(0, 0); }
+A.xrtestgo = xrTestGo;
+A.xrtestall = function () { for (let i = 0; i < 3; i++) if (!(G.testing && G.testing.y === G.year && G.testing.days.length >= 3)) xrRunTestDay(G); DK3.ttab = 'all'; xrTestGo(); };
+['gowk', 'gowkrace'].forEach(k => { const f = A[k]; A[k] = function () { if (xrTestNeeded(G)) return xrTestGo(); return f.apply(this, arguments); }; });
+const _xg_nextRaceCard = nextRaceCard;
+nextRaceCard = function (t, btn) {
+  if (!xrTestNeeded(G)) return _xg_nextRaceCard.apply(this, arguments);
+  const T = G.testing && G.testing.y === G.year ? G.testing : null, tr = TRACK_BY_ID[xrTestTrack(G)] || roundTrack(G, 0), done = T ? T.days.length : 0;
+  return `<div class="card hl xr-next"><h3>Pre-season testing · before round 1 of ${G.cal.length}</h3><div class="row">${trackSVG(tr, 110)}<div class="sp"><div class="big">${flag(tr.cc)} Testing</div>
+    <div class="mut">${esc(tr.name)} · 3 days</div><div class="small mut">${done ? `Day ${done} of 3 done.` : 'Every team runs 3 days of testing before the season opener.'} Round 1 is ${esc(t.short)}.</div></div></div>
+    <div class="row" style="margin-top:10px"><button class="pri sp" data-a="xrtestgo" data-enter="1">${done ? 'Continue testing →' : 'Go to testing →'}</button><button data-a="xrtestall">⏩ Run all ${done ? 'remaining days' : '3 days'}</button></div></div>`;
 };
 // ===================== Alternative history: line-up of one year, calendar of another =====================
 // G.mix = { line0, cal0, mode }: line-up from year line0 (kept for the whole game, or advancing a year each season),
@@ -8432,7 +8467,7 @@ function bcComm(who, s, prio = 1) {
   BC.cap = e;
 }
 function bcRadio(R, c, from, s) {
-  const now = bcNow(); if (!c || now - BC.lastRadio < 1100) return; BC.lastRadio = now;
+  const now = bcNow(); if (!c || now - BC.lastRadio < 1100 || PAUSED || !R.started || R.done) return; BC.lastRadio = now;
   R.msg(`📻 ${c.d.code} ${from === 'eng' ? '(engineer)' : ''}: "${s}"`.replace(' :', ':'), false);
 }
 function bcClip(ev, cars, label) {
@@ -8449,9 +8484,13 @@ function bcCut(cam) {
 // ---------- director idle choices (real time, on each UI update) ----------
 function bcDirect() {
   const R = RACE, now = bcNow();
+  // a replay ends on its own clock, whether or not the TV picture is open
+  if (BC.replay && BC.replay.t0 + (now - BC.replay.start) / 1000 * BC.replay.rate > BC.replay.t1) BC.replay = null;
+  if (BC.hidden) BC.pendRep = null; // no automatic replays while the TV is off
   if (BC.pendRep && now >= BC.pendRep.at && !BC.replay) { bcStartReplay(BC.pendRep.clip); BC.pendRep = null; }
+  const live = R.started && !PAUSED && !R.done;
   while (BC.q.length && now - BC.q[0].t > 9000) BC.q.shift();
-  if (BC.q.length && now - BC.lastComm > 1500) { const x = BC.q.shift(); bcComm(x.who, x.s, 3); }
+  if (live && BC.q.length && now - BC.lastComm > 1500) { const x = BC.q.shift(); bcComm(x.who, x.s, 3); }
   if (BC.cam && now < BC.cam.until) { bcRefreshText(); return; }
   const ord = R.order().filter(c => !c.out);
   const fav = R.cars.find(c => c.fav && !c.out);
@@ -8487,7 +8526,8 @@ function bcRefreshText() {
     const [a, b] = C.cars, g = bcGap(R, a, b), tr = bcTrend(a, b), d = tr.length >= 2 ? (tr[tr.length - 1] - tr[0]) / (tr.length - 1) : 0;
     C.text = `${bcName(a)} vs ${bcName(b)} · ${g.toFixed(2)} s${Math.abs(d) > 0.05 ? ` · ${d < 0 ? 'closing' : 'pulling away'} ${Math.abs(d).toFixed(2)} s/lap` : ''}`;
     C.spark = bcSpark(tr);
-    if (g < 0.6 && C.drs !== b.laps && Math.random() < 0.3) { C.drs = b.laps; bcRadio(R, b, 'eng', `Gap ${g.toFixed(1)}. DRS next lap, go for it.`); }
+    const drsEra = G.year >= 2011 && G.year <= 2025, DR = BC.drsR || (BC.drsR = {});
+    if (drsEra && R.started && !PAUSED && !R.sc && !R.vsc && b.laps >= 2 && g < 0.6 && DR[b.d.id] !== b.laps && Math.random() < 0.3) { DR[b.d.id] = b.laps; C.drs = b.laps; bcRadio(R, b, 'eng', `Gap ${g.toFixed(1)}. DRS next lap, go for it.`); }
   } else C.spark = '';
   if (C.kind === 'pitwin') {
     const c = C.cars[0], loss = R.track.pit + 2.6, mine = p(c); let rp = mine, ahead = null;
@@ -8615,7 +8655,7 @@ function bcUi() {
   if (BC.race !== RACE) bcReset(RACE);
   bcDirect();
   const C = BC.cam, l3 = document.getElementById('bcl3');
-  const rp = BC.replay;
+  const rp = BC.hidden ? null : BC.replay;
   const html = rp ? `<span class="bc-tag" style="background:#e10600">REPLAY</span><span class="bc-txt">Lap ${rp.clip.lap} · ${esc(rp.clip.label)}</span>`
     : C && C.text ? `<span class="bc-tag" style="background:${C.col};color:${dkInk(C.col)}">${esc(C.tag)}</span><span class="bc-txt">${esc(C.text)}</span>${C.spark || ''}` : '';
   if (l3 && l3._h !== html) { l3.innerHTML = html; l3._h = html; l3.classList.toggle('on', !!html); }
@@ -10009,7 +10049,7 @@ dkDrawMap = function (cv, kind, S, mini) {
   const s0 = pointAt(g, 0), q = mini ? 2 : 3; ctx.save(); ctx.translate(X(s0), Y(s0)); ctx.rotate(s0[2] + Math.PI / 2);
   for (let k = -3; k < 3; k++) for (let j = 0; j < 2; j++) { ctx.fillStyle = (k + j) % 2 ? '#fff' : '#111'; ctx.fillRect(k * q, -q + j * q, q, q); } ctx.restore();
   // corner numbers, placed on the outside of each bend
-  if (!mini && s > 180) {
+  if (false) { // corner numbers are not drawn on the live map (still editable in Track Studio)
     const fs = s > 420 ? 11 : 10, rr = fs * 0.78; ctx.font = `700 ${fs}px "Titillium Web",system-ui,sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     F.corners.forEach(c => { const p = pointAt(g, c.f), n = p[2] + Math.PI / 2, d = -c.s * (tw / 2 + rr + 4), x = X(p) + Math.cos(n) * d, y = Y(p) + Math.sin(n) * d;
       ctx.beginPath(); ctx.arc(x, y, rr, 0, 6.283); ctx.fillStyle = '#2a2d38'; ctx.fill(); ctx.fillStyle = '#e6e8ee'; ctx.fillText(String(c.n), x, y + 0.5); });
