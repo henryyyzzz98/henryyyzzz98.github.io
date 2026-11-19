@@ -1083,3 +1083,7 @@ body.dt .dk .dkst tr.me td.tcell{background:var(--tc);color:var(--ti)}
 .pot-sc{overflow-x:auto;max-width:100%}
 .pot-page{min-width:0;overflow:hidden}
 @media (max-width:899px){.pot-tab td,.pot-tab th{padding:.25em .35em;font-size:.88em}.pot-tab .hm{display:none}}
+.pot-team{margin-top:1em}
+.pot-tn{border-left:4px solid var(--tc);padding-left:.5em;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.pot-team .pot-grid{margin-top:.4em}
+.pot-all{gap:6px;flex-wrap:wrap;margin-top:.6em}
