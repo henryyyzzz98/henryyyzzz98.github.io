@@ -1049,3 +1049,9 @@ body.dt .dk .dkst tr.me td.tcell{background:var(--tc);color:var(--ti)}
 .trm-chip small{color:#8a96b0}
 .trm-chip button.sm{padding:0 5px;min-width:0}
 .trm-n{width:3.2em;padding:1px 3px;font-size:12px}
+.grp-cols{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:1em;margin-top:.6em}
+.grp-h{margin:.2em 0 .4em;font-size:1em;letter-spacing:.04em}
+.grp-tag{display:inline-block;min-width:1.5em;text-align:center;font-weight:800;border-radius:4px;padding:0 .3em;color:#0b0b0b}
+.grp-tag.gA{background:#ffd23f}.grp-tag.gB{background:#9ec5ff}.grp-tag.gC{background:#f4a3a3}
+.grp-wait{margin:.4em 0;line-height:1.7}
+@media (max-width:899px){.grp-cols{grid-template-columns:1fr}}
