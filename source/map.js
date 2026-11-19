@@ -50,6 +50,20 @@ function mapFeatures(track) {
   if (mk && Array.isArray(mk.corners)) out.corners = mk.corners.map((c, i) => { const j = Math.round(((c[0] % 1) + 1) % 1 * M) % M; return { f: c[0], n: c[1] != null ? c[1] : i + 1, s: Math.sign(sm[j]) || 1 }; });
   return MAPF[key] = out;
 }
+// ---------- pit lane ----------
+// The game triggers a stop as the car crosses the start/finish line, so the lane starts at the line and
+// rejoins the track a little further on. Each team has its own box along the lane.
+const PIT_LEN = 0.06, PIT_OFF = 16;
+const pitRamp = s => s < 0.15 ? s / 0.15 : s > 0.85 ? (1 - s) / 0.15 : 1;
+function pitLanePt(g, base, s, X, Y) { s = Math.max(0, Math.min(1, s)); const p = pointAt(g, base + s * PIT_LEN), n = p[2] + Math.PI / 2, d = PIT_OFF * pitRamp(s); return [X(p) + Math.cos(n) * d, Y(p) + Math.sin(n) * d]; }
+function pitBox(race, c) { const ts = [...new Set(race.cars.map(x => x.t.id))], i = Math.max(0, ts.indexOf(c.t.id)); return ts.length > 1 ? 0.25 + 0.5 * i / (ts.length - 1) : 0.5; }
+function pitProgress(c) { // where along the lane: drive in, stop at the box for the service, drive out
+  const P = c.pitInfo, el = P.T - c.pitT, drive = Math.max(0.1, P.T - P.svc), tin = drive * P.box;
+  if (el < tin) return el / tin * P.box;
+  if (el < tin + P.svc) return P.box;
+  return P.box + (el - tin - P.svc) / Math.max(0.1, drive - tin) * (1 - P.box);
+}
+hxChain('onPit', (race, c, comp, svc) => { c.pitInfo = { T: c.pitT, svc: svc || 0, base: c.dist / race.L, box: pitBox(race, c) }; });
 function mapDrsOn() { const y = G && G.year; return y >= 2011 && y <= 2025; }
 const _mp_clearGeo = clearGeo; clearGeo = function () { _mp_clearGeo(); Object.keys(MAPF).forEach(k => delete MAPF[k]); };
 dkDrawMap = function (cv, kind, S, mini) {
@@ -71,8 +85,7 @@ dkDrawMap = function (cv, kind, S, mini) {
   // pit lane (same side the cars are drawn when pitting)
   if (!mini) {
     ctx.save(); ctx.setLineDash([4, 4]); ctx.strokeStyle = '#5b6070'; ctx.lineWidth = 2; ctx.beginPath();
-    for (let k = 0; k <= 40; k++) { const f = -0.045 + 0.085 * k / 40, p = pointAt(g, f), n = p[2] + Math.PI / 2, e = k < 5 ? k / 5 : k > 35 ? (40 - k) / 5 : 1, d = 16 * e;
-      const x = X(p) + Math.cos(n) * d, y = Y(p) + Math.sin(n) * d; k ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+    for (let k = 0; k <= 40; k++) { const [x, y] = pitLanePt(g, 0, k / 40, X, Y); k ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
     ctx.stroke(); ctx.restore();
   }
   full(); ctx.strokeStyle = '#2a2d38'; ctx.lineWidth = tw; ctx.stroke();
@@ -97,10 +110,18 @@ dkDrawMap = function (cv, kind, S, mini) {
   const list = [];
   ord.forEach((c, i) => {
     let x, y, dim = false;
-    if (kind === 'race') { if (c.out) return; const frac = c.finished ? 0.002 * i : (RACE.started ? c.dist : c.dist * 2.6) / RACE.L; const p = pointAt(g, frac); x = X(p); y = Y(p);
+    if (kind === 'race') { if (c.out) return; let frac = c.finished ? 0.002 * i : (RACE.started ? c.dist : c.dist * 2.6) / RACE.L;
+      // just out of the pits: ease from the lane exit back onto the car's real track position
+      if (c.pitInfo && !(c.pitT > 0) && !c.finished) { const rel = c.dist / RACE.L - c.pitInfo.base; if (rel >= 0 && rel < 2 * PIT_LEN) frac = c.pitInfo.base + PIT_LEN + rel / 2; else c.pitInfo = null; }
+      const p = pointAt(g, frac); x = X(p); y = Y(p);
       if (!RACE.started) { const n = p[2] + Math.PI / 2, sd = (c.grid % 2 ? -1 : 1) * 5; x += Math.cos(n) * sd; y += Math.sin(n) * sd; }
-      if (c.pitT > 0) { const n = p[2] + Math.PI / 2; x += Math.cos(n) * 16; y += Math.sin(n) * 16; dim = true; } }
-    else { if (c.out || c.phase === 'garage' || c.phase === 'crashed') return; const p = pointAt(g, c.frac); x = X(p); y = Y(p); dim = c.phase !== 'flying'; }
+      if (c.pitT > 0) {
+        if (c.pitInfo && !mini) [x, y] = pitLanePt(g, c.pitInfo.base, pitProgress(c), X, Y);
+        else if (c.parked && !mini) [x, y] = pitLanePt(g, 0, pitBox(RACE, c), X, Y);
+        else { const n = p[2] + Math.PI / 2; x += Math.cos(n) * PIT_OFF; y += Math.sin(n) * PIT_OFF; }
+        dim = true; } }
+    else { if (c.out || c.phase === 'garage' || c.phase === 'crashed') return; const p = pointAt(g, c.frac); x = X(p); y = Y(p); dim = c.phase !== 'flying';
+      if (c.phase === 'out' && c.frac < PIT_LEN && !mini) [x, y] = pitLanePt(g, 0, c.frac / PIT_LEN, X, Y); }
     list.push({ c, x, y, dim, i });
   });
   const tags = [];
