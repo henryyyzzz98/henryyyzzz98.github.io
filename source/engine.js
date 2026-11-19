@@ -583,7 +583,7 @@ function aiFillNow(G) { fillAISeats(G, null); }
 
 function save(G) { try { G.trackLib = LIB; localStorage.setItem('f1mgr_save', JSON.stringify(G)); return true; } catch (e) { return false; } }
 function loadSave() { try { const s = localStorage.getItem('f1mgr_save'); return s ? JSON.parse(s) : null; } catch (e) { return null; } }
-function exportCode(G) { G.trackLib = LIB; return btoa(unescape(encodeURIComponent(JSON.stringify(G)))); }
+function exportCode(G) { G.trackLib = Object.assign({}, LIB, { defaults: typeof linkedDefaults === "function" ? linkedDefaults() : {} }); return btoa(unescape(encodeURIComponent(JSON.stringify(G)))); }
 function importCode(s) { return JSON.parse(decodeURIComponent(escape(atob(s.trim())))); }
 
 // ---------- Live qualifying session ----------

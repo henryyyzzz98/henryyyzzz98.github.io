@@ -1037,3 +1037,15 @@ body.dt .dk .dkst tr.me td.tcell{background:var(--tc);color:var(--ti)}
 @media (max-width:1100px){.tp-mod{height:auto;max-height:100vh;width:100vw;border-radius:0}.tp-grid{display:flex;flex-direction:column;overflow:visible}.tp-main{overflow:visible;padding-right:0}.tp-hist table{max-height:50vh}.tp-top{font-size:16px;flex-wrap:wrap}.tp-mono{display:none}.tp-hd{padding-right:90px}.tp-hd h2{font-size:18px}}
 @media (max-width:1100px){.tp-list{flex:0 0 auto;padding-bottom:4px}.tp-li{flex:0 0 auto}}
 .xr-lock{color:#f59e0b;font-size:11px}
+/* bigger TV-style track map */
+.dk-grid{grid-template-columns:minmax(0,.74fr) minmax(0,.5fr) minmax(0,.88fr);grid-template-rows:minmax(0,1fr) 20vh}
+.dk-mapbox{background:#12131a}
+.dk-maptitle{font-size:clamp(18px,1.7vw,32px);top:.35em}
+@media (max-width:899px){.dk-mapbox{height:min(98vw,560px)}.dk-maptitle{font-size:18px}}
+.trm-h{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:8px}
+.trm-list{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.trm-chip{display:inline-flex;align-items:center;gap:4px;padding:2px 6px;border:1px solid #2a3248;border-radius:6px;font-size:12px;background:#151a26;color:#e6ebf5;opacity:1}
+.trm-chip.drs{border-color:#2f7a3d;color:#9ff0ad}
+.trm-chip small{color:#8a96b0}
+.trm-chip button.sm{padding:0 5px;min-width:0}
+.trm-n{width:3.2em;padding:1px 3px;font-size:12px}

@@ -6,7 +6,7 @@ const TRACK_TYPES = {
   technical: { name: 'Technical', v: 200, ot: .35, df: .75, pw: .45, wear: .6 },
   street: { name: 'Street circuit', v: 175, ot: .2, df: .8, pw: .35, wear: .4 }
 };
-function loadLib() { try { const s = localStorage.getItem('pitwall_tracks'); if (s) { const o = JSON.parse(s); return { layouts: o.layouts || {}, custom: o.custom || [], laps: o.laps || {}, sets: o.sets || {}, defVer: o.defVer || {} }; } } catch (e) { } return { layouts: {}, custom: [], laps: {}, sets: {}, defVer: {} }; }
+function loadLib() { try { const s = localStorage.getItem('pitwall_tracks'); if (s) { const o = JSON.parse(s); return { layouts: o.layouts || {}, custom: o.custom || [], laps: o.laps || {}, sets: o.sets || {}, defVer: o.defVer || {}, marks: o.marks || {} }; } } catch (e) { } return { layouts: {}, custom: [], laps: {}, sets: {}, defVer: {}, marks: {} }; }
 let LIB = loadLib();
 function saveLib() { try { localStorage.setItem('pitwall_tracks', JSON.stringify(LIB)); } catch (e) { } }
 function makeCustomTrack(c) {
@@ -22,7 +22,7 @@ function applyLib() {
     if (i >= 0) TRACKS[i] = t; else TRACKS.push(t);
     TRACK_BY_ID[c.id] = t;
   });
-  TRACKS.forEach(t => { const L = LIB.layouts[t.id]; const lv = defaultLink(t.id); t.pts = lv ? lv.pts : L && L.length >= 3 ? L : t.origPts; delete GEO[t.id]; const n = (LIB.laps || {})[t.id]; t.laps = n ? n : t.origLaps; });
+  TRACKS.forEach(t => { const L = LIB.layouts[t.id]; const lv = defaultLink(t.id); t.pts = lv ? lv.pts : L && L.length >= 3 ? L : t.origPts; t.marks = lv ? (lv.marks || null) : ((LIB.marks || {})[t.id] || null); delete GEO[t.id]; const n = (LIB.laps || {})[t.id]; t.laps = n ? n : t.origLaps; });
 }
 function mergeLib(other) {
   if (!other) return;
@@ -31,6 +31,8 @@ function mergeLib(other) {
   LIB.laps = LIB.laps || {}; Object.entries(other.laps || {}).forEach(([k, v]) => { LIB.laps[k] = v; });
   LIB.sets = LIB.sets || {}; Object.entries(other.sets || {}).forEach(([k, v]) => { LIB.sets[k] = v; });
   LIB.defVer = LIB.defVer || {}; Object.entries(other.defVer || {}).forEach(([k, v]) => { LIB.defVer[k] = v; });
+  LIB.marks = LIB.marks || {}; Object.entries(other.marks || {}).forEach(([k, v]) => { LIB.marks[k] = v; });
+  restoreDefaults(other.defaults);
   saveLib(); applyLib();
 }
 applyLib();
@@ -39,11 +41,21 @@ function clearGeo() { Object.keys(GEO).forEach(k => delete GEO[k]); }
 function layoutVersions(id) { return (LIB.sets && LIB.sets[id]) || []; }
 // the default layout can be linked to one of the dated versions (no copying needed)
 function defaultLink(id) { const dv = LIB.defVer && LIB.defVer[id]; if (!dv) return null; const v = layoutVersions(id).find(x => x.from === dv.from && x.to === dv.to); return v && v.pts && v.pts.length >= 3 ? v : null; }
+// exported files carry each linked default's resolved layout, so the link survives even if its version is missing
+function linkedDefaults() { const o = {}; Object.keys(LIB.defVer || {}).forEach(id => { const v = defaultLink(id); if (v) o[id] = { from: v.from, to: v.to, pts: v.pts, marks: v.marks || null }; }); return o; }
+function restoreDefaults(D) {
+  Object.entries(D || {}).forEach(([id, d]) => { if (!d || !d.pts || d.pts.length < 3) return;
+    LIB.sets = LIB.sets || {}; const vs = LIB.sets[id] = LIB.sets[id] || [];
+    let v = vs.find(x => x.from === d.from && x.to === d.to);
+    if (!v) { v = { from: d.from, to: d.to, pts: d.pts }; if (d.marks) v.marks = d.marks; vs.push(v); vs.sort((a, b) => a.from - b.from); }
+    else if (!v.pts || v.pts.length < 3) v.pts = d.pts;
+    LIB.defVer = LIB.defVer || {}; LIB.defVer[id] = { from: d.from, to: d.to }; });
+}
 function layoutForYear(t, year) {
   const vs = layoutVersions(t.id).filter(v => year >= v.from && year <= v.to && v.pts && v.pts.length >= 3);
   if (!vs.length) return t;
   const v = vs.sort((a, b) => b.from - a.from)[0];
-  return Object.assign({}, t, { pts: v.pts, geoKey: t.id + '@' + v.from + '-' + v.to });
+  return Object.assign({}, t, { pts: v.pts, marks: v.marks || null, geoKey: t.id + '@' + v.from + '-' + v.to });
 }
 
 // ---------- image tracing ----------

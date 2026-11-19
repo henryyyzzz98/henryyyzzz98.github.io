@@ -196,7 +196,7 @@ Object.assign(A, {
   trsimplify() { trPush(); TR.pts = resampleLoop(TR.pts, Math.max(8, Math.round(TR.pts.length * 0.7))); refreshTracerSide(); },
   trstart(el) { if (TR.pts.length < 3) return; trPush(); const d = +el.dataset.v; if (d > 0) TR.pts.push(TR.pts.shift()); else TR.pts.unshift(TR.pts.pop()); refreshTracerSide(); },
   trrev() { if (TR.pts.length < 3) return; trPush(); const f = TR.pts[0]; TR.pts = [f].concat(TR.pts.slice(1).reverse()); refreshTracerSide(); },
-  trreset() { delete LIB.layouts[TR.id]; clearGeo(); saveLib(); applyLib(); if (G) autosave(); toast('Original layout restored'); openTracer(TR.id, TR.back); },
+  trreset() { delete LIB.layouts[TR.id]; if (LIB.marks) delete LIB.marks[TR.id]; clearGeo(); saveLib(); applyLib(); if (G) autosave(); toast('Original layout restored'); openTracer(TR.id, TR.back); },
   tracersave() {
     if (TR.pts.length < 4) return;
     const pts = TR.pts.map(p => [+(p[0] / 10).toFixed(2), +(p[1] / 10).toFixed(2)]);
@@ -274,7 +274,7 @@ Object.assign(A, {
   delcircuit(el) {
     const id = el.dataset.v; if (LIB.sets) delete LIB.sets[id]; if (LIB.defVer) delete LIB.defVer[id];
     if (G && (G.cal.includes(id) || (G.calNext || []).includes(id))) return toast('Remove it from your calendar first');
-    LIB.custom = LIB.custom.filter(c => c.id !== id); delete LIB.layouts[id]; if (LIB.laps) delete LIB.laps[id];
+    LIB.custom = LIB.custom.filter(c => c.id !== id); delete LIB.layouts[id]; if (LIB.laps) delete LIB.laps[id]; if (LIB.marks) delete LIB.marks[id];
     const i = TRACKS.findIndex(t => t.id === id); if (i >= 0) TRACKS.splice(i, 1); delete TRACK_BY_ID[id];
     saveLib(); toast('Circuit deleted'); render();
   }
@@ -287,9 +287,10 @@ let DL_CAP = null;
 try { if (window.claude && typeof window.claude.use === 'function') window.claude.use('downloads').then(d => { DL_CAP = d; }).catch(() => { }); } catch (e) { }
 function libSummary(L) {
   const sets = Object.values(L.sets || {}).reduce((n, v) => n + v.length, 0);
-  return `${Object.keys(L.layouts || {}).length} traced layout${Object.keys(L.layouts || {}).length === 1 ? '' : 's'}, ${sets} dated version${sets === 1 ? '' : 's'}, ${Object.keys(L.laps || {}).length} lap change${Object.keys(L.laps || {}).length === 1 ? '' : 's'}, ${(L.custom || []).length} custom circuit${(L.custom || []).length === 1 ? '' : 's'}`;
+  const dl = Object.keys(L.defVer || {}).length, mk = Object.keys(L.marks || {}).length + Object.values(L.sets || {}).reduce((n, v) => n + v.filter(x => x.marks).length, 0);
+  return `${Object.keys(L.layouts || {}).length} traced layout${Object.keys(L.layouts || {}).length === 1 ? '' : 's'}, ${sets} dated version${sets === 1 ? '' : 's'}${dl ? `, ${dl} default${dl === 1 ? '' : 's'} linked to a year version` : ''}${mk ? `, ${mk} layout${mk === 1 ? '' : 's'} with DRS/corner marks` : ''}, ${Object.keys(L.laps || {}).length} lap change${Object.keys(L.laps || {}).length === 1 ? '' : 's'}, ${(L.custom || []).length} custom circuit${(L.custom || []).length === 1 ? '' : 's'}`;
 }
-function trackPackCode() { return 'PWTRACKS1:' + btoa(unescape(encodeURIComponent(JSON.stringify({ pitwallTracks: 1, exported: new Date().toISOString(), lib: LIB })))); }
+function trackPackCode() { return 'PWTRACKS1:' + btoa(unescape(encodeURIComponent(JSON.stringify({ pitwallTracks: 1, exported: new Date().toISOString(), lib: Object.assign({}, LIB, { defaults: linkedDefaults() }) })))); }
 function parseTrackPack(text) {
   text = (text || '').trim(); if (!text) throw new Error('empty');
   let obj;
@@ -298,7 +299,7 @@ function parseTrackPack(text) {
   else obj = JSON.parse(decodeURIComponent(escape(atob(text)))); // a full career save code also works
   const lib = obj.pitwallTracks ? obj.lib : obj.trackLib ? obj.trackLib : (obj.layouts || obj.custom) ? obj : null;
   if (!lib) throw new Error('no tracks');
-  return { layouts: lib.layouts || {}, custom: lib.custom || [], laps: lib.laps || {}, sets: lib.sets || {}, defVer: lib.defVer || {} };
+  return { layouts: lib.layouts || {}, custom: lib.custom || [], laps: lib.laps || {}, sets: lib.sets || {}, defVer: lib.defVer || {}, marks: lib.marks || {}, defaults: lib.defaults || {} };
 }
 Object.assign(A, {
   tracksexport() {
@@ -313,7 +314,7 @@ Object.assign(A, {
   tpcopy() { const t = document.getElementById('tpcode'); t.select(); const ok = () => toast('Copied'); try { (navigator.clipboard ? navigator.clipboard.writeText(t.value) : Promise.reject()).then(ok, () => { try { document.execCommand('copy'); ok(); } catch (e) { toast('Select the code and copy it manually'); } }); } catch (e) { toast('Select the code and copy it manually'); } },
   async tpdownload() {
     const filename = `pitwall-tracks-${new Date().toISOString().slice(0, 10)}.json`;
-    const json = JSON.stringify({ pitwallTracks: 1, exported: new Date().toISOString(), lib: LIB }, null, 1);
+    const json = JSON.stringify({ pitwallTracks: 1, exported: new Date().toISOString(), lib: Object.assign({}, LIB, { defaults: linkedDefaults() }) }, null, 1);
     const note = t => { const n = document.getElementById('tpnote'); if (n) n.textContent = t; };
     if (DL_CAP) {
       try { await DL_CAP.save({ filename, data: json }); note('Saved ' + filename); } catch (e) { if (e && e.code === 'declined') note('Download cancelled.'); else note('Download isn\'t available here — use Copy code instead.'); }
@@ -348,11 +349,12 @@ Object.assign(A, {
       const missing = LIB.custom.filter(c => keep.has(c.id) && !L.custom.some(x => x.id === c.id));
       if (missing.length) L.custom = L.custom.concat(missing); // never remove a circuit your career calendar uses
       LIB.custom.filter(c => !L.custom.some(x => x.id === c.id)).forEach(c => { const i = TRACKS.findIndex(t => t.id === c.id); if (i >= 0) TRACKS.splice(i, 1); delete TRACK_BY_ID[c.id]; });
-      LIB.layouts = L.layouts; LIB.custom = L.custom; LIB.laps = L.laps; LIB.sets = L.sets; LIB.defVer = L.defVer;
+      LIB.layouts = L.layouts; LIB.custom = L.custom; LIB.laps = L.laps; LIB.sets = L.sets; LIB.defVer = L.defVer; LIB.marks = L.marks;
     } else {
       L.custom.forEach(c => { const i = LIB.custom.findIndex(x => x.id === c.id); if (i >= 0) LIB.custom[i] = c; else LIB.custom.push(c); });
-      Object.assign(LIB.layouts, L.layouts); LIB.laps = Object.assign(LIB.laps || {}, L.laps); LIB.sets = Object.assign(LIB.sets || {}, L.sets); LIB.defVer = Object.assign(LIB.defVer || {}, L.defVer);
+      Object.assign(LIB.layouts, L.layouts); LIB.laps = Object.assign(LIB.laps || {}, L.laps); LIB.sets = Object.assign(LIB.sets || {}, L.sets); LIB.defVer = Object.assign(LIB.defVer || {}, L.defVer); LIB.marks = Object.assign(LIB.marks || {}, L.marks);
     }
+    restoreDefaults(L.defaults);
     saveLib(); applyLib(); clearGeo(); if (G) autosave(); closeModal();
     toast('Tracks imported'); render();
   }
