@@ -9500,7 +9500,7 @@ const MAPF = {};
 const MAP_SEC = ['#e8463f', '#3b8cff', '#f5b82e'];
 function mapWrap(a) { while (a > Math.PI) a -= 6.283185; while (a < -Math.PI) a += 6.283185; return a; }
 function mapFeatures(track) {
-  const g = trackGeometry(track), nT = (() => { try { return dkTurns(track); } catch (e) { return 12; } })();
+  const g = trackGeometry(track), nT = track.turnsN || (() => { try { return dkTurns(track); } catch (e) { return 12; } })();
   const mk = track.marks || null;
   const key = (track.geoKey || track.id) + ':' + nT + ':' + (mk ? JSON.stringify(mk) : '');
   if (MAPF[key]) return MAPF[key];
@@ -9509,12 +9509,25 @@ function mapFeatures(track) {
   const W = 4, cv = [];
   for (let j = 0; j < M; j++) cv.push(mapWrap(hd[(j + W) % M] - hd[(j - W + M) % M]));
   const sm = cv.map((_, j) => (cv[(j - 2 + M) % M] + cv[(j - 1 + M) % M] * 2 + cv[j] * 3 + cv[(j + 1) % M] * 2 + cv[(j + 2) % M]) / 9);
-  // corners: strongest curvature peaks, spaced apart, as many as the real turn count
+  // corners: always exactly the real turn count (from the turns database).
+  // 1) strongest curvature peaks, spaced apart; 2) relax the spacing for chicanes and esses;
+  // 3) still short -> add the curviest remaining spots furthest from existing corners (kinks, long multi-apex bends).
+  const dist = (x, y) => { const d = Math.abs(x - y); return Math.min(d, M - d); };
   const peaks = [];
-  for (let j = 0; j < M; j++) { const a = Math.abs(sm[j]); if (a > 0.12 && a >= Math.abs(sm[(j - 1 + M) % M]) && a >= Math.abs(sm[(j + 1) % M])) peaks.push({ j, a, s: Math.sign(sm[j]) }); }
+  for (let j = 0; j < M; j++) { const a = Math.abs(sm[j]); if (a > 0.015 && a >= Math.abs(sm[(j - 1 + M) % M]) && a >= Math.abs(sm[(j + 1) % M])) peaks.push({ j, a }); }
+  for (let j = 0; j < M; j++) { const a = Math.abs(cv[j]); if (a > 0.04 && a > Math.abs(cv[(j - 1 + M) % M]) && a >= Math.abs(cv[(j + 1) % M]) && !peaks.some(q => q.j === j)) peaks.push({ j, a: a * 0.9 }); }
   peaks.sort((x, y) => y.a - x.a);
-  const pick = [], sep = Math.max(6, Math.round(M * 0.012));
-  for (const p of peaks) { if (pick.length >= nT) break; if (pick.every(q => Math.min(Math.abs(q.j - p.j), M - Math.abs(q.j - p.j)) >= sep)) pick.push(p); }
+  const pick = [];
+  for (const sep of [Math.round(M * 0.014), Math.round(M * 0.009), Math.round(M * 0.006), 3]) {
+    for (const p of peaks) { if (pick.length >= nT) break; if (pick.every(q => dist(q.j, p.j) >= sep)) pick.push(p); }
+    if (pick.length >= nT) break;
+  }
+  while (pick.length < Math.min(nT, M / 3)) {
+    let bj = -1, bs = -1;
+    for (let j = 0; j < M; j++) { const d = pick.length ? Math.min(...pick.map(q => dist(q.j, j))) : M; if (d < 3) continue; const sc = Math.sqrt(Math.abs(sm[j]) + 0.002) * d; if (sc > bs) { bs = sc; bj = j; } }
+    if (bj < 0) break; pick.push({ j: bj, a: Math.abs(sm[bj]) });
+  }
+  pick.forEach(p => { p.s = Math.sign(sm[p.j]) || Math.sign(cv[p.j]) || 1; });
   pick.sort((x, y) => x.j - y.j);
   const corners = pick.map((p, i) => ({ f: p.j / M, s: p.s, n: i + 1 }));
   // straights: long runs of low curvature (wrap-aware) -> DRS zones on the longest ones
@@ -9616,12 +9629,17 @@ function trmGeo() {
   const k = JSON.stringify(P); if (TR._mg && TR._mg.k === k) return TR._mg;
   const sp = trSpline(P, 40), cum = [0]; for (let i = 1; i <= sp.length; i++) { const a = sp[i - 1], b = sp[i % sp.length]; cum.push(cum[i - 1] + Math.hypot(b[0] - a[0], b[1] - a[1])); }
   const len = cum[cum.length - 1];
-  const gk = '_trm' + (++trmGeo.n), tk = { id: TR.id, geoKey: gk, pts: P.map(p => [p[0] / 10, p[1] / 10]), marks: null };
+  const gk = '_trm' + (++trmGeo.n), tk = { id: TR.id, geoKey: gk, pts: P.map(p => [p[0] / 10, p[1] / 10]), marks: null, turnsN: trmTurnsFor(TR.id, TR.ver === -1 ? null : TR.from, TR.ver === -1 ? null : TR.to) };
   let auto = { drs: [], corners: [] }; try { const F = mapFeatures(tk); auto = { drs: F.autoDrs.map(z => [z[0], z[1] % 1]), corners: F.autoCorners.map(c => [c.f, null]) }; } catch (e) { }
   delete GEO[gk]; Object.keys(MAPF).forEach(x => { if (x.startsWith(gk)) delete MAPF[x]; });
   return TR._mg = { k, sp, cum, len, auto };
 }
 trmGeo.n = 0;
+// real turn count for a layout's years (latest year in the range where this circuit raced), else the circuit's current count
+function trmTurnsFor(id, from, to) {
+  if (from && to && typeof HIST !== 'undefined' && HIST.years) for (let y = Math.min(to, 2026); y >= from; y--) { const H = HIST.years[y], arr = TURNS_Y[y]; if (!H || !H.cal || !arr) continue; const rd = H.cal.findIndex(c => c[0] === id); if (rd >= 0 && arr[rd]) return arr[rd]; }
+  return TURNS_T[id] || null;
+}
 function trmAt(f) { const G2 = trmGeo(); const t = (((f % 1) + 1) % 1) * G2.len; let lo = 0, hi = G2.cum.length - 1; while (hi - lo > 1) { const m = (lo + hi) >> 1; if (G2.cum[m] <= t) lo = m; else hi = m; }
   const a = G2.sp[lo % G2.sp.length], b = G2.sp[(lo + 1) % G2.sp.length], u = (t - G2.cum[lo]) / ((G2.cum[lo + 1] - G2.cum[lo]) || 1); return [a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u]; }
 function trmFrac(p) { const G2 = trmGeo(); let bi = 0, bd = 1e9; G2.sp.forEach((q, i) => { const d = Math.hypot(q[0] - p[0], q[1] - p[1]); if (d < bd) { bd = d; bi = i; } }); return { f: +(G2.cum[bi] / G2.len).toFixed(4), d: bd }; }
