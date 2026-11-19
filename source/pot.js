@@ -11,7 +11,7 @@ function potState() {
   return G.pot;
 }
 function potRacesAfter() { return Math.max(0, G.cal.length - G.round - 1); }
-function potBank(id) { const S = potState(); if (S.bank[id] == null) S.bank[id] = POT_PER_RACE * Math.max(1, G.cal.length - G.round); return S.bank[id]; }
+function potBank(id) { const S = potState(); if (S.bank[id] == null) { S.bank[id] = POT_PER_RACE * Math.max(1, G.cal.length - G.round); S.start = S.start || {}; S.start[id] = S.bank[id]; } return S.bank[id]; }
 function potMax(id) { return Math.max(1, potBank(id) - potRacesAfter()); }
 const potControlled = e => G.player ? e.t.id === G.player : (() => { const f = WK.entries.find(x => x.d.id === G.follow); return !!f && f.t.id === e.t.id; })();
 
@@ -127,7 +127,7 @@ function potPage() {
   <div class="dk-fpbox"><div class="dk-mut heat-note">💰 Practice is done. Each driver agrees with their team principal how many points to chip into this Grand Prix's pot — at least 1. Stakes stay secret; only the total is announced before the race. After the race the whole pot is paid out: every finisher gets at least 1 point, the rest is shared by finishing position on a sliding scale down to the last finisher, and retirements get nothing.</div>
   <div class="pot-grid">${mine.map(card).join('')}</div>
   <div class="dk-mut" style="margin-top:.8em">🔒 The other ${others} drivers have agreed their amounts with their own team principals in secret.</div></div>
-  <div class="dk-fpfoot"><span class="dk-mut kbhint">Press ENTER/SPACE or click Lock in.</span><span class="sp"></span><button class="pri" data-a="potlock" data-enter="1">Lock in and go to qualifying →</button></div></div>`;
+  <div class="dk-fpfoot"><span class="dk-mut kbhint">Press ENTER/SPACE or click Lock in.</span><span class="sp"></span><button data-a="potview">💰 Allowances and past pots</button><button class="pri" data-a="potlock" data-enter="1">Lock in and go to qualifying →</button></div></div>`;
 }
 const _pot_viewWeekend = viewWeekend;
 viewWeekend = function () {
@@ -155,7 +155,7 @@ updateRaceUI = function () {
   try {
     if (!RACE || RACE.sprint || !potOn() || !WK.pot || !WK.pot.locked) return r;
     const ds = document.getElementById('dksess'); if (!ds) return r;
-    if (!ds.querySelector('.pot-chip')) ds.insertAdjacentHTML('beforeend', ` <span class="pot-chip">💰 POT ${WK.pot.total}</span>`);
+    if (!ds.querySelector('.pot-chip')) ds.insertAdjacentHTML('beforeend', ` <span class="pot-chip" data-a="potview" title="Open the prize pot">💰 POT ${WK.pot.total}</span>`);
   } catch (e) { }
   return r;
 };
@@ -164,8 +164,56 @@ dkRaceView = function (o) {
   let html = _pot_dkRaceView.apply(this, arguments);
   const s = G.results[o.k];
   if (s && s.pot && !o.sprint) {
-    const strip = `<div class="heat-strip pot-strip"><span><b>💰 Prize pot ${s.pot.total} pts</b> from ${s.pot.n} drivers</span><span>Winner +${s.pot.top}</span><span>${s.pot.fin} finishers paid · at least 1 each</span><span>Retirements: 0</span></div>`;
+    const strip = `<div class="heat-strip pot-strip"><span><b>💰 Prize pot ${s.pot.total} pts</b> from ${s.pot.n} drivers</span><span>Winner +${s.pot.top}</span><span>${s.pot.fin} finishers paid · at least 1 each</span><span>Retirements: 0</span><button class="sm" data-a="potview">Stakes and allowances →</button></div>`;
     html = html.replace('<table class="dkfp dkrr">', strip + '<table class="dkfp dkrr">');
   }
   return html;
 };
+
+// ---------- Prize Pot view: allowances left + round-by-round breakdown ----------
+// Secrecy: a stake locked for a race that hasn't been run yet stays hidden, so other drivers'
+// "left" figures only drop once that race is over. Your own team's figures are always up to date.
+let POTV = { open: {} };
+function potPending() { return WK && WK.pot && WK.pot.locked && !(WK.applied && WK.stage === 'results') && G.results.length <= G.round ? WK.pot : null; }
+function potMine(id) { if (G.player) return G.drivers[id] && G.drivers[id].team === G.player; const f = G.drivers[G.follow]; return !!f && !!G.drivers[id] && G.drivers[id].team === f.team; }
+function potRows() {
+  const S = potState(), pend = potPending(), won = {}, used = {};
+  G.results.forEach(r => { if (r.pot) r.rows.forEach(x => { won[x.id] = (won[x.id] || 0) + (x.pts || 0); }); });
+  const ids = Object.keys(S.bank);
+  return ids.map(id => {
+    const d = G.drivers[id]; if (!d) return null;
+    const hid = pend && pend.stakes[id] != null && !potMine(id) ? pend.stakes[id] : 0;
+    const left = S.bank[id] + hid, start = (S.start || {})[id] != null ? S.start[id] : POT_PER_RACE * G.cal.length;
+    return { id, d, team: d.team, start, left, used: start - left, won: won[id] || 0, cur: pend && potMine(id) ? pend.stakes[id] : null };
+  }).filter(Boolean).sort((a, b) => b.left - a.left || b.won - a.won);
+}
+function potViewHtml(modal) {
+  const S = potState(), rows = potRows(), pend = potPending(), after = Math.max(0, G.cal.length - Math.min(G.round, G.cal.length) - (pend ? 1 : 0));
+  const rounds = G.results.filter(r => r.pot);
+  const paid = rounds.reduce((a, r) => a + r.pot.total, 0);
+  const tc = t => (G.teams[t] || {}).color || '#888';
+  const nm = r => `<span class="pot-dn" style="--tc:${tc(r.team)}">${esc(r.d.name)}</span>`;
+  const stat = (l, v) => `<div class="pot-stat"><span>${l}</span><b>${v}</b></div>`;
+  const allow = `<div class="pot-sc"><table class="dkfp pot-tab"><thead><tr><th class="l">Driver</th><th class="l hm">Team</th><th class="ra hm">Allowance</th><th class="ra">Chipped in</th><th class="ra">Left</th><th class="ra hm">Per race left</th><th class="ra">Pot points won</th></tr></thead><tbody>${rows.map(r => `<tr class="${potMine(r.id) ? 'me' : ''}"><td class="l">${nm(r)}${r.cur != null ? ` <span class="pot-cur">${r.cur} in this GP</span>` : ''}</td><td class="l hm">${esc((G.teams[r.team] || {}).name || '')}</td><td class="ra hm">${r.start}</td><td class="ra">${r.used}</td><td class="ra"><b>${r.left}</b></td><td class="ra hm">${after ? (r.left / after).toFixed(1) : '—'}</td><td class="ra">${r.won}</td></tr>`).join('')}</tbody></table></div>`;
+  const hist = rounds.length ? rounds.slice().reverse().map(r => {
+    const k = r.round, fin = r.rows.filter(x => !x.out), rows2 = r.rows.slice().sort((a, b) => (a.out ? 1 : 0) - (b.out ? 1 : 0) || a.pos - b.pos);
+    const open = !!POTV.open[k], best = fin.reduce((m, x) => x.stake && (x.pts / x.stake) > (m ? m.pts / m.stake : 0) ? x : m, null);
+    return `<div class="pot-rd"><button class="pot-rdh ${open ? 'on' : ''}" data-a="potrd" data-v="${k}"><b>R${k} ${esc(r.gp || '')}</b><span>Pot <b>${r.pot.total}</b></span><span class="hm">${r.pot.fin} finishers paid</span><span>Winner +${r.pot.top}</span>${best ? `<span class="hm">Best return ${esc(best.code)} ${best.stake}→${best.pts}</span>` : ''}<span class="sp"></span><span>${open ? '▲' : '▼'}</span></button>
+    ${open ? `<div class="pot-sc"><table class="dkfp pot-tab"><thead><tr><th>Pos</th><th class="l">Driver</th><th class="ra">Chipped in</th><th class="ra">Paid out</th><th class="ra">Net</th></tr></thead><tbody>${rows2.map(x => { const net = (x.pts || 0) - (x.stake || 0); return `<tr class="${potMine(x.id) ? 'me' : ''}"><td class="pos">${x.out ? 'DNF' : 'P' + x.pos}</td><td class="l"><span class="pot-dn" style="--tc:${tc(x.team)}">${esc(x.name)}</span></td><td class="ra">${x.stake != null ? x.stake : '—'}</td><td class="ra">${x.pts || 0}</td><td class="ra ${net > 0 ? 'good' : net < 0 ? 'bad' : ''}">${net > 0 ? '+' : ''}${net}</td></tr>`; }).join('')}</tbody></table></div>` : ''}</div>`;
+  }).join('') : '<div class="dk-mut" style="padding:.6em 0">No Grand Prix has paid out yet this season.</div>';
+  const cur = pend ? `<div class="pot-live">💰 This Grand Prix's pot: <b>${pend.total}</b> points from ${Object.keys(pend.stakes).length} drivers. Other drivers' stakes are revealed after the race.</div>` : '';
+  const body = `${cur}<div class="pot-stats">${stat('Allowance per driver', POT_PER_RACE * G.cal.length)}${stat('Grands Prix paid out', rounds.length + ' / ' + G.cal.length)}${stat('Points paid out so far', paid)}${stat('Races still to chip into', after)}</div>
+  <h3 class="grp-h">Points left for each driver</h3>${allow}
+  <h3 class="grp-h" style="margin-top:1em">Prize pot by round</h3><div class="dk-mut small" style="margin-bottom:.4em">Tap a round to see every driver's stake and payout.</div>${hist}`;
+  if (modal) return `<div class="dkx-mod pot-mod"><div class="dkx-hd"><div><h2>Prize Pot</h2><div class="dk-mut">${G.year} · ${esc(G.cal.length + ' rounds')}</div></div><span class="sp"></span><button class="dkx-x" data-a="hxclose">✕</button></div><div class="dkx-body pot-body">${body}</div></div>`;
+  return `<div class="card pot-page"><h3>💰 Prize Pot — ${G.year}</h3>${body}</div>`;
+}
+Object.assign(A, {
+  potview() { hxOpen(potViewHtml(true)); },
+  potrd(el) { const k = el.dataset.v; POTV.open[k] = !POTV.open[k]; if (document.getElementById('dkx-ov')) hxOpen(potViewHtml(true)); else render(); }
+});
+const _pot_hqTabs = hqTabs;
+hqTabs = function () { const t = _pot_hqTabs.apply(this, arguments); if (potOn() && !t.includes('pot')) { const i = t.indexOf('standings'); t.splice(i + 1, 0, 'pot'); } return t; };
+TAB_NAMES.pot = '💰 Prize Pot';
+const _pot_viewHQ = viewHQ;
+viewHQ = function () { if (TAB === 'pot' && potOn()) { ensureXP(G); return potViewHtml(false); } return _pot_viewHQ.apply(this, arguments); };
