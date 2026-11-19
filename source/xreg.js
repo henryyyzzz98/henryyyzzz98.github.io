@@ -193,7 +193,7 @@ function xrTestPage() {
   const left = 3 - T.days.length;
   return `<div class="dk dk-page dk-fp dk-res" id="dk"><div class="dk-reshead">${dkFlag(track.cc, 'lg')}<div><h1>Pre-Season Testing - ${esc(track.short)}</h1><div class="dk-mut">${esc(track.name)} | ${G.year} | Day ${T.days.length} of 3</div></div><span class="sp"></span><div class="dk-tabs">${tabs}</div></div>
   <div class="dk-resgrid"><div class="dk-fpbox">${table}</div><div class="dk-resside">${side}${ev ? `<section><div class="dk-h"><b>STOPPAGES</b></div><div class="dkg-body">${ev}</div></section>` : ''}${notes}</div></div>
-  <div class="dk-fpfoot"><button data-a="xrtback">‹ Calendar</button><span class="sp"></span>${left > 0 ? `<button data-a="xrtrun" data-v="1">Run day ${T.days.length + 1}</button><button class="pri" data-a="xrtrun" data-v="${left}" data-enter="1">Run ${left > 1 ? 'all remaining days' : 'final day'}</button>` : '<span class="dk-mut">Testing complete — the season starts with round 1.</span>'}</div></div>`;
+  <div class="dk-fpfoot"><button data-a="xrtback">‹ Calendar</button><span class="sp"></span>${left > 0 ? `<button data-a="xrtrun" data-v="1">Run day ${T.days.length + 1}</button><button class="pri" data-a="xrtrun" data-v="${left}" data-enter="1">Run ${left > 1 ? 'all remaining days' : 'final day'}</button>` : '<span class="dk-mut">Testing complete — the season starts with round 1.</span><button class="pri" data-a="gowk" data-enter="1">Round 1 weekend →</button>'}</div></div>`;
 }
 Object.assign(A, {
   xrtest() { DK3.test = true; DK2.arch = null; render(); },
@@ -229,4 +229,18 @@ Race.prototype.retire = function (c, why, flag) {
   if (/tyre/i.test(String(why))) c.pitReq = c.pitReq || (this.slick ? this.slick(c, this.laps - c.laps) : null) || 'M';
   this.msg(crash ? `💥 ${c.d.code} has a big moment (${why}) — but recovers and carries on` : `⚠️ ${c.d.code} has a problem (${why}) — loses time but keeps going`, true);
   if (crash && this.incidentsOn && this.rules.sc && Math.random() < 0.3) { if (this.rules.vsc) this.startVSC(); else this.msg('🟨 Yellow flags', false); }
+};
+
+// ---------- testing comes first: the season opens with pre-season testing, not round 1 ----------
+function xrTestGo() { VIEW = 'hq'; TAB = 'calendar'; DK3.test = true; if (typeof DK2 !== 'undefined') DK2.arch = null; render(); window.scrollTo(0, 0); }
+A.xrtestgo = xrTestGo;
+A.xrtestall = function () { for (let i = 0; i < 3; i++) if (!(G.testing && G.testing.y === G.year && G.testing.days.length >= 3)) xrRunTestDay(G); DK3.ttab = 'all'; xrTestGo(); };
+['gowk', 'gowkrace'].forEach(k => { const f = A[k]; A[k] = function () { if (xrTestNeeded(G)) return xrTestGo(); return f.apply(this, arguments); }; });
+const _xg_nextRaceCard = nextRaceCard;
+nextRaceCard = function (t, btn) {
+  if (!xrTestNeeded(G)) return _xg_nextRaceCard.apply(this, arguments);
+  const T = G.testing && G.testing.y === G.year ? G.testing : null, tr = TRACK_BY_ID[xrTestTrack(G)] || roundTrack(G, 0), done = T ? T.days.length : 0;
+  return `<div class="card hl xr-next"><h3>Pre-season testing · before round 1 of ${G.cal.length}</h3><div class="row">${trackSVG(tr, 110)}<div class="sp"><div class="big">${flag(tr.cc)} Testing</div>
+    <div class="mut">${esc(tr.name)} · 3 days</div><div class="small mut">${done ? `Day ${done} of 3 done.` : 'Every team runs 3 days of testing before the season opener.'} Round 1 is ${esc(t.short)}.</div></div></div>
+    <div class="row" style="margin-top:10px"><button class="pri sp" data-a="xrtestgo" data-enter="1">${done ? 'Continue testing →' : 'Go to testing →'}</button><button data-a="xrtestall">⏩ Run all ${done ? 'remaining days' : '3 days'}</button></div></div>`;
 };

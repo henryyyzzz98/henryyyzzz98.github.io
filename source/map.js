@@ -86,7 +86,7 @@ dkDrawMap = function (cv, kind, S, mini) {
   const s0 = pointAt(g, 0), q = mini ? 2 : 3; ctx.save(); ctx.translate(X(s0), Y(s0)); ctx.rotate(s0[2] + Math.PI / 2);
   for (let k = -3; k < 3; k++) for (let j = 0; j < 2; j++) { ctx.fillStyle = (k + j) % 2 ? '#fff' : '#111'; ctx.fillRect(k * q, -q + j * q, q, q); } ctx.restore();
   // corner numbers, placed on the outside of each bend
-  if (!mini && s > 180) {
+  if (false) { // corner numbers are not drawn on the live map (still editable in Track Studio)
     const fs = s > 420 ? 11 : 10, rr = fs * 0.78; ctx.font = `700 ${fs}px "Titillium Web",system-ui,sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     F.corners.forEach(c => { const p = pointAt(g, c.f), n = p[2] + Math.PI / 2, d = -c.s * (tw / 2 + rr + 4), x = X(p) + Math.cos(n) * d, y = Y(p) + Math.sin(n) * d;
       ctx.beginPath(); ctx.arc(x, y, rr, 0, 6.283); ctx.fillStyle = '#2a2d38'; ctx.fill(); ctx.fillStyle = '#e6e8ee'; ctx.fillText(String(c.n), x, y + 0.5); });

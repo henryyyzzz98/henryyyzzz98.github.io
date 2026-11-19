@@ -147,7 +147,7 @@ function bcComm(who, s, prio = 1) {
   BC.cap = e;
 }
 function bcRadio(R, c, from, s) {
-  const now = bcNow(); if (!c || now - BC.lastRadio < 1100) return; BC.lastRadio = now;
+  const now = bcNow(); if (!c || now - BC.lastRadio < 1100 || PAUSED || !R.started || R.done) return; BC.lastRadio = now;
   R.msg(`📻 ${c.d.code} ${from === 'eng' ? '(engineer)' : ''}: "${s}"`.replace(' :', ':'), false);
 }
 function bcClip(ev, cars, label) {
@@ -164,9 +164,13 @@ function bcCut(cam) {
 // ---------- director idle choices (real time, on each UI update) ----------
 function bcDirect() {
   const R = RACE, now = bcNow();
+  // a replay ends on its own clock, whether or not the TV picture is open
+  if (BC.replay && BC.replay.t0 + (now - BC.replay.start) / 1000 * BC.replay.rate > BC.replay.t1) BC.replay = null;
+  if (BC.hidden) BC.pendRep = null; // no automatic replays while the TV is off
   if (BC.pendRep && now >= BC.pendRep.at && !BC.replay) { bcStartReplay(BC.pendRep.clip); BC.pendRep = null; }
+  const live = R.started && !PAUSED && !R.done;
   while (BC.q.length && now - BC.q[0].t > 9000) BC.q.shift();
-  if (BC.q.length && now - BC.lastComm > 1500) { const x = BC.q.shift(); bcComm(x.who, x.s, 3); }
+  if (live && BC.q.length && now - BC.lastComm > 1500) { const x = BC.q.shift(); bcComm(x.who, x.s, 3); }
   if (BC.cam && now < BC.cam.until) { bcRefreshText(); return; }
   const ord = R.order().filter(c => !c.out);
   const fav = R.cars.find(c => c.fav && !c.out);
@@ -202,7 +206,8 @@ function bcRefreshText() {
     const [a, b] = C.cars, g = bcGap(R, a, b), tr = bcTrend(a, b), d = tr.length >= 2 ? (tr[tr.length - 1] - tr[0]) / (tr.length - 1) : 0;
     C.text = `${bcName(a)} vs ${bcName(b)} · ${g.toFixed(2)} s${Math.abs(d) > 0.05 ? ` · ${d < 0 ? 'closing' : 'pulling away'} ${Math.abs(d).toFixed(2)} s/lap` : ''}`;
     C.spark = bcSpark(tr);
-    if (g < 0.6 && C.drs !== b.laps && Math.random() < 0.3) { C.drs = b.laps; bcRadio(R, b, 'eng', `Gap ${g.toFixed(1)}. DRS next lap, go for it.`); }
+    const drsEra = G.year >= 2011 && G.year <= 2025, DR = BC.drsR || (BC.drsR = {});
+    if (drsEra && R.started && !PAUSED && !R.sc && !R.vsc && b.laps >= 2 && g < 0.6 && DR[b.d.id] !== b.laps && Math.random() < 0.3) { DR[b.d.id] = b.laps; C.drs = b.laps; bcRadio(R, b, 'eng', `Gap ${g.toFixed(1)}. DRS next lap, go for it.`); }
   } else C.spark = '';
   if (C.kind === 'pitwin') {
     const c = C.cars[0], loss = R.track.pit + 2.6, mine = p(c); let rp = mine, ahead = null;
@@ -330,7 +335,7 @@ function bcUi() {
   if (BC.race !== RACE) bcReset(RACE);
   bcDirect();
   const C = BC.cam, l3 = document.getElementById('bcl3');
-  const rp = BC.replay;
+  const rp = BC.hidden ? null : BC.replay;
   const html = rp ? `<span class="bc-tag" style="background:#e10600">REPLAY</span><span class="bc-txt">Lap ${rp.clip.lap} · ${esc(rp.clip.label)}</span>`
     : C && C.text ? `<span class="bc-tag" style="background:${C.col};color:${dkInk(C.col)}">${esc(C.tag)}</span><span class="bc-txt">${esc(C.text)}</span>${C.spark || ''}` : '';
   if (l3 && l3._h !== html) { l3.innerHTML = html; l3._h = html; l3.classList.toggle('on', !!html); }

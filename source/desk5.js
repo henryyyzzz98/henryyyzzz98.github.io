@@ -48,7 +48,7 @@ function deskGrid(sprint) {
 
   return `<div class="dk dk-fp dk-res dk-sgr" id="dk"><div class="dk-reshead">${dkFlag(t.cc, 'lg')}<div><h1>Starting Grid - ${esc(t.short)}</h1><div class="dk-mut">${esc(t.name)} | Round ${WK.round + 1} of ${G.cal.length} | ${G.year} | ${name}${ac && sprint ? ' | top 8 from qualifying reversed' : ''}</div></div><span class="sp"></span>${schedHtml}</div>
   <div class="dk-resgrid"><div class="dk-fpbox">${table}</div><div class="dk-resside">${preview}${strat}${pu}${pred}</div></div>
-  <div class="dk-fpfoot"><span class="dk-mut kbhint">Press ENTER or click Cars to the grid.</span><span class="sp"></span><button class="pri" data-a="startrace" data-enter="1">Cars to the grid</button></div></div>`;
+  <div class="dk-fpfoot"><span class="dk-mut kbhint">Press ENTER or click Cars to the grid.</span><span class="sp"></span><button data-a="skipgp" title="Simulate the whole race instantly and go straight to the results">⏭ Skip ${sprint ? 'sprint' : 'Grand Prix'} — show result</button><button class="pri" data-a="startrace" data-enter="1">Cars to the grid</button></div></div>`;
 }
 const _dk5_viewWeekend = viewWeekend;
 viewWeekend = function () {
@@ -69,10 +69,9 @@ function deskTitle() {
   return `<div class="dk dk-page dk-title" id="dk"><div class="dkt-wrap">
     <div class="dkt-head"><div class="logo">PIT<b>WALL</b></div><div class="dk-mut">F1 TEAM MANAGER</div></div>
     ${cont}
-    <section><div class="dk-h"><b>NEW GAME</b></div><div class="dkt-tiles">
+    <section><div class="dk-h"><b>NEW GAME</b></div><div class="dkt-tiles two">
       ${tile('newgame', 'Manager career', 'Run a real 2026 team: drivers, contracts, car development and race strategy.', 'red')}
-      ${tile('newspec', 'Spectator season', 'Pick a favourite driver, set your own rules and watch the season unfold.')}
-      ${tile('newhist', 'Historic timeline 1950–', 'Real line-ups, calendars and points rules from any season since 1950.', 'gold')}</div></section>
+      ${tile('newspec', 'Spectator season', 'Pick a favourite driver, set your own rules and watch the season unfold.')}</div></section>
     <div class="dkt-row2"><section><div class="dk-h"><b>TOOLS</b></div><div class="dkt-tiles two">
       ${tile('importui', 'Import save code', 'Load a game exported from another device.')}
       ${tile('studio', 'Track Studio', 'Trace circuit layouts from images, or draw your own.')}</div></section>

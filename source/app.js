@@ -267,7 +267,7 @@ function hqMenu() {
   <div class="card"><h3>Settings</h3>
   <label class="row"><input type="checkbox" data-a="set" data-v="weatherOn" ${G.weatherOn !== false ? 'checked' : ''}> Weather (rain)</label>
   <label class="row"><input type="checkbox" data-a="set" data-v="incidentsOn" ${G.incidentsOn !== false ? 'checked' : ''}> Crashes, failures & safety cars</label>
-  <label class="row"><input type="checkbox" data-a="set" data-v="autoPause" ${G.autoPause ? 'checked' : ''}> Auto-pause race on safety car, rain or your retirement</label>
+  <label class="row"><input type="checkbox" data-a="set" data-v="autoPause" ${G.autoPause ? 'checked' : ''}> Auto-pause race on safety car or your retirement</label>
   ${G.spectator ? '' : `<div class="row" style="margin-top:6px"><span class="mut">Difficulty</span>${['easy', 'normal', 'hard'].map(d => `<button class="sm ${G.difficulty === d ? 'on' : ''}" data-a="setdiff" data-v="${d}">${d}</button>`).join('')}</div>`}</div>
   <div class="card"><h3>Tracks</h3><button data-a="studio">✏️ Track Studio</button><div class="small mut" style="margin-top:6px">Trace circuit layouts from images, or create your own circuits.</div></div>
   <div class="card"><h3>Career</h3><button data-a="totitle">Main menu</button></div></div>`;
@@ -720,7 +720,7 @@ function checkAutoPause() {
   const ev = RACE.events.splice(0);
   if (!G.autoPause) return false;
   const mine = myEntries().map(e => e.d.code); if (G.follow && G.drivers[G.follow]) mine.push(G.drivers[G.follow].code);
-  const hit = ev.find(s => /SAFETY CAR|VIRTUAL|Rain is starting|stopped/.test(s) || mine.some(c => s.includes(c) && /❌|Puncture/.test(s)));
+  const hit = ev.find(s => /SAFETY CAR|VIRTUAL|stopped/.test(s) || mine.some(c => s.includes(c) && /❌|Puncture/.test(s)));
   if (hit) { PAUSED = true; raceBanner = hit + ' — paused. Pick a speed to continue.'; const b = document.getElementById('rbanner'); if (b) { b.className = 'banner'; b.textContent = raceBanner; } document.querySelectorAll('.spd').forEach(x => x.classList.toggle('on', x.dataset.v === 'pause')); return true; }
   return false;
 }
@@ -911,6 +911,16 @@ const A = {
   togrid(q) { WK.stage = WK.stage === 'squali' ? 'sgrid' : 'grid'; if (q !== true) render(); },
   stt(el) { const e = WK.entries.find(e => e.d.id === el.dataset.d); if (WK.stage === 'sgrid') e.sStartTyre = el.dataset.v; else e.startTyre = el.dataset.v; render(); },
   autostrat(el) { WK.entries.find(e => e.d.id === el.dataset.d).auto = el.checked; },
+  skipgp() {
+    if (!WK || (WK.stage !== 'grid' && WK.stage !== 'sgrid' && WK.stage !== 'hbreak' && WK.stage !== 'gbreak')) return;
+    let guard = 0;
+    do {
+      A.startrace(true); cancelAnimationFrame(raf);
+      RACE.started = true; LIGHTS = null; PAUSED = false; let n = 0;
+      while (!RACE.done && n++ < 3000000) { RACE.step(0.25); RACE.events.length = 0; }
+      finishRace();
+    } while ((WK.stage === 'hbreak' || WK.stage === 'gbreak') && guard++ < 6);
+  },
   startrace(q) {
     const sprint = WK.stage === 'sgrid';
     const grid = sprint ? WK.sgrid : WK.grid;

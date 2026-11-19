@@ -198,7 +198,7 @@ function deskLive(kind) {
   <div class="dk-grid">
     <section class="dk-map"><div class="dk-bar"><span class="dk-flagst" id="dkflag"></span><span class="sp"></span><span class="dk-spd" id="rctl">${dkSpd()}</span><span class="dk-km">${t.km.toFixed(3)} km · ${dkTurns(t)} turns</span></div>
       <div class="dk-mapbox"><canvas id="cv"></canvas>
-        <div class="dk-maptitle">${dkFlag(t.cc, 'xl')}<span>${esc(t.short)}</span></div>
+        <div class="dk-maptitle">${dkFlag(t.cc, 'xl')}<span>${esc(t.name || t.short)}</span></div>
         ${kind === 'race' ? `<div class="gantry dk-gantry ${RACE.started && !(LIGHTS && LIGHTS.phase === 'out') ? 'gone' : ''}" id="gantry">${[0, 1, 2, 3, 4].map(() => '<div class="glamp"><i></i><i></i></div>').join('')}</div><div class="lomsg" id="lomsg"></div>` : ''}
         <div id="rbanner" class="${raceBanner ? 'banner' : ''}">${raceBanner ? esc(raceBanner) : ''}</div></div></section>
     <section class="dk-order"><div class="dk-tabs">${tabs.map(([k, v]) => `<button class="${DK.tab === k ? 'on' : ''}" data-a="dktab" data-v="${k}">${v}</button>`).join('')}</div><div class="dk-table" id="dktable"></div></section>
@@ -487,7 +487,7 @@ Object.assign(A, {
     const v = el.dataset.v, kind = dkStage(), S = kind === 'race' ? RACE : kind === 'quali' ? curQS().live : null;
     if (v === 'settings') {
       modal(`<h3>Display settings</h3><label class="row" style="margin:8px 0"><input type="checkbox" data-a="dkclassic"> Use the classic layout on this device</label>
-      <label class="row" style="margin:8px 0"><input type="checkbox" data-a="dkautop" ${G.autoPause ? 'checked' : ''}> Auto-pause for safety cars, rain and my car's problems</label>
+      <label class="row" style="margin:8px 0"><input type="checkbox" data-a="dkautop" ${G.autoPause ? 'checked' : ''}> Auto-pause for safety cars and my car's problems</label>
       <div class="small mut">Keyboard: <b>T</b> telemetry / broadcast · <b>Space</b> pause · <b>1–5</b> speed</div>
       ${kind === 'race' || kind === 'quali' ? `<div class="dk-homebox"><b>Leave this session?</b><div class="small mut">The ${kind === 'race' ? (RACE && RACE.sprint ? 'sprint' : 'race') : 'session'} is saved exactly where it is. Press <b>Continue</b> on the main menu to pick it up again.</div><button data-a="dkhome">🏠 Back to main menu</button></div>` : ''}
       <div class="row" style="margin-top:12px"><span class="sp"></span><button data-a="close">Close</button></div>`); return;

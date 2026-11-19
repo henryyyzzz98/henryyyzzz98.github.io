@@ -1087,3 +1087,15 @@ body.dt .dk .dkst tr.me td.tcell{background:var(--tc);color:var(--ti)}
 .pot-tn{border-left:4px solid var(--tc);padding-left:.5em;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
 .pot-team .pot-grid{margin-top:.4em}
 .pot-all{gap:6px;flex-wrap:wrap;margin-top:.6em}
+/* pop-ups on phones: pin to the top of the visible screen so the close button is always reachable */
+.dp-hd{position:sticky;top:0;z-index:2;background:#000;border-bottom:1px solid #141e33}
+.dkx-ov{overscroll-behavior:contain}
+.dkx-mod{overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+@media (max-width:899px){
+  .dkx-ov{align-items:flex-start;overflow-y:auto;height:100vh;height:100dvh}
+  .dkx-mod{max-height:100vh;max-height:100dvh;margin:0}
+  .dp-hd{padding:10px 12px}
+  .dp-hd button{padding:6px 14px;font-size:14px}
+}
+.tp-hd{position:sticky;top:0;z-index:2;background:#060a14}
+@media (max-width:1100px){.tp-mod{max-height:100vh;max-height:100dvh}}
