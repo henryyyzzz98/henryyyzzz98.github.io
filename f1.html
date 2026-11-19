@@ -1069,6 +1069,27 @@ body.dt .dk .dkst tr.me td.tcell{background:var(--tc);color:var(--ti)}
 .pot-ann{color:#ffd23f}
 .pot-chip{color:#ffd23f;font-weight:700;margin-left:.4em}
 @media (max-width:899px){.pot-lab{display:block;min-width:0}}
+.pot-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.6em;margin:.6em 0 1em}
+.pot-stat{background:#121826;border:1px solid #2a3248;padding:.5em .8em;display:flex;flex-direction:column}
+.pot-stat span{font-size:.75em;color:#8a96b0;text-transform:uppercase;letter-spacing:.05em}.pot-stat b{font-size:1.5em;color:#ffd23f}
+.pot-tab td,.pot-tab th{padding:.3em .6em}
+.pot-tab tr.me td{background:#1b2333}
+.pot-dn{border-left:4px solid var(--tc);padding-left:.5em}
+.pot-cur{font-size:.75em;color:#ffd23f;margin-left:.4em}
+.pot-rd{margin:.35em 0}
+.pot-rdh{display:flex;width:100%;gap:1em;align-items:center;text-align:left;flex-wrap:wrap}
+.pot-rdh.on{border-color:#ffd23f}
+.pot-live{background:#2a2410;border:1px solid #6b5a1a;padding:.5em .8em;margin-bottom:.6em}
+.pot-mod{width:min(1100px,96vw)}.pot-body{max-height:80vh;overflow:auto}
+.pot-chip{cursor:pointer;text-decoration:underline dotted}
+.pot-strip button.sm{margin-left:auto}
+.pot-sc{overflow-x:auto;max-width:100%}
+.pot-page{min-width:0;overflow:hidden}
+@media (max-width:899px){.pot-tab td,.pot-tab th{padding:.25em .35em;font-size:.88em}.pot-tab .hm{display:none}}
+.pot-team{margin-top:1em}
+.pot-tn{border-left:4px solid var(--tc);padding-left:.5em;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.pot-team .pot-grid{margin-top:.4em}
+.pot-all{gap:6px;flex-wrap:wrap;margin-top:.6em}
 </style></head><body><div id="app"></div><script>
 // ===== DATA: teams, drivers, tracks =====
 const ENGINES = {
@@ -9687,9 +9708,11 @@ function potState() {
   return G.pot;
 }
 function potRacesAfter() { return Math.max(0, G.cal.length - G.round - 1); }
-function potBank(id) { const S = potState(); if (S.bank[id] == null) S.bank[id] = POT_PER_RACE * Math.max(1, G.cal.length - G.round); return S.bank[id]; }
+function potBank(id) { const S = potState(); if (S.bank[id] == null) { S.bank[id] = POT_PER_RACE * Math.max(1, G.cal.length - G.round); S.start = S.start || {}; S.start[id] = S.bank[id]; } return S.bank[id]; }
 function potMax(id) { return Math.max(1, potBank(id) - potRacesAfter()); }
-const potControlled = e => G.player ? e.t.id === G.player : (() => { const f = WK.entries.find(x => x.d.id === G.follow); return !!f && f.t.id === e.t.id; })();
+// spectator without a favourite driver isn't on any team, so they sit in on every team's talks
+const potSeeAll = () => !!(G && !G.player && G.spectator && !(G.follow && G.drivers[G.follow]));
+const potControlled = e => G.player ? e.t.id === G.player : potSeeAll() ? true : (() => { const f = WK.entries.find(x => x.d.id === G.follow); return !!f && f.t.id === e.t.id; })();
 
 // ---------- AI: how much to chip in ----------
 function potFpRank() { // pace order from the last free practice session
@@ -9708,14 +9731,14 @@ function potAiStake(e, rank, n) {
   return { ask: clampS(base * ego), final: clampS(base) };
 }
 function potTalk(e, s) {
-  const first = String(e.d.name).split(' ').slice(-1)[0];
-  const strong = s.ask >= s.final;
-  const d = s.ask > s.final * 1.25 ? `“I feel quick here after practice — I want to put in ${s.ask}.”`
-    : s.ask < s.final * 0.8 ? `“Not my weekend so far. I'd rather keep my points — ${s.ask} at most.”`
-    : `“The car feels about right. Something like ${s.ask} makes sense.”`;
-  const tp = s.final === s.ask ? `“Agreed, ${s.final} it is.”`
-    : s.final < s.ask ? `“Let's not overspend this early, ${first}. We go with ${s.final}.”`
-    : `“We have the pace for more — I want ${s.final} on the table.”`;
+  const first = String(e.d.name).split(' ').slice(-1)[0], A_ = s.ask, F_ = s.final;
+  const hi = [`“I feel quick here after practice — I want to put in ${A_}.”`, `“This track suits me. Let's go big: ${A_}.”`, `“The long runs were strong. I'd chip in ${A_}.”`, `“I can win from here. ${A_}, no less.”`];
+  const lo = [`“Not my weekend so far. I'd rather keep my points — ${A_} at most.”`, `“We're struggling for grip. Keep it small, ${A_}.”`, `“Practice was messy. Let's save it for a better track — ${A_}.”`, `“I don't trust the balance yet. ${A_} is enough.”`];
+  const mid = [`“The car feels about right. Something like ${A_} makes sense.”`, `“Solid practice. ${A_} feels like the right amount.”`, `“We're in the mix. I'd go with ${A_}.”`, `“Nothing special, nothing bad. ${A_}?”`, `“Points on the board matter. Put ${A_} in.”`];
+  const d = pick(A_ > F_ * 1.25 ? hi : A_ < F_ * 0.8 ? lo : mid);
+  const tp = pick(F_ === A_ ? [`“Agreed, ${F_} it is.”`, `“Fine by me — ${F_}.”`, `“Same number I had in mind. ${F_}.”`]
+    : F_ < A_ ? [`“Let's not overspend this early, ${first}. We go with ${F_}.”`, `“The data says otherwise. ${F_}, not ${A_}.”`, `“We need points for later races. ${F_}.”`, `“Calm down, ${first}. ${F_} is plenty.”`]
+    : [`“We have the pace for more — I want ${F_} on the table.”`, `“Don't undersell yourself, ${first}. ${F_}.”`, `“The car's better than you think. We go ${F_}.”`]);
   return { d, tp };
 }
 function potDecide() {
@@ -9786,6 +9809,7 @@ A.toquali = function (q) {
 Object.assign(A, {
   potadj(el) { const P = WK.pot, id = el.dataset.d, v = el.dataset.v, max = potMax(id);
     P.stakes[id] = v === 'min' ? 1 : v === 'max' ? max : v === 'ask' ? P.talks[id].ask : v === 'tp' ? P.talks[id].tpPick : Math.max(1, Math.min(max, (P.stakes[id] || 1) + +v)); render(); },
+  potall(el) { const P = WK.pot, v = el.dataset.v; Object.keys(P.talks).forEach(id => { P.stakes[id] = v === 'min' ? 1 : v === 'max' ? potMax(id) : v === 'ask' ? P.talks[id].ask : P.talks[id].tpPick; }); render(); },
   potlock() { if (!WK.pot) return; potLock(); WK.stage = 'fp'; _pot_toquali.call(A); }
 });
 const _pot_dkcont = A.dkcont;
@@ -9799,11 +9823,15 @@ function potPage() {
     <div class="pot-num"><span class="dk-mut">Chip in</span><b>${v}</b><span class="dk-mut">of ${max} possible · allowance ${bank} → ${bank - v}</span></div>
     <div class="row pot-btns">${btn('min', 'Min 1')}${btn(-5, '−5')}${btn(-1, '−1')}${btn(1, '+1')}${btn(5, '+5')}${btn('max', 'Max')}${btn('ask', `Driver's ask (${T.ask})`)}${btn('tp', `Principal's call (${T.tpPick})`)}</div></div>`; };
   const others = WK.entries.length - mine.length;
+  const teams = []; mine.forEach(e => { let g = teams.find(x => x.t === e.t); if (!g) teams.push(g = { t: e.t, es: [] }); g.es.push(e); });
+  const grid = potSeeAll() ? teams.map(g => `<div class="pot-team"><div class="pot-tn" style="--tc:${g.t.color}">${esc(g.t.name)}</div><div class="pot-grid">${g.es.map(card).join('')}</div></div>`).join('') : `<div class="pot-grid">${mine.map(card).join('')}</div>`;
+  const tail = potSeeAll() ? `<div class="dk-mut" style="margin-top:.8em">👀 You're not following a driver, so you sit in on every team's talks. The teams still only learn the pot's total.</div>` : `<div class="dk-mut" style="margin-top:.8em">🔒 The other ${others} drivers have agreed their amounts with their own team principals in secret.</div>`;
   return `<div class="dk dk-fp" id="dk"><div class="dk-fptitle">Prize Pot Talks - ${esc(t.short)}<span class="dk-mut">ROUND ${WK.round + 1} OF ${G.cal.length} · ${G.year} · ${after} RACE${after === 1 ? '' : 'S'} AFTER THIS ONE · KEEP 1 POINT FOR EACH</span></div>
   <div class="dk-fpbox"><div class="dk-mut heat-note">💰 Practice is done. Each driver agrees with their team principal how many points to chip into this Grand Prix's pot — at least 1. Stakes stay secret; only the total is announced before the race. After the race the whole pot is paid out: every finisher gets at least 1 point, the rest is shared by finishing position on a sliding scale down to the last finisher, and retirements get nothing.</div>
-  <div class="pot-grid">${mine.map(card).join('')}</div>
-  <div class="dk-mut" style="margin-top:.8em">🔒 The other ${others} drivers have agreed their amounts with their own team principals in secret.</div></div>
-  <div class="dk-fpfoot"><span class="dk-mut kbhint">Press ENTER/SPACE or click Lock in.</span><span class="sp"></span><button class="pri" data-a="potlock" data-enter="1">Lock in and go to qualifying →</button></div></div>`;
+  ${potSeeAll() ? `<div class="row pot-all"><span class="dk-mut">All drivers:</span><button class="sm" data-a="potall" data-v="tp">Principals' calls</button><button class="sm" data-a="potall" data-v="ask">Drivers' asks</button><button class="sm" data-a="potall" data-v="min">Everyone min 1</button><button class="sm" data-a="potall" data-v="max">Everyone max</button></div>` : ''}
+  ${grid}
+  ${tail}</div>
+  <div class="dk-fpfoot"><span class="dk-mut kbhint">Press ENTER/SPACE or click Lock in.</span><span class="sp"></span><button data-a="potview">💰 Allowances and past pots</button><button class="pri" data-a="potlock" data-enter="1">Lock in and go to qualifying →</button></div></div>`;
 }
 const _pot_viewWeekend = viewWeekend;
 viewWeekend = function () {
@@ -9831,7 +9859,7 @@ updateRaceUI = function () {
   try {
     if (!RACE || RACE.sprint || !potOn() || !WK.pot || !WK.pot.locked) return r;
     const ds = document.getElementById('dksess'); if (!ds) return r;
-    if (!ds.querySelector('.pot-chip')) ds.insertAdjacentHTML('beforeend', ` <span class="pot-chip">💰 POT ${WK.pot.total}</span>`);
+    if (!ds.querySelector('.pot-chip')) ds.insertAdjacentHTML('beforeend', ` <span class="pot-chip" data-a="potview" title="Open the prize pot">💰 POT ${WK.pot.total}</span>`);
   } catch (e) { }
   return r;
 };
@@ -9840,11 +9868,59 @@ dkRaceView = function (o) {
   let html = _pot_dkRaceView.apply(this, arguments);
   const s = G.results[o.k];
   if (s && s.pot && !o.sprint) {
-    const strip = `<div class="heat-strip pot-strip"><span><b>💰 Prize pot ${s.pot.total} pts</b> from ${s.pot.n} drivers</span><span>Winner +${s.pot.top}</span><span>${s.pot.fin} finishers paid · at least 1 each</span><span>Retirements: 0</span></div>`;
+    const strip = `<div class="heat-strip pot-strip"><span><b>💰 Prize pot ${s.pot.total} pts</b> from ${s.pot.n} drivers</span><span>Winner +${s.pot.top}</span><span>${s.pot.fin} finishers paid · at least 1 each</span><span>Retirements: 0</span><button class="sm" data-a="potview">Stakes and allowances →</button></div>`;
     html = html.replace('<table class="dkfp dkrr">', strip + '<table class="dkfp dkrr">');
   }
   return html;
 };
+
+// ---------- Prize Pot view: allowances left + round-by-round breakdown ----------
+// Secrecy: a stake locked for a race that hasn't been run yet stays hidden, so other drivers'
+// "left" figures only drop once that race is over. Your own team's figures are always up to date.
+let POTV = { open: {} };
+function potPending() { return WK && WK.pot && WK.pot.locked && !(WK.applied && WK.stage === 'results') && G.results.length <= G.round ? WK.pot : null; }
+function potMine(id) { if (G.player) return G.drivers[id] && G.drivers[id].team === G.player; const f = G.drivers[G.follow]; return !!f && !!G.drivers[id] && G.drivers[id].team === f.team; }
+function potRows() {
+  const S = potState(), pend = potPending(), won = {}, used = {};
+  G.results.forEach(r => { if (r.pot) r.rows.forEach(x => { won[x.id] = (won[x.id] || 0) + (x.pts || 0); }); });
+  const ids = Object.keys(S.bank);
+  return ids.map(id => {
+    const d = G.drivers[id]; if (!d) return null;
+    const see = potMine(id) || potSeeAll(), hid = pend && pend.stakes[id] != null && !see ? pend.stakes[id] : 0;
+    const left = S.bank[id] + hid, start = (S.start || {})[id] != null ? S.start[id] : POT_PER_RACE * G.cal.length;
+    return { id, d, team: d.team, start, left, used: start - left, won: won[id] || 0, cur: pend && (potMine(id) || potSeeAll()) ? pend.stakes[id] : null };
+  }).filter(Boolean).sort((a, b) => b.left - a.left || b.won - a.won);
+}
+function potViewHtml(modal) {
+  const S = potState(), rows = potRows(), pend = potPending(), after = Math.max(0, G.cal.length - Math.min(G.round, G.cal.length) - (pend ? 1 : 0));
+  const rounds = G.results.filter(r => r.pot);
+  const paid = rounds.reduce((a, r) => a + r.pot.total, 0);
+  const tc = t => (G.teams[t] || {}).color || '#888';
+  const nm = r => `<span class="pot-dn" style="--tc:${tc(r.team)}">${esc(r.d.name)}</span>`;
+  const stat = (l, v) => `<div class="pot-stat"><span>${l}</span><b>${v}</b></div>`;
+  const allow = `<div class="pot-sc"><table class="dkfp pot-tab"><thead><tr><th class="l">Driver</th><th class="l hm">Team</th><th class="ra hm">Allowance</th><th class="ra">Chipped in</th><th class="ra">Left</th><th class="ra hm">Per race left</th><th class="ra">Pot points won</th></tr></thead><tbody>${rows.map(r => `<tr class="${potMine(r.id) ? 'me' : ''}"><td class="l">${nm(r)}${r.cur != null ? ` <span class="pot-cur">${r.cur} in this GP</span>` : ''}</td><td class="l hm">${esc((G.teams[r.team] || {}).name || '')}</td><td class="ra hm">${r.start}</td><td class="ra">${r.used}</td><td class="ra"><b>${r.left}</b></td><td class="ra hm">${after ? (r.left / after).toFixed(1) : '—'}</td><td class="ra">${r.won}</td></tr>`).join('')}</tbody></table></div>`;
+  const hist = rounds.length ? rounds.slice().reverse().map(r => {
+    const k = r.round, fin = r.rows.filter(x => !x.out), rows2 = r.rows.slice().sort((a, b) => (a.out ? 1 : 0) - (b.out ? 1 : 0) || a.pos - b.pos);
+    const open = !!POTV.open[k], best = fin.reduce((m, x) => x.stake && (x.pts / x.stake) > (m ? m.pts / m.stake : 0) ? x : m, null);
+    return `<div class="pot-rd"><button class="pot-rdh ${open ? 'on' : ''}" data-a="potrd" data-v="${k}"><b>R${k} ${esc(r.gp || '')}</b><span>Pot <b>${r.pot.total}</b></span><span class="hm">${r.pot.fin} finishers paid</span><span>Winner +${r.pot.top}</span>${best ? `<span class="hm">Best return ${esc(best.code)} ${best.stake}→${best.pts}</span>` : ''}<span class="sp"></span><span>${open ? '▲' : '▼'}</span></button>
+    ${open ? `<div class="pot-sc"><table class="dkfp pot-tab"><thead><tr><th>Pos</th><th class="l">Driver</th><th class="ra">Chipped in</th><th class="ra">Paid out</th><th class="ra">Net</th></tr></thead><tbody>${rows2.map(x => { const net = (x.pts || 0) - (x.stake || 0); return `<tr class="${potMine(x.id) ? 'me' : ''}"><td class="pos">${x.out ? 'DNF' : 'P' + x.pos}</td><td class="l"><span class="pot-dn" style="--tc:${tc(x.team)}">${esc(x.name)}</span></td><td class="ra">${x.stake != null ? x.stake : '—'}</td><td class="ra">${x.pts || 0}</td><td class="ra ${net > 0 ? 'good' : net < 0 ? 'bad' : ''}">${net > 0 ? '+' : ''}${net}</td></tr>`; }).join('')}</tbody></table></div>` : ''}</div>`;
+  }).join('') : '<div class="dk-mut" style="padding:.6em 0">No Grand Prix has paid out yet this season.</div>';
+  const cur = pend ? `<div class="pot-live">💰 This Grand Prix's pot: <b>${pend.total}</b> points from ${Object.keys(pend.stakes).length} drivers. ${potSeeAll() ? 'You sat in on every team\'s talks, so all stakes are shown.' : 'Other drivers\' stakes are revealed after the race.'}</div>` : '';
+  const body = `${cur}<div class="pot-stats">${stat('Allowance per driver', POT_PER_RACE * G.cal.length)}${stat('Grands Prix paid out', rounds.length + ' / ' + G.cal.length)}${stat('Points paid out so far', paid)}${stat('Races still to chip into', after)}</div>
+  <h3 class="grp-h">Points left for each driver</h3>${allow}
+  <h3 class="grp-h" style="margin-top:1em">Prize pot by round</h3><div class="dk-mut small" style="margin-bottom:.4em">Tap a round to see every driver's stake and payout.</div>${hist}`;
+  if (modal) return `<div class="dkx-mod pot-mod"><div class="dkx-hd"><div><h2>Prize Pot</h2><div class="dk-mut">${G.year} · ${esc(G.cal.length + ' rounds')}</div></div><span class="sp"></span><button class="dkx-x" data-a="hxclose">✕</button></div><div class="dkx-body pot-body">${body}</div></div>`;
+  return `<div class="card pot-page"><h3>💰 Prize Pot — ${G.year}</h3>${body}</div>`;
+}
+Object.assign(A, {
+  potview() { hxOpen(potViewHtml(true)); },
+  potrd(el) { const k = el.dataset.v; POTV.open[k] = !POTV.open[k]; if (document.getElementById('dkx-ov')) hxOpen(potViewHtml(true)); else render(); }
+});
+const _pot_hqTabs = hqTabs;
+hqTabs = function () { const t = _pot_hqTabs.apply(this, arguments); if (potOn() && !t.includes('pot')) { const i = t.indexOf('standings'); t.splice(i + 1, 0, 'pot'); } return t; };
+TAB_NAMES.pot = '💰 Prize Pot';
+const _pot_viewHQ = viewHQ;
+viewHQ = function () { if (TAB === 'pot' && potOn()) { ensureXP(G); return potViewHtml(false); } return _pot_viewHQ.apply(this, arguments); };
 // ---------- TV-graphics track map (replaces dkDrawMap) ----------
 // Draws the traced layout exactly as stored; only styling is added around it.
 const MAPF = {};
