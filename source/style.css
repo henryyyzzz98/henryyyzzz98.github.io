@@ -1055,3 +1055,14 @@ body.dt .dk .dkst tr.me td.tcell{background:var(--tc);color:var(--ti)}
 .grp-tag.gA{background:#ffd23f}.grp-tag.gB{background:#9ec5ff}.grp-tag.gC{background:#f4a3a3}
 .grp-wait{margin:.4em 0;line-height:1.7}
 @media (max-width:899px){.grp-cols{grid-template-columns:1fr}}
+.pot-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:1em;margin-top:.8em}
+.pot-card{border:1px solid #2a3248;border-left:4px solid var(--tc);border-radius:0;padding:.8em 1em;background:#0e121b}
+.pot-who{font-size:1.05em;margin-bottom:.5em}
+.pot-talk{display:grid;gap:.4em;font-size:.92em;line-height:1.45}
+.pot-lab{display:inline-block;min-width:8.5em;color:#8a96b0;font-size:.85em;text-transform:uppercase;letter-spacing:.04em}
+.pot-num{display:flex;align-items:baseline;gap:.6em;flex-wrap:wrap;margin:.7em 0 .4em}
+.pot-num b{font-size:2em;color:#ffd23f}
+.pot-btns{flex-wrap:wrap;gap:4px}
+.pot-ann{color:#ffd23f}
+.pot-chip{color:#ffd23f;font-weight:700;margin-left:.4em}
+@media (max-width:899px){.pot-lab{display:block;min-width:0}}

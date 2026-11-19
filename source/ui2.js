@@ -288,6 +288,7 @@ function lcsProject() {
   } else if (!H || R.heat === 3) running.forEach((c, i) => { if (i < PT.length) add[c.d.id] = (add[c.d.id] || 0) + PT[i]; });
   if (fl && R.fastest && !R.fastest.c.out) { const p = running.indexOf(R.fastest.c); if (p >= 0 && (fl === 'any' || p < 10)) add[R.fastest.c.d.id] = (add[R.fastest.c.d.id] || 0) + 1; }
   if (!sprint && typeof expInfo === 'function') { const E = expInfo(); if (E && expHalf(E, G.round)) Object.keys(add).forEach(k => add[k] /= 2); }
+  if (!sprint && typeof potLive === 'function') { const pa = potLive(R, running); if (pa) { Object.keys(add).forEach(k => delete add[k]); Object.assign(add, pa); } }
   const ds0 = standingsDrivers(G).filter(d => d.team || d.pts > 0), pre = new Map(ds0.map((d, i) => [d.id, i]));
   const drv = ds0.map(d => ({ d, pts: d.pts + (add[d.id] || 0), gain: add[d.id] || 0 })).sort((a, b) => b.pts - a.pts || pre.get(a.d.id) - pre.get(b.d.id));
   const ts0 = standingsTeams(G), preT = new Map(ts0.map((t, i) => [t.id, i])), tadd = {};

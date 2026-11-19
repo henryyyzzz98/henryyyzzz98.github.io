@@ -1,7 +1,7 @@
 // ===================== More alternative regulations =====================
 // Pre-season testing · equal cars (all season, or equal at the start and then developed) · weather setting ·
 // refuelling · team orders · no safety car. Every option can be switched on/off in the custom regulations.
-const XR0 = { testing: 'off', equal: 'off', weather: 'real', refuel: 'off', orders: 'off', scr: 'era', sprint: 'on', dnf: 'on', standins: 'real', heatpts: 'weighted', express: 'off' };
+const XR0 = { testing: 'off', equal: 'off', weather: 'real', refuel: 'off', orders: 'off', scr: 'era', sprint: 'on', dnf: 'on', standins: 'real', heatpts: 'weighted', express: 'off', pot: 'off' };
 const xr = (G0, k) => { const r = (G0 && G0.regs) || {}; return r[k] == null ? XR0[k] : r[k]; };
 
 // ---------- settings form ----------
@@ -30,7 +30,8 @@ dkRegsForm = function (r, act) {
   <label class="small">Retirements${sel('dnf', [['on', 'On — crashes, failures and other retirements'], ['off', 'Off — every car races to the finish']])}</label>
   <label class="small">Stand-in &amp; reserve drivers${sel('standins', [['real', 'As in real history — stand-ins and one-off entries race'], ['off', 'Off — the season line-up races every round']])}</label>
   <label class="small">Three-part GP points${sel('heatpts', [['weighted', 'Weighted — Race 1 ⅓, Race 2 ⅔, Race 3 full points'], ['standard', 'Standard — normal points for the final classification only'], ['fixed', 'Fixed — Race 1 5-4-3-2-1, Race 2 10-8-6-4-2, Race 3 15-12-9-6-3 (replaces the points system)']])}</label>
-  <label class="small">Express pass race${sel('express', [['off', 'Off'], ['on', 'On — a quarter of the races: each winner skips the next race, which pays half points']])}</label>`;
+  <label class="small">Express pass race${sel('express', [['off', 'Off'], ['on', 'On — a quarter of the races: each winner skips the next race, which pays half points']])}</label>
+  <label class="small">Prize pot points${sel('pot', [['off', 'Off — normal points'], ['on', 'On — each driver gets 10 × rounds to chip in (min 1 per GP); the pot is shared by every finisher on a sliding scale (at least 1 each), retirements get 0']])}</label>`;
   const i = html.lastIndexOf('</div>');
   return html.slice(0, i) + more + html.slice(i);
 };
