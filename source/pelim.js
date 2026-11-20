@@ -1,6 +1,6 @@
 // ===================== Pole-lap elimination Grand Prix (+ the Hybrid three-part version) =====================
 // Pole-lap elimination: every (race laps ÷ starters) laps — counted on the RACE LEADER's laps — the car in last place
-// at the moment the leader crosses the start/finish line is eliminated. Retirements count as eliminations.
+// at the moment the leader crosses the start/finish line is eliminated. Retirements don't replace eliminations.
 // The final two race to the flag.
 // Hybrid: the three-part Grand Prix, but each race's eliminations happen during the race the same way (timed on that
 // race's leader): Race 1 and Race 2 drop their quota spread evenly through the race; Race 3 drops one car every
@@ -21,7 +21,7 @@ hxChain('raceInit', race => {
 const _pe_retire = Race.prototype.retire;
 Race.prototype.retire = function (c, why, flag) {
   const r = _pe_retire.apply(this, arguments);
-  if (this.pe && !c.elimd && !this.pe.out.includes(c)) { this.pe.out.push(c); c.elimLap = c.laps; this.pe.credit++; }
+  if (this.pe && !c.elimd && !this.pe.out.includes(c)) { this.pe.out.push(c); c.elimLap = c.laps; /* no credit: the schedule carries on */ }
   return r;
 };
 function peAlive(race) { return race.order().filter(x => !x.out && !x.finished); }

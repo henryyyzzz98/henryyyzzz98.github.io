@@ -43,10 +43,12 @@ const DK_PTS_NAMES = { era: 'Real rules of each season', p50: '1950–59 · 8-6-
 const DK_REG0 = { format: 'f1', pts: 'era', custom: '25,18,15,12,10,8,6,4,2,1', pole: 0, fl: 'era', quali: 'era', drop: 'era', race: 'gp' };
 const dkAcad = (G0 = G) => !!(G0 && G0.regs && G0.regs.format === 'academy');
 function dkRegsActive(r) { return r && (r.format === 'academy' || r.pts !== 'era' || r.pole || r.fl !== 'era' || r.quali !== 'era' || r.drop !== 'era' || (r.race && r.race !== 'gp')); }
+// custom seasons build on their chosen "rules of" year
+function dkRulesYear(G0) { return G0.custom && G0.customSpec ? clamp(G0.customSpec.rulesY || G0.year, HIST_FIRST, HIST_LAST) : G0.year; }
 function dkApplyRegs(G0) {
   if (!G0 || !G0.regs || !dkRegsActive(G0.regs)) return;
   const r = G0.regs;
-  const base = G0.timeline ? rulesFor(G0.year) : { year: G0.year, points: POINTS, bestN: 0, fl: null, sprintPts: SPRINT_POINTS, twoCompound: true, sc: true, vsc: true, quali: 'knockout', capOn: true, constructors: true, wearMul: 1 };
+  const base = G0.timeline ? rulesFor(dkRulesYear(G0)) : { year: G0.year, points: POINTS, bestN: 0, fl: null, sprintPts: SPRINT_POINTS, twoCompound: true, sc: true, vsc: true, quali: 'knockout', capOn: true, constructors: true, wearMul: 1 };
   if (r.pts === 'custom') { const p = String(r.custom).split(/[^0-9.]+/).map(Number).filter(x => x > 0); if (p.length) base.points = p; }
   else if (DK_PTS[r.pts]) base.points = DK_PTS[r.pts];
   if (r.fl !== 'era') base.fl = r.fl === 'off' ? null : r.fl;
@@ -91,7 +93,7 @@ function dkRegsForm(r, act) {
 const _dk3_viewSetup = viewSetup;
 viewSetup = function () {
   let html = _dk3_viewSetup(); const S = SETUP;
-  if (S.mode === 'spectator') {
+  if (S.mode === 'spectator' || S.era === 'custom') {
     S.regs = S.regs || Object.assign({}, DK_REG0);
     const card = `<div class="card" style="margin-top:12px"><h3>Regulations — alternative history</h3><div class="small mut" style="margin-bottom:8px">Rewrite the rulebook and see how history changes. Leave everything on “real” for the genuine rules of ${S.era === 'hist' ? 'each season' : 'today'}.</div>${dkRegsForm(S.regs, 'dkreg')}</div>`;
     html = html.replace('<div class="row" style="margin:16px 0 40px">', card + '<div class="row" style="margin:16px 0 40px">');
@@ -102,7 +104,7 @@ const _dk3_newGame = newGame; newGame = function (opts) { const g = _dk3_newGame
 const _dk3_newTL = newTimelineGame; newTimelineGame = function (opts) { const g = _dk3_newTL.apply(this, arguments); if (g && g.spectator && SETUP.regs && dkRegsActive(SETUP.regs)) { g.regs = Object.assign({}, SETUP.regs); dkApplyRegs(g); } return g; };
 const _dk3_hqMenu = hqMenu;
 hqMenu = function () {
-  if (!G.spectator) return _dk3_hqMenu();
+  if (!G.spectator && !G.custom) return _dk3_hqMenu();
   const r = G.regs || Object.assign({}, DK_REG0);
   return _dk3_hqMenu() + `<div class="card" style="margin-top:12px"><h3>Regulations</h3><div class="small mut" style="margin-bottom:8px">Changes apply from the next session onwards. Points already scored stay as they are.</div>${dkRegsForm(r, 'dkreg2')}</div>`;
 };
@@ -264,7 +266,7 @@ Object.assign(A, {
   dkcalth(el) { DK3.th = el.dataset.v; render(); },
   dkseason(el) { if (el.tagName !== 'SELECT') return; DK3.season = +el.value; DK2.panel = 'grid'; render(); },
   dkreg(el) { if (el.tagName === 'OPTION') return; if (el.tagName !== 'SELECT' && el.tagName !== 'INPUT') return; SETUP.regs = SETUP.regs || Object.assign({}, DK_REG0); SETUP.regs[el.dataset.k] = el.value; if (el.tagName === 'SELECT') render(); },
-  dkreg2(el) { if (el.tagName !== 'SELECT' && el.tagName !== 'INPUT') return; G.regs = G.regs || Object.assign({}, DK_REG0); G.regs[el.dataset.k] = el.value; if (dkRegsActive(G.regs)) dkApplyRegs(G); else G.rules = G.timeline ? rulesFor(G.year) : null; autosave(); if (el.tagName === 'SELECT') render(); toast('Regulations updated'); },
+  dkreg2(el) { if (el.tagName !== 'SELECT' && el.tagName !== 'INPUT') return; G.regs = G.regs || Object.assign({}, DK_REG0); G.regs[el.dataset.k] = el.value; if (dkRegsActive(G.regs)) dkApplyRegs(G); else G.rules = G.timeline ? rulesFor(dkRulesYear(G)) : null; autosave(); if (el.tagName === 'SELECT') render(); toast('Regulations updated'); },
 });
 const _dk3_loadSeason = loadSeason; loadSeason = function (G0) { const r = _dk3_loadSeason.apply(this, arguments); dkApplyRegs(G0); return r; };
 

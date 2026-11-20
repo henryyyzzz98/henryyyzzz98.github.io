@@ -1,6 +1,6 @@
 // ===================== Elimination Grand Prix (custom regulation) =====================
 // The car in last place is eliminated every (race laps ÷ starters) laps, timed on the leader crossing the line.
-// A retirement counts as that interval's elimination. The last car left wins; the rest are ranked by when they went out.
+// A retirement does NOT replace an elimination: the next one still happens on schedule. The last car left wins; the rest are ranked by when they went out.
 const elimOn = race => !!(race && race.elimR);
 hxChain('raceInit', race => {
   if (race.sprint || !race.G.rules || !race.G.rules.elimRace) return;
@@ -13,7 +13,7 @@ hxChain('raceInit', race => {
 const _elimr_retire = Race.prototype.retire;
 Race.prototype.retire = function (c, why, flag) {
   const r = _elimr_retire.apply(this, arguments);
-  if (this.elimR && !c.elimd && !this.elimR.out.includes(c)) { this.elimR.out.push(c); c.elimLap = c.laps; this.elimR.credit++; }
+  if (this.elimR && !c.elimd && !this.elimR.out.includes(c)) { this.elimR.out.push(c); c.elimLap = c.laps; /* no credit: the schedule carries on */ }
   return r;
 };
 // Eliminations: when the leader completes a scheduled lap, that lap becomes an elimination lap and the LAST CAR

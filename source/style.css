@@ -1188,3 +1188,22 @@ body.dt .dk .dkst tr.me td.tcell{background:var(--tc);color:var(--ti)}
 .fd-champ td.l{text-align:left!important;white-space:nowrap}
 .fd-champ td.fd-cc{min-width:30px}
 .doc-rd{max-width:46vw;margin-right:8px}
+/* custom season editor */
+.cx .card{margin-bottom:12px}
+.cx-top{gap:10px;flex-wrap:wrap;margin-top:10px;align-items:center}
+.cx-cols{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:12px}
+.cx-add{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}.cx-add select{max-width:100%}
+.cx-team{border-left:4px solid var(--tc);border-radius:0;background:#0d1220;padding:6px 10px;margin:8px 0}
+.cx-th,.cx-drv{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:3px 0}
+.cx-th b{color:var(--tc);font-size:15px;min-width:110px}
+.cx-drv{padding-left:10px;border-top:1px solid #182033}
+.cx-rd{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:5px 0;border-top:1px solid #182033}
+.cx-rd select{max-width:260px}.cx-n{min-width:1.6em;text-align:right;color:#8a96b0}
+.cx-go{display:flex;align-items:center;gap:10px;position:sticky;bottom:0;z-index:5}
+@media (max-width:899px){.cx-cols{grid-template-columns:1fr}.cx-rd select{max-width:100%;flex:1 1 140px}.cx-th b{min-width:0}}
+.cx select,.cx input{max-width:100%;min-width:0;box-sizing:border-box}
+.cx .card,.cx-cols>*{min-width:0}
+.cx-add select,.cx-add input{flex:1 1 180px}
+@media (max-width:899px){.cx{overflow-x:hidden}.cx-drv select{flex:1 1 150px}}
+.cx-setbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 16px;border-bottom:1px solid #182033;background:#05070d;position:sticky;top:0;z-index:6}
+.cx-setstep{color:#8a96b0;font-size:13px}
