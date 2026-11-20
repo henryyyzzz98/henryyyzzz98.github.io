@@ -75,7 +75,6 @@ main.solo{grid-template-columns:minmax(0,640px);justify-content:center}
 .meter.tzone b{position:absolute;top:0;bottom:0;background:color-mix(in srgb,var(--go) 45%,transparent);border-inline:2px solid var(--go)}
 .meter.tzone.heat{background:linear-gradient(90deg,var(--sunk),color-mix(in srgb,var(--marker) 30%,var(--sunk)) 60%,color-mix(in srgb,var(--stamp) 45%,var(--sunk)))}
 .qopts.two{grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr))}
-.qopt.sel{border-color:var(--ink);background:var(--sunk)}
 .heat{display:inline-block;padding:0 6px;border-radius:4px;color:var(--on-color);font-weight:700}
 .heat.h1{background:var(--stamp)} .heat.h2{background:var(--bump)} .heat.h3{background:var(--task)}
 .hunt{display:grid;grid-template-columns:repeat(var(--w),minmax(0,1fr));gap:6px}
@@ -97,9 +96,9 @@ main.solo{grid-template-columns:minmax(0,640px);justify-content:center}
 .rhythm{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;height:220px;max-width:360px;width:100%;justify-self:center}
 .rlane{position:relative;background:var(--sunk);border-radius:8px;overflow:hidden}
 .rline{position:absolute;left:0;right:0;top:calc(82% + 10px);height:3px;background:var(--ink);opacity:.5}
-.note{position:absolute;left:12%;right:12%;height:20px;border-radius:6px;top:-10%;opacity:0}
-.note.hit{opacity:0!important;transition:opacity .15s}
-.note.miss{opacity:.2!important}
+.rnote{position:absolute;left:12%;right:12%;height:20px;border-radius:6px;top:-10%;opacity:0}
+.rnote.hit{opacity:0!important;transition:opacity .15s}
+.rnote.miss{opacity:.2!important}
 .rpads{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;max-width:360px;width:100%;justify-self:center}
 .rpad{appearance:none;border:0;border-radius:10px;height:64px;cursor:pointer;color:var(--on-color);font-family:var(--mono);font-weight:600;opacity:.75;touch-action:manipulation}
 .rpad.lit{opacity:1;transform:scale(.96)}
@@ -2194,9 +2193,9 @@ rhythm(el,cfg,done,alive){
   const T=timer(el),yr=$('#yr',el),ys=$('#ys',el),lanes=[...el.querySelectorAll('.rlane')];
   cleanups.push(()=>cancelAnimationFrame(raf));
   function start(){
-    hits=0;$('#yh',el).textContent=0;lanes.forEach(l=>l.querySelectorAll('.note').forEach(n=>n.remove()));
+    hits=0;$('#yh',el).textContent=0;lanes.forEach(l=>l.querySelectorAll('.rnote').forEach(n=>n.remove()));
     let prev=-1;notes=Array.from({length:N},(_,i)=>{let l;do{l=ri(0,3);}while(l===prev&&Math.random()<.7);prev=l;
-      const n=document.createElement('i');n.className='note';n.style.background=cols[l];lanes[l].appendChild(n);return {l,at:TRAVEL+i*GAP+(i%5===4?GAP/2:0),el:n,hit:false,gone:false};});
+      const n=document.createElement('i');n.className='rnote';n.style.background=cols[l];lanes[l].appendChild(n);return {l,at:TRAVEL+i*GAP+(i%5===4?GAP/2:0),el:n,hit:false,gone:false};});
     t0=performance.now();ys.textContent=`Follow the ${cfg.item||'beat'}`;raf=requestAnimationFrame(frame);
   }
   function frame(now){
