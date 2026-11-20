@@ -1,7 +1,7 @@
 // ===================== Group lottery qualifying =====================
 // Before qualifying, a number lottery splits the field into three equal groups (A, B, C).
 // The groups run one after another (like Q1, Q2, Q3), so they never meet on track. Within a group the cars are released
-// in lottery order, spaced out so nobody catches the car ahead. Each driver gets an out lap, 3 timed laps and an in lap;
+// in lottery order, spaced out so nobody catches the car ahead. Each driver gets an out lap, 6 timed laps (cool-down lap between each) and an in lap, with no time limit;
 // their best lap counts. Grid: the fastest of each group fill P1–P3 (sorted by time), the second fastest of each group
 // P4–P6, and so on — so the slowest of each group make up the back of the grid.
 function qGroups() { return !!(G && WK && WK.stage === 'quali' && G.rules && G.rules.quali === 'groups'); }
@@ -45,11 +45,12 @@ qualiInfo = function (key) {
   const I = _qg_qualiInfo.apply(this, arguments);
   if (key === 'Q' && qGroups()) {
     const st = Math.min(I.stage, 3);
-    Object.assign(I, { groups: true, single: false, cut: 0, runs: 3, label: 'Group ' + QG_NAMES[st - 1], n: WK.Q.groups ? (WK.Q.groups[st - 1] || []).length : qgSizes(WK.entries.length)[st - 1], dur: 600 });
+    Object.assign(I, { groups: true, single: false, cut: 0, runs: QG_TIMED, label: 'Group ' + QG_NAMES[st - 1], n: WK.Q.groups ? (WK.Q.groups[st - 1] || []).length : qgSizes(WK.entries.length)[st - 1], dur: 1500 });
   }
   return I;
 };
 
+const QG_TIMED = 6, QG_ADJ = [0.18, 0, 0.04, 0.1, 0.16, 0.24]; // lap 1 tyres still coming in, then a slow fade
 const _qg_QualiLive = QualiLive;
 QualiLive = class extends _qg_QualiLive {
   constructor(G0, wk, list, opts) {
@@ -69,17 +70,49 @@ QualiLive = class extends _qg_QualiLive {
       const t0 = 5 + i * gap, OL = base * 1.4 * rnd(0.98, 1.02), IL = base * 1.45 * rnd(0.98, 1.02);
       const evo = Math.min(0.3, (stage - 1) * 0.08 + t0 / 900 * 0.1); // the track rubbers in a little through the session
       c.runs = []; let t = t0;
-      [0.18, 0, 0.22].forEach((adj, k) => { // lap 1 tyres still coming in, lap 2 the peak, lap 3 the tyres fade
-        const q = qualiLap(this.G, c.e, this.track, this.wet, c.risk);
-        const fly = (q.crash ? base * rnd(1, 1.02) : q.t) - evo + adj;
-        const ol = k === 0 ? OL : 0.05, il = k === 2 ? IL : 0.05;
-        c.runs.push({ start: t, OL: ol, IL: il, fly, crash: q.crash, crashAt: rnd(0.2, 0.9), done: false, aborted: false });
-        t += ol + fly + il;
+      // 6 timed laps, each followed by a cool-down lap to rest the driver and the tyres
+      QG_ADJ.forEach((adj, k) => {
+        const run = this.qgLap(c, k, t, OL, IL, evo + k * 0.02, adj);
+        t = run.start + run.OL + run.fly + run.IL;
       });
       c.qgNo = (QS.lot.find(x => x.e === c.e) || {}).n; last = Math.max(last, t);
     });
-    this.dur = Math.ceil(last + 20); this.log = []; this.events = [];
-    this.msg(`🟢 ${this.label} is under way — ${cars.length} cars, released ${gap.toFixed(0)} s apart in lottery order. Out lap, 3 timed laps, in lap — best lap counts.`, true);
+    this.dur = 1e7; this.log = []; this.events = []; // no time limit: the session ends when every car has done its laps
+    this.msg(`🟢 ${this.label} is under way — ${cars.length} cars, released ${gap.toFixed(0)} s apart in lottery order. No time limit: out lap, ${QG_TIMED} timed laps with a cool-down lap between each, in lap — best lap counts.`, true);
+  }
+  qgLap(c, k, start, OL, IL, evo, adj) {
+    const base = this.base, q = qualiLap(this.G, c.e, this.track, this.wet, c.risk);
+    const fly = (q.crash ? base * rnd(1, 1.02) : q.t) - evo + adj;
+    const ol = k === 0 ? OL : base * 1.25 * rnd(0.98, 1.03); // cool-down lap before every timed lap after the first
+    const run = { start, OL: ol, IL: 0.05, fly, crash: q.crash, crashAt: rnd(0.2, 0.9), done: false, aborted: false, qgK: k };
+    c.runs.push(run); this.qgFixIn(c, IL); return run;
+  }
+  qgFixIn(c, IL) { c.runs.forEach((r, i) => { r.IL = i === c.runs.length - 1 ? (IL || this.base * 1.45) : 0.05; }); }
+  clock() { return this.groupMode ? this.t : super.clock(); }
+  crash(c, r) {
+    if (!this.groupMode) return super.crash(c, r);
+    // red flag: laps in progress are aborted — every affected driver gets that timed lap back after the restart
+    const before = new Set(); this.cars.forEach(o => o.runs.forEach(rr => { if (rr.aborted) before.add(rr); }));
+    super.crash(c, r);
+    const pause = 90;
+    this.cars.forEach(o => o.runs.forEach(rr => { if (this.t < rr.start) rr.start += pause * 0.5; })); // full stoppage (base already added half)
+    this.cars.forEach(o => {
+      if (o.out || o === c) return;
+      o.runs.filter(rr => rr.aborted && !before.has(rr)).forEach(() => {
+        const lastR = o.runs[o.runs.length - 1], end = Math.max(this.t + pause, lastR.start + lastR.OL + lastR.fly + 0.05);
+        this.qgLap(o, o.runs.length, end, this.base * 1.4, this.base * 1.45, Math.min(0.3, this.t / 900 * 0.1), 0.05);
+        this.msg(`↩️ ${o.d.code} gets the aborted timed lap back after the restart`, o.fav || o.player);
+      });
+    });
+    this.msg(`⏸ Session suspended — no time limit, so every driver will still complete ${QG_TIMED} timed laps`, true);
+  }
+  step(dt) {
+    if (!this.groupMode) return super.step(dt);
+    if (this.done) return;
+    super.step(dt);
+    if (this.done) return;
+    // ends only when every car has finished all its runs (or is out)
+    if (this.cars.every(c => c.out || c.runs.every(r => r.done))) { this.chequered = true; this.msg('🏁 Every driver has completed their timed laps — session over', true); this.finish(); }
   }
 };
 
@@ -129,7 +162,7 @@ function qgPanel() {
     grid = `<h4 style="margin-top:10px">Starting grid</h4><div class="small mut">Fastest of each group take P1–P3, second fastest P4–P6, and so on.</div><table class="qg-t">${QS.top.map((r, i) => `<tr class="${mine(r.e) ? 'me' : ''}"><td><b>P${i + 1}</b></td><td>${flag(r.e.d.nat)} ${esc(r.e.d.name)}</td><td class="mut small">Group ${QG_NAMES[r.qg]} · ${r.qgPos}${['st', 'nd', 'rd'][r.qgPos - 1] || 'th'}</td><td style="text-align:right">${r.t != null ? fmtTime(r.t) : 'No time'}</td></tr>`).join('')}</table>`;
   }
   return `<div class="card qg-card"><h3>🎱 Group lottery qualifying</h3>
-    <div class="small mut">The lottery drew a number for every driver: numbers 1–${QS.groups[0].length} are Group A, then Group B, then Group C. Groups run one after another and never meet on track. Each driver does 3 timed laps; the best counts. The grid takes the fastest of each group first, then the second fastest of each group, and so on.</div>
+    <div class="small mut">The lottery drew a number for every driver: numbers 1–${QS.groups[0].length} are Group A, then Group B, then Group C. Groups run one after another and never meet on track. Each driver does 6 timed laps; the best counts. The grid takes the fastest of each group first, then the second fastest of each group, and so on.</div>
     <div class="qg-cols">${cols}</div>${grid}</div>`;
 }
 const _qg_wkQuali = wkQuali;
@@ -137,7 +170,7 @@ wkQuali = function (key) {
   let html = _qg_wkQuali.apply(this, arguments);
   if (key !== 'Q' || !qGroups()) return html;
   const QS = WK.Q; if (QS.live && !QS.live.done) return html;
-  html = html.replace(' · the top 10 shoot-out for pole', ' · 3 timed laps each, best lap counts')
+  html = html.replace(' · the top 10 shoot-out for pole', ' · 6 timed laps each, no time limit, best lap counts')
     .replace(/Knockout qualifying decides the grid\. Watch every flying lap live\./, 'Group lottery qualifying decides the grid.')
     .replace(/<h3>(Group [ABC]) · \d+ minutes<\/h3>/, '<h3>$1</h3>').replace(/>Q([123]) classification</, (m, s) => `>Group ${QG_NAMES[s - 1]} classification<`);
   return qgPanel() + html;
@@ -160,7 +193,7 @@ function qgDeskBox() {
     grid = `<div class="qg-dh" style="margin-top:1em"><b>STARTING GRID</b><span class="dk-mut">Fastest of each group take P1–P3 (in time order), second fastest P4–P6, and so on</span></div>
     <table class="dkfp"><thead><tr><th>Pos</th><th class="l">Driver</th><th class="l hm">Team</th><th class="l">Group</th><th class="l hm">Tyre</th><th class="ra">Lap</th><th class="ra">Gap to fastest</th></tr></thead><tbody>${QS.top.map((r, i) => row(r.e, 'P' + String(i + 1).padStart(2, '0'), fmt(r), r.t == null || !lead || r === lead ? '--' : '+' + (r.t - lead.t).toFixed(3), `<td class="l">${QG_NAMES[r.qg]} · ${r.qgPos}${['st', 'nd', 'rd'][r.qgPos - 1] || 'th'}</td><td class="l hm">${tyre}</td>`)).join('')}</tbody></table>`;
   }
-  const intro = st === 1 && !QS.gres.length ? `<div class="dk-mut qg-intro">🎱 Lottery drawn — numbers 1–${QS.groups[0].length} are Group A, then B, then C. The groups run one after another and never meet on track; cars are released in number order. Out lap, 3 timed laps, in lap — best lap counts.${WK.weather.quali > 0.25 ? ' 🌧️ Wet session.' : ''}</div>` : '';
+  const intro = st === 1 && !QS.gres.length ? `<div class="dk-mut qg-intro">🎱 Lottery drawn — numbers 1–${QS.groups[0].length} are Group A, then B, then C. The groups run one after another and never meet on track; cars are released in number order. Out lap, 6 timed laps, in lap — best lap counts.${WK.weather.quali > 0.25 ? ' 🌧️ Wet session.' : ''}</div>` : '';
   return `<div class="dk-fpbox">${intro}${st > 3 ? grid + `<div class="qg-dcols" style="margin-top:1em">${groups}</div>` : `<div class="qg-dcols">${groups}</div>`}</div>`;
 }
 if (typeof deskQualiRes === 'function') {

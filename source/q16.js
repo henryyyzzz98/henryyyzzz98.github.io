@@ -25,17 +25,26 @@ const _q16_QualiLive = QualiLive;
 QualiLive = class extends _q16_QualiLive {
   constructor(G0, wk, list, opts) {
     const lap = qLapElim() && !opts.elim;
-    if (lap) opts = Object.assign({}, opts, { dur: 1e6, label: 'Qualifying', cut: 0, runs: 1, elim: Math.max(1, list.length - 1), windows: [[0, 1e-6]] });
+    let lapSt = 3;
+    if (lap) { // Q1 and Q2 knock out the usual knockout number; Q3 runs down to the final three and a shootout
+      lapSt = Math.min(3, (WK.Q && WK.Q.stage) || 1);
+      const k = lapSt < 3 ? Math.max(1, Math.min(list.length - 1, qCut(WK.entries.length))) : Math.max(1, list.length - 1);
+      opts = Object.assign({}, opts, { dur: 1e6, label: 'Q' + lapSt, cut: lapSt < 3 ? k : 0, runs: 1, elim: k, windows: [[0, 1e-6]] });
+    }
     else if (qElim() && !opts.elim && WK.stage !== 'squali') { const I = qualiInfo('Q'); opts = Object.assign({}, opts, { dur: I.dur, label: I.label, cut: I.cut, runs: 3, elim: I.elimN, windows: Q16_WIN }); }
     super(G0, wk, list, opts);
-    if (lap) this.lapSetup();
+    if (lap) { this.lapStage = lapSt; this.lapSetup(); }
   }
   // ---- pole-lap elimination: one open-ended session; the slowest car goes every <current pole lap time> ----
   lapSetup() {
     this.lapMode = true; this.elapsed = true; this.armed = false; this.lastE = null; this.log = []; this.events = [];
-    this.pend = null; this.so = null; this.sets = 4;
-    this.cars.forEach(c => { c.runs = []; c.sets = this.sets; c.stintEnd = 0; c.usedLaps = 0; this.planStint(c, rnd(0, this.base * 0.8)); });
-    this.msg(`🟢 Qualifying is under way — no time limit. Once everyone has a time, the slowest driver is out every 2 × pole lap. Laps already started still count. ${this.sets} sets of tyres each. Final three: one-lap shootout.`, true);
+    this.pend = null; this.so = null; this.sets = 6;
+    const QS = WK.Q; QS.lapSets = QS.lapSets || {}; // tyre sets carry over from Q1 to Q2 to Q3
+    this.cars.forEach(c => { c.runs = []; c.sets = Math.max(1, QS.lapSets[c.d.id] != null ? QS.lapSets[c.d.id] : this.sets); c.stintEnd = 0; c.usedLaps = 0; this.planStint(c, rnd(0, this.base * 0.8)); });
+    const st = this.lapStage, n = this.cars.length;
+    this.msg(st < 3
+      ? `🟢 Q${st} is under way — no time limit. Once everyone has a time, the slowest driver is out every 2 × pole lap until ${n - this.elim.left} remain for Q${st + 1}. Laps already started still count. Times reset for the next session.`
+      : `🟢 Q3 is under way — no time limit. The slowest driver is out every 2 × pole lap. Final three: one-lap shootout for pole.`, true);
   }
   // one stint: out lap, push laps with cool-down laps between, in lap
   planStint(c, t0) {
@@ -75,6 +84,7 @@ QualiLive = class extends _q16_QualiLive {
   clock() { return this.lapMode ? this.t : super.clock(); }
   nextElim() { if (!this.lapMode) return super.nextElim(); return this.armed && !this.so && this.elim.left > 0 && !this.pend ? Math.max(0, this.lastE + this.elim.gap - this.t) : null; }
   crash(c, r) { super.crash(c, r); if (this.lapMode && this.lastE != null) this.lastE += 45; }
+  finish() { if (this.lapMode && WK.Q) { WK.Q.lapSets = WK.Q.lapSets || {}; this.cars.forEach(c => { WK.Q.lapSets[c.d.id] = c.sets; }); } return super.finish(); }
   shootout() {
     const S = this.so;
     if (S.phase === 'wait') { // everyone back in the garage first
@@ -137,7 +147,7 @@ QualiLive = class extends _q16_QualiLive {
     }
     super.step(dt);
     const left = this.aliveCars();
-    if (!this.done && left.length <= 3 && !this.so) {
+    if (!this.done && this.lapStage === 3 && left.length <= 3 && !this.so) {
       this.so = { phase: 'wait', cars: left, cur: null, queue: [] };
       left.forEach(c => c.runs.forEach(r => { if (r.start > this.t) r.done = true; })); // cancel planned runs
       this.msg(`🎯 Three drivers left — eliminations stop. They return to the pits for a one-lap shootout.`, true);
@@ -148,13 +158,12 @@ function qLapElim() { return !!(G && WK && WK.stage !== 'squali' && G.rules && G
 const _q16_qualiInfo2 = qualiInfo;
 qualiInfo = function (key) {
   const I = _q16_qualiInfo2.apply(this, arguments);
-  if (key === 'Q' && qLapElim()) Object.assign(I, { single: true, lapElim: true, label: 'Qualifying', cut: 0, dur: 1800, runs: 1 });
+  if (key === 'Q' && qLapElim()) Object.assign(I, { single: false, lapElim: true, label: 'Q' + Math.min(I.stage, 3), dur: 1800, runs: 1 });
   return I;
 };
 const _q16_applyQualiStage = applyQualiStage;
 applyQualiStage = function (QS, res) {
-  if (!qLapElim()) return _q16_applyQualiStage.apply(this, arguments);
-  QS.rounds.push({ stage: QS.stage, res }); QS.top = res; QS.stage = 4; WK.grid = res.map(r => r.e);
+  return _q16_applyQualiStage.apply(this, arguments); // pole-lap elimination now runs as Q1, Q2, Q3 like a knockout
 };
 // quick-simulated sessions run the same elimination clock
 const _q16_runQualiSession = runQualiSession;
@@ -175,7 +184,7 @@ updateQualiUI = function () {
     let txt = nx == null ? '' : `OUT IN ${fmtClock(nx)}`;
     if (Q.lapMode) txt = Q.so ? (Q.so.cur && !Q.so.finished ? `SHOOTOUT: ${Q.so.cur.d.code}` : 'SHOOTOUT') : Q.pend ? 'ELIMINATION DUE: LAPS FINISHING' : Q.armed ? `OUT IN ${fmtClock(nx)}` : 'SETTING TIMES';
     const ds = document.getElementById('dksess');
-    if (ds) { const h = `${esc(Q.label === 'Qualifying' ? 'Q' : Q.label)} · ${fmtClock(Q.clock())} · ${left} left${txt ? ` · <span class="q16">${txt}</span>` : ''}${Q.lapMode && Q.armed && !Q.so ? ` · every ${fmtTime(Q.elim.gap)}` : ''}`; if (ds._q16 !== h || ds._q16src !== ds._h) { ds.innerHTML = h; ds._q16 = h; ds._q16src = ds._h; } ds.title = ds.textContent; }
+    if (ds) { const h = `${esc(Q.label)} · ${fmtClock(Q.clock())} · ${left} left${txt ? ` · <span class="q16">${txt}</span>` : ''}${Q.lapMode && Q.armed && !Q.so ? ` · every ${fmtTime(Q.elim.gap)}` : ''}`; if (ds._q16 !== h || ds._q16src !== ds._h) { ds.innerHTML = h; ds._q16 = h; ds._q16src = ds._h; } ds.title = ds.textContent; }
     const hud = document.getElementById('hud'); if (hud && nx != null) hud.insertAdjacentHTML('beforeend', `<span class="chip">⛔ Next out ${fmtClock(nx)} · ${left} left</span>`);
   } catch (e) { }
   return r;

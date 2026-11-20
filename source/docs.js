@@ -70,12 +70,13 @@ function docFP(i) {
 }
 function docQRows(QS, sprint) {
   const sc = sprint ? docSched(WK).sq : docSched(WK).q, segs = QS.rounds.length, segLen = sc[2] / Math.max(1, segs);
-  const per = new Map();
+  const per = new Map(), grp = !sprint && G.rules && G.rules.quali === 'groups';
   QS.rounds.forEach((r, k) => r.res.forEach(x => { const o = per.get(x.e.d.id) || { id: x.e.d.id, seg: [] };
-    const laps = k === segs - 1 && segs > 1 ? rint(3, 5) : rint(6, 12);
-    o.seg[k] = { t: x.crash ? null : x.t, laps: x.crash ? rint(1, 4) : laps, tod: (sc[1] + k * segLen + rnd(segLen * 0.35, segLen * 0.95)) * 60 + rint(0, 59) }; per.set(x.e.d.id, o); }));
+    // group lottery qualifying: exactly 3 timed laps each (fewer if the car crashed); otherwise a normal Q1/Q2/Q3 run plan
+    const laps = grp ? (x.crash ? rint(0, 5) : 6) : k === segs - 1 && segs > 1 ? rint(3, 5) : rint(6, 12);
+    o.seg[k] = { t: x.crash ? null : x.t, laps: grp ? laps : x.crash ? rint(1, 4) : laps, tod: (sc[1] + k * segLen + rnd(segLen * 0.35, segLen * 0.95)) * 60 + rint(0, 59) }; per.set(x.e.d.id, o); }));
   const order = (sprint ? WK.sgrid : WK.grid) || [];
-  return { segs, labels: G.rules && G.rules.quali === 'groups' && !sprint ? ['G1', 'G2', 'G3'] : segs === 1 ? ['TIME'] : ['Q1', 'Q2', 'Q3'], cuts: QS.rounds.slice(1).map(r => r.res.length), rows: order.map(e => per.get(e.d.id) || { id: e.d.id, seg: [] }) };
+  return { segs, grp, labels: grp ? ['GROUP A', 'GROUP B', 'GROUP C'] : segs === 1 ? ['TIME'] : ['Q1', 'Q2', 'Q3'], cuts: grp ? [] : QS.rounds.slice(1).map(r => r.res.length), rows: order.map(e => per.get(e.d.id) || { id: e.d.id, seg: [] }) };
 }
 function docQuali(sprint, final) {
   const QS = sprint ? WK.SQ : WK.Q; if (!QS || !QS.rounds.length) return;
@@ -232,7 +233,7 @@ function docPaper(doc) {
     const p0 = B.rows[0]; if (p0) { const s = [...p0.seg].reverse().find(s => s && s.t != null); if (s) pole = { id: p0.id, t: s.t }; }
     const segCells = r => Array.from({ length: segs }, (_, k) => { const s = r.seg[k]; return s ? `<td class="fd-q">${docLap(s.t)}</td><td>${s.laps}</td><td>${docHMS(s.tod)}</td>` : '<td class="fd-q"></td><td></td><td></td>'; }).join('');
     const nm = B.sprint ? 'Sprint Qualifying' : 'Qualifying';
-    sheet = `<div class="fd-page fd-wide">${docSheetHead(doc, D, `${nm} Session ${B.final ? 'Final' : 'Provisional'} Classification`)}<table class="fd-tab fd-time fd-qt"><thead><tr><th></th><th>NO</th><th class="l">DRIVER</th><th>NAT</th><th class="l">ENTRANT</th>${B.labels.slice(0, segs).map(l => `<th class="fd-q">${l}</th><th>LAPS</th><th>TIME</th>`).join('')}</tr></thead><tbody>
+    sheet = `<div class="fd-page fd-wide">${docSheetHead(doc, D, `${nm} Session ${B.final ? 'Final' : 'Provisional'} Classification`)}<table class="fd-tab fd-time fd-qt"><thead><tr><th></th><th>NO</th><th class="l">DRIVER</th><th>NAT</th><th class="l">ENTRANT</th>${B.labels.slice(0, segs).map(l => `<th class="fd-q">${l}</th><th>${B.grp ? 'TIMED LAPS' : 'LAPS'}</th><th>TIME</th>`).join('')}</tr></thead><tbody>
     ${B.rows.map((r, i) => { const x = E(r.id); return `<tr class="${cutAt.has(i + 1) ? 'fd-cut' : ''}"><td>${i + 1}</td><td><b>${x.no}</b></td><td class="l"><b>${esc(docName(x.name))}</b></td><td>${docFlag(x.nat)}</td><td class="l">${esc(x.team)}</td>${segCells(r)}</tr>`; }).join('')}</tbody></table>
     ${pole ? `<div class="fd-pl"><h4>POLE POSITION LAP</h4><div><b>${E(pole.id).no}</b> <b>${esc(docName(E(pole.id).name))}</b> ${docFlag(E(pole.id).nat)} ${esc(E(pole.id).team)}<span>${docLap(pole.t)}</span><span>${docKmh(D.km, pole.t)} KM/H</span></div></div>` : ''}
     ${fl ? `<div class="fd-pl"><h4>FASTEST LAP</h4><div><b>${E(fl.id).no}</b> <b>${esc(docName(E(fl.id).name))}</b> ${docFlag(E(fl.id).nat)} ${esc(E(fl.id).team)}<span>${docLap(fl.t)}</span><span>${docKmh(D.km, fl.t)} KM/H</span></div></div>` : ''}
