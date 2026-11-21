@@ -7,6 +7,7 @@
 
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
+import { loadAll } from "./crawl-meta.mjs";
 
 /* ===== Contest settings — edit these for a new contest ===== */
 export const CONFIG = {
@@ -30,6 +31,12 @@ const MULTICALL_CANDIDATES = [
 ];
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+// Stop looking things up after this many minutes and save what we have; the next run continues.
+// (GitHub kills the job at 60 min, and anything unsaved would be lost.)
+const BUDGET_MS = Number(process.env.TIME_BUDGET_MIN || 45) * 60_000;
+let deadline = Date.now() + BUDGET_MS;
+export const setDeadline = ms => { deadline = Date.now() + ms; };
+const outOfTime = (marginMs = 0) => Date.now() > deadline - marginMs;
 const log = (...a) => console.log(new Date().toISOString().slice(11, 19), ...a);
 const pad64 = h => h.padStart(64, "0");
 const topicOf = id => "0x" + pad64(BigInt(id).toString(16));
@@ -102,11 +109,13 @@ export async function listCopies(season, coll) {
 }
 
 /* ===== Step 2a: who each copy was minted to (= bought by). Never changes, so cached in state. ===== */
-export async function lookupMints(ids, cache) {
+export async function lookupMints(ids, cache, save = async () => {}) {
   const todo = ids.filter(id => !cache[id]);
   log(`Mints: ${ids.length - todo.length} cached, ${todo.length} to look up`);
-  let size = 100;
+  let size = 100, chunks = 0;
   for (let i = 0; i < todo.length; ) {
+    if (outOfTime()) { log(`  Time budget reached after ${i}/${todo.length} mints — saving; next run continues`); break; }
+    if (++chunks % 20 === 0) await save();
     const chunk = todo.slice(i, i + size);
     try {
       const logs = await rpc("eth_getLogs", [{ address: CONTRACT, fromBlock: "0x0", toBlock: "latest",
@@ -163,11 +172,13 @@ async function findMulticall(sampleId) {
 
 export async function lookupOwners(ids) {
   const res = {};
-  if (!ids.length) return res;
+  res.complete = false;
+  if (!ids.length) { res.complete = true; return res; }
   const mc = await findMulticall(ids[0]);
   log(`Holders: ${ids.length} copies via ${mc ? "Multicall3 " + mc : "one-by-one calls"}`);
   let size = mc ? 200 : 1;
   for (let i = 0; i < ids.length; ) {
+    if (outOfTime()) { log(`  Time budget reached after ${i}/${ids.length} holders — keeping previous holder standings`); return res; }
     const chunk = ids.slice(i, i + size);
     try {
       if (mc) {
@@ -184,6 +195,7 @@ export async function lookupOwners(ids) {
     }
     if (i % 2000 < size) log(`  holders ${i}/${ids.length}`);
   }
+  res.complete = true;
   return res;
 }
 
@@ -213,15 +225,42 @@ async function readJSON(file, fallback) { try { return JSON.parse(await readFile
 export async function main() {
   const { season, collections: colls, topPerMember, checkHolders } = CONFIG;
   const t0 = Date.now();
-  log(`Contest: ${season} ${colls.join(" + ")}`);
+  log(`Contest: ${season} ${colls.join(" + ")} · time budget ${BUDGET_MS / 60000} min`);
+  await mkdir(OUT_FILE.replace(/\/[^/]+$/, "") || ".", { recursive: true });
 
   const state = await readJSON(STATE_FILE, {});
+  const prev = await readJSON(OUT_FILE, null);
   if (state.season !== season || JSON.stringify(state.collections) !== JSON.stringify(colls)) {
     state.season = season; state.collections = colls; state.copies = {}; // contest changed: start fresh (keep mint cache)
   }
   state.mints ||= {};
+  const saveState = async () => { await writeFile(STATE_FILE, JSON.stringify(state)); };
+
+  // Prefer the crawled COSMO metadata (no OpenSea needed). Use it once the crawl has covered this season.
+  let local = null;
+  try {
+    const all = await loadAll();
+    const want = new Set(colls.map(c => c.toLowerCase()));
+    const found = {};
+    all.collections.forEach((c, i) => {
+      if (c[1].toLowerCase() === season.toLowerCase() && want.has(c[3].toLowerCase()))
+        for (const id of all.ids[i]) (found[c[3]] ||= []).push({ id: String(id), member: c[2] });
+    });
+    const latest = all.state.latest || 0;
+    const caughtUp = !latest || all.state.next > latest;
+    if (Object.keys(found).length && (caughtUp || !process.env.OPENSEA_KEY)) {
+      local = found;
+      if (!caughtUp) log(`Crawl hasn't caught up yet (#${all.state.next} of #${latest}) and there's no OpenSea key — using what's crawled so far`);
+    } else if (Object.keys(found).length) log(`Crawl hasn't caught up yet (#${all.state.next} of #${latest}) — using OpenSea for the full list`);
+  } catch {}
 
   for (const coll of colls) {
+    if (local) {
+      const key = Object.keys(local).find(k => k.toLowerCase() === coll.toLowerCase());
+      state.copies[coll] = key ? local[key] : [];
+      log(`${season} ${coll}: ${state.copies[coll].length} copies (from crawled metadata)`);
+      continue;
+    }
     try {
       const list = await listCopies(season, coll);
       state.copies[coll] = list;
@@ -231,31 +270,43 @@ export async function main() {
       log(`${coll}: OpenSea failed (${e.message}); reusing last run's list of ${state.copies[coll].length}`);
     }
   }
+  await saveState();
   const ids = [...new Set(colls.flatMap(c => (state.copies[c] || []).map(x => x.id)))];
 
-  await lookupMints(ids, state.mints);
-  const owners = checkHolders ? await lookupOwners(ids) : null;
-
+  // Buyers first (the contest's main ranking). Progress is saved as we go.
+  try { await lookupMints(ids, state.mints, saveState); }
+  finally { await saveState(); }
+  const mintsDone = ids.filter(id => state.mints[id]).length;
   const buyers = rank(state.copies, state.mints, colls, topPerMember);
-  const holders = owners ? rank(state.copies, owners, colls, topPerMember) : null;
+
+  // Holders only if there's time left; otherwise keep the last complete holder standings.
+  let owner = null;
+  if (checkHolders && !outOfTime(10 * 60_000)) {
+    const owners = await lookupOwners(ids);
+    if (owners.complete) owner = { label: "Who holds it now", updated: new Date().toISOString(), ...rank(state.copies, owners, colls, topPerMember) };
+  } else if (checkHolders) log("Skipping holders this run (not enough time left)");
+  if (!owner && prev?.modes?.owner && prev.season === season &&
+      JSON.stringify(prev.collections) === JSON.stringify(colls)) {
+    owner = { ...prev.modes.owner, updated: prev.modes.owner.updated || prev.updated };
+    log(`Keeping holder standings from ${owner.updated}`);
+  }
 
   const result = {
     updated: new Date().toISOString(),
     season, collections: colls,
     copies: ids.length,
     perCollection: Object.fromEntries(colls.map(c => [c, (state.copies[c] || []).length])),
+    progress: { mintsChecked: mintsDone, total: ids.length, complete: mintsDone >= ids.length },
     modes: {
-      mint: { label: "Who it was minted to (buyer)", ...buyers },
-      ...(holders ? { owner: { label: "Who holds it now", ...holders } } : {}),
+      mint: { label: "Who it was minted to (buyer)", updated: new Date().toISOString(), ...buyers },
+      ...(owner ? { owner } : {}),
     },
     tookSeconds: Math.round((Date.now() - t0) / 1000),
   };
 
-  await mkdir(OUT_FILE.replace(/\/[^/]+$/, "") || ".", { recursive: true });
   await writeFile(OUT_FILE, JSON.stringify(result));
-  await writeFile(STATE_FILE, JSON.stringify(state));
-  log(`Done in ${result.tookSeconds}s · ${ids.length} copies · buyers counted ${buyers.counted}` +
-      (holders ? ` · holders counted ${holders.counted}` : "") + ` → ${OUT_FILE}`);
+  log(`Done in ${result.tookSeconds}s · ${ids.length} copies · buyers checked ${mintsDone}/${ids.length}` +
+      (owner ? ` · holders as of ${owner.updated}` : "") + ` → ${OUT_FILE}`);
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
