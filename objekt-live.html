@@ -170,11 +170,27 @@ const HTTP_RPCS = ["https://api.mainnet.abs.xyz", "https://abstract.api.onfinali
 const WS_RPCS   = ["wss://api.mainnet.abs.xyz/ws", "wss://abstract.api.onfinality.io/public-ws"];
 // "All copies" lookup via OpenSea. Get a free key at https://opensea.io/settings/developer (or docs.opensea.io).
 // Leave empty to just link to OpenSea's search instead.
-const OPENSEA_KEY = ""; // optional: or paste it into the 🏆 Contest panel (saved only in your browser)
+const OPENSEA_KEY = "01c0333ec8464a8f97e46611853a3b54"; // optional: or paste it into the 🏆 Contest panel (saved only in your browser)
 const osKey = () => { try { return OPENSEA_KEY || localStorage.getItem("osKey") || ""; } catch { return OPENSEA_KEY; } };
 const OPENSEA_SLUG = "objekt-2";
 // Standings precomputed hourly by GitHub Actions (scripts/contest.mjs). Path is relative to this page.
 const CONTEST_JSON = "data/contest.json";
+// Every collection's token IDs, generated hourly from COSMO metadata by scripts/build-site.mjs
+const OBJEKT_DATA = "objekts";
+const objKey = (artist, season, member, coll) => `${artist}-${season}-${member}-${coll}`.toLowerCase().replace(/[^a-z0-9-]/g, "");
+let objIndex;
+async function loadObjIndex() {
+  if (objIndex !== undefined) return objIndex;
+  try { const r = await fetch(`${OBJEKT_DATA}/index.json?t=${Date.now()}`, { cache: "no-store" }); objIndex = r.ok ? await r.json() : null; }
+  catch { objIndex = null; }
+  return objIndex;
+}
+const crawlCaughtUp = ix => ix && (!ix.latest || ix.crawledUpTo >= ix.latest);
+async function localIds(key) {
+  const r = await fetch(`${OBJEKT_DATA}/c/${key}.json`);
+  if (!r.ok) throw new Error(`list ${r.status}`);
+  return (await r.json()).ids.map(BigInt);
+}
 const HISTORY_BLOCKS = 600;    // how far back to load on page open
 const MAX_CARDS = 120;         // keep the page light
 const POLL_MS = 4000;          // fallback polling interval if WebSocket fails
@@ -428,6 +444,26 @@ async function showCopies(m) {
   const searchUrl = `https://opensea.io/collection/${OPENSEA_SLUG}?sortBy=created_date&sortDirection=desc&searchQuery=${encodeURIComponent(m.name)}`;
   $("cpNote").innerHTML = `Copy numbers follow token ID order (≈ mint order), not official serials. · <a href="${searchUrl}" target="_blank" rel="noopener">View on OpenSea ↗</a>`;
 
+  // 1) Your site's own crawled list (instant, no API key)
+  const ix = m.season && m.member && m.coll ? await loadObjIndex() : null;
+  if (run !== copiesRun) return;
+  const entry = ix?.collections.find(c => c.key === objKey(m.artist || "", m.season, m.member, m.coll));
+  if (entry && (crawlCaughtUp(ix) || !osKey())) {
+    try {
+      const ids = (await localIds(entry.key)).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+      if (run !== copiesRun) return;
+      $("cpCount").textContent = `${ids.length.toLocaleString()} cop${ids.length === 1 ? "y" : "ies"}`;
+      if (!crawlCaughtUp(ix)) $("cpNote").insertAdjacentHTML("afterbegin",
+        `<div>⏳ The crawl is still catching up (#${ix.crawledUpTo.toLocaleString()} of #${ix.latest.toLocaleString()}), so newer copies may be missing.</div>`);
+      list.innerHTML = ids.map((id, i) =>
+        `<div class="cp"><span>#${i + 1}</span><a href="https://abscan.org/nft/${CONTRACT}/${id}" target="_blank" rel="noopener">${id}</a></div>`).join("");
+      currentIds = ids.slice();
+      $("cpHolders").disabled = !ids.length;
+      return;
+    } catch (e) { console.warn("Local list failed, trying OpenSea:", e); }
+  }
+
+  // 2) OpenSea (needs an API key)
   if (!osKey() || !(m.season && m.member && m.coll)) {
     $("cpCount").textContent = osKey() ? "Card details missing" : "Add an OpenSea API key (🏆 Contest panel) to list copies here";
     return;
@@ -602,6 +638,21 @@ function ctSetStatus(text, frac, err) {
 
 // Every copy of one collection (all members), e.g. Season=Cream02 + Collection=372Z
 async function osAllCopies(season, coll, run, onPage) {
+  // Prefer your site's own crawled lists when the crawl has caught up
+  const ix = await loadObjIndex();
+  if (crawlCaughtUp(ix)) {
+    const matches = ix.collections.filter(c => c.season.toLowerCase() === season.toLowerCase() && c.coll.toLowerCase() === coll.toLowerCase());
+    if (matches.length) {
+      const out = [];
+      for (const c of matches) {
+        if (run !== ctRun) throw new Error("cancelled");
+        (await localIds(c.key)).forEach(id => out.push({ id, member: c.member, coll }));
+        onPage(out.length);
+      }
+      return out;
+    }
+  }
+  if (!osKey()) throw new Error("This season isn't in your site's crawled data yet, and there's no OpenSea key to fall back on.");
   const traits = JSON.stringify([{ traitType: "Season", value: season }, { traitType: "Collection", value: coll }]);
   const out = [];
   let next = null, page = 0, retries = 0;
@@ -771,7 +822,7 @@ $("ctRun").onclick = async () => {
   const mode = $("ctMode").value;
   const key = $("ctKey").value.trim();
   if (key) { try { localStorage.setItem("osKey", key); } catch {} }
-  if (!osKey()) return ctSetStatus("Paste your OpenSea API key first.", null, true);
+
   if (!season || !colls.length) return ctSetStatus("Enter a season and at least one collection.", null, true);
   $("ctResults").innerHTML = ""; $("ctCsv").disabled = true; ctData = null; saved = null;
   $("ctSaved").textContent = "Running live… (reopen the panel to go back to the saved standings)";
@@ -782,7 +833,7 @@ $("ctRun").onclick = async () => {
     for (const [ci, coll] of colls.entries()) {
       const before = copies.length;
       const got = await osAllCopies(season, coll, run, n =>
-        ctSetStatus(`Step 1/2 · Listing copies from OpenSea… ${season} ${coll}: ${n.toLocaleString()} found`, (ci + 0.5) / colls.length));
+        ctSetStatus(`Step 1/2 · Listing copies… ${season} ${coll}: ${n.toLocaleString()} found`, (ci + 0.5) / colls.length));
       copies.push(...got);
       ctSetStatus(`Step 1/2 · ${season} ${coll}: ${(copies.length - before).toLocaleString()} copies`, (ci + 1) / colls.length);
     }
@@ -873,7 +924,9 @@ function showSaved() {
       per: Object.fromEntries(colls.map((c, i) => [c, row[1 + i]])) }])));
   }
   ctData = { season: saved.season, colls, mode, tally, walletCounts, copies: saved.copies, missing: 0, at: new Date(saved.updated) };
-  ctSetStatus(`${saved.season} ${colls.join(" + ")} · ${saved.copies.toLocaleString()} copies · ${md.label}`);
+  const asOf = md.updated && Math.abs(new Date(md.updated) - new Date(saved.updated)) > 5 * 60000
+    ? ` · these standings are from ${ago(md.updated)}` : "";
+  ctSetStatus(`${saved.season} ${colls.join(" + ")} · ${saved.copies.toLocaleString()} copies · ${md.label}${asOf}`);
   $("ctCsv").disabled = false;
   renderContest(null);
 }
@@ -886,7 +939,10 @@ async function loadSaved() {
     $("ctSeason").value = saved.season; $("ctColls").value = saved.collections.join(", ");
     $("ctMode").querySelector('option[value="owner"]').disabled = !saved.modes.owner;
     $("ctSaved").innerHTML = `📌 Standings updated <b>${ago(saved.updated)}</b> (${new Date(saved.updated).toLocaleString()}) · refreshed hourly. ` +
-      `Change the fields and press <b>Run live</b> for a different contest.`;
+      `Change the fields and press <b>Run live</b> for a different contest.` +
+      (saved.progress && !saved.progress.complete
+        ? `<br>⏳ Still catching up: ${saved.progress.mintsChecked.toLocaleString()} of ${saved.progress.total.toLocaleString()} copies checked so far. Buyer totals will grow over the next few hourly runs.`
+        : "");
     showSaved();
   } catch {
     saved = null;
