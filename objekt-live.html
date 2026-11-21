@@ -76,6 +76,19 @@
   #holders td.addr a:hover { color: var(--accent); }
   #holders .bar { height: 6px; border-radius: 3px; background: var(--card, var(--accent)); min-width: 2px; }
   #holders .ids { color: var(--dim); font-family: ui-monospace, Menlo, monospace; font-size: 11px; }
+  #browse { display: none; margin: 20px 24px 0; background: var(--panel); border: 1px solid var(--line);
+    border-top: 3px solid var(--accent); border-radius: 14px; padding: 16px 18px; }
+  #browse.open { display: block; }
+  #browse .head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  #browse h2 { margin: 0; font-size: 17px; }
+  #brQ { min-width: 280px; }
+  #brGrid { margin-top: 12px; display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    max-height: 520px; overflow: auto; }
+  .bc { background: #1f1f29; border-radius: 10px; overflow: hidden; cursor: pointer; border-top: 3px solid var(--card, var(--line)); }
+  .bc:hover { outline: 1px solid var(--accent); }
+  .bc .im { aspect-ratio: 1083 / 1673; background: #262630 center/cover no-repeat; }
+  .bc .t { padding: 6px 8px; font-size: 12px; } .bc .t b { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bc .t span { color: var(--dim); font-size: 11px; }
   #contest { display: none; margin: 20px 24px 0; background: var(--panel); border: 1px solid var(--line);
     border-top: 3px solid #f5c451; border-radius: 14px; padding: 16px 18px; }
   #contest.open { display: block; }
@@ -122,9 +135,20 @@
     <button class="chip" data-type="burn" aria-pressed="true">🔥 Burns</button>
     <input type="search" id="q" placeholder="Filter: e.g. ChaeWon, Atom02, 113Z, First…">
     <button class="chip" id="pause" aria-pressed="true">⏸ Pause</button>
+    <button class="chip" id="brOpen">📚 Collections</button>
     <button class="chip" id="ctOpen">🏆 Contest</button>
   </div>
 </header>
+
+<section id="browse">
+  <div class="head">
+    <h2>📚 Collections</h2>
+    <input type="search" id="brQ" placeholder="e.g. Atom01 JiWoo 100Z, or just Atom01 JiWoo">
+    <button class="chip close" id="brClose" style="margin-left:auto">✕ Close</button>
+  </div>
+  <div class="note" id="brNote" style="margin-top:8px"></div>
+  <div id="brGrid"></div>
+</section>
 
 <section id="contest">
   <div class="head">
@@ -170,7 +194,7 @@ const HTTP_RPCS = ["https://api.mainnet.abs.xyz", "https://abstract.api.onfinali
 const WS_RPCS   = ["wss://api.mainnet.abs.xyz/ws", "wss://abstract.api.onfinality.io/public-ws"];
 // "All copies" lookup via OpenSea. Get a free key at https://opensea.io/settings/developer (or docs.opensea.io).
 // Leave empty to just link to OpenSea's search instead.
-const OPENSEA_KEY = "01c0333ec8464a8f97e46611853a3b54"; // optional: or paste it into the 🏆 Contest panel (saved only in your browser)
+const OPENSEA_KEY = ""; // optional: or paste it into the 🏆 Contest panel (saved only in your browser)
 const osKey = () => { try { return OPENSEA_KEY || localStorage.getItem("osKey") || ""; } catch { return OPENSEA_KEY; } };
 const OPENSEA_SLUG = "objekt-2";
 // Standings precomputed hourly by GitHub Actions (scripts/contest.mjs). Path is relative to this page.
@@ -448,7 +472,7 @@ async function showCopies(m) {
   const ix = m.season && m.member && m.coll ? await loadObjIndex() : null;
   if (run !== copiesRun) return;
   const entry = ix?.collections.find(c => c.key === objKey(m.artist || "", m.season, m.member, m.coll));
-  if (entry && (crawlCaughtUp(ix) || !osKey())) {
+  if (entry) {
     try {
       const ids = (await localIds(entry.key)).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
       if (run !== copiesRun) return;
@@ -958,6 +982,48 @@ $("ctOpen").onclick = () => {
   window.scrollTo({ top: 0, behavior: "smooth" });
 };
 $("ctClose").onclick = () => { ctRun++; $("contest").classList.remove("open"); if (!ctData || !saved) saved = null; };
+
+/* ===== Collection browser (from the crawled index) ===== */
+const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+async function openBrowse() {
+  $("browse").classList.add("open");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+  $("brNote").textContent = "Loading collections…";
+  const ix = await loadObjIndex();
+  if (!ix) { $("brNote").textContent = "No crawled data on this site yet. It appears after the hourly job's first run."; return; }
+  const pct = ix.latest ? Math.min(100, ix.crawledUpTo / ix.latest * 100) : 100;
+  $("brNote").textContent = `${ix.collections.length.toLocaleString()} collections found so far · crawled up to #${ix.crawledUpTo.toLocaleString()}` +
+    (ix.latest && ix.crawledUpTo < ix.latest ? ` of #${ix.latest.toLocaleString()} (${pct.toFixed(1)}%) — newer seasons appear as the crawl continues` : " · fully up to date");
+  renderBrowse();
+  $("brQ").focus();
+}
+function renderBrowse() {
+  const ix = objIndex; if (!ix) return;
+  const words = $("brQ").value.toLowerCase().split(/\s+/).filter(Boolean);
+  const hits = ix.collections.filter(c => {
+    const hay = `${c.artist} ${c.season} ${c.member} ${c.coll} ${c.cls}`.toLowerCase();
+    return words.every(w => hay.includes(w));
+  });
+  const shown = hits.slice(0, 120);
+  $("brGrid").innerHTML = shown.map((c, i) => `
+    <div class="bc" data-i="${ix.collections.indexOf(c)}" style="--card:${esc(c.color || "")}">
+      <div class="im" style="background-image:url('${esc(c.image || "")}')"></div>
+      <div class="t"><b>${esc(c.season)} ${esc(c.member)} ${esc(c.coll)}</b><span>${esc(c.cls)} · ${c.copies.toLocaleString()} copies</span></div>
+    </div>`).join("") +
+    (hits.length > shown.length ? `<div class="note" style="grid-column:1/-1">Showing 120 of ${hits.length.toLocaleString()} — type more to narrow it down.</div>` : "") +
+    (!hits.length ? `<div class="note" style="grid-column:1/-1">No collections match${ix.crawledUpTo < (ix.latest || 0) ? " yet — it may not be crawled so far" : ""}.</div>` : "");
+  $("brGrid").querySelectorAll(".bc").forEach(el => el.onclick = () => {
+    const c = ix.collections[+el.dataset.i];
+    const m = { name: `${c.season} ${c.member} ${c.coll}`, artist: c.artist, season: c.season, member: c.member, coll: c.coll, cls: c.cls, color: c.color };
+    $("q").value = m.name; applyAll();
+    showCopies(m);
+    $("copies").scrollIntoView({ behavior: "smooth" });
+  });
+}
+let brTimer;
+$("brQ").oninput = () => { clearTimeout(brTimer); brTimer = setTimeout(renderBrowse, 150); };
+$("brOpen").onclick = openBrowse;
+$("brClose").onclick = () => $("browse").classList.remove("open");
 
 /* ===== UI wiring ===== */
 document.querySelectorAll(".chip[data-type]").forEach(b => b.onclick = () => {
