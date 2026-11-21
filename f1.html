@@ -1210,6 +1210,28 @@ body.dt .dk .dkst tr.me td.tcell{background:var(--tc);color:var(--ti)}
 @media (max-width:899px){.cx{overflow-x:hidden}.cx-drv select{flex:1 1 150px}}
 .cx-setbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 16px;border-bottom:1px solid #182033;background:#05070d;position:sticky;top:0;z-index:6}
 .cx-setstep{color:#8a96b0;font-size:13px}
+.gb-cols{display:grid;grid-template-columns:1.1fr 1fr;gap:14px;margin-top:10px}
+@media(max-width:800px){.gb-cols{grid-template-columns:1fr}}
+.gb-slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:6px}
+.gb-slot{display:flex;flex-direction:column;align-items:flex-start;gap:1px;padding:6px 8px;border:1px solid #ffffff22;border-left:4px solid #3ddc84;background:#ffffff08;color:inherit;border-radius:6px;cursor:pointer;text-align:left}
+.gb-slot b{font-size:15px}.gb-slot span{font-size:12px;color:#ffd166}.gb-slot small{font-size:10px;opacity:.7}
+.gb-slot.taken{border-left-color:var(--tc,#666);opacity:.45;cursor:default}
+.gb-slot:not(.taken):not([disabled]):hover{background:#3ddc8422}
+.gb-slot[disabled]:not(.taken){cursor:default}
+tr.gb-now td{background:#ffd16622}
+.rng-chip{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:4px;background:#ffd166;color:#111;font-weight:700;font-size:11px}
+.rng-chip.pend{background:#ffffff22;color:inherit;font-weight:500}
+.rot-draw{margin:8px 0;padding:8px 10px;border:1px solid #ffffff1f;border-radius:8px;background:#ffffff06}
+.rot-hd{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:6px}.rot-hd .dk-mut{flex:1;font-size:12px}
+.rot-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:6px}
+.rot-team{border-left:4px solid var(--tc);padding:4px 8px;background:#ffffff08;border-radius:4px;font-size:13px}
+.rot-team>b{display:block;font-size:12px;letter-spacing:.04em;margin-bottom:2px}
+.rot-last{font-style:normal;font-size:10px;padding:0 4px;border-radius:3px;background:#ffd166;color:#111}
+.rot-scroll{overflow-x:auto}.rot-tab td,.rot-tab th{padding:3px 5px}
+.rot-th{border-bottom:3px solid var(--tc);font-size:11px}
+.rot-c{text-align:center;font-size:14px;font-weight:700;color:var(--tc);background:#ffffff05}
+.rot-c.full{background:color-mix(in srgb,var(--tc) 22%,transparent);color:#fff}
+.rot-c.now{outline:2px solid #ffd166;outline-offset:-2px}
 </style></head><body><div id="app"></div><script>
 // ===== DATA: teams, drivers, tracks =====
 const ENGINES = {
@@ -7644,7 +7666,7 @@ deskGrid = function (sprint) {
 // ===================== More alternative regulations =====================
 // Pre-season testing · equal cars (all season, or equal at the start and then developed) · weather setting ·
 // refuelling · team orders · no safety car. Every option can be switched on/off in the custom regulations.
-const XR0 = { testing: 'off', equal: 'off', weather: 'real', refuel: 'off', orders: 'off', scr: 'era', sprint: 'on', dnf: 'on', standins: 'real', heatpts: 'weighted', express: 'off', pot: 'off' };
+const XR0 = { testing: 'off', equal: 'off', weather: 'real', refuel: 'off', orders: 'off', scr: 'era', sprint: 'on', dnf: 'on', standins: 'real', heatpts: 'weighted', express: 'off', pot: 'off', gamble: 'off', rnglaps: 'off', rotate: 'off' };
 const xr = (G0, k) => { const r = (G0 && G0.regs) || {}; return r[k] == null ? XR0[k] : r[k]; };
 
 // ---------- settings form ----------
@@ -7674,7 +7696,10 @@ dkRegsForm = function (r, act) {
   <label class="small">Stand-in &amp; reserve drivers${sel('standins', [['real', 'As in real history — stand-ins and one-off entries race'], ['off', 'Off — the season line-up races every round']])}</label>
   <label class="small">Three-part GP points${sel('heatpts', [['weighted', 'Weighted — Race 1 ⅓, Race 2 ⅔, Race 3 full points'], ['standard', 'Standard — normal points for the final classification only'], ['fixed', 'Fixed — Race 1 5-4-3-2-1, Race 2 10-8-6-4-2, Race 3 15-12-9-6-3 (replaces the points system)']])}</label>
   <label class="small">Express pass race${sel('express', [['off', 'Off'], ['on', 'On — a quarter of the races: each winner skips the next race, which pays half points']])}</label>
-  <label class="small">Prize pot points${sel('pot', [['off', 'Off — normal points'], ['on', 'On — each driver gets 10 × rounds to chip in (min 1 per GP); the pot is shared by every finisher on a sliding scale (at least 1 each), retirements get 0']])}</label>`;
+  <label class="small">Prize pot points${sel('pot', [['off', 'Off — normal points'], ['on', 'On — each driver gets 10 × rounds to chip in (min 1 per GP); the pot is shared by every finisher on a sliding scale (at least 1 each), retirements get 0']])}</label>
+  <label class="small">Gamble grid slots${sel('gamble', [['off', 'Off — qualifying sets the grid'], ['on', 'On — qualifying sets the pick order; drivers choose their grid slot, and the slot sets the points (pole win 5 → back-row win 100, finishing well behind your slot loses points)']])}</label>
+  <label class="small">Random laps${sel('rnglaps', [['off', 'Off'], ['on', 'On — at half distance a random number adds or removes 0–10 laps from the race']])}</label>
+  <label class="small">Rotating drivers${sel('rotate', [['off', 'Off — drivers race for their own team'], ['on', 'On — no contracts: a lottery seats every driver in a different car each Grand Prix, and each driver drives every constructor\'s cars once before that constructor is off their list']])}</label>`;
   const i = html.lastIndexOf('</div>');
   return html.slice(0, i) + more + html.slice(i);
 };
@@ -10642,6 +10667,275 @@ render = function () {
   }
   return _cx_render.apply(this, arguments);
 };
+// ===================== Gamble grid slots + Random laps (custom regulations) =====================
+const gbOn = () => !!(G && G.regs && G.regs.gamble === 'on');
+const rngOn = () => !!(G && G.regs && G.regs.rnglaps === 'on');
+
+// ---------- the points scale ----------
+// A win from slot s is worth 5 points from pole rising smoothly to 100 points from the back of the grid.
+// Other finishes slide down to 0 about 4½ places behind the starting slot, and go negative beyond that.
+function gbWin(s, N) { return N > 1 ? 5 * Math.pow(20, (s - 1) / (N - 1)) : 5; }
+function gbBreak(s) { return s + 4.5; }
+function gbPts(s, f, N) { const w = gbWin(s, N), b = gbBreak(s); return Math.round(w * (b - f) / (b - 1)); }
+function gbDnf(s, N) { return Math.min(0, gbPts(s, N, N)); } // a retirement scores 0, or last place's value if that's negative
+
+// ---------- the draft ----------
+function gbHuman(e) { return !G.spectator && G.player && e.t.id === G.player; }
+function gbInit() {
+  const order = WK.grid.slice(); // qualifying result = pick order
+  WK.gb = { order: order.map(e => e.d.id), slot: {}, i: 0, N: order.length, risk: {} };
+  order.forEach(e => { WK.gb.risk[e.d.id] = rnd(0.75, 1.35); });
+  return WK.gb;
+}
+function gbEntry(id) { return WK.entries.find(e => e.d.id === id); }
+function gbTaken() { return new Set(Object.values(WK.gb.slot)); }
+function gbAiPick(id) {
+  const B = WK.gb, N = B.N, rank = B.order.indexOf(id) + 1, taken = gbTaken(), a = B.risk[id], e = gbEntry(id);
+  const dnf = 0.08 + (100 - (e ? e.d.cons : 80)) / 400;
+  let best = null;
+  for (let s = 1; s <= N; s++) {
+    if (taken.has(s)) continue;
+    const exp = rank + 0.45 * (s - rank); // where they expect to finish: their pace, pulled toward their starting slot
+    let ev = 0, wsum = 0;
+    for (let d = -4; d <= 4; d++) { const f = Math.min(N, Math.max(1, Math.round(exp + d * (0.6 + s / N)))), w = 5 - Math.abs(d); ev += w * gbPts(s, f, N); wsum += w; }
+    ev = (ev / wsum) * (1 - dnf) + gbDnf(s, N) * dnf;
+    const score = ev * (ev > 0 ? a : 1 / a) + rnd(-1.5, 1.5);
+    if (!best || score > best.score) best = { s, score };
+  }
+  return best.s;
+}
+function gbRun(stopForHuman) { // run AI picks until a human driver is up (or the draft ends)
+  const B = WK.gb;
+  while (B.i < B.order.length) {
+    const id = B.order[B.i], e = gbEntry(id);
+    if (stopForHuman && e && gbHuman(e)) return;
+    B.slot[id] = gbAiPick(id); B.i++;
+  }
+}
+function gbFinish() {
+  const B = WK.gb, bySlot = Object.entries(B.slot).sort((a, b) => a[1] - b[1]).map(([id]) => gbEntry(id)).filter(Boolean);
+  WK.grid = bySlot; B.done = true;
+}
+const _gb_togrid = A.togrid;
+A.togrid = function (q) {
+  if (gbOn() && WK && WK.stage === 'quali' && !(WK.gb && WK.gb.done)) {
+    if (!WK.gb) gbInit();
+    gbRun(q !== true);
+    if (q === true) { gbRun(false); gbFinish(); return _gb_togrid.apply(this, arguments); }
+    WK.stage = 'gpick'; render(); window.scrollTo(0, 0); return;
+  }
+  return _gb_togrid.apply(this, arguments);
+};
+Object.assign(A, {
+  gbpick(el) { const B = WK.gb, id = B.order[B.i], s = +el.dataset.v; if (gbTaken().has(s)) return; B.slot[id] = s; B.i++; gbRun(true); render(); },
+  gbauto() { const B = WK.gb, id = B.order[B.i]; B.slot[id] = gbAiPick(id); B.i++; gbRun(true); render(); },
+  gbgo() { gbRun(false); gbFinish(); WK.stage = 'quali'; _gb_togrid.call(A); }
+});
+function gbPage() {
+  const B = WK.gb, N = B.N, t = WK.track, taken = new Map(Object.entries(B.slot).map(([id, s]) => [s, id])), curId = B.order[B.i], cur = curId && gbEntry(curId), my = cur && gbHuman(cur);
+  const row = (id, k) => { const e = gbEntry(id), s = B.slot[id]; return `<tr class="${k === B.i ? 'gb-now' : ''} ${G.player && e.t.id === G.player ? 'me' : ''}" style="--tc:${e.t.color};--ti:${dkInk(e.t.color)}"><td class="pos">Q${k + 1}</td><td class="l">${dkFlag(e.d.nat)} ${dkNm(e.d.name)}</td><td class="l hm">${esc(e.t.name)}</td><td class="ra">${s ? `<b>P${s}</b>` : k === B.i ? '<span class="good">picking…</span>' : ''}</td><td class="ra">${s ? `win = ${Math.round(gbWin(s, N))}` : ''}</td></tr>`; };
+  const slot = s => { const id = taken.get(s), e = id && gbEntry(id), w = Math.round(gbWin(s, N)), be = Math.min(N, Math.floor(gbBreak(s)));
+    return `<button class="gb-slot ${id ? 'taken' : ''}" ${id || !my ? 'disabled' : `data-a="gbpick" data-v="${s}"`} style="${e ? `--tc:${e.t.color}` : ''}"><b>P${s}</b><span>win ${w}</span><small>${id ? esc(e.d.code) : be < N ? `0 pts at P${Math.ceil(gbBreak(s))}` : 'all finishes score'}</small></button>`; };
+  const ex = s => `P1 ${gbPts(s, 1, N)} · P3 ${gbPts(s, 3, N)} · P6 ${gbPts(s, 6, N)} · P10 ${gbPts(s, 10, N)} · last ${gbPts(s, N, N)}`;
+  return `<div class="dk dk-fp" id="dk"><div class="dk-fptitle">Grid Slot Draft - ${esc(t.short)}<span class="dk-mut">ROUND ${WK.round + 1} · ${G.year} · GAMBLE GRID · ${B.i >= B.order.length ? 'DRAFT COMPLETE' : `PICK ${B.i + 1} OF ${N}`}</span></div>
+  <div class="dk-fpbox"><div class="dk-mut heat-note">🎲 Qualifying sets the order drivers choose their grid slot. The slot sets what the race is worth: a win from pole pays ${Math.round(gbWin(1, N))}, from the back ${Math.round(gbWin(N, N))}. Finishing about 4–5 places behind your slot scores nothing, and worse loses points. ${my ? `<b class="good">Your pick: ${esc(cur.d.name)}.</b> Choose a slot below.` : ''}</div>
+  <div class="gb-cols"><div><table class="dkfp"><thead><tr><th>Pick</th><th class="l">Driver</th><th class="l hm">Team</th><th class="ra">Slot</th><th class="ra">Value</th></tr></thead><tbody>${B.order.map(row).join('')}</tbody></table></div>
+  <div><div class="gb-slots">${Array.from({ length: N }, (_, i) => slot(i + 1)).join('')}</div>
+  <div class="dk-mut small" style="margin-top:8px">Examples — from P1: ${ex(1)}<br>from P${Math.ceil(N / 2)}: ${ex(Math.ceil(N / 2))}<br>from P${N}: ${ex(N)}</div></div></div></div>
+  <div class="dk-fpfoot"><span class="sp"></span>${my ? `<button data-a="gbauto">Let the team strategist pick</button>` : ''}<button class="pri" data-a="gbgo" ${my ? '' : 'data-enter="1"'}>${B.i >= B.order.length ? 'Cars to the grid →' : 'Finish the draft →'}</button></div></div>`;
+}
+const _gb_viewWeekend = viewWeekend;
+viewWeekend = function () { if (WK && WK.stage === 'gpick' && WK.gb) return gbPage(); return _gb_viewWeekend.apply(this, arguments); };
+if (typeof DOC_ORDER !== 'undefined') DOC_ORDER.splice(DOC_ORDER.indexOf('quali') + 1, 0, 'gpick');
+
+// grid page: what each slot is worth
+if (typeof deskGrid === 'function') {
+  const _gb_deskGrid = deskGrid;
+  deskGrid = function (sprint) {
+    let html = _gb_deskGrid.apply(this, arguments);
+    if (!sprint && gbOn() && WK.gb && WK.gb.done) {
+      const N = WK.gb.N, me = WK.grid.find(e => G.player ? e.t.id === G.player : e.d.id === G.follow);
+      html = html.replace(/(<div class="dk-mut dkg-note">)/, `<div class="dk-mut dkg-note gb-ann">🎲 Gamble grid: a win from pole pays ${Math.round(gbWin(1, N))}, from P${N} ${Math.round(gbWin(N, N))}.${me ? ` ${esc(me.d.code)} starts P${WK.gb.slot[me.d.id]} — a win is worth ${Math.round(gbWin(WK.gb.slot[me.d.id], N))}, finishing P${Math.ceil(gbBreak(WK.gb.slot[me.d.id]))} or worse costs points.` : ''}</div>$1`);
+    }
+    return html;
+  };
+}
+// race points
+const _gb_applyRaceResult = applyRaceResult;
+applyRaceResult = function (G0, race, wk) {
+  const out = _gb_applyRaceResult.apply(this, arguments);
+  try {
+    if (!gbOn() || !race || race.sprint || !wk.gb || !wk.gb.done) return out;
+    const s = G0.results[G0.results.length - 1], N = wk.gb.N, teamDelta = {};
+    let best = null;
+    s.rows.forEach(r => {
+      const slot = wk.gb.slot[r.id]; if (!slot) return;
+      const nw = r.out ? gbDnf(slot, N) : gbPts(slot, r.pos, N), d = G0.drivers[r.id]; if (!d) return;
+      const dl = nw - (r.pts || 0); d.pts += dl; if (d.res && d.res.length) d.res[d.res.length - 1] = nw;
+      G0.teams[r.team].pts += dl; teamDelta[r.team] = (teamDelta[r.team] || 0) + dl; r.pts = nw; r.slot = slot;
+      if (!best || nw > best.pts) best = { code: r.code, pts: nw, slot, pos: r.pos };
+    });
+    Object.entries(teamDelta).forEach(([t, dl]) => { G0.teams[t].money += dl * 0.12; });
+    s.gamble = { best, N };
+    if (G0.rules && G0.rules.bestN && typeof recomputePoints === 'function') recomputePoints(G0);
+  } catch (e) { console.error(e); }
+  return out;
+};
+// live championship projection
+if (typeof potLive === 'function') {
+  const _gb_potLive = potLive;
+  potLive = function (R, running) {
+    if (gbOn() && !R.sprint && WK.gb && WK.gb.done) { const add = {}; running.forEach((c, i) => { const s = WK.gb.slot[c.d.id]; if (s) add[c.d.id] = gbPts(s, i + 1, WK.gb.N); }); return add; }
+    return _gb_potLive.apply(this, arguments);
+  };
+}
+// results strip
+const _gb_dkRaceView = dkRaceView;
+dkRaceView = function (o) {
+  let html = _gb_dkRaceView.apply(this, arguments);
+  const s = G.results[o.k];
+  if (s && s.gamble && !o.sprint) {
+    const b = s.gamble.best;
+    html = html.replace('<table class="dkfp dkrr">', `<div class="heat-strip"><span><b>🎲 Gamble grid</b> · points set by each driver's chosen slot</span>${b ? `<span>Biggest haul: ${esc(b.code)} +${b.pts} (P${b.slot} → P${b.pos})</span>` : ''}</div><table class="dkfp dkrr">`);
+  }
+  return html;
+};
+
+// ---------- Random laps at half distance ----------
+function rngAllowed(race) {
+  const r = G.rules || {};
+  return rngOn() && !race.sprint && !r.elimRace && !r.heats && !r.intruder && !r.poleElim && !r.groups && !r.endu && !r.hybrid;
+}
+hxChain('onLap', (race, c, n) => {
+  if (!race || !rngAllowed(race)) return;
+  if (!race.rng && race.wk === WK && n >= Math.floor(race.laps / 2)) {
+    const delta = typeof window.RNG_FORCE === 'number' ? window.RNG_FORCE : rint(-10, 10), from = race.laps, to = Math.max(n + 3, from + delta);
+    race.laps = to; race.rng = { delta: to - from, at: n, from, to };
+    race.msg(to === from ? `🎲 RANDOM LAPS at half distance: ±0 — the race stays at ${to} laps` : `🎲 RANDOM LAPS at half distance: ${to > from ? '+' : ''}${to - from} laps! The race is now ${to} laps instead of ${from}. ${to < from ? 'Teams switch to attack mode.' : 'Teams switch to tyre saving.'}`, true);
+    if (typeof bcComm === 'function') try { bcComm('lead', to === from ? 'The random laps roll comes up zero — no change!' : `What a twist — ${Math.abs(to - from)} laps ${to > from ? 'added to' : 'taken off'} the race!`, 4); } catch (e) { }
+  }
+  // AI reacts to the new distance for the rest of the race
+  if (race.rng && race.rng.delta && c.auto && !c.player && !c.finished) {
+    const left = race.laps - n;
+    if (race.rng.delta < 0) { if (c.wear < 0.7 || left <= 3) c.mode = 'push'; }
+    else if (c.wear > 0.3 && left > 4) c.mode = 'save';
+  }
+});
+const _rng_updRace = updateRaceUI;
+updateRaceUI = function () {
+  const r = _rng_updRace.apply(this, arguments);
+  try {
+    if (RACE && RACE.rng) { const ds = document.getElementById('dksess'); if (ds && !ds.querySelector('.rng-chip')) ds.insertAdjacentHTML('beforeend', ` <span class="rng-chip">🎲 ${RACE.rng.delta > 0 ? '+' : ''}${RACE.rng.delta} LAPS</span>`); }
+    else if (RACE && !RACE.sprint && rngAllowed(RACE) && !RACE.rng) { const ds = document.getElementById('dksess'); if (ds && !ds.querySelector('.rng-chip')) ds.insertAdjacentHTML('beforeend', ` <span class="rng-chip pend">🎲 ±0–10 AT HALF DISTANCE</span>`); }
+  } catch (e) { }
+  return r;
+};
+// ===================== Rotating drivers (custom regulation) =====================
+// No contracts: the season's drivers form one pool, and a lottery seats them in a different car each Grand Prix.
+// A driver can race for a constructor once in each of its cars; once they've driven all of them, that constructor is off their list.
+const rotOn = (G0) => !!(G0 && G0.regs && G0.regs.rotate === 'on');
+function rotSlotName(t, k) { return (t && t.cars === 1) ? 'car' : `car ${k + 1}`; }
+
+function rotSeason(G0, base) {
+  if (G0.rot && G0.rot.year === G0.year) return G0.rot;
+  // seats: the cars the regular line-up would race; pool: the season's contracted drivers (no stand-ins)
+  const per = {};
+  base.filter(e => !e.standin && !e.t.xt).forEach(e => { per[e.t.id] = (per[e.t.id] || 0) + 1; });
+  const seats = []; Object.entries(per).forEach(([tid, n]) => { for (let k = 0; k < n; k++) seats.push([tid, k]); });
+  const pool = Object.values(G0.drivers).filter(d => d.team && per[d.team] && !d.retired).map(d => d.id);
+  G0.rot = { year: G0.year, pool, seats, used: {}, rounds: {} };
+  return G0.rot;
+}
+// does driver id still have this seat available? (each car of each constructor once)
+function rotFree(R, id, s) { const u = R.used[id]; return !(u && u[s[0]] && u[s[0]].includes(s[1])); }
+function rotDraw(G0, R) {
+  const n = R.seats.length;
+  // who races: everyone if the pool fits, else the drivers with fewest starts (random tie-break)
+  const starts = id => Object.values(R.used[id] || {}).reduce((a, l) => a + l.length, 0);
+  let drivers = R.pool.filter(id => G0.drivers[id] && !G0.drivers[id].retired).map(id => [id, starts(id) + Math.random()]).sort((a, b) => a[1] - b[1]).slice(0, n).map(x => x[0]);
+  // a driver who has driven every car on the grid starts a fresh cycle
+  drivers.forEach(id => { if (R.seats.every(s => !rotFree(R, id, s))) { R.used[id] = {}; R.cyc = R.cyc || {}; R.cyc[id] = (R.cyc[id] || 1) + 1; } });
+  const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  drivers = shuffle(drivers);
+  // lottery = random maximum matching of drivers to seats, never a seat the driver has used
+  const seatOf = {}, drvOf = new Array(n).fill(null);
+  const order = {}; drivers.forEach(id => { order[id] = shuffle([...Array(n).keys()]); });
+  const tryAssign = (id, seen) => {
+    for (const si of order[id]) {
+      if (seen.has(si) || !rotFree(R, id, R.seats[si])) continue; seen.add(si);
+      if (drvOf[si] === null || tryAssign(drvOf[si], seen)) { drvOf[si] = id; seatOf[id] = si; return true; }
+    }
+    return false;
+  };
+  drivers.forEach(id => tryAssign(id, new Set()));
+  // anyone the lottery couldn't place (rare late-season dead end): clear their history and draw again for free seats
+  drivers.filter(id => seatOf[id] == null).forEach(id => { R.used[id] = {}; R.cyc = R.cyc || {}; R.cyc[id] = (R.cyc[id] || 1) + 1; tryAssign(id, new Set()); });
+  const map = {};
+  drvOf.forEach((id, si) => { if (id) map[id] = si; });
+  return map;
+}
+const _rot_weekendEntries = weekendEntries;
+weekendEntries = function (G0) {
+  const base = _rot_weekendEntries.apply(this, arguments);
+  if (!rotOn(G0)) return base;
+  try {
+    const R = rotSeason(G0, base);
+    let map = R.rounds[G0.round];
+    if (!map) {
+      map = rotDraw(G0, R); R.rounds[G0.round] = map;
+      Object.entries(map).forEach(([id, si]) => { const [tid, k] = R.seats[si]; const u = (R.used[id] = R.used[id] || {}); (u[tid] = u[tid] || []).push(k); });
+    }
+    const mk = (d, t) => ({ d, t, setup: rnd(0.35, 0.5) + (t.id === G0.player ? 0 : rnd(0.1, 0.3)), tyreKnow: t.id === G0.player ? 0 : rnd(0.2, 0.5), qualiPrep: t.id === G0.player ? 0 : rnd(0.2, 0.5) });
+    const seated = Object.entries(map).sort((a, b) => a[1] - b[1]);
+    seated.forEach(([id, si]) => { G0.drivers[id].team = R.seats[si][0]; G0.drivers[id].rotSeat = R.seats[si][1]; });
+    R.pool.forEach(id => { if (map[id] == null && G0.drivers[id]) G0.drivers[id].rotSeat = null; });
+    const L = seated.map(([id, si]) => mk(G0.drivers[id], G0.teams[R.seats[si][0]]));
+    return L;
+  } catch (e) { console.error(e); return base; }
+};
+
+// ---------- the draw on the practice page ----------
+function rotDrawHtml() {
+  const R = G.rot; if (!R || !WK) return '';
+  const map = R.rounds[WK.round]; if (!map) return '';
+  const byTeam = {};
+  Object.entries(map).forEach(([id, si]) => { const [tid, k] = R.seats[si]; (byTeam[tid] = byTeam[tid] || []).push([k, id]); });
+  const prev = R.rounds[WK.round - 1] || {};
+  const cards = Object.keys(byTeam).map(tid => { const t = G.teams[tid];
+    return `<div class="rot-team" style="--tc:${t.color}"><b>${esc(t.name)}</b>${byTeam[tid].sort((a, b) => a[0] - b[0]).map(([k, id]) => { const d = G.drivers[id], left = (t.cars || 2) - ((R.used[id] || {})[tid] || []).length;
+      return `<div><span class="dk-mut">${rotSlotName(t, k)}</span> ${dkFlag(d.nat)} ${esc(d.name)}${left ? '' : ' <i class="rot-last" title="Last time in this team\'s cars">final</i>'}</div>`; }).join('')}</div>`; }).join('');
+  return `<div class="rot-draw"><div class="rot-hd"><b>🎰 Driver lottery · Round ${WK.round + 1}</b><span class="dk-mut">Every driver drives each constructor's cars once, then that constructor is off their list.</span><button data-a="rotview">Rotation table</button></div><div class="rot-grid">${cards}</div></div>`;
+}
+const _rot_viewWeekend = viewWeekend;
+viewWeekend = function () {
+  let html = _rot_viewWeekend.apply(this, arguments);
+  if (rotOn(G) && WK && WK.stage === 'fp' && G.rot) {
+    const box = rotDrawHtml();
+    const i = html.indexOf('<div class="dk-fpbox">');
+    html = i >= 0 ? html.slice(0, i) + box + html.slice(i) : box + html;
+  }
+  return html;
+};
+// rotation table: driver × constructor, cars driven
+function rotTableHtml() {
+  const R = G.rot; if (!R) return '<p class="dk-mut">The lottery starts at the first Grand Prix.</p>';
+  const teams = [...new Set(R.seats.map(s => s[0]))].map(id => G.teams[id]);
+  const rows = R.pool.map(id => G.drivers[id]).filter(Boolean).sort((a, b) => b.pts - a.pts).map(d => {
+    const u = R.used[d.id] || {}, cur = WK && R.rounds[WK.round] && R.rounds[WK.round][d.id] != null ? R.seats[R.rounds[WK.round][d.id]][0] : null;
+    const cy = (R.cyc || {})[d.id] || 1, done = Object.values(u).reduce((a, l) => a + l.length, 0);
+    return `<tr><td class="l">${dkFlag(d.nat)} ${esc(d.code || d.name)}</td><td class="ra">${d.pts}</td><td class="ra">${cy > 1 ? `#${cy} · ` : ''}${done}/${R.seats.length}</td>${teams.map(t => { const n = (u[t.id] || []).length, full = n >= (t.cars || 2);
+      return `<td class="rot-c ${full ? 'full' : ''} ${cur === t.id ? 'now' : ''}" style="--tc:${t.color}">${n ? (full ? '✓' : '●'.repeat(n)) : ''}</td>`; }).join('')}</tr>`; }).join('');
+  return `<p class="dk-mut small">● = one Grand Prix in that constructor's car, ✓ = every car of that constructor driven, so the lottery skips it. "Cars" counts the cars driven so far; once a driver has driven every car on the grid (#2) a new cycle starts. The outlined cell is this weekend's car.</p>
+  <div class="rot-scroll"><table class="dkfp rot-tab"><thead><tr><th class="l">Driver</th><th class="ra">Pts</th><th class="ra" title="Cars driven in the current cycle">Cars</th>${teams.map(t => `<th style="--tc:${t.color}" class="rot-th" title="${esc(t.name)}">${esc((t.name || t.id).slice(0, 3).toUpperCase())}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+A.rotview = function () {
+  hxOpen(`<div class="dkx-mod pot-mod"><div class="dkx-hd"><div><h2>Driver rotation</h2><div class="dk-mut">${G.year} · lottery seats</div></div><span class="sp"></span><button class="dkx-x" data-a="hxclose">✕</button></div><div class="dkx-body">${rotTableHtml()}</div></div>`);
+};
+const _rot_hqTabs = hqTabs;
+hqTabs = function () { const t = _rot_hqTabs.apply(this, arguments); if (rotOn(G) && !t.includes('rot')) { const i = t.indexOf('standings'); t.splice(i + 1, 0, 'rot'); } return t; };
+TAB_NAMES.rot = '🎰 Rotation';
+const _rot_viewHQ = viewHQ;
+viewHQ = function () { if (TAB === 'rot' && rotOn(G)) return `<div class="card pot-page"><h3>🎰 Driver rotation — ${G.year}</h3>${rotTableHtml()}</div>`; return _rot_viewHQ.apply(this, arguments); };
 // ---------- TV-graphics track map (replaces dkDrawMap) ----------
 // Draws the traced layout exactly as stored; only styling is added around it.
 const MAPF = {};
