@@ -1,0 +1,79 @@
+name: Objekt data + publish site
+
+# Every hour: crawl new Objekt metadata, update contest standings, then publish the whole site.
+# Also publishes whenever you push changes to your site.
+#
+# ONE-TIME SETUP: Settings → Pages → Build and deployment → Source: "GitHub Actions".
+# (Scheduled runs only happen on your default branch.)
+on:
+  schedule:
+    - cron: "17 * * * *"   # every hour at :17 (UTC). GitHub may start it late when busy.
+  push:
+    branches: [main, master]
+    paths-ignore: ["data/meta/**", "data/contest*.json"]   # the bot's own data commits don't need a second run
+  workflow_dispatch:
+
+permissions:
+  contents: write   # save crawl progress back to the repo
+  pages: write      # publish to GitHub Pages
+  id-token: write
+
+concurrency:
+  group: objekt-site
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 58
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Crawl new Objekt metadata
+        if: github.event_name != 'push'
+        continue-on-error: true    # still publish the site even if COSMO is having a bad day
+        env:
+          TIME_BUDGET_MIN: "30"
+          COSMO_RPS: "20"
+          RPC_URLS: ${{ secrets.RPC_URL && format('{0},https://api.mainnet.abs.xyz', secrets.RPC_URL) || 'https://api.mainnet.abs.xyz,https://abstract.api.onfinality.io/public' }}
+        run: node scripts/crawl-meta.mjs
+
+      - name: Update contest standings
+        if: github.event_name != 'push'
+        continue-on-error: true
+        env:
+          OPENSEA_KEY: ${{ secrets.OPENSEA_KEY }}
+          TIME_BUDGET_MIN: "15"
+          RPC_URLS: ${{ secrets.RPC_URL && format('{0},https://api.mainnet.abs.xyz', secrets.RPC_URL) || 'https://api.mainnet.abs.xyz,https://abstract.api.onfinality.io/public' }}
+        run: node scripts/contest.mjs
+
+      - name: Save progress to the repo
+        if: always() && github.event_name != 'push'
+        run: |
+          git config user.name "objekt-bot"
+          git config user.email "objekt-bot@users.noreply.github.com"
+          git add data/ || true
+          if git diff --cached --quiet; then
+            echo "No changes"
+          else
+            git commit -m "Update Objekt data"
+            git pull --rebase
+            git push
+          fi
+
+      - name: Build site
+        run: node scripts/build-site.mjs
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deploy
+        uses: actions/deploy-pages@v4
