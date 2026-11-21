@@ -3,6 +3,11 @@ name: Objekt data + publish site
 # Every hour: crawl new Objekt metadata, update contest standings, then publish the whole site.
 # Also publishes whenever you push changes to your site.
 #
+# While the first big crawl is still catching up, each run starts the next one as soon as it
+# finishes (back to back), so it doesn't depend on GitHub's hourly schedule. Once the crawl is
+# up to date, it goes back to hourly. To switch the back-to-back runs off: Settings → Secrets and
+# variables → Actions → Variables → New variable AUTO_CHAIN = false.
+#
 # ONE-TIME SETUP: Settings → Pages → Build and deployment → Source: "GitHub Actions".
 # (Scheduled runs only happen on your default branch.)
 on:
@@ -14,6 +19,7 @@ on:
   workflow_dispatch:
 
 permissions:
+  actions: write    # lets a run start the next run (back-to-back crawling)
   contents: write   # save crawl progress back to the repo
   pages: write      # publish to GitHub Pages
   id-token: write
@@ -35,6 +41,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+
+      - name: Note where the crawl starts
+        id: before
+        run: echo "next=$(node -e 'try{console.log(require("./data/meta/state.json").next)}catch{console.log(1)}')" >> "$GITHUB_OUTPUT"
 
       - name: Crawl new Objekt metadata
         if: github.event_name != 'push'
@@ -77,3 +87,21 @@ jobs:
           path: _site
       - id: deploy
         uses: actions/deploy-pages@v4
+
+      # Start the next run right away while the crawl is still catching up.
+      # Only if this run actually made progress, so a COSMO outage can't cause an endless loop.
+      - name: Start the next run (catch-up mode)
+        if: always() && github.event_name != 'push' && vars.AUTO_CHAIN != 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          BEFORE: ${{ steps.before.outputs.next }}
+        run: |
+          read AFTER LATEST < <(node -e 'try{const s=require("./data/meta/state.json");console.log(s.next, s.latest||0)}catch{console.log(1, 0)}')
+          echo "Crawl moved from #$BEFORE to #$AFTER (newest token #$LATEST)"
+          if [ "$AFTER" -gt "$BEFORE" ] && [ "$AFTER" -le "$LATEST" ]; then
+            echo "Still catching up — starting the next run now."
+            gh workflow run site.yml --ref "$GITHUB_REF_NAME"
+          else
+            echo "Up to date (or no progress this run) — waiting for the hourly schedule."
+          fi
