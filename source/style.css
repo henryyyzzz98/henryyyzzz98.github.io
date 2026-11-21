@@ -1207,3 +1207,25 @@ body.dt .dk .dkst tr.me td.tcell{background:var(--tc);color:var(--ti)}
 @media (max-width:899px){.cx{overflow-x:hidden}.cx-drv select{flex:1 1 150px}}
 .cx-setbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 16px;border-bottom:1px solid #182033;background:#05070d;position:sticky;top:0;z-index:6}
 .cx-setstep{color:#8a96b0;font-size:13px}
+.gb-cols{display:grid;grid-template-columns:1.1fr 1fr;gap:14px;margin-top:10px}
+@media(max-width:800px){.gb-cols{grid-template-columns:1fr}}
+.gb-slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:6px}
+.gb-slot{display:flex;flex-direction:column;align-items:flex-start;gap:1px;padding:6px 8px;border:1px solid #ffffff22;border-left:4px solid #3ddc84;background:#ffffff08;color:inherit;border-radius:6px;cursor:pointer;text-align:left}
+.gb-slot b{font-size:15px}.gb-slot span{font-size:12px;color:#ffd166}.gb-slot small{font-size:10px;opacity:.7}
+.gb-slot.taken{border-left-color:var(--tc,#666);opacity:.45;cursor:default}
+.gb-slot:not(.taken):not([disabled]):hover{background:#3ddc8422}
+.gb-slot[disabled]:not(.taken){cursor:default}
+tr.gb-now td{background:#ffd16622}
+.rng-chip{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:4px;background:#ffd166;color:#111;font-weight:700;font-size:11px}
+.rng-chip.pend{background:#ffffff22;color:inherit;font-weight:500}
+.rot-draw{margin:8px 0;padding:8px 10px;border:1px solid #ffffff1f;border-radius:8px;background:#ffffff06}
+.rot-hd{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:6px}.rot-hd .dk-mut{flex:1;font-size:12px}
+.rot-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:6px}
+.rot-team{border-left:4px solid var(--tc);padding:4px 8px;background:#ffffff08;border-radius:4px;font-size:13px}
+.rot-team>b{display:block;font-size:12px;letter-spacing:.04em;margin-bottom:2px}
+.rot-last{font-style:normal;font-size:10px;padding:0 4px;border-radius:3px;background:#ffd166;color:#111}
+.rot-scroll{overflow-x:auto}.rot-tab td,.rot-tab th{padding:3px 5px}
+.rot-th{border-bottom:3px solid var(--tc);font-size:11px}
+.rot-c{text-align:center;font-size:14px;font-weight:700;color:var(--tc);background:#ffffff05}
+.rot-c.full{background:color-mix(in srgb,var(--tc) 22%,transparent);color:#fff}
+.rot-c.now{outline:2px solid #ffd166;outline-offset:-2px}
