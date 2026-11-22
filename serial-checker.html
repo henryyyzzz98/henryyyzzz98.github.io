@@ -370,8 +370,16 @@
     });
     try {
       await scanner.start(
-        { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } },
-        { fps: 10, qrbox: 250 },
+        { facingMode: "environment" },
+        {
+          fps: 10,
+          qrbox: 250,
+          videoConstraints: {
+            facingMode: "environment",
+            width: { ideal: 1920 },
+            height: { ideal: 1080 },
+          },
+        },
         async (decodedText) => {
           await stopScan();
           handleDecoded(decodedText);
