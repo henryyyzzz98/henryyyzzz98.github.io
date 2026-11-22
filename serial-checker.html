@@ -30,7 +30,7 @@
   h1 { font-size: 22px; margin: 0 0 4px; }
   p.sub { color: var(--muted); margin: 0 0 28px; font-size: 14px; }
   form { display: flex; gap: 10px; }
-  input {
+  input[type="text"] {
     flex: 1;
     background: var(--panel);
     border: 1px solid var(--border);
@@ -40,7 +40,7 @@
     font-size: 15px;
     outline: none;
   }
-  input:focus { border-color: var(--accent); }
+  input[type="text"]:focus { border-color: var(--accent); }
   button {
     background: var(--accent);
     color: #fff;
@@ -51,13 +51,19 @@
     font-weight: 600;
     cursor: pointer;
   }
-  button.ghost {
+  .ghost {
+    display: block;
+    width: 100%;
+    text-align: center;
     background: transparent;
     border: 1px solid var(--border);
     color: var(--text);
     margin-top: 12px;
-    width: 100%;
     padding: 11px;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
   }
   button:disabled { opacity: 0.5; cursor: default; }
   #reader-box {
@@ -69,6 +75,10 @@
   }
   #reader { width: 100%; }
   .scan-note { color: var(--muted); font-size: 13px; padding: 10px 14px 0; }
+  #zoomWrap { display: none; padding: 12px 14px; }
+  #zoom { width: 100%; }
+  .status { color: var(--muted); font-size: 13px; margin-top: 12px; display: none; }
+  .status.show { display: block; }
   .result {
     margin-top: 24px;
     background: var(--panel);
@@ -101,9 +111,20 @@
 
   <button class="ghost" id="scanBtn" type="button">Scan QR</button>
 
+  <label class="ghost" id="uploadLabel">
+    Upload a photo of the QR
+    <input id="fileInput" type="file" accept="image/*" capture="environment" style="display:none;" />
+  </label>
+
+  <div class="status" id="status"></div>
+
   <div id="reader-box">
     <div id="reader"></div>
-    <div class="scan-note" id="scanNote">Point the camera at the QR code.</div>
+    <div id="zoomWrap">
+      <div class="scan-note" style="padding:0 0 6px;">Zoom (hold the card further away, then zoom in)</div>
+      <input id="zoom" type="range" />
+    </div>
+    <div class="scan-note" id="scanNote">Fill the frame with the QR and hold steady.</div>
   </div>
 
   <div class="result" id="result">
@@ -115,26 +136,35 @@
   <div class="error" id="error"></div>
 </div>
 
-<!-- QR scanning library, loaded from a public CDN. Needs internet + HTTPS (GitHub Pages is fine). -->
+<!-- Live camera scanning -->
 <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<!-- Strong still-image QR decoding -->
+<script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <script>
   // Point this at your deployed Worker. No trailing slash.
-  const WORKER_URL = "https://cosmo-proxy.henrylai543.workers.dev";
+  const WORKER_URL = "https://cosmo-proxy.YOUR-SUBDOMAIN.workers.dev";
 
   const form = document.getElementById("form");
   const input = document.getElementById("claimId");
   const btn = document.getElementById("btn");
   const result = document.getElementById("result");
   const errorBox = document.getElementById("error");
+  const statusBox = document.getElementById("status");
   const scanBtn = document.getElementById("scanBtn");
   const readerBox = document.getElementById("reader-box");
-  const scanNote = document.getElementById("scanNote");
+  const zoomWrap = document.getElementById("zoomWrap");
+  const zoom = document.getElementById("zoom");
+  const fileInput = document.getElementById("fileInput");
 
-  // --- QR handling ---------------------------------------------------------
-  let scanner = null;
-  let scanning = false;
+  function setStatus(msg) {
+    if (msg) { statusBox.textContent = msg; statusBox.classList.add("show"); }
+    else { statusBox.classList.remove("show"); }
+  }
 
-  // The QR may hold a full claim URL or just the ID. Pull the ID out of either.
+  // The QR holds a link like https://link.cosmo.fans/mint?n=XXXX .
+  // Pull the ID out of the "n" param (or a few other common spots), else use
+  // the whole string.
   function extractClaimId(text) {
     const t = (text || "").trim();
     try {
@@ -151,25 +181,125 @@
     return t;
   }
 
+  function handleDecoded(text) {
+    setStatus("");
+    input.value = extractClaimId(text);
+    form.requestSubmit();
+  }
+
+  // --- Still-image decoding (strong, multi-attempt) ------------------------
+  function loadImage(file) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error("bad image"));
+      img.src = URL.createObjectURL(file);
+    });
+  }
+
+  // Draw the image to a canvas, optionally scaled down and/or colour-inverted.
+  function canvasOf(img, targetW, invert) {
+    const scale = Math.min(1, targetW / img.naturalWidth) || 1;
+    const w = Math.max(1, Math.round(img.naturalWidth * scale));
+    const h = Math.max(1, Math.round(img.naturalHeight * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(img, 0, 0, w, h);
+    if (invert) {
+      const d = ctx.getImageData(0, 0, w, h);
+      const p = d.data;
+      for (let i = 0; i < p.length; i += 4) {
+        p[i] = 255 - p[i];
+        p[i + 1] = 255 - p[i + 1];
+        p[i + 2] = 255 - p[i + 2];
+      }
+      ctx.putImageData(d, 0, 0);
+    }
+    return canvas;
+  }
+
+  async function decodeImageFile(file) {
+    const img = await loadImage(file);
+
+    // 1. Native barcode engine (strongest where present: most Android Chrome).
+    if ("BarcodeDetector" in window) {
+      try {
+        const detector = new BarcodeDetector({ formats: ["qr_code"] });
+        const found = await detector.detect(img);
+        if (found && found.length) return found[0].rawValue;
+      } catch (e) {}
+    }
+
+    // 2. ZXing (strong; also covers iPhone/Safari). Try normal then inverted,
+    //    since this card's QR is white-on-black.
+    if (window.ZXing && ZXing.BrowserQRCodeReader) {
+      const reader = new ZXing.BrowserQRCodeReader();
+      for (const invert of [false, true]) {
+        try {
+          const url = canvasOf(img, img.naturalWidth, invert).toDataURL("image/png");
+          const res = await reader.decodeFromImageUrl(url);
+          const text = res && (res.text || (res.getText && res.getText()));
+          if (text) return text;
+        } catch (e) {}
+      }
+    }
+
+    // 3. jsQR fallback, several sizes. attemptBoth handles inversion.
+    for (const target of [img.naturalWidth, 2000, 1400, 1000, 700]) {
+      const c = canvasOf(img, target, false);
+      const ctx = c.getContext("2d");
+      const d = ctx.getImageData(0, 0, c.width, c.height);
+      const code = jsQR(d.data, c.width, c.height, { inversionAttempts: "attemptBoth" });
+      if (code && code.data) return code.data;
+    }
+    return null;
+  }
+
+  // --- Live camera scanning ------------------------------------------------
+  let scanner = null;
+  let scanning = false;
+
+  function setupCameraControls() {
+    try {
+      const caps = scanner.getRunningTrackCapabilities();
+      if (caps.focusMode && caps.focusMode.includes("continuous")) {
+        scanner.applyVideoConstraints({ advanced: [{ focusMode: "continuous" }] }).catch(() => {});
+      }
+      if (caps.zoom && typeof caps.zoom.max === "number") {
+        zoom.min = caps.zoom.min;
+        zoom.max = caps.zoom.max;
+        zoom.step = caps.zoom.step || 0.1;
+        zoom.value = caps.zoom.min;
+        zoomWrap.style.display = "block";
+        zoom.oninput = () => {
+          scanner.applyVideoConstraints({ advanced: [{ zoom: Number(zoom.value) }] }).catch(() => {});
+        };
+      }
+    } catch (e) {}
+  }
+
   async function startScan() {
     if (scanning) return;
     errorBox.classList.remove("show");
     readerBox.style.display = "block";
     scanBtn.textContent = "Stop scanning";
-    scanner = new Html5Qrcode("reader");
+    scanner = new Html5Qrcode("reader", {
+      experimentalFeatures: { useBarCodeDetectorIfSupported: true },
+    });
     try {
       await scanner.start(
-        { facingMode: "environment" }, // rear camera
-        { fps: 10, qrbox: 220 },
+        { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } },
+        { fps: 10, qrbox: 250 },
         async (decodedText) => {
           await stopScan();
-          const id = extractClaimId(decodedText);
-          input.value = id;
-          form.requestSubmit();
+          handleDecoded(decodedText);
         },
-        () => {} // ignore per-frame "not found" messages
+        () => {}
       );
       scanning = true;
+      setupCameraControls();
     } catch (err) {
       readerBox.style.display = "none";
       scanBtn.textContent = "Scan QR";
@@ -186,11 +316,38 @@
     }
     scanning = false;
     readerBox.style.display = "none";
+    zoomWrap.style.display = "none";
     scanBtn.textContent = "Scan QR";
   }
 
   scanBtn.addEventListener("click", () => {
     scanning ? stopScan() : startScan();
+  });
+
+  // Photo fallback.
+  fileInput.addEventListener("change", async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    errorBox.classList.remove("show");
+    await stopScan();
+    setStatus("Reading photo...");
+    try {
+      const text = await decodeImageFile(file);
+      if (text) {
+        handleDecoded(text);
+      } else {
+        setStatus("");
+        errorBox.textContent =
+          "Still couldn't find a QR. Get closer so the QR fills most of the frame, keep it flat, sharp and well-lit, and avoid glare, then try again.";
+        errorBox.classList.add("show");
+      }
+    } catch (err) {
+      setStatus("");
+      errorBox.textContent = "Couldn't read that image.";
+      errorBox.classList.add("show");
+    } finally {
+      fileInput.value = "";
+    }
   });
 
   // --- Lookup --------------------------------------------------------------
