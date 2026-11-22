@@ -122,6 +122,21 @@
   .chip:disabled { opacity: .45; cursor: default; }
   footer { text-align: center; color: var(--dim); font-size: 12px; padding: 0 0 30px; }
   footer a { color: var(--dim); }
+  /* ===== Sections (tabs) ===== */
+  .views { display: flex; gap: 4px; background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 3px; }
+  .vt { background: none; border: none; color: var(--dim); font: inherit; font-size: 14px; font-weight: 600; padding: 6px 14px;
+    border-radius: 999px; cursor: pointer; white-space: nowrap; }
+  .vt.on { background: #2c2c38; color: var(--text); }
+  .vbadge { display: inline-block; min-width: 18px; padding: 0 5px; margin-left: 4px; border-radius: 999px; background: var(--mint);
+    color: #0d0d12; font-size: 11px; line-height: 18px; text-align: center; }
+  .vbadge[hidden] { display: none; }
+  body:not([data-view="live"]) .liveOnly, body:not([data-view="live"]) #feed { display: none !important; }
+  body[data-view="collections"] #browse { display: block; }
+  body:not([data-view="collections"]) #browse { display: none !important; }
+  body[data-view="contest"] #contest { display: block; }
+  body:not([data-view="contest"]) #contest { display: none !important; }
+  body:not([data-view="live"]) #copies { display: none !important; }
+
   /* ===== Phones ===== */
   @media (max-width: 640px) {
     body { font-size: 13px; }
@@ -132,6 +147,7 @@
     .controls { gap: 6px; }
     .controls input[type=search] { order: -1; flex: 1 1 100%; min-width: 0; }
     .chip { padding: 5px 10px; font-size: 12.5px; }
+    .views { order: 5; width: 100%; } .vt { flex: 1; padding: 7px 6px; font-size: 13px; }
     main { padding: 12px; gap: 8px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .card { border-radius: 10px; }
     .info { padding: 7px 8px 9px; gap: 2px; }
@@ -200,6 +216,9 @@
   .dot.old { background: #555; }
   .dMsg { color: var(--dim); font-size: 13px; margin-top: 10px; }
   .dMore { margin-top: 12px; }
+  .chainTag { font-size: 10px; font-weight: 600; border-radius: 999px; padding: 1px 6px; margin-left: 6px; vertical-align: middle; }
+  .chainTag.poly { color: #b48cff; border: 1px solid rgba(180,140,255,.45); }
+  .chainTag.abs { color: var(--mint); border: 1px solid rgba(61,220,151,.4); }
   .sb { display: inline-block; font-size: 11px; font-weight: 600; border-radius: 999px; padding: 1px 8px; margin-left: 6px; vertical-align: middle; }
   .sb.est { color: var(--dim); border: 1px solid var(--line); }
   .sb.adj { color: #7aa7ff; border: 1px solid rgba(122,167,255,.45); }
@@ -228,20 +247,23 @@
 <body>
 <header>
   <h1>Objekt <span>Live</span></h1>
-  <div class="status"><div class="dot" id="dot"></div><span id="statusText">Connecting…</span></div>
-  <div class="stats">
+  <nav class="views" aria-label="Sections">
+    <button class="vt" data-view="collections">📚 Collections</button>
+    <button class="vt" data-view="live">⚡ Live activity <span class="vbadge" id="liveBadge" hidden></span></button>
+    <button class="vt" data-view="contest">🏆 Contest</button>
+  </nav>
+  <div class="status liveOnly"><div class="dot" id="dot"></div><span id="statusText">Connecting…</span></div>
+  <div class="stats liveOnly">
     <div>Mints <b id="sMint">0</b></div>
     <div>Transfers <b id="sXfer">0</b></div>
     <div>Block <b id="sBlock">—</b></div>
   </div>
-  <div class="controls">
+  <div class="controls liveOnly">
     <button class="chip" data-type="mint" aria-pressed="true">🆕 Mints</button>
     <button class="chip" data-type="transfer" aria-pressed="true">🔁 Transfers</button>
     <button class="chip" data-type="burn" aria-pressed="true">🔥 Burns</button>
     <input type="search" id="q" placeholder="Filter: e.g. ChaeWon, Atom02, 113Z, First…">
     <button class="chip" id="pause" aria-pressed="true">⏸ Pause</button>
-    <button class="chip" id="brOpen">📚 Collections</button>
-    <button class="chip" id="ctOpen">🏆 Contest</button>
   </div>
 </header>
 
@@ -260,7 +282,6 @@
   <div class="head">
     <h2>📚 Collections</h2>
     <input type="search" id="brQ" placeholder="e.g. Atom01 JiWoo 100Z, or just Atom01 JiWoo">
-    <button class="chip close" id="brClose" style="margin-left:auto">✕ Close</button>
   </div>
   <div class="brFilters">
     <select id="brArtist"><option value="">All artists</option></select>
@@ -284,7 +305,6 @@
 <section id="contest">
   <div class="head">
     <h2>🏆 Top buyer per member</h2>
-    <button class="chip close" id="ctClose" style="margin-left:auto">✕ Close</button>
   </div>
   <div class="form">
     <label>Season <input type="text" id="ctSeason" value="Cream02" size="9"></label>
@@ -335,7 +355,7 @@ const HTTP_RPCS = ["https://api.mainnet.abs.xyz", "https://abstract.api.onfinali
 const WS_RPCS   = ["wss://api.mainnet.abs.xyz/ws", "wss://abstract.api.onfinality.io/public-ws"];
 // "All copies" lookup via OpenSea. Get a free key at https://opensea.io/settings/developer (or docs.opensea.io).
 // Leave empty to just link to OpenSea's search instead.
-const OPENSEA_KEY = ""; // optional: or paste it into the 🏆 Contest panel (saved only in your browser)
+const OPENSEA_KEY = "01c0333ec8464a8f97e46611853a3b54"; // optional: or paste it into the 🏆 Contest panel (saved only in your browser)
 const osKey = () => { try { return OPENSEA_KEY || localStorage.getItem("osKey") || ""; } catch { return OPENSEA_KEY; } };
 const OPENSEA_SLUG = "objekt-2";
 // Standings precomputed hourly by GitHub Actions (scripts/contest.mjs). Path is relative to this page.
@@ -482,6 +502,7 @@ async function addEvent(ev, { live = true } = {}) {
   if (ev.type === "mint") counts.mint++; else counts.transfer++;
   $("sMint").textContent = counts.mint; $("sXfer").textContent = counts.transfer;
   $("sBlock").textContent = ev.block.toLocaleString();
+  if (live) noteLiveActivity();
   if (paused && live) { queue.push(ev); return; }
   render(ev);
 }
@@ -1118,19 +1139,19 @@ async function loadSaved() {
 }
 $("ctMode").onchange = () => { if (saved && !$("ctStatus").classList.contains("err")) showSaved(); };
 
-$("ctOpen").onclick = () => {
+function openContest() {
   $("contest").classList.add("open");
   if (!saved) loadSaved();
   if (osKey()) $("ctKey").placeholder = "saved ✓ (paste to replace)";
-  window.scrollTo({ top: 0, behavior: "smooth" });
-};
-$("ctClose").onclick = () => { ctRun++; $("contest").classList.remove("open"); if (!ctData || !saved) saved = null; };
+}
 
 /* ===== Collection browser (from the crawled index) ===== */
 const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+let browseLoaded = false;
 async function openBrowse() {
   $("browse").classList.add("open");
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  if (browseLoaded) return;
+  browseLoaded = true;
   $("brNote").textContent = "Loading collections…";
   const ix = await loadObjIndex();
   if (!ix) { $("brNote").textContent = "No crawled data on this site yet. It appears after the hourly job's first run."; return; }
@@ -1219,8 +1240,31 @@ $("brSort").onchange = renderBrowse;
 $("brReset").onclick = () => { for (const [id] of BR_FIELDS) $(id).value = ""; $("brQ").value = ""; $("brSort").value = "new"; brChanged(); };
 let brTimer;
 $("brQ").oninput = () => { clearTimeout(brTimer); brTimer = setTimeout(brChanged, 150); };
-$("brOpen").onclick = openBrowse;
-$("brClose").onclick = () => $("browse").classList.remove("open");
+/* ----- Sections: Collections (home) · Live activity · Contest ----- */
+let liveUnseen = 0;
+function setView(v, { push = true } = {}) {
+  if (!["collections", "live", "contest"].includes(v)) v = "collections";
+  document.body.dataset.view = v;
+  document.querySelectorAll(".vt").forEach(b => b.classList.toggle("on", b.dataset.view === v));
+  if (v === "collections") openBrowse();
+  if (v === "contest") openContest();
+  if (v === "live") { liveUnseen = 0; $("liveBadge").hidden = true; }
+  if (push && !location.hash.startsWith("#c=")) try { history.replaceState(null, "", v === "collections" ? location.pathname + location.search : `#${v}`); } catch {}
+  window.scrollTo({ top: 0 });
+}
+function noteLiveActivity() {
+  if (document.body.dataset.view === "live") return;
+  liveUnseen++;
+  $("liveBadge").textContent = liveUnseen > 99 ? "99+" : liveUnseen;
+  $("liveBadge").hidden = false;
+}
+document.querySelectorAll(".vt").forEach(b => b.onclick = () => setView(b.dataset.view));
+window.addEventListener("hashchange", () => {
+  const h = location.hash.slice(1);
+  if (["live", "contest", "collections"].includes(h)) setView(h, { push: false });
+  else if (!h) setView("collections", { push: false });
+});
+setView(["live", "contest"].includes(location.hash.slice(1)) ? location.hash.slice(1) : "collections", { push: false });
 
 /* ===== Serials: estimated for physical (A) objekts, with admin corrections ===== */
 // How COSMO numbers physicals (from apollo.cafe's research): each print run gets token IDs reserved in
@@ -1229,74 +1273,106 @@ $("brClose").onclick = () => $("browse").classList.remove("open");
 // blocks ("segs"); confirmed serials from the admin editor re-anchor their block and everything after it.
 const OVERRIDES_PATH = "data/serial-overrides.json";
 let overrides = null;
+let published = null; // the file as it is on the site
 async function loadOverrides(force) {
-  if (overrides && !force) return overrides;
-  try { const r = await fetch(`${OVERRIDES_PATH}?t=${Date.now()}`, { cache: "no-store" }); overrides = r.ok ? await r.json() : { version: 1, serials: {} }; }
-  catch { overrides = { version: 1, serials: {} }; }
-  overrides.serials ||= {};
+  if (published && !force) { overrides = overridesView(); return overrides; }
+  try { const r = await fetch(`${OVERRIDES_PATH}?t=${Date.now()}`, { cache: "no-store" }); published = r.ok ? await r.json() : { version: 1, serials: {} }; }
+  catch { published = { version: 1, serials: {} }; }
+  overrides = overridesView();
   return overrides;
 }
+// Admin edits wait in this browser as "unpublished changes" until Publish saves them all in one commit.
+const getPending = () => { try { return JSON.parse(localStorage.getItem("serialPending") || "[]"); } catch { return []; } };
+const setPending = list => { try { list.length ? localStorage.setItem("serialPending", JSON.stringify(list)) : localStorage.removeItem("serialPending"); } catch {} };
+function applyChanges(data, list) {
+  data.serials ||= {};
+  for (const { key, field, id, value } of list) {
+    data[field] ||= {};
+    const col = (data[field][key] ||= {});
+    if (value) col[id] = value; else { delete col[id]; if (!Object.keys(col).length) delete data[field][key]; }
+  }
+  return data;
+}
+function overridesView() {
+  const base = JSON.parse(JSON.stringify(published || { version: 1, serials: {} }));
+  return applyChanges(base, isAdmin() ? getPending() : []);
+}
+function queueChange(key, id, change) {
+  const field = "serial" in change ? "serials" : "dirs", value = "serial" in change ? change.serial : change.dir;
+  const list = getPending().filter(c => !(c.key === key && c.field === field && c.id === id));
+  // skip if it just puts back what's already published
+  const cur = published?.[field]?.[key]?.[id] ?? null;
+  if ((value ?? null) !== cur) list.push({ key, field, id, value: value ?? null });
+  setPending(list);
+  overrides = overridesView();
+  renderAdminBar();
+}
+// Physical serial model, per unbroken block of a collection's token IDs:
+//  • IDs are handed out in chunks of 50 (sometimes 100). Chunks follow on upward: each chunk takes the next 50 serials.
+//  • Inside a chunk the serials either count UP with the token ID, or count DOWN
+//    (e.g. IDs 2071–2120 = #2102…#2053, then 2121–2170 = #2152…#2103).
+//  • Unscanned IDs still use up their serials.
+// Confirmed serials pick the chunk size, where chunks start, the direction and the starting serial that fit
+// the most confirmations; an admin's "counts down" setting fixes the direction.
 function physSerials(idsN, segs, conf, dirs = {}) {
   if (!segs || !segs.length) { // not crawled: guess blocks from big gaps
     segs = []; idsN.forEach((id, k) => { if (k === 0 || id - idsN[k - 1] > 100) segs.push([k, null]); });
   }
+  const mod = (a, n) => ((a % n) + n) % n;
   const map = new Map(), blocks = [];
   let running = 1, anchored = false;
-  const majority = m => [...m.entries()].sort((a, b) => b[1] - a[1])[0][0];
-  segs.forEach(([start, pf], s) => {
-    const end = s + 1 < segs.length ? segs[s + 1][0] - 1 : idsN.length - 1;
+
+  segs.forEach(([start, pf], si) => {
+    const end = si + 1 < segs.length ? segs[si + 1][0] - 1 : idsN.length - 1;
     const first = idsN[start], last = idsN[end];
-    const resStart = pf != null && first - pf - 1 <= 99 ? pf + 1 : first;   // block starts right after the other collection's token
+    const knownStart = pf != null && first - pf - 1 <= 99 ? pf + 1 : null;   // block starts right after another collection's token
     const confirmed = [];
     for (let k = start; k <= end; k++) if (conf[idsN[k]]) confirmed.push([idsN[k], conf[idsN[k]]]);
+    let adminDir = null;
+    for (let k = start; k <= end && !adminDir; k++) if (dirs[idsN[k]]) adminDir = dirs[idsN[k]];
 
-    // Which way does this block count? 1) an admin's setting on any of its tokens,
-    // 2) two or more confirmations (serial falling as the ID rises = counts down), 3) up by default.
-    let down = null;
-    for (let k = start; k <= end && down === null; k++) { const d = dirs[idsN[k]]; if (d) down = d === "down"; }
-    let dirFrom = down === null ? "default" : "admin";
-    if (down === null && confirmed.length >= 2) {
-      let up = 0, dn = 0;
-      for (let i = 1; i < confirmed.length; i++) {
-        const [a, sa] = confirmed[i - 1], [b, sb] = confirmed[i];
-        if (sb !== sa) ((sb - sa) * (b - a) > 0 ? up++ : dn++);
-      }
-      if (up || dn) { down = dn > up; dirFrom = "confirmations"; }
-    }
-    down = !!down;
+    // A layout: chunk size S, chunk alignment a (chunks start at IDs ≡ a mod S), direction, first chunk's serial base0
+    const layout = (S, a, down) => {
+      const cs = id => id - mod(id - a, S);                 // start of the chunk holding this ID
+      const cs0 = cs(knownStart ?? first);
+      const within = id => down ? cs(id) + S - 1 - id : id - cs(id);
+      const chunkNo = id => (cs(id) - cs0) / S;
+      return { S, a, down, cs, cs0, within, chunkNo };
+    };
+    const fit = L => { // which first-chunk serial do the confirmations point to, and how many agree?
+      if (!confirmed.length) return { base0: running, score: 0 };
+      const votes = new Map();
+      for (const [id, c] of confirmed) { const b = c - L.chunkNo(id) * L.S - L.within(id); votes.set(b, (votes.get(b) || 0) + 1); }
+      const [base0, score] = [...votes.entries()].sort((x, y) => y[1] - x[1] || Math.abs(x[0] - running) - Math.abs(y[0] - running))[0];
+      return { base0, score };
+    };
 
-    let serialOf, nextRunning;
-    if (!down) {
-      // counts up: serial = id − K
-      let K = resStart - running, blockStart = resStart;
-      if (confirmed.length) {
-        const v = new Map(); confirmed.forEach(([id, c]) => { const k = id - c; v.set(k, (v.get(k) || 0) + 1); });
-        K = majority(v); anchored = true;
-        blockStart = Math.min(first, Math.max(K + running, pf != null ? pf + 1 : -Infinity));
-      }
-      const len = Math.ceil((last - blockStart + 1) / 50) * 50;              // blocks come in 50s/100s
-      serialOf = id => id - K;
-      nextRunning = blockStart - K + len;
-    } else {
-      // counts down: serial = M − id (the lowest serial sits at the block's highest token ID)
-      const len0 = Math.ceil((last - resStart + 1) / 50) * 50;
-      let M = resStart + len0 - 1 + running, blockStart = resStart;
-      if (confirmed.length) {
-        const v = new Map(); confirmed.forEach(([id, c]) => { const m = id + c; v.set(m, (v.get(m) || 0) + 1); });
-        M = majority(v); anchored = true;
-        const blockEnd = Math.max(last, M - running);                         // where the next expected serial would sit
-        blockStart = Math.min(first, blockEnd - Math.ceil((blockEnd - Math.min(first, resStart) + 1) / 50) * 50 + 1);
-        if (pf != null) blockStart = Math.max(blockStart, pf + 1);
-      }
-      serialOf = id => M - id;
-      nextRunning = M - blockStart + 1;
+    let best = null;
+    const dirsToTry = adminDir ? [adminDir === "down"] : confirmed.length >= 2 ? [false, true] : [false];
+    for (const down of dirsToTry) for (const S of [50, 100]) for (let a = 0; a < S; a++) {
+      if (!confirmed.length && (S !== 50 || (knownStart != null ? a !== mod(knownStart, S) : a !== mod(first, S)))) continue;
+      const L = layout(S, a, down), f = fit(L);
+      const prefer = [                                        // tie-breaks, most important first
+        f.score,
+        down === (adminDir === "down") ? 1 : 0,               // default direction (up) unless an admin said down
+        knownStart != null && a === mod(knownStart, S) ? 1 : 0,
+        S === 50 ? 1 : 0,                                     // 50-ID chunks unless the confirmations need 100
+        -Math.abs(f.base0 - running),                         // closest to where the previous block left off
+      ];
+      const better = () => { for (let i = 0; i < prefer.length; i++) if (prefer[i] !== best.prefer[i]) return prefer[i] > best.prefer[i]; return false; };
+      if (!best || better()) best = { L, f, prefer };
     }
+    const { L, f } = best;
+    if (f.score) anchored = true;
+    const serialOf = id => f.base0 + L.chunkNo(id) * L.S + L.within(id);
     for (let k = start; k <= end; k++) {
       const id = idsN[k], c = conf[id];
-      map.set(id, c ? { serial: c, how: "confirmed", down, seg: s } : { serial: serialOf(id), how: anchored ? "adjusted" : "estimated", down, seg: s });
+      map.set(id, c ? { serial: c, how: "confirmed", down: L.down, seg: si } : { serial: serialOf(id), how: anchored ? "adjusted" : "estimated", down: L.down, seg: si });
     }
-    blocks.push({ start, end, down, dirFrom });
-    running = Math.max(running, nextRunning);
+    const dirFrom = adminDir ? "admin" : L.down ? "confirmations" : "default";
+    const disagree = confirmed.length - f.score;
+    blocks.push({ start, end, down: L.down, dirFrom, size: L.S, disagree });
+    running = Math.max(running, f.base0 + (L.chunkNo(last) + 1) * L.S);    // next block carries on after this one's last chunk
   });
   return { map, blocks, printed: running - 1 };
 }
@@ -1316,8 +1392,9 @@ function serialRow(id, no) {
     : s.how === "adjusted" ? `<span class="sb adj" title="Estimated, lined up with a confirmed serial">Adjusted</span>`
     : `<span class="sb est" title="Calculated from the token ID's reserved block">Estimated</span>`;
   const blk = D.ser.blocks[s.seg];
-  const dir = s.down ? ` <span style="color:var(--dim);font-size:12px" title="${blk.dirFrom === "admin" ? "Set by an admin" : "Worked out from two or more confirmed serials"}">↓ counts down in this block</span>` : "";
-  return `<tr><td>Serial</td><td><b>#${s.serial}</b>${badge}${dir}</td></tr>`;
+  const dir = s.down ? ` <span style="color:var(--dim);font-size:12px" title="${blk.dirFrom === "admin" ? "Set by an admin" : "Worked out from confirmed serials"}">↓ counts down within each ${blk.size}-ID chunk</span>` : "";
+  const warn = blk.disagree ? `<div style="color:#f5c451;font-size:12px;margin-top:4px">⚠ ${blk.disagree > 1 ? `${blk.disagree} confirmed serials in this block don't` : "A confirmed serial in this block doesn't"} fit the same pattern as the others — check ${blk.disagree > 1 ? "them" : "it"}.</div>` : "";
+  return `<tr><td>Serial</td><td><b>#${s.serial}</b>${badge}${dir}${warn}</td></tr>`;
 }
 
 /* ----- Admin (GitHub) ----- */
@@ -1338,24 +1415,20 @@ async function gh(path, opts = {}) {
   const j = await r.json().catch(() => ({}));
   return { ok: r.ok, status: r.status, j };
 }
-// change = { serial: number|null } or { dir: "down"|"up"|null }
-async function saveOverride(key, tokenId, change) {
+// Save every unpublished change to GitHub in ONE commit.
+async function publishPending() {
+  const list = getPending();
+  if (!list.length) return 0;
   const branch = ls.get("ghBranch") || "main";
   for (let attempt = 0; attempt < 3; attempt++) {
     const cur = await gh(`/contents/${OVERRIDES_PATH}?ref=${encodeURIComponent(branch)}`);
     if (!cur.ok && cur.status !== 404) throw new Error(`GitHub ${cur.status}: ${cur.j.message || "couldn't read the file"}`);
-    const data = cur.ok ? JSON.parse(b64dec(cur.j.content)) : { version: 1, serials: {} };
-    const field = "serial" in change ? "serials" : "dirs";
-    const value = "serial" in change ? change.serial : change.dir;
-    data[field] ||= {};
-    const col = (data[field][key] ||= {});
-    if (value) col[tokenId] = value; else { delete col[tokenId]; if (!Object.keys(col).length) delete data[field][key]; }
-    const message = field === "serials"
-      ? (value ? `Confirm serial: ${key} token ${tokenId} = #${value}` : `Remove serial confirmation: ${key} token ${tokenId}`)
-      : (value ? `Set block direction (${value}): ${key} token ${tokenId}` : `Clear block direction: ${key} token ${tokenId}`);
+    const data = applyChanges(cur.ok ? JSON.parse(b64dec(cur.j.content)) : { version: 1, serials: {} }, list);
+    const cols = [...new Set(list.map(c => c.key))];
+    const message = `Update serials: ${list.length} change${list.length > 1 ? "s" : ""} in ${cols.length > 2 ? cols.length + " collections" : cols.join(", ")}`;
     const put = await gh(`/contents/${OVERRIDES_PATH}`, { method: "PUT", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ branch, message, ...(cur.ok ? { sha: cur.j.sha } : {}), content: b64enc(JSON.stringify(data, null, 1) + "\n") }) });
-    if (put.ok) { overrides = data; overrides.serials ||= {}; return; }
+    if (put.ok) { published = data; setPending([]); overrides = overridesView(); return list.length; }
     if (put.status !== 409 && put.status !== 422) throw new Error(`GitHub ${put.status}: ${put.j.message || "save failed"}`);
     // someone saved at the same moment — re-read and try again
   }
@@ -1368,50 +1441,61 @@ function editorRow(id) {
     <button class="chip" id="dEditSave">${s.how === "confirmed" ? "Update" : "Confirm"}</button>
     ${s.how === "confirmed" ? `<button class="chip" id="dEditDel">Remove</button>` : ""}
     <label style="display:flex;align-items:center;gap:6px;width:100%;font-size:13px;margin-top:2px">
-      <input type="checkbox" id="dEditDown" ${s.down ? "checked" : ""} style="width:auto"> This block counts down (lower serials at higher token IDs)</label>
+      <input type="checkbox" id="dEditDown" ${s.down ? "checked" : ""} style="width:auto"> Counts down within each chunk (lower serials at higher token IDs)</label>
     <div class="dEditMsg" id="dEditMsg">Enter the serial printed on the card, then Confirm. The rest of its block lines up with it.
       Confirm two cards in a block and the direction is worked out for you.</div>
   </div></td></tr>`;
 }
 function wireEditor(id, no) {
-  const msg = t => { const el = $("dEditMsg"); if (el) el.textContent = t; };
-  const act = async serial => {
-    const run = dRun;
-    $("dEditSave").disabled = true; $("dEditDel") && ($("dEditDel").disabled = true);
-    msg("Saving to GitHub…");
-    try {
-      await saveOverride(D.key, String(id), { serial });
-      if (run !== dRun) return;
-      computeSerials(); D.holders = null;
-      renderSerials();
-      setTimeout(() => { const el = $("dEditMsg"); if (el) el.textContent = `Saved ✓ — you see it now; everyone else after the next site update (a few minutes, or up to ~40 while the big crawl is running).`; }, 50);
-    } catch (e) { msg(`Couldn't save: ${e.message}`); $("dEditSave").disabled = false; $("dEditDel") && ($("dEditDel").disabled = false); }
+  const after = text => { computeSerials(); D.holders = null; renderSerials();
+    setTimeout(() => { const el = $("dEditMsg"); if (el) el.textContent = text; }, 0); };
+  $("dEditSave").onclick = () => {
+    const v = parseInt($("dEditIn").value, 10);
+    if (!(v > 0)) { $("dEditMsg").textContent = "Enter a serial of 1 or more."; return; }
+    queueChange(D.key, String(id), { serial: v });
+    after(`Added ✓ — press Publish (below) when you're done to save your changes.`);
   };
-  $("dEditSave").onclick = () => { const v = parseInt($("dEditIn").value, 10); if (v > 0) act(v); else msg("Enter a serial of 1 or more."); };
-  $("dEditDel") && ($("dEditDel").onclick = () => act(null));
-  $("dEditDown").onchange = async e => {
-    const run = dRun, want = e.target.checked ? "down" : "up";
-    // store the setting on the first token of this block, replacing any other setting inside the block
+  $("dEditDel") && ($("dEditDel").onclick = () => { queueChange(D.key, String(id), { serial: null }); after("Confirmation removed — press Publish to save."); });
+  $("dEditDown").onchange = e => {
+    const want = e.target.checked ? "down" : "up";
+    // one setting per block, kept on the block's first token
     const blk = D.ser.blocks[D.ser.map.get(Number(id)).seg];
     const blockIds = D.ids.slice(blk.start, blk.end + 1).map(String);
-    const existing = Object.keys(overrides?.dirs?.[D.key] || {}).filter(t => blockIds.includes(t));
-    e.target.disabled = true; msg("Saving to GitHub…");
-    try {
-      for (const t of existing) if (t !== blockIds[0]) await saveOverride(D.key, t, { dir: null });
-      await saveOverride(D.key, blockIds[0], { dir: want });
-      if (run !== dRun) return;
-      computeSerials(); D.holders = null; renderSerials();
-      setTimeout(() => { const el = $("dEditMsg"); if (el) el.textContent = `Saved ✓ — this block now counts ${want}.`; }, 50);
-    } catch (err) { msg(`Couldn't save: ${err.message}`); e.target.disabled = false; e.target.checked = !e.target.checked; }
+    for (const t of Object.keys(overrides?.dirs?.[D.key] || {})) if (blockIds.includes(t) && t !== blockIds[0]) queueChange(D.key, t, { dir: null });
+    queueChange(D.key, blockIds[0], { dir: want });
+    after(`This block now counts ${want} — press Publish to save.`);
   };
 }
 function renderAdminBar() {
   const box = $("dAdmin");
+  if (!box) return;
   if (isAdmin()) {
+    const n = getPending().length;
     box.innerHTML = `🔓 Admin: <b>${esc(ls.get("ghRepo"))}</b> (${esc(ls.get("ghBranch") || "main")}) ·
       <button class="linkish" id="adOut">Sign out</button>
-      <div style="margin-top:6px">Physical (A) cards show a serial editor under each copy.</div>`;
-    $("adOut").onclick = () => { ls.set("ghToken", ""); renderAdminBar(); D && D.ids && renderSerials(); };
+      <div style="margin-top:6px">Physical (A) cards show a serial editor under each copy.</div>
+      ${ETHERSCAN_KEY ? "" : `<div class="row">Etherscan key (for Polygon history, this browser only):
+        <input id="adEth" type="password" placeholder="${ls.get("etherscanKey") ? "saved ✓" : "paste key"}" style="flex:1 1 160px">
+        <button class="chip" id="adEthSave">Save</button></div>`}
+      <div class="row" style="${n ? "color:var(--text)" : ""}">
+        ${n ? `<b>${n} unpublished change${n > 1 ? "s" : ""}</b>
+          <button class="chip run" id="adPub" style="background:#f5c451;color:#0d0d12;border-color:#f5c451">Publish</button>
+          <button class="chip" id="adDiscard">Discard</button>` : "No unpublished changes"}
+        <span id="adPubMsg"></span></div>`;
+    $("adEthSave") && ($("adEthSave").onclick = () => { ls.set("etherscanKey", $("adEth").value.trim()); polyCache.clear(); renderAdminBar(); D && D.ids && renderSerials(); });
+    $("adOut").onclick = () => { ls.set("ghToken", ""); overrides = overridesView(); renderAdminBar(); D && D.ids && (computeSerials(), renderSerials()); };
+    $("adPub") && ($("adPub").onclick = async () => {
+      $("adPub").disabled = true; $("adPubMsg").textContent = "Saving to GitHub…";
+      try {
+        const done = await publishPending();
+        renderAdminBar();
+        $("adPubMsg").textContent = `Published ${done} change${done > 1 ? "s" : ""} in one commit ✓ — live for everyone after the next site update (within the hour).`;
+      } catch (e) { $("adPubMsg").textContent = `Couldn't publish: ${e.message}`; $("adPub").disabled = false; }
+    });
+    $("adDiscard") && ($("adDiscard").onclick = () => {
+      if (!confirm(`Discard ${n} unpublished change${n > 1 ? "s" : ""}?`)) return;
+      setPending([]); overrides = overridesView(); renderAdminBar(); D && D.ids && (computeSerials(), renderSerials());
+    });
     return;
   }
   box.innerHTML = `<button class="linkish" id="adOpen">🔒 Admin</button><div id="adForm" hidden>
@@ -1432,8 +1516,63 @@ function renderAdminBar() {
       $("adMsg").textContent = r.ok ? "That token can't edit this repo — give it Contents: Read and write." : `GitHub said: ${r.j.message || "not found"} — check the repo name and token.`;
       return;
     }
-    renderAdminBar(); D && D.ids && renderSerials();
+    overrides = overridesView(); renderAdminBar(); D && D.ids && (computeSerials(), renderSerials());
   };
+}
+
+/* ===== Polygon-era history (before Objekts moved to Abstract in April 2025) ===== */
+// Same token IDs on both chains. Read through Etherscan's API (chainid 137 = Polygon), one request per copy.
+// Get a free key at https://etherscan.io/apidashboard and paste it here. Etherscan asks free users to credit them.
+const ETHERSCAN_KEY = "6ECSPQV6KX4BBNSY94KVI391ENKIJ4MWYH";
+const POLYGON_CONTRACT = "0xa4b37be40f7b231ee9574c4b16b7ddb7eacdc99b";
+const ethKey = () => ETHERSCAN_KEY || ls.get("etherscanKey");
+const polyCache = new Map();
+async function polygonHistory(id) {
+  const k = id.toString();
+  if (polyCache.has(k)) return polyCache.get(k);
+  const u = new URL("https://api.etherscan.io/v2/api");
+  Object.entries({ chainid: "137", module: "logs", action: "getLogs", address: POLYGON_CONTRACT, fromBlock: "0", toBlock: "latest",
+    topic0: TRANSFER, topic3: "0x" + BigInt(id).toString(16).padStart(64, "0"), topic0_3_opr: "and", page: "1", offset: "1000", apikey: ethKey() })
+    .forEach(([a, b]) => u.searchParams.set(a, b));
+  let j;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    j = await (await fetch(u)).json();
+    if (!/rate limit/i.test(String(j.result))) break;
+    await new Promise(r => setTimeout(r, 1200));           // free tier: a few calls per second
+  }
+  if (j.status !== "1") {
+    if (/no records/i.test(j.message || "")) { polyCache.set(k, []); return []; }
+    throw new Error(typeof j.result === "string" ? j.result : j.message || "Etherscan error");
+  }
+  const rows = j.result.map(l => ({ chain: "polygon", from: "0x" + l.topics[1].slice(26), to: "0x" + l.topics[2].slice(26),
+    t: parseInt(l.timeStamp, 16) * 1000, tx: l.transactionHash }));
+  polyCache.set(k, rows);
+  return rows;
+}
+
+/* ===== Spun copies: any copy ever sent to COSMO's spin wallet ===== */
+const SPIN_WALLET = "0xD3D5f29881ad87Bb10C1100e2c709c9596dE345F";
+const SPIN_TOPIC = "0x" + SPIN_WALLET.slice(2).toLowerCase().padStart(64, "0");
+const isSpinWallet = a => (a || "").toLowerCase() === SPIN_WALLET.toLowerCase();
+const spunCache = new Map(); // collection key → Set of spun token IDs (as strings)
+async function loadSpun(key, ids, onProgress) {
+  if (spunCache.has(key)) return spunCache.get(key);
+  const spun = new Set(), list = ids.map(id => "0x" + id.toString(16).padStart(64, "0"));
+  let size = 100;
+  for (let i = 0; i < list.length; ) {
+    const group = list.slice(i, i + size);
+    try {
+      const logs = await rpc("eth_getLogs", [{ address: CONTRACT, fromBlock: "0x0", toBlock: "latest", topics: [TRANSFER, null, SPIN_TOPIC, group] }]);
+      for (const l of logs) spun.add(BigInt(l.topics[3]).toString());
+      i += group.length;
+      onProgress?.(i, list.length, spun.size);
+    } catch (e) {
+      if (size > 10) { size = Math.floor(size / 2); continue; }
+      throw e;
+    }
+  }
+  spunCache.set(key, spun);
+  return spun;
 }
 
 /* ===== Objekt detail sheet (like objekt.top / apollo.cafe) ===== */
@@ -1500,6 +1639,13 @@ async function openDetail(m) {
   await loadOverrides();
   if (run !== dRun) return;
   computeSerials();
+  D.spun = null; D.spunProg = 0; D.filter = "all";
+  loadSpun(key, ids, (done, total) => {
+    if (run !== dRun) return;
+    D.spunProg = done / total;
+    const el = $("dSpunV"); if (el) el.innerHTML = `<span style="font-size:13px;color:var(--dim)">Checking… ${Math.round(D.spunProg * 100)}%</span>`;
+  }).then(set => { if (run !== dRun) return; D.spun = set; D.holders && renderHolders(); renderSerials(); })
+    .catch(e => { if (run !== dRun) return; D.spunErr = e.message; renderSerials(); });
   D.idx = Math.min(Math.max(wantSerial, 1), Math.max(ids.length, 1)) - 1;
   renderSerials();
 }
@@ -1518,43 +1664,54 @@ function dTab(t) {
 
 /* ----- Serials tab ----- */
 function renderSerials() {
-  const { ids, idx } = D, n = ids.length;
+  const { ids } = D, n = ids.length;
   if (!n) { $("dSerials").innerHTML = `<div class="dMsg">No copies found.</div>`; return; }
+  const isSpun = id => D.spun?.has(id.toString());
+  // the copies shown by the All / Spun / Non-Spin filter
+  const pos = D.spun && D.filter !== "all" ? ids.map((id, i) => i).filter(i => (D.filter === "spun") === isSpun(ids[i])) : ids.map((id, i) => i);
+  if (pos.length && !pos.includes(D.idx)) D.idx = pos[0];
+  const at = pos.indexOf(D.idx), idx = D.idx;
+  const spunN = D.spun ? D.spun.size : null;
+  const spunV = D.spun ? spunN.toLocaleString()
+    : D.spunErr ? `<span style="font-size:13px;color:var(--dim)" title="${esc(D.spunErr)}">Couldn't check</span>`
+    : `<span style="font-size:13px;color:var(--dim)">Checking… ${Math.round((D.spunProg || 0) * 100)}%</span>`;
+  const pct = v => n ? ` <small>${(v / n * 100).toFixed(1)}%</small>` : "";
   $("dSerials").innerHTML = `
     <div class="dStats">
       <div class="dStat"><div class="k">${D.phys ? "Scanned" : "Copies"}</div><div class="v">${n.toLocaleString()}</div></div>
       ${D.phys ? `<div class="dStat"><div class="k">Printed <span style="font-size:11px">(est.)</span></div><div class="v">${D.ser.printed.toLocaleString()}</div></div>` : ""}
-      <div class="dStat"><div class="k">Spun</div><div class="v">${SOON}</div></div>
-      <div class="dStat"><div class="k">Non-Spin</div><div class="v">${SOON}</div></div>
+      <div class="dStat"><div class="k">Spun</div><div class="v" id="dSpunV">${spunV}${D.spun ? pct(spunN) : ""}</div></div>
+      <div class="dStat"><div class="k">Non-Spin</div><div class="v">${D.spun ? (n - spunN).toLocaleString() + pct(n - spunN) : "—"}</div></div>
       <div class="dStat"><div class="k">Transferable</div><div class="v">${SOON}</div></div>
     </div>
     ${D.note ? `<div class="dMsg" style="margin:-6px 0 14px">⏳ ${esc(D.note)}</div>` : ""}
     <div class="dNav">
-      <input id="dSerialIn" type="number" inputmode="numeric" min="1" value="${D.phys ? D.ser.map.get(Number(ids[idx])).serial : idx + 1}" aria-label="${D.phys ? "Serial" : "Copy number"}" placeholder="${D.phys ? "Serial #" : "Copy #"}">
-      <button id="dFirst" title="First" ${idx === 0 ? "disabled" : ""}>⏮</button>
-      <button id="dPrev" title="Previous" ${idx === 0 ? "disabled" : ""}>‹</button>
-      <button id="dNext" title="Next" ${idx >= n - 1 ? "disabled" : ""}>›</button>
-      <button id="dLast" title="Last" ${idx >= n - 1 ? "disabled" : ""}>⏭</button>
+      <input id="dSerialIn" type="number" inputmode="numeric" min="1" value="${pos.length ? (D.phys ? D.ser.map.get(Number(ids[idx])).serial : idx + 1) : ""}" aria-label="${D.phys ? "Serial" : "Copy number"}" placeholder="${D.phys ? "Serial #" : "Copy #"}">
+      <button id="dFirst" title="First" ${at <= 0 ? "disabled" : ""}>⏮</button>
+      <button id="dPrev" title="Previous" ${at <= 0 ? "disabled" : ""}>‹</button>
+      <button id="dNext" title="Next" ${at < 0 || at >= pos.length - 1 ? "disabled" : ""}>›</button>
+      <button id="dLast" title="Last" ${at < 0 || at >= pos.length - 1 ? "disabled" : ""}>⏭</button>
     </div>
     <div class="dSeg">
-      <button class="on">All</button>
-      <button disabled title="Coming in a future update">Spun</button>
-      <button disabled title="Coming in a future update">Non-Spin</button>
+      <button data-f="all" class="${D.filter === "all" ? "on" : ""}">All</button>
+      <button data-f="spun" class="${D.filter === "spun" ? "on" : ""}" ${D.spun ? "" : "disabled title='Still checking…'"}>Spun</button>
+      <button data-f="non" class="${D.filter === "non" ? "on" : ""}" ${D.spun ? "" : "disabled title='Still checking…'"}>Non-Spin</button>
     </div>
-    <div id="dCopy"></div>`;
-  const go = i => { D.idx = Math.min(Math.max(i, 0), n - 1); try { history.replaceState(null, "", `#c=${D.key}&s=${D.idx + 1}`); } catch {} renderSerials(); };
-  $("dFirst").onclick = () => go(0); $("dPrev").onclick = () => go(D.idx - 1);
-  $("dNext").onclick = () => go(D.idx + 1); $("dLast").onclick = () => go(n - 1);
+    <div id="dCopy">${pos.length ? "" : `<div class="dMsg">No ${D.filter === "spun" ? "spun" : "non-spin"} copies.</div>`}</div>`;
+  const go = i => { D.idx = i; try { history.replaceState(null, "", `#c=${D.key}&s=${D.idx + 1}`); } catch {} renderSerials(); };
+  $("dFirst").onclick = () => go(pos[0]); $("dPrev").onclick = () => go(pos[Math.max(0, at - 1)]);
+  $("dNext").onclick = () => go(pos[Math.min(pos.length - 1, at + 1)]); $("dLast").onclick = () => go(pos[pos.length - 1]);
+  document.querySelectorAll(".dSeg button[data-f]").forEach(b => b.onclick = () => { D.filter = b.dataset.f; renderSerials(); });
   $("dSerialIn").onchange = e => {
     const v = parseInt(e.target.value, 10) || 1;
-    if (!D.phys) return go(v - 1);
-    // physical: jump to that serial, or the nearest scanned one
-    let best = 0, bestD = Infinity;
-    ids.forEach((id, i) => { const d = Math.abs(D.ser.map.get(Number(id)).serial - v); if (d < bestD) { bestD = d; best = i; } });
-    D.jumpMsg = bestD ? `Serial #${v} hasn't been scanned yet — showing the nearest scanned copy.` : "";
+    const serialAt = i => D.phys ? D.ser.map.get(Number(ids[i])).serial : i + 1;
+    // jump to that number, or the nearest copy within the current filter
+    let best = pos[0], bestD = Infinity;
+    for (const i of pos) { const d = Math.abs(serialAt(i) - v); if (d < bestD) { bestD = d; best = i; } }
+    D.jumpMsg = bestD ? `#${v} isn't ${D.phys ? "scanned yet" : "in this list"} — showing the nearest copy.` : "";
     go(best);
   };
-  loadCopy(ids[idx], idx + 1);
+  if (pos.length) loadCopy(ids[idx], idx + 1);
 }
 
 const blockTimes = new Map();
@@ -1566,24 +1723,26 @@ async function loadCopy(id, no) {
       <tr><td>Owner</td><td id="dOwner">Loading…</td></tr>
       <tr><td>Token ID</td><td><a href="https://abscan.org/nft/${CONTRACT}/${id}" target="_blank" rel="noopener">${id}</a></td></tr>
       ${serialRow(id, no)}
+      <tr><td>Spun</td><td>${D.spun ? (D.spun.has(id.toString()) ? `<span class="sb adj" style="margin:0">🌀 Spun</span>` : "No") : "Checking…"}</td></tr>
       <tr><td>Transferable</td><td>${SOON}</td></tr>
       ${D.phys && isAdmin() ? editorRow(id) : ""}
     </table>
     ${D.jumpMsg ? `<div class="dMsg">${esc(D.jumpMsg)}</div>` : ""}
     <table class="dTable"><thead><tr><th>OWNER</th><th class="sort" id="dSort">DATE ${D.histDesc ? "↓" : "↑"}</th></tr></thead>
       <tbody id="dHist"><tr><td colspan="2" style="color:var(--dim)">Loading history…</td></tr></tbody></table>
-    <div class="dMsg">History covers Abstract only (from April 2025). Cosmo usernames ${SOON}</div>`;
+    <div class="dMsg"><span id="dHistNote">Loading…</span> Cosmo usernames ${SOON}</div>`;
   $("dSort").onclick = () => { D.histDesc = !D.histDesc; loadCopy(id, no); };
   if (D.phys && isAdmin()) wireEditor(id, no);
   const topic = "0x" + id.toString(16).padStart(64, "0");
   try {
-    const [ownerRaw, logs] = await Promise.all([
+    const [ownerRaw, logs, poly] = await Promise.all([
       rpc("eth_call", ownerCall(id).params).catch(() => null),
       rpc("eth_getLogs", [{ address: CONTRACT, fromBlock: "0x0", toBlock: "latest", topics: [TRANSFER, null, null, topic] }]),
+      ethKey() ? polygonHistory(id).catch(e => ({ error: e.message })) : Promise.resolve({ noKey: true }),
     ]);
     if (run !== dRun) return;
     const owner = ownerParse(ownerRaw) || (logs.length ? "0x" + logs[logs.length - 1].topics[2].slice(26) : null);
-    $("dOwner").innerHTML = owner ? `<a href="https://abscan.org/address/${owner}" target="_blank" rel="noopener" title="${owner}">${short(owner)}</a>` : "—";
+    $("dOwner").innerHTML = owner ? `<a href="https://abscan.org/address/${owner}" target="_blank" rel="noopener" title="${owner}">${isSpinWallet(owner) ? "🌀 COSMO spin wallet" : short(owner)}</a>` : "—";
     for (const l of logs) {
       const b = l.blockNumber;
       if (!blockTimes.has(b)) {
@@ -1592,13 +1751,23 @@ async function loadCopy(id, no) {
       }
       if (run !== dRun) return;
     }
-    const rows = logs.map(l => ({ to: "0x" + l.topics[2].slice(26), from: "0x" + l.topics[1].slice(26), t: blockTimes.get(l.blockNumber) }));
+    const rows = [
+      ...(Array.isArray(poly) ? poly : []),
+      ...logs.map(l => ({ chain: "abstract", to: "0x" + l.topics[2].slice(26), from: "0x" + l.topics[1].slice(26), t: blockTimes.get(l.blockNumber) })),
+    ];
+    rows.sort((a, b) => (a.t || 0) - (b.t || 0));
     if (D.histDesc) rows.reverse();
     const fmt = t => t ? new Date(t).toLocaleString([], { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" }) : "—";
+    const explorer = r => r.chain === "polygon" ? "https://polygonscan.com/address/" : "https://abscan.org/address/";
+    const tag = r => r.chain === "polygon" ? ` <span class="chainTag poly">Polygon</span>` : ` <span class="chainTag abs">Abstract</span>`;
+    const current = i => r => r.chain === "abstract" && r.to.toLowerCase() === (owner || "").toLowerCase() && (D.histDesc ? i === 0 : i === rows.length - 1);
     $("dHist").innerHTML = rows.length ? rows.map((r, i) => `<tr>
-        <td><span class="dot ${r.to.toLowerCase() === (owner || "").toLowerCase() && (D.histDesc ? i === 0 : i === rows.length - 1) ? "" : "old"}"></span><a href="https://abscan.org/address/${r.to}" target="_blank" rel="noopener" title="${r.to}">${short(r.to)}</a>${r.from === ZERO ? ` <span style="color:var(--dim);font-size:12px">mint</span>` : ""}</td>
+        <td><span class="dot ${current(i)(r) ? "" : "old"}"></span><a href="${explorer(r)}${r.to}" target="_blank" rel="noopener" title="${r.to}">${isSpinWallet(r.to) ? "🌀 COSMO spin wallet" : r.to === ZERO.slice(0, 42) ? "burned / moved off Polygon" : short(r.to)}</a>${r.from.toLowerCase() === "0x" + "0".repeat(40) ? ` <span style="color:var(--dim);font-size:12px">${r.chain === "abstract" && Array.isArray(poly) && poly.length ? "moved to Abstract" : "mint"}</span>` : ""}${tag(r)}</td>
         <td>${fmt(r.t)}</td></tr>`).join("")
-      : `<tr><td colspan="2" style="color:var(--dim)">No transfers on Abstract for this copy.</td></tr>`;
+      : `<tr><td colspan="2" style="color:var(--dim)">No transfers found for this copy.</td></tr>`;
+    $("dHistNote").innerHTML = poly?.noKey ? `Showing Abstract only (from April 2025). Add an Etherscan key to include Polygon history.`
+      : poly?.error ? `Couldn't load Polygon history: ${esc(poly.error)}. Showing Abstract only.`
+      : `Polygon history via Etherscan.io APIs · Abstract from April 2025.`;
   } catch (e) {
     if (run !== dRun) return;
     $("dOwner").textContent = "—";
@@ -1652,15 +1821,16 @@ function renderHolders() {
     <div class="dMsg" style="font-size:15px;margin:0 0 6px">${summary}</div>
     <table class="dTable"><thead><tr><th>RANK</th><th>HOLDER</th><th class="r">COPIES</th><th class="r">LOWEST</th><th class="r">SHARE</th></tr></thead><tbody>
       ${list.slice(0, shown).map(e => `<tr><td>${e.rank}</td>
-        <td><a href="https://abscan.org/address/${e.addr}" target="_blank" rel="noopener" title="${e.addr}">${short(e.addr)}</a></td>
+        <td><a href="https://abscan.org/address/${e.addr}" target="_blank" rel="noopener" title="${e.addr}">${isSpinWallet(e.addr) ? "🌀 COSMO spin wallet" : short(e.addr)}</a></td>
         <td class="r">${e.count}</td><td class="r">#${e.lowest}</td><td class="r">${pct(e.count, copies)}</td></tr>`).join("")}
     </tbody></table>
     ${shown < holders ? `<button class="chip dMore" id="dMoreH">Show more (${(holders - shown).toLocaleString()} left)</button>` : ""}
-    <div class="dMsg">Cosmo usernames ${SOON} · A wallet holding many copies may be a Modhaus system wallet.</div>`;
+    <div class="dMsg">Cosmo usernames ${SOON} · 🌀 is COSMO's spin wallet, which holds every spun copy. Other wallets holding many copies may also be Modhaus system wallets.</div>`;
   $("dMoreH") && ($("dMoreH").onclick = () => { D.holders.shown += 200; renderHolders(); });
 }
 
 document.querySelectorAll(".dTab").forEach(b => b.onclick = () => dTab(b.dataset.tab));
+window.addEventListener("beforeunload", e => { if (isAdmin() && getPending().length) { e.preventDefault(); e.returnValue = ""; } });
 $("dClose").onclick = closeDetail;
 $("detail").onclick = e => { if (e.target.id === "detail") closeDetail(); };
 document.addEventListener("keydown", e => { if (e.key === "Escape" && D) closeDetail(); });
