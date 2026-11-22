@@ -12,7 +12,7 @@ import { loadAll, collectionKey } from "./crawl-meta.mjs";
 
 const OUT = process.env.SITE_DIR || "_site";
 // Repo folders/files that are not part of the website
-const SKIP = new Set([".git", ".github", "scripts", "node_modules", "_site", "data/meta", "data/contest-state.json"]);
+const SKIP = new Set([".git", ".github", "scripts", "node_modules", "_site", "data/meta", "data/contest-state.json", "data/nicks/state.json"]);
 
 async function copySite(src = ".", rel = "") {
   for (const e of await readdir(src, { withFileTypes: true })) {
