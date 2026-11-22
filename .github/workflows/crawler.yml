@@ -1,0 +1,113 @@
+name: Objekt crawler
+
+# Collects Objekt data in the background: crawls COSMO metadata, updates contest standings and saves
+# wallet nicknames. Everything it collects is saved on a separate "data" branch, so it never commits
+# to your main branch and never gets in the way of your own pushes. When it finishes, it asks the
+# "Publish site" workflow to put the new data live.
+#
+# While the first big crawl is still catching up, each run starts the next one straight away.
+# To switch that off: Settings → Secrets and variables → Actions → Variables → AUTO_CHAIN = false.
+on:
+  schedule:
+    - cron: "17 * * * *"   # every hour at :17 (UTC). GitHub may start it late when busy.
+  workflow_dispatch:
+
+permissions:
+  actions: write    # start the next run / ask the site to publish
+  contents: write   # save to the data branch
+
+concurrency:
+  group: objekt-crawler
+  cancel-in-progress: false
+
+env:
+  RPC_URLS: ${{ secrets.RPC_URL && format('{0},https://api.mainnet.abs.xyz', secrets.RPC_URL) || 'https://api.mainnet.abs.xyz,https://abstract.api.onfinality.io/public' }}
+  META_DIR: store/data/meta
+  OUT_FILE: store/data/contest.json
+  STATE_FILE: store/data/contest-state.json
+  NICK_DIR: store/data/nicks
+
+jobs:
+  crawl:
+    runs-on: ubuntu-latest
+    timeout-minutes: 58
+    steps:
+      - uses: actions/checkout@v4      # main branch: only used for the scripts
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Get the data branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          url="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          if git ls-remote --exit-code --heads "$url" data >/dev/null 2>&1; then
+            git clone --quiet --depth 1 --branch data "$url" store
+          else
+            echo "First run: creating the data branch from the data already in main"
+            mkdir -p store/data
+            ( cd store
+              git init --quiet -b data && git remote add origin "$url"
+              for f in meta nicks contest.json contest-state.json; do
+                if [ -e "../data/$f" ]; then cp -r "../data/$f" data/; fi
+              done )
+          fi
+          echo "next=$(node -e 'try{console.log(require("./store/data/meta/state.json").next)}catch{console.log(1)}')" >> "$GITHUB_ENV"
+
+      - name: Crawl new Objekt metadata
+        continue-on-error: true
+        env:
+          TIME_BUDGET_MIN: "30"
+          COSMO_RPS: "20"
+        run: node scripts/crawl-meta.mjs
+
+      - name: Update contest standings
+        continue-on-error: true
+        env:
+          OPENSEA_KEY: ${{ secrets.OPENSEA_KEY }}
+          TIME_BUDGET_MIN: "12"
+        run: node scripts/contest.mjs
+
+      - name: Save COSMO nicknames (from objekt.top)
+        continue-on-error: true
+        env:
+          TIME_BUDGET_MIN: "8"
+          NICK_RPS: "3"
+        run: node scripts/nicknames.mjs
+
+      - name: Save to the data branch
+        if: always()
+        run: |
+          cd store
+          git config user.name "objekt-bot"
+          git config user.email "objekt-bot@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then echo "No changes"; else
+            git commit --quiet -m "Update Objekt data"
+            git push --quiet origin data
+          fi
+
+      - name: Publish the site with the new data
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: gh workflow run site.yml --ref "${{ github.event.repository.default_branch }}"
+
+      # Start the next run right away while the crawl is still catching up — only if this run made progress.
+      - name: Start the next run (catch-up mode)
+        if: always() && vars.AUTO_CHAIN != 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          read AFTER LATEST < <(node -e 'try{const s=require("./store/data/meta/state.json");console.log(s.next, s.latest||0)}catch{console.log(1, 0)}')
+          echo "Crawl moved from #$next to #$AFTER (newest token #$LATEST)"
+          if [ "$AFTER" -gt "$next" ] && [ "$AFTER" -le "$LATEST" ]; then
+            echo "Still catching up — starting the next run now."
+            gh workflow run crawler.yml --ref "${{ github.event.repository.default_branch }}"
+          else
+            echo "Up to date (or no progress this run) — waiting for the hourly schedule."
+          fi

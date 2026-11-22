@@ -1,96 +1,49 @@
-name: Objekt data + publish site
+name: Publish site
 
-# Every hour: crawl new Objekt metadata, update contest standings, save wallet nicknames, then publish the whole site.
-# Also publishes whenever you push changes to your site.
-#
-# While the first big crawl is still catching up, each run starts the next one as soon as it
-# finishes (back to back), so it doesn't depend on GitHub's hourly schedule. Once the crawl is
-# up to date, it goes back to hourly. To switch the back-to-back runs off: Settings → Secrets and
-# variables → Actions → Variables → New variable AUTO_CHAIN = false.
+# Puts your site live on GitHub Pages — usually within 1–2 minutes.
+# Runs on every push you make (never waits for the crawler) and after each crawler run.
+# It combines your files from main with the crawler's data from the "data" branch.
 #
 # ONE-TIME SETUP: Settings → Pages → Build and deployment → Source: "GitHub Actions".
-# (Scheduled runs only happen on your default branch.)
 on:
-  schedule:
-    - cron: "17 * * * *"   # every hour at :17 (UTC). GitHub may start it late when busy.
   push:
     branches: [main, master]
-    # the bot's own data commits and admin serial edits don't need their own run —
-    # they go live with the next scheduled run (or press "Run workflow" to publish sooner)
-    paths-ignore: ["data/meta/**", "data/contest*.json", "data/serial-overrides.json"]
   workflow_dispatch:
 
 permissions:
-  actions: write    # lets a run start the next run (back-to-back crawling)
-  contents: write   # save crawl progress back to the repo
-  pages: write      # publish to GitHub Pages
+  contents: read
+  pages: write
   id-token: write
 
 concurrency:
-  group: objekt-site
-  cancel-in-progress: false
+  group: pages
+  cancel-in-progress: true   # a newer publish replaces an older one that hasn't finished
 
 jobs:
-  update:
+  publish:
     runs-on: ubuntu-latest
-    timeout-minutes: 58
+    timeout-minutes: 15
     environment:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
 
+      - name: Get the crawler's data
+        continue-on-error: true    # fine before the crawler's first run
+        uses: actions/checkout@v4
+        with:
+          ref: data
+          path: store
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - name: Note where the crawl starts
-        id: before
-        run: echo "next=$(node -e 'try{console.log(require("./data/meta/state.json").next)}catch{console.log(1)}')" >> "$GITHUB_OUTPUT"
-
-      - name: Crawl new Objekt metadata
-        if: github.event_name != 'push'
-        continue-on-error: true    # still publish the site even if COSMO is having a bad day
-        env:
-          TIME_BUDGET_MIN: "27"
-          COSMO_RPS: "40"
-          RPC_URLS: ${{ secrets.RPC_URL && format('{0},https://api.mainnet.abs.xyz', secrets.RPC_URL) || 'https://api.mainnet.abs.xyz,https://abstract.api.onfinality.io/public' }}
-        run: node scripts/crawl-meta.mjs
-
-      - name: Update contest standings
-        if: github.event_name != 'push'
-        continue-on-error: true
-        env:
-          OPENSEA_KEY: ${{ secrets.OPENSEA_KEY }}
-          TIME_BUDGET_MIN: "12"
-          RPC_URLS: ${{ secrets.RPC_URL && format('{0},https://api.mainnet.abs.xyz', secrets.RPC_URL) || 'https://api.mainnet.abs.xyz,https://abstract.api.onfinality.io/public' }}
-        run: node scripts/contest.mjs
-
-      - name: Save COSMO nicknames (from objekt.top)
-        if: github.event_name != 'push'
-        continue-on-error: true
-        env:
-          TIME_BUDGET_MIN: "8"
-          NICK_RPS: "3"
-          RPC_URLS: ${{ secrets.RPC_URL && format('{0},https://api.mainnet.abs.xyz', secrets.RPC_URL) || 'https://api.mainnet.abs.xyz,https://abstract.api.onfinality.io/public' }}
-        run: node scripts/nicknames.mjs
-
-      - name: Save progress to the repo
-        if: always() && github.event_name != 'push'
-        run: |
-          git config user.name "objekt-bot"
-          git config user.email "objekt-bot@users.noreply.github.com"
-          git add data/ || true
-          if git diff --cached --quiet; then
-            echo "No changes"
-          else
-            git commit -m "Update Objekt data"
-            git pull --rebase
-            git push
-          fi
-
       - name: Build site
-        run: node scripts/build-site.mjs
+        run: |
+          if [ -d store/data/meta ]; then export DATA_DIR=store/data; fi
+          node scripts/build-site.mjs
 
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
@@ -98,21 +51,3 @@ jobs:
           path: _site
       - id: deploy
         uses: actions/deploy-pages@v4
-
-      # Start the next run right away while the crawl is still catching up.
-      # Only if this run actually made progress, so a COSMO outage can't cause an endless loop.
-      - name: Start the next run (catch-up mode)
-        if: always() && github.event_name != 'push' && vars.AUTO_CHAIN != 'false'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-          BEFORE: ${{ steps.before.outputs.next }}
-        run: |
-          read AFTER LATEST < <(node -e 'try{const s=require("./data/meta/state.json");console.log(s.next, s.latest||0)}catch{console.log(1, 0)}')
-          echo "Crawl moved from #$BEFORE to #$AFTER (newest token #$LATEST)"
-          if [ "$AFTER" -gt "$BEFORE" ] && [ "$AFTER" -le "$LATEST" ]; then
-            echo "Still catching up — starting the next run now."
-            gh workflow run site.yml --ref "$GITHUB_REF_NAME"
-          else
-            echo "Up to date (or no progress this run) — waiting for the hourly schedule."
-          fi
