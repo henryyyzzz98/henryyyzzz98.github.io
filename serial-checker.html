@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Objekt Serial Checker</title>
+<style>
+  :root {
+    --bg: #0f0f11;
+    --panel: #18181b;
+    --border: #2a2a2f;
+    --text: #f4f4f5;
+    --muted: #9898a0;
+    --accent: #6d5cff;
+    --good: #35c08a;
+    --bad: #e05a6a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    justify-content: center;
+    padding: 48px 20px;
+    min-height: 100vh;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  p.sub { color: var(--muted); margin: 0 0 28px; font-size: 14px; }
+  form { display: flex; gap: 10px; }
+  input {
+    flex: 1;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 12px 14px;
+    border-radius: 10px;
+    font-size: 15px;
+    outline: none;
+  }
+  input:focus { border-color: var(--accent); }
+  button {
+    background: var(--accent);
+    color: #fff;
+    border: 0;
+    padding: 0 18px;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button.ghost {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    margin-top: 12px;
+    width: 100%;
+    padding: 11px;
+  }
+  button:disabled { opacity: 0.5; cursor: default; }
+  #reader-box {
+    margin-top: 16px;
+    display: none;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  #reader { width: 100%; }
+  .scan-note { color: var(--muted); font-size: 13px; padding: 10px 14px 0; }
+  .result {
+    margin-top: 24px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    display: none;
+  }
+  .result.show { display: block; }
+  .row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 15px; }
+  .row + .row { border-top: 1px solid var(--border); }
+  .label { color: var(--muted); }
+  .value { font-weight: 600; }
+  .pill { padding: 2px 10px; border-radius: 999px; font-size: 13px; font-weight: 600; }
+  .pill.good { background: rgba(53,192,138,0.15); color: var(--good); }
+  .pill.bad { background: rgba(224,90,106,0.15); color: var(--bad); }
+  .error { color: var(--bad); margin-top: 20px; font-size: 14px; display: none; }
+  .error.show { display: block; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Objekt Serial Checker</h1>
+  <p class="sub">Enter a claim ID, or scan the QR on a physical Objekt card.</p>
+
+  <form id="form">
+    <input id="claimId" type="text" placeholder="Enter claim ID" autocomplete="off" />
+    <button id="btn" type="submit">Check</button>
+  </form>
+
+  <button class="ghost" id="scanBtn" type="button">Scan QR</button>
+
+  <div id="reader-box">
+    <div id="reader"></div>
+    <div class="scan-note" id="scanNote">Point the camera at the QR code.</div>
+  </div>
+
+  <div class="result" id="result">
+    <div class="row"><span class="label">Collection</span><span class="value" id="collection"></span></div>
+    <div class="row"><span class="label">Serial</span><span class="value" id="serial"></span></div>
+    <div class="row"><span class="label">Claimed</span><span id="claimed"></span></div>
+  </div>
+
+  <div class="error" id="error"></div>
+</div>
+
+<!-- QR scanning library, loaded from a public CDN. Needs internet + HTTPS (GitHub Pages is fine). -->
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script>
+  // Point this at your deployed Worker. No trailing slash.
+  const WORKER_URL = "https://cosmo-proxy.henrylai543.workers.dev";
+
+  const form = document.getElementById("form");
+  const input = document.getElementById("claimId");
+  const btn = document.getElementById("btn");
+  const result = document.getElementById("result");
+  const errorBox = document.getElementById("error");
+  const scanBtn = document.getElementById("scanBtn");
+  const readerBox = document.getElementById("reader-box");
+  const scanNote = document.getElementById("scanNote");
+
+  // --- QR handling ---------------------------------------------------------
+  let scanner = null;
+  let scanning = false;
+
+  // The QR may hold a full claim URL or just the ID. Pull the ID out of either.
+  function extractClaimId(text) {
+    const t = (text || "").trim();
+    try {
+      const u = new URL(t);
+      for (const key of ["n", "claim_id", "claimId", "id", "token"]) {
+        const v = u.searchParams.get(key);
+        if (v) return v;
+      }
+      const segs = u.pathname.split("/").filter(Boolean);
+      if (segs.length) return segs[segs.length - 1];
+    } catch (e) {
+      // not a URL; treat the whole thing as the ID
+    }
+    return t;
+  }
+
+  async function startScan() {
+    if (scanning) return;
+    errorBox.classList.remove("show");
+    readerBox.style.display = "block";
+    scanBtn.textContent = "Stop scanning";
+    scanner = new Html5Qrcode("reader");
+    try {
+      await scanner.start(
+        { facingMode: "environment" }, // rear camera
+        { fps: 10, qrbox: 220 },
+        async (decodedText) => {
+          await stopScan();
+          const id = extractClaimId(decodedText);
+          input.value = id;
+          form.requestSubmit();
+        },
+        () => {} // ignore per-frame "not found" messages
+      );
+      scanning = true;
+    } catch (err) {
+      readerBox.style.display = "none";
+      scanBtn.textContent = "Scan QR";
+      errorBox.textContent = "Couldn't start the camera: " + err;
+      errorBox.classList.add("show");
+    }
+  }
+
+  async function stopScan() {
+    if (scanner) {
+      try { await scanner.stop(); } catch (e) {}
+      try { scanner.clear(); } catch (e) {}
+      scanner = null;
+    }
+    scanning = false;
+    readerBox.style.display = "none";
+    scanBtn.textContent = "Scan QR";
+  }
+
+  scanBtn.addEventListener("click", () => {
+    scanning ? stopScan() : startScan();
+  });
+
+  // --- Lookup --------------------------------------------------------------
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const id = input.value.trim();
+    if (!id) return;
+
+    result.classList.remove("show");
+    errorBox.classList.remove("show");
+    btn.disabled = true;
+    btn.textContent = "...";
+
+    try {
+      const res = await fetch(`${WORKER_URL}/?claim_id=${encodeURIComponent(id)}`);
+      const data = await res.json();
+
+      if (!res.ok || data.error) {
+        throw new Error(data.error || `Request failed (${res.status})`);
+      }
+
+      document.getElementById("collection").textContent = data.collectionId ?? "-";
+      document.getElementById("serial").textContent =
+        data.objektNo != null ? "#" + data.objektNo : "-";
+
+      const claimed = document.getElementById("claimed");
+      if (data.isClaimed === true) {
+        claimed.className = "pill good";
+        claimed.textContent = "Claimed";
+      } else if (data.isClaimed === false) {
+        claimed.className = "pill bad";
+        claimed.textContent = "Unclaimed";
+      } else {
+        claimed.className = "value";
+        claimed.textContent = "-";
+      }
+
+      result.classList.add("show");
+    } catch (err) {
+      errorBox.textContent = err.message;
+      errorBox.classList.add("show");
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Check";
+    }
+  });
+</script>
+</body>
+</html>
