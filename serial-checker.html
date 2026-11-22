@@ -129,7 +129,7 @@
 
     <label class="ghost" id="uploadLabel">
       Upload a photo of the QR
-      <input id="fileInput" type="file" accept="image/*" capture="environment" style="display:none;" />
+      <input id="fileInput" type="file" accept="image/*" style="display:none;" />
     </label>
 
     <div class="status" id="status"></div>
@@ -373,7 +373,8 @@
         { facingMode: "environment" },
         {
           fps: 10,
-          qrbox: 250,
+          // No qrbox: scan the whole frame, so a QR is detected even when it's
+          // small or off-centre, not just inside a central box.
           videoConstraints: {
             facingMode: "environment",
             width: { ideal: 1920 },
