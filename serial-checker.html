@@ -30,7 +30,7 @@
   h1 { font-size: 22px; margin: 0 0 4px; }
   p.sub { color: var(--muted); margin: 0 0 28px; font-size: 14px; }
   form { display: flex; gap: 10px; }
-  input[type="text"] {
+  input[type="text"], input[type="password"] {
     flex: 1;
     background: var(--panel);
     border: 1px solid var(--border);
@@ -40,7 +40,7 @@
     font-size: 15px;
     outline: none;
   }
-  input[type="text"]:focus { border-color: var(--accent); }
+  input:focus { border-color: var(--accent); }
   button {
     background: var(--accent);
     color: #fff;
@@ -66,6 +66,7 @@
     cursor: pointer;
   }
   button:disabled { opacity: 0.5; cursor: default; }
+  #app { display: none; }
   #reader-box {
     margin-top: 16px;
     display: none;
@@ -97,43 +98,60 @@
   .pill.bad { background: rgba(224,90,106,0.15); color: var(--bad); }
   .error { color: var(--bad); margin-top: 20px; font-size: 14px; display: none; }
   .error.show { display: block; }
+  #gateError { margin-top: 14px; }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>Objekt Serial Checker</h1>
-  <p class="sub">Enter a claim ID, or scan the QR on a physical Objekt card.</p>
 
-  <form id="form">
-    <input id="claimId" type="text" placeholder="Enter claim ID" autocomplete="off" />
-    <button id="btn" type="submit">Check</button>
-  </form>
+  <!-- Login screen -->
+  <div id="gate">
+    <h1>Objekt Serial Checker</h1>
+    <p class="sub">Enter the password to continue.</p>
+    <form id="gateForm">
+      <input id="password" type="password" placeholder="Password" autocomplete="current-password" />
+      <button id="gateBtn" type="submit">Unlock</button>
+    </form>
+    <div class="error" id="gateError"></div>
+  </div>
 
-  <button class="ghost" id="scanBtn" type="button">Scan QR</button>
+  <!-- Main tool (shown after login) -->
+  <div id="app">
+    <h1>Objekt Serial Checker</h1>
+    <p class="sub">Enter a claim ID, or scan the QR on a physical Objekt card.</p>
 
-  <label class="ghost" id="uploadLabel">
-    Upload a photo of the QR
-    <input id="fileInput" type="file" accept="image/*" capture="environment" style="display:none;" />
-  </label>
+    <form id="form">
+      <input id="claimId" type="text" placeholder="Enter claim ID" autocomplete="off" />
+      <button id="btn" type="submit">Check</button>
+    </form>
 
-  <div class="status" id="status"></div>
+    <button class="ghost" id="scanBtn" type="button">Scan QR</button>
 
-  <div id="reader-box">
-    <div id="reader"></div>
-    <div id="zoomWrap">
-      <div class="scan-note" style="padding:0 0 6px;">Zoom (hold the card further away, then zoom in)</div>
-      <input id="zoom" type="range" />
+    <label class="ghost" id="uploadLabel">
+      Upload a photo of the QR
+      <input id="fileInput" type="file" accept="image/*" capture="environment" style="display:none;" />
+    </label>
+
+    <div class="status" id="status"></div>
+
+    <div id="reader-box">
+      <div id="reader"></div>
+      <div id="zoomWrap">
+        <div class="scan-note" style="padding:0 0 6px;">Zoom (hold the card further away, then zoom in)</div>
+        <input id="zoom" type="range" />
+      </div>
+      <div class="scan-note" id="scanNote">Fill the frame with the QR and hold steady.</div>
     </div>
-    <div class="scan-note" id="scanNote">Fill the frame with the QR and hold steady.</div>
+
+    <div class="result" id="result">
+      <div class="row"><span class="label">Collection</span><span class="value" id="collection"></span></div>
+      <div class="row"><span class="label">Serial</span><span class="value" id="serial"></span></div>
+      <div class="row"><span class="label">Claimed</span><span id="claimed"></span></div>
+    </div>
+
+    <div class="error" id="error"></div>
   </div>
 
-  <div class="result" id="result">
-    <div class="row"><span class="label">Collection</span><span class="value" id="collection"></span></div>
-    <div class="row"><span class="label">Serial</span><span class="value" id="serial"></span></div>
-    <div class="row"><span class="label">Claimed</span><span id="claimed"></span></div>
-  </div>
-
-  <div class="error" id="error"></div>
 </div>
 
 <!-- Live camera scanning -->
@@ -145,6 +163,77 @@
   // Point this at your deployed Worker. No trailing slash.
   const WORKER_URL = "https://cosmo-proxy.YOUR-SUBDOMAIN.workers.dev";
 
+  // --- Login / password ----------------------------------------------------
+  // The password is never stored in this file. It's typed in, checked by the
+  // Worker, and kept only for this browser session.
+  let sitePassword = sessionStorage.getItem("objektPw") || "";
+
+  const gate = document.getElementById("gate");
+  const appEl = document.getElementById("app");
+  const gateForm = document.getElementById("gateForm");
+  const passwordInput = document.getElementById("password");
+  const gateBtn = document.getElementById("gateBtn");
+  const gateError = document.getElementById("gateError");
+
+  function authHeaders() {
+    return sitePassword ? { "x-site-password": sitePassword } : {};
+  }
+
+  function showApp() {
+    gate.style.display = "none";
+    appEl.style.display = "block";
+  }
+
+  function showGate(msg) {
+    appEl.style.display = "none";
+    gate.style.display = "block";
+    if (msg) { gateError.textContent = msg; gateError.classList.add("show"); }
+  }
+
+  // Ask the Worker whether a password is correct.
+  async function checkPassword(pw) {
+    const res = await fetch(`${WORKER_URL}/?auth=1`, {
+      headers: pw ? { "x-site-password": pw } : {},
+    });
+    return res.ok;
+  }
+
+  gateForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const pw = passwordInput.value;
+    gateError.classList.remove("show");
+    gateBtn.disabled = true;
+    gateBtn.textContent = "...";
+    try {
+      if (await checkPassword(pw)) {
+        sitePassword = pw;
+        sessionStorage.setItem("objektPw", pw);
+        showApp();
+      } else {
+        gateError.textContent = "Wrong password.";
+        gateError.classList.add("show");
+      }
+    } catch (err) {
+      gateError.textContent = "Couldn't reach the server. Try again.";
+      gateError.classList.add("show");
+    } finally {
+      gateBtn.disabled = false;
+      gateBtn.textContent = "Unlock";
+    }
+  });
+
+  // On load: if we already have a saved password that still works, skip login.
+  (async () => {
+    if (sitePassword && (await checkPassword(sitePassword).catch(() => false))) {
+      showApp();
+    } else {
+      sessionStorage.removeItem("objektPw");
+      sitePassword = "";
+      showGate();
+    }
+  })();
+
+  // --- Elements ------------------------------------------------------------
   const form = document.getElementById("form");
   const input = document.getElementById("claimId");
   const btn = document.getElementById("btn");
@@ -163,8 +252,6 @@
   }
 
   // The QR holds a link like https://link.cosmo.fans/mint?n=XXXX .
-  // Pull the ID out of the "n" param (or a few other common spots), else use
-  // the whole string.
   function extractClaimId(text) {
     const t = (text || "").trim();
     try {
@@ -175,9 +262,7 @@
       }
       const segs = u.pathname.split("/").filter(Boolean);
       if (segs.length) return segs[segs.length - 1];
-    } catch (e) {
-      // not a URL; treat the whole thing as the ID
-    }
+    } catch (e) {}
     return t;
   }
 
@@ -187,7 +272,7 @@
     form.requestSubmit();
   }
 
-  // --- Still-image decoding (strong, multi-attempt) ------------------------
+  // --- Still-image decoding ------------------------------------------------
   function loadImage(file) {
     return new Promise((resolve, reject) => {
       const img = new Image();
@@ -197,7 +282,6 @@
     });
   }
 
-  // Draw the image to a canvas, optionally scaled down and/or colour-inverted.
   function canvasOf(img, targetW, invert) {
     const scale = Math.min(1, targetW / img.naturalWidth) || 1;
     const w = Math.max(1, Math.round(img.naturalWidth * scale));
@@ -223,7 +307,6 @@
   async function decodeImageFile(file) {
     const img = await loadImage(file);
 
-    // 1. Native barcode engine (strongest where present: most Android Chrome).
     if ("BarcodeDetector" in window) {
       try {
         const detector = new BarcodeDetector({ formats: ["qr_code"] });
@@ -232,8 +315,6 @@
       } catch (e) {}
     }
 
-    // 2. ZXing (strong; also covers iPhone/Safari). Try normal then inverted,
-    //    since this card's QR is white-on-black.
     if (window.ZXing && ZXing.BrowserQRCodeReader) {
       const reader = new ZXing.BrowserQRCodeReader();
       for (const invert of [false, true]) {
@@ -246,7 +327,6 @@
       }
     }
 
-    // 3. jsQR fallback, several sizes. attemptBoth handles inversion.
     for (const target of [img.naturalWidth, 2000, 1400, 1000, 700]) {
       const c = canvasOf(img, target, false);
       const ctx = c.getContext("2d");
@@ -324,7 +404,6 @@
     scanning ? stopScan() : startScan();
   });
 
-  // Photo fallback.
   fileInput.addEventListener("change", async (e) => {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
@@ -338,7 +417,7 @@
       } else {
         setStatus("");
         errorBox.textContent =
-          "Still couldn't find a QR. Get closer so the QR fills most of the frame, keep it flat, sharp and well-lit, and avoid glare, then try again.";
+          "Couldn't find a QR. Get closer so the QR fills most of the frame, keep it flat, sharp and glare-free, then try again.";
         errorBox.classList.add("show");
       }
     } catch (err) {
@@ -362,9 +441,16 @@
     btn.textContent = "...";
 
     try {
-      const res = await fetch(`${WORKER_URL}/?claim_id=${encodeURIComponent(id)}`);
-      const data = await res.json();
+      const res = await fetch(`${WORKER_URL}/?claim_id=${encodeURIComponent(id)}`, {
+        headers: authHeaders(),
+      });
 
+      if (res.status === 401) {
+        showGate("Session expired. Log in again.");
+        return;
+      }
+
+      const data = await res.json();
       if (!res.ok || data.error) {
         throw new Error(data.error || `Request failed (${res.status})`);
       }
