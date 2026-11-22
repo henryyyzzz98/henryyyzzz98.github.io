@@ -82,11 +82,15 @@
   #browse .head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
   #browse h2 { margin: 0; font-size: 17px; }
   #brQ { min-width: 280px; }
-  #brGrid { margin-top: 12px; display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    max-height: 520px; overflow: auto; }
+  #brGrid { margin-top: 12px; display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
   .bc { background: #1f1f29; border-radius: 10px; overflow: hidden; cursor: pointer; border-top: 3px solid var(--card, var(--line)); }
   .bc:hover { outline: 1px solid var(--accent); }
-  .bc .im { aspect-ratio: 1083 / 1673; background: #262630 center/cover no-repeat; }
+  .bc .im { aspect-ratio: 1083 / 1673; background: #262630; display: block; width: 100%; height: auto; object-fit: cover; }
+  .brFilters { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .brFilters select { background: #1f1f29; border: 1px solid var(--line); color: var(--text); padding: 6px 10px;
+    border-radius: 999px; font: inherit; font-size: 13px; max-width: 100%; }
+  .brFilters select.on { border-color: var(--accent); color: var(--accent); }
+  #brMore { grid-column: 1 / -1; height: 1px; }
   .bc .t { padding: 6px 8px; font-size: 12px; } .bc .t b { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .bc .t span { color: var(--dim); font-size: 11px; }
   #contest { display: none; margin: 20px 24px 0; background: var(--panel); border: 1px solid var(--line);
@@ -137,7 +141,8 @@
     #copies, #contest, #browse { margin: 12px 12px 0; padding: 12px; }
     #browse .head, #copies .head, #contest .head { gap: 8px; }
     #brQ { order: 3; flex: 1 1 100%; min-width: 0; }
-    #brGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; max-height: 70vh; }
+    #brGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+    .brFilters { gap: 6px; } .brFilters select { font-size: 12px; padding: 5px 8px; flex: 1 1 calc(50% - 6px); }
     .bc .t { padding: 5px 6px; font-size: 11px; } .bc .t span { font-size: 10px; }
     .bc .t b { white-space: normal; line-height: 1.25; overflow-wrap: anywhere; }
     #copies h2, #contest h2, #browse h2 { font-size: 15px; }
@@ -149,6 +154,61 @@
     #ctResults .members { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; }
     #ctResults .members .chip { flex: none; }
     footer { padding: 0 12px 24px; }
+  }
+  /* ===== Objekt detail sheet ===== */
+  #detail { position: fixed; inset: 0; z-index: 20; display: none; background: rgba(0,0,0,.6); backdrop-filter: blur(4px);
+    overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  #detail.open { display: block; }
+  .dSheet { position: relative; max-width: 760px; margin: 32px auto; background: var(--panel); border: 1px solid var(--line);
+    border-top: 4px solid var(--card, var(--accent)); border-radius: 16px; padding: 20px 22px 28px; }
+  .dClose { position: absolute; top: 12px; right: 12px; }
+  .dTop { display: grid; grid-template-columns: 240px 1fr; gap: 22px; align-items: start; }
+  .dImg { width: 100%; aspect-ratio: 1083 / 1673; object-fit: cover; border-radius: 12px; background: #1f1f29; }
+  .dTop h2 { margin: 4px 40px 14px 0; font-size: 22px; line-height: 1.2; }
+  .dAttrs { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .dAttrs td { padding: 6px 0; vertical-align: top; } .dAttrs td:first-child { color: var(--dim); width: 44%; }
+  .dAttrs .mono { font-family: ui-monospace, Menlo, monospace; }
+  .dBtns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+  .dBtns a { text-decoration: none; }
+  .soon { display: inline-block; font-size: 10.5px; font-weight: 600; letter-spacing: .02em; color: #f5c451;
+    border: 1px solid rgba(245,196,81,.4); background: rgba(245,196,81,.08); border-radius: 999px; padding: 1px 7px; vertical-align: middle; }
+  .dTabs { display: flex; gap: 6px; margin: 24px 0 16px; border-bottom: 1px solid var(--line); }
+  .dTab { background: none; border: none; color: var(--dim); font: inherit; font-size: 16px; font-weight: 600; padding: 10px 14px;
+    cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  .dTab.on { color: var(--text); border-bottom-color: var(--text); }
+  .dStats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px 20px; margin-bottom: 18px; }
+  .dStats.three { grid-template-columns: repeat(3, 1fr); }
+  .dStat .k { color: var(--dim); font-size: 13px; } .dStat .v { font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .dStat .v small { font-size: 13px; font-weight: 400; color: var(--dim); margin-left: 4px; }
+  .dNav { display: flex; gap: 8px; align-items: center; }
+  .dNav input { flex: 1; min-width: 0; background: #1f1f29; border: 1px solid var(--line); color: var(--text); padding: 9px 12px;
+    border-radius: 10px; font: inherit; font-size: 16px; }
+  .dNav button { width: 42px; height: 42px; border-radius: 10px; border: 1px solid var(--line); background: #1f1f29; color: var(--text);
+    font-size: 16px; cursor: pointer; flex: none; } .dNav button:disabled { opacity: .35; cursor: default; }
+  .dSeg { display: inline-flex; margin: 12px 0 16px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .dSeg button { background: #1f1f29; border: none; color: var(--text); font: inherit; font-size: 14px; padding: 7px 14px; }
+  .dSeg button.on { background: #2c2c38; font-weight: 600; } .dSeg button:disabled { color: var(--dim); cursor: not-allowed; }
+  .dCopy { font-size: 14px; } .dCopy td { padding: 6px 0; } .dCopy td:first-child { color: var(--dim); width: 44%; }
+  .dCopy a, .dTable a { color: var(--text); text-decoration: none; font-family: ui-monospace, Menlo, monospace; }
+  .dCopy a:hover, .dTable a:hover { color: var(--accent); }
+  .dTable { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 12px; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  .dTable th { text-align: left; color: var(--dim); font-weight: 500; font-size: 12px; letter-spacing: .05em; padding: 10px 12px; background: #1c1c25; }
+  .dTable td { padding: 10px 12px; border-top: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+  .dTable td.r, .dTable th.r { text-align: right; }
+  .dTable th.sort { cursor: pointer; color: var(--text); }
+  .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--mint); margin-right: 8px; vertical-align: middle; }
+  .dot.old { background: #555; }
+  .dMsg { color: var(--dim); font-size: 13px; margin-top: 10px; }
+  .dMore { margin-top: 12px; }
+  @media (max-width: 640px) {
+    .dSheet { margin: 0; min-height: 100%; border-radius: 0; border-left: none; border-right: none; padding: 16px 14px 40px; }
+    .dClose { position: sticky; top: 10px; float: right; z-index: 2; background: rgba(23,23,31,.92); margin: -4px -2px 0 0; }
+    .dTop { grid-template-columns: 1fr; gap: 14px; }
+    .dImg { max-width: 260px; margin: 0 auto; display: block; }
+    .dTop h2 { font-size: 19px; margin-right: 0; }
+    .dTab { font-size: 15px; padding: 9px 10px; }
+    .dStat .v { font-size: 21px; }
+    .dTable { font-size: 13px; } .dTable td, .dTable th { padding: 9px 8px; }
   }
 </style>
 </head>
@@ -172,13 +232,39 @@
   </div>
 </header>
 
+<section id="copies">
+  <div class="head">
+    <h2 id="cpTitle"></h2><span class="count" id="cpCount"></span>
+    <button class="chip" id="cpHolders" disabled>👑 Top holders</button>
+    <button class="chip close" id="cpClose">✕ Close</button>
+  </div>
+  <div class="list" id="cpList"></div>
+  <div class="note" id="cpNote"></div>
+  <div id="holders"><h3 id="hdTitle"></h3><div id="hdBody"></div></div>
+</section>
+
 <section id="browse">
   <div class="head">
     <h2>📚 Collections</h2>
     <input type="search" id="brQ" placeholder="e.g. Atom01 JiWoo 100Z, or just Atom01 JiWoo">
     <button class="chip close" id="brClose" style="margin-left:auto">✕ Close</button>
   </div>
+  <div class="brFilters">
+    <select id="brArtist"><option value="">All artists</option></select>
+    <select id="brSeason"><option value="">All seasons</option></select>
+    <select id="brMember"><option value="">All members</option></select>
+    <select id="brClass"><option value="">All classes</option></select>
+    <select id="brSort">
+      <option value="new">Newest first</option>
+      <option value="old">Oldest first</option>
+      <option value="no">Collection no.</option>
+      <option value="most">Most copies</option>
+      <option value="least">Fewest copies</option>
+    </select>
+    <button class="chip" id="brReset">Reset</button>
+  </div>
   <div class="note" id="brNote" style="margin-top:8px"></div>
+  <div class="note" id="brCount" style="margin-top:4px"></div>
   <div id="brGrid"></div>
 </section>
 
@@ -204,16 +290,25 @@
   <div id="ctResults"></div>
 </section>
 
-<section id="copies">
-  <div class="head">
-    <h2 id="cpTitle"></h2><span class="count" id="cpCount"></span>
-    <button class="chip" id="cpHolders" disabled>👑 Top holders</button>
-    <button class="chip close" id="cpClose">✕ Close</button>
+<div id="detail" role="dialog" aria-modal="true">
+  <div class="dSheet" id="dSheet">
+    <button class="chip dClose" id="dClose">✕ Close</button>
+    <div class="dTop">
+      <img class="dImg" id="dImg" alt="" onerror="this.style.visibility='hidden'">
+      <div>
+        <h2 id="dName"></h2>
+        <table class="dAttrs" id="dAttrs"></table>
+        <div class="dBtns" id="dBtns"></div>
+      </div>
+    </div>
+    <div class="dTabs">
+      <button class="dTab on" data-tab="serials">Serials</button>
+      <button class="dTab" data-tab="holders">Holders</button>
+    </div>
+    <div id="dSerials"></div>
+    <div id="dHolders" hidden></div>
   </div>
-  <div class="list" id="cpList"></div>
-  <div class="note" id="cpNote"></div>
-  <div id="holders"><h3 id="hdTitle"></h3><div id="hdBody"></div></div>
-</section>
+</div>
 
 <main id="feed"><div class="empty" id="empty">Waiting for Objekt activity…</div></main>
 <footer>Data from the Abstract blockchain · Explorer links via <a href="https://abscan.org" target="_blank" rel="noopener">Abscan</a></footer>
@@ -226,7 +321,7 @@ const HTTP_RPCS = ["https://api.mainnet.abs.xyz", "https://abstract.api.onfinali
 const WS_RPCS   = ["wss://api.mainnet.abs.xyz/ws", "wss://abstract.api.onfinality.io/public-ws"];
 // "All copies" lookup via OpenSea. Get a free key at https://opensea.io/settings/developer (or docs.opensea.io).
 // Leave empty to just link to OpenSea's search instead.
-const OPENSEA_KEY = "01c0333ec8464a8f97e46611853a3b54"; // optional: or paste it into the 🏆 Contest panel (saved only in your browser)
+const OPENSEA_KEY = ""; // optional: or paste it into the 🏆 Contest panel (saved only in your browser)
 const osKey = () => { try { return OPENSEA_KEY || localStorage.getItem("osKey") || ""; } catch { return OPENSEA_KEY; } };
 const OPENSEA_SLUG = "objekt-2";
 // Standings precomputed hourly by GitHub Actions (scripts/contest.mjs). Path is relative to this page.
@@ -399,8 +494,9 @@ function render(ev) {
   getMeta(ev.id).then(m => {
     const nameEl = card.querySelector(".name");
     nameEl.textContent = m.name;
-    nameEl.title = "Click to follow this collection";
-    nameEl.onclick = () => { $("q").value = m.name; applyAll(); showCopies(m); window.scrollTo({ top: 0, behavior: "smooth" }); };
+    nameEl.title = "Open this Objekt's details";
+    nameEl.onclick = () => openDetail(m);
+    const th = card.querySelector(".thumb"); th.style.cursor = "pointer"; th.onclick = () => openDetail(m);
     card.querySelector(".sub").textContent = [m.artist, m.cls && m.cls + " Class", "#" + ev.id].filter(Boolean).join(" · ");
     if (m.color) card.style.setProperty("--card", m.color);
     card.dataset.search += " " + [m.name, m.member, m.season, m.coll, m.cls, m.artist].join(" ").toLowerCase();
@@ -1024,38 +1120,311 @@ async function openBrowse() {
   const ix = await loadObjIndex();
   if (!ix) { $("brNote").textContent = "No crawled data on this site yet. It appears after the hourly job's first run."; return; }
   const pct = ix.latest ? Math.min(100, ix.crawledUpTo / ix.latest * 100) : 100;
-  $("brNote").textContent = `${ix.collections.length.toLocaleString()} collections found so far · crawled up to #${ix.crawledUpTo.toLocaleString()}` +
+  $("brNote").textContent = `Crawled up to #${ix.crawledUpTo.toLocaleString()}` +
     (ix.latest && ix.crawledUpTo < ix.latest ? ` of #${ix.latest.toLocaleString()} (${pct.toFixed(1)}%) — newer seasons appear as the crawl continues` : " · fully up to date");
+  ix.collections.forEach((c, i) => { c._i = i; });
+  fillFilters();
   renderBrowse();
-  $("brQ").focus();
 }
+
+// Dropdowns only offer values that exist with the other filters applied (like apollo.cafe)
+const BR_FIELDS = [["brArtist", "artist"], ["brSeason", "season"], ["brMember", "member"], ["brClass", "cls"]];
+function brMatches(c, skip) {
+  for (const [id, f] of BR_FIELDS) { const v = $(id).value; if (id !== skip && v && c[f] !== v) return false; }
+  const words = $("brQ").value.toLowerCase().split(/\s+/).filter(Boolean);
+  if (words.length) {
+    const hay = `${c.artist} ${c.season} ${c.member} ${c.coll} ${c.cls}`.toLowerCase();
+    if (!words.every(w => hay.includes(w))) return false;
+  }
+  return true;
+}
+function fillFilters() {
+  const ix = objIndex; if (!ix) return;
+  const seasonOrder = new Map(); // season → first collection position (crawl order ≈ release order)
+  ix.collections.forEach(c => { if (!seasonOrder.has(c.season)) seasonOrder.set(c.season, c._i); });
+  for (const [id, f] of BR_FIELDS) {
+    const sel = $(id), cur = sel.value;
+    const vals = [...new Set(ix.collections.filter(c => brMatches(c, id)).map(c => c[f]).filter(Boolean))];
+    vals.sort(f === "season" ? (a, b) => seasonOrder.get(a) - seasonOrder.get(b) : (a, b) => a.localeCompare(b));
+    sel.innerHTML = sel.options[0].outerHTML + vals.map(v => `<option${v === cur ? " selected" : ""}>${esc(v)}</option>`).join("");
+    if (cur && !vals.includes(cur)) sel.value = "";
+    sel.classList.toggle("on", !!sel.value);
+  }
+}
+
+// Smaller image variant from COSMO's image service when it exists, else the original
+const thumbOf = url => url.replace(/\/(original|public|\dx)$/, "/thumbnail");
+
+let brList = [], brShown = 0, brObserver = null;
+const BR_PAGE = 60;
 function renderBrowse() {
   const ix = objIndex; if (!ix) return;
-  const words = $("brQ").value.toLowerCase().split(/\s+/).filter(Boolean);
-  const hits = ix.collections.filter(c => {
-    const hay = `${c.artist} ${c.season} ${c.member} ${c.coll} ${c.cls}`.toLowerCase();
-    return words.every(w => hay.includes(w));
-  });
-  const shown = hits.slice(0, 120);
-  $("brGrid").innerHTML = shown.map((c, i) => `
-    <div class="bc" data-i="${ix.collections.indexOf(c)}" style="--card:${esc(c.color || "")}">
-      <div class="im" style="background-image:url('${esc(c.image || "")}')"></div>
-      <div class="t"><b>${esc(c.season)} ${esc(c.member)} ${esc(c.coll)}</b><span>${esc(c.cls)} · ${c.copies.toLocaleString()} copies</span></div>
-    </div>`).join("") +
-    (hits.length > shown.length ? `<div class="note" style="grid-column:1/-1">Showing 120 of ${hits.length.toLocaleString()} — type more to narrow it down.</div>` : "") +
-    (!hits.length ? `<div class="note" style="grid-column:1/-1">No collections match${ix.crawledUpTo < (ix.latest || 0) ? " yet — it may not be crawled so far" : ""}.</div>` : "");
-  $("brGrid").querySelectorAll(".bc").forEach(el => el.onclick = () => {
-    const c = ix.collections[+el.dataset.i];
-    const m = { name: `${c.season} ${c.member} ${c.coll}`, artist: c.artist, season: c.season, member: c.member, coll: c.coll, cls: c.cls, color: c.color };
-    $("q").value = m.name; applyAll();
-    showCopies(m);
-    $("copies").scrollIntoView({ behavior: "smooth" });
-  });
+  const sort = $("brSort").value;
+  const collNo = c => parseInt(c.coll, 10) || 0;
+  brList = ix.collections.filter(c => brMatches(c));
+  const by = {
+    new: (a, b) => b._i - a._i,
+    old: (a, b) => a._i - b._i,
+    no: (a, b) => a.season.localeCompare(b.season) || collNo(a) - collNo(b) || a.coll.localeCompare(b.coll) || a.member.localeCompare(b.member),
+    most: (a, b) => b.copies - a.copies,
+    least: (a, b) => a.copies - b.copies,
+  }[sort];
+  brList.sort(by);
+  const copies = brList.reduce((s, c) => s + c.copies, 0);
+  $("brCount").textContent = brList.length
+    ? `${brList.length.toLocaleString()} collection${brList.length === 1 ? "" : "s"} · ${copies.toLocaleString()} copies`
+    : `No collections match${ix.crawledUpTo < (ix.latest || 0) ? " — it may not be crawled yet" : ""}.`;
+  $("brGrid").innerHTML = `<div id="brMore"></div>`;
+  brShown = 0;
+  brAppend();
+  brObserver?.disconnect();
+  brObserver = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) brAppend(); }, { rootMargin: "800px" });
+  brObserver.observe($("brMore"));
 }
+function brAppend() {
+  if (brShown >= brList.length) return;
+  const batch = brList.slice(brShown, brShown + BR_PAGE);
+  brShown += batch.length;
+  $("brMore").insertAdjacentHTML("beforebegin", batch.map(c => `
+    <div class="bc" data-i="${c._i}" style="--card:${esc(c.color || "")}">
+      <img class="im" loading="lazy" decoding="async" alt="" width="1083" height="1673"
+        src="${esc(thumbOf(c.image || ""))}" data-full="${esc(c.image || "")}"
+        onerror="if(this.src!==this.dataset.full){this.src=this.dataset.full}else{this.style.visibility='hidden'}">
+      <div class="t"><b>${esc(c.season)} ${esc(c.member)} ${esc(c.coll)}</b><span>${esc(c.cls)} · ${c.copies.toLocaleString()} copies</span></div>
+    </div>`).join(""));
+}
+$("brGrid").onclick = e => {
+  const el = e.target.closest(".bc"); if (!el) return;
+  const c = objIndex.collections[+el.dataset.i];
+  openDetail({ artist: c.artist, season: c.season, member: c.member, coll: c.coll, cls: c.cls, color: c.color, image: c.image });
+};
+const brChanged = () => { fillFilters(); renderBrowse(); };
+for (const [id] of BR_FIELDS) $(id).onchange = brChanged;
+$("brSort").onchange = renderBrowse;
+$("brReset").onclick = () => { for (const [id] of BR_FIELDS) $(id).value = ""; $("brQ").value = ""; $("brSort").value = "new"; brChanged(); };
 let brTimer;
-$("brQ").oninput = () => { clearTimeout(brTimer); brTimer = setTimeout(renderBrowse, 150); };
+$("brQ").oninput = () => { clearTimeout(brTimer); brTimer = setTimeout(brChanged, 150); };
 $("brOpen").onclick = openBrowse;
 $("brClose").onclick = () => $("browse").classList.remove("open");
+
+/* ===== Objekt detail sheet (like objekt.top / apollo.cafe) ===== */
+const SOON = `<span class="soon" title="Coming in a future update">Soon</span>`;
+const apolloSlug = (season, member, coll) => `${season} ${member} ${coll}`.toLowerCase().normalize("NFD")
+  .replace(/[̀-ͯ]/g, "").replace(/[^\w\s-]/g, "").replace(/\s+/g, "-");
+let D = null; // current detail state
+let dRun = 0;
+
+async function openDetail(m) {
+  const run = ++dRun;
+  const key = objKey(m.artist || "", m.season, m.member, m.coll);
+  const linked = new URLSearchParams(location.hash.slice(1));
+  const wantSerial = linked.get("c") === key ? Number(linked.get("s")) || 1 : 1;
+  D = { m, key, ids: null, idx: 0, holders: null, histDesc: true };
+  try { history.replaceState(null, "", `#c=${key}${wantSerial > 1 ? "&s=" + wantSerial : ""}`); } catch {}
+  $("detail").classList.add("open"); document.body.style.overflow = "hidden";
+  $("detail").scrollTop = 0;
+  $("dSheet").style.setProperty("--card", m.color || "");
+  // image: use what we have, or look it up in the crawled index
+  const ix = await loadObjIndex();
+  const entry = ix?.collections.find(c => c.key === key);
+  const img = m.image || entry?.image || "";
+  $("dImg").src = img; $("dImg").style.visibility = img ? "" : "hidden";
+  const name = `${m.season} ${m.member} ${m.coll}`;
+  $("dName").textContent = name;
+  const type = /A$/i.test(m.coll) ? "Physical" : /Z$/i.test(m.coll) ? "Digital" : "—";
+  $("dAttrs").innerHTML = [
+    ["Artist", esc(m.artist || entry?.artist || "—")], ["Member", esc(m.member)], ["Season", esc(m.season)],
+    ["Class", esc(m.cls || entry?.cls || "—")], ["Collection No.", `<span class="mono">${esc(m.coll)}</span>`], ["Type", type],
+  ].map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join("");
+  const slug = apolloSlug(m.season, m.member, m.coll);
+  $("dBtns").innerHTML = `
+    <a class="chip" href="https://apollo.cafe/?id=${slug}" target="_blank" rel="noopener">🛸 View in Apollo</a>
+    <a class="chip" href="https://opensea.io/collection/${OPENSEA_SLUG}?searchQuery=${encodeURIComponent(name)}" target="_blank" rel="noopener">OpenSea ↗</a>`;
+  dTab("serials");
+  $("dSerials").innerHTML = `<div class="dMsg">Loading copies…</div>`;
+  $("dHolders").innerHTML = "";
+
+  // every copy of this collection: the site's crawled list first, OpenSea as a fallback
+  let ids = null, note = "";
+  try {
+    if (entry) {
+      ids = await localIds(entry.key);
+      if (!crawlCaughtUp(ix)) note = "The crawl is still catching up, so the newest copies may be missing.";
+    } else {
+      $("dSerials").innerHTML = `<div class="dMsg">This collection isn't in your site's crawled data yet — asking OpenSea…</div>`;
+      const all = await osAllCopies(m.season, m.coll, ctRun, n => {
+        if (run === dRun) $("dSerials").innerHTML = `<div class="dMsg">Not crawled yet — listing from OpenSea… ${n.toLocaleString()} found</div>`;
+      });
+      ids = all.filter(x => x.member.toLowerCase() === m.member.toLowerCase()).map(x => BigInt(x.id));
+    }
+  } catch (e) {
+    if (run !== dRun) return;
+    $("dSerials").innerHTML = `<div class="dMsg">Couldn't load the copies: ${esc(e.message)}.<br>Open it on Apollo instead.</div>`;
+    return;
+  }
+  if (run !== dRun) return;
+  ids.sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+  D.ids = ids; D.note = note;
+  D.idx = Math.min(Math.max(wantSerial, 1), Math.max(ids.length, 1)) - 1;
+  renderSerials();
+}
+
+function closeDetail() {
+  dRun++; D = null;
+  $("detail").classList.remove("open"); document.body.style.overflow = "";
+  try { history.replaceState(null, "", location.pathname + location.search); } catch {}
+}
+
+function dTab(t) {
+  document.querySelectorAll(".dTab").forEach(b => b.classList.toggle("on", b.dataset.tab === t));
+  $("dSerials").hidden = t !== "serials"; $("dHolders").hidden = t !== "holders";
+  if (t === "holders" && D?.ids && !D.holders) loadHolders();
+}
+
+/* ----- Serials tab ----- */
+function renderSerials() {
+  const { ids, idx } = D, n = ids.length;
+  if (!n) { $("dSerials").innerHTML = `<div class="dMsg">No copies found.</div>`; return; }
+  $("dSerials").innerHTML = `
+    <div class="dStats">
+      <div class="dStat"><div class="k">Copies</div><div class="v">${n.toLocaleString()}</div></div>
+      <div class="dStat"><div class="k">Spun</div><div class="v">${SOON}</div></div>
+      <div class="dStat"><div class="k">Non-Spin</div><div class="v">${SOON}</div></div>
+      <div class="dStat"><div class="k">Transferable</div><div class="v">${SOON}</div></div>
+    </div>
+    ${D.note ? `<div class="dMsg" style="margin:-6px 0 14px">⏳ ${esc(D.note)}</div>` : ""}
+    <div class="dNav">
+      <input id="dSerialIn" type="number" inputmode="numeric" min="1" max="${n}" value="${idx + 1}" aria-label="Copy number">
+      <button id="dFirst" title="First" ${idx === 0 ? "disabled" : ""}>⏮</button>
+      <button id="dPrev" title="Previous" ${idx === 0 ? "disabled" : ""}>‹</button>
+      <button id="dNext" title="Next" ${idx >= n - 1 ? "disabled" : ""}>›</button>
+      <button id="dLast" title="Last" ${idx >= n - 1 ? "disabled" : ""}>⏭</button>
+    </div>
+    <div class="dSeg">
+      <button class="on">All</button>
+      <button disabled title="Coming in a future update">Spun</button>
+      <button disabled title="Coming in a future update">Non-Spin</button>
+    </div>
+    <div id="dCopy"></div>`;
+  const go = i => { D.idx = Math.min(Math.max(i, 0), n - 1); try { history.replaceState(null, "", `#c=${D.key}&s=${D.idx + 1}`); } catch {} renderSerials(); };
+  $("dFirst").onclick = () => go(0); $("dPrev").onclick = () => go(D.idx - 1);
+  $("dNext").onclick = () => go(D.idx + 1); $("dLast").onclick = () => go(n - 1);
+  $("dSerialIn").onchange = e => go((parseInt(e.target.value, 10) || 1) - 1);
+  loadCopy(ids[idx], idx + 1);
+}
+
+const blockTimes = new Map();
+async function loadCopy(id, no) {
+  const run = dRun, box = $("dCopy");
+  box.innerHTML = `
+    <table class="dCopy">
+      <tr><td>Owner</td><td id="dOwner">Loading…</td></tr>
+      <tr><td>Token ID</td><td><a href="https://abscan.org/nft/${CONTRACT}/${id}" target="_blank" rel="noopener">${id}</a></td></tr>
+      <tr><td>Copy no.</td><td>#${no} <span style="color:var(--dim);font-size:12px">(by mint order — ≈ serial)</span></td></tr>
+      <tr><td>Transferable</td><td>${SOON}</td></tr>
+    </table>
+    <table class="dTable"><thead><tr><th>OWNER</th><th class="sort" id="dSort">DATE ${D.histDesc ? "↓" : "↑"}</th></tr></thead>
+      <tbody id="dHist"><tr><td colspan="2" style="color:var(--dim)">Loading history…</td></tr></tbody></table>
+    <div class="dMsg">History covers Abstract only (from April 2025). Cosmo usernames ${SOON}</div>`;
+  $("dSort").onclick = () => { D.histDesc = !D.histDesc; loadCopy(id, no); };
+  const topic = "0x" + id.toString(16).padStart(64, "0");
+  try {
+    const [ownerRaw, logs] = await Promise.all([
+      rpc("eth_call", ownerCall(id).params).catch(() => null),
+      rpc("eth_getLogs", [{ address: CONTRACT, fromBlock: "0x0", toBlock: "latest", topics: [TRANSFER, null, null, topic] }]),
+    ]);
+    if (run !== dRun) return;
+    const owner = ownerParse(ownerRaw) || (logs.length ? "0x" + logs[logs.length - 1].topics[2].slice(26) : null);
+    $("dOwner").innerHTML = owner ? `<a href="https://abscan.org/address/${owner}" target="_blank" rel="noopener" title="${owner}">${short(owner)}</a>` : "—";
+    for (const l of logs) {
+      const b = l.blockNumber;
+      if (!blockTimes.has(b)) {
+        const blk = await rpc("eth_getBlockByNumber", [b, false]).catch(() => null);
+        blockTimes.set(b, blk ? parseInt(blk.timestamp, 16) * 1000 : null);
+      }
+      if (run !== dRun) return;
+    }
+    const rows = logs.map(l => ({ to: "0x" + l.topics[2].slice(26), from: "0x" + l.topics[1].slice(26), t: blockTimes.get(l.blockNumber) }));
+    if (D.histDesc) rows.reverse();
+    const fmt = t => t ? new Date(t).toLocaleString([], { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" }) : "—";
+    $("dHist").innerHTML = rows.length ? rows.map((r, i) => `<tr>
+        <td><span class="dot ${r.to.toLowerCase() === (owner || "").toLowerCase() && (D.histDesc ? i === 0 : i === rows.length - 1) ? "" : "old"}"></span><a href="https://abscan.org/address/${r.to}" target="_blank" rel="noopener" title="${r.to}">${short(r.to)}</a>${r.from === ZERO ? ` <span style="color:var(--dim);font-size:12px">mint</span>` : ""}</td>
+        <td>${fmt(r.t)}</td></tr>`).join("")
+      : `<tr><td colspan="2" style="color:var(--dim)">No transfers on Abstract for this copy.</td></tr>`;
+  } catch (e) {
+    if (run !== dRun) return;
+    $("dOwner").textContent = "—";
+    $("dHist").innerHTML = `<tr><td colspan="2" style="color:var(--dim)">Couldn't load history (${esc(e.message)}).</td></tr>`;
+  }
+}
+
+/* ----- Holders tab ----- */
+async function loadHolders() {
+  const run = dRun, { ids } = D, box = $("dHolders");
+  box.innerHTML = `<div class="dMsg">Checking who owns each copy… 0 / ${ids.length.toLocaleString()}</div>`;
+  let owners;
+  try {
+    owners = await ownerLookupFast(ids, ctRun, (d, t) => {
+      if (run === dRun) box.innerHTML = `<div class="dMsg">Checking who owns each copy… ${d.toLocaleString()} / ${t.toLocaleString()}</div>`;
+    });
+  } catch (e) {
+    if (run === dRun) box.innerHTML = `<div class="dMsg">Couldn't check holders (${esc(e.message)}). <button class="chip" id="dRetry">Try again</button></div>`;
+    $("dRetry") && ($("dRetry").onclick = loadHolders);
+    return;
+  }
+  if (run !== dRun) return;
+  const copyNo = new Map(ids.map((id, i) => [id, i + 1]));
+  const tally = new Map();
+  owners.forEach((addr, id) => {
+    const a = addr.toLowerCase();
+    if (!tally.has(a)) tally.set(a, { addr, count: 0, lowest: Infinity });
+    const e = tally.get(a); e.count++; e.lowest = Math.min(e.lowest, copyNo.get(id));
+  });
+  const list = [...tally.values()].sort((a, b) => b.count - a.count || a.lowest - b.lowest);
+  let rank = 0, prev = null;
+  list.forEach((e, i) => { if (e.count !== prev) { rank = i + 1; prev = e.count; } e.rank = rank; });
+  D.holders = { list, copies: owners.size, shown: 100 };
+  renderHolders();
+}
+function renderHolders() {
+  const { list, copies, shown } = D.holders, holders = list.length;
+  const one = list.filter(e => e.count === 1).length;
+  const ten = list.filter(e => e.count >= 10), tenCopies = ten.reduce((s, e) => s + e.count, 0);
+  const pct = (a, b) => b ? (a / b * 100).toFixed(1) + "%" : "0%";
+  const summary = holders === 0 ? "No holders found."
+    : one / holders >= 0.95 ? "Almost every holder owns a single copy"
+    : tenCopies / copies >= 0.25 ? "A few big collectors hold a large share"
+    : "Copies are spread across many holders";
+  $("dHolders").innerHTML = `
+    <div class="dStats three">
+      <div class="dStat"><div class="k">Holders</div><div class="v">${holders.toLocaleString()}</div><div class="k">${copies.toLocaleString()} copies</div></div>
+      <div class="dStat"><div class="k">Own one</div><div class="v">${one.toLocaleString()}<small>${pct(one, holders)}</small></div></div>
+      <div class="dStat"><div class="k">Own 10+</div><div class="v">${ten.length.toLocaleString()}<small>hold ${pct(tenCopies, copies)}</small></div></div>
+    </div>
+    <div class="dMsg" style="font-size:15px;margin:0 0 6px">${summary}</div>
+    <table class="dTable"><thead><tr><th>RANK</th><th>HOLDER</th><th class="r">COPIES</th><th class="r">LOWEST</th><th class="r">SHARE</th></tr></thead><tbody>
+      ${list.slice(0, shown).map(e => `<tr><td>${e.rank}</td>
+        <td><a href="https://abscan.org/address/${e.addr}" target="_blank" rel="noopener" title="${e.addr}">${short(e.addr)}</a></td>
+        <td class="r">${e.count}</td><td class="r">#${e.lowest}</td><td class="r">${pct(e.count, copies)}</td></tr>`).join("")}
+    </tbody></table>
+    ${shown < holders ? `<button class="chip dMore" id="dMoreH">Show more (${(holders - shown).toLocaleString()} left)</button>` : ""}
+    <div class="dMsg">Cosmo usernames ${SOON} · A wallet holding many copies may be a Modhaus system wallet.</div>`;
+  $("dMoreH") && ($("dMoreH").onclick = () => { D.holders.shown += 200; renderHolders(); });
+}
+
+document.querySelectorAll(".dTab").forEach(b => b.onclick = () => dTab(b.dataset.tab));
+$("dClose").onclick = closeDetail;
+$("detail").onclick = e => { if (e.target.id === "detail") closeDetail(); };
+document.addEventListener("keydown", e => { if (e.key === "Escape" && D) closeDetail(); });
+
+// open straight from a shared link like objekt-live.html#c=triples-atom01-jiwoo-100z&s=5
+(async () => {
+  const h = new URLSearchParams(location.hash.slice(1)).get("c");
+  if (!h) return;
+  const ix = await loadObjIndex();
+  const c = ix?.collections.find(x => x.key === h);
+  if (c) openDetail({ artist: c.artist, season: c.season, member: c.member, coll: c.coll, cls: c.cls, color: c.color, image: c.image });
+})();
 
 /* ===== UI wiring ===== */
 document.querySelectorAll(".chip[data-type]").forEach(b => b.onclick = () => {
