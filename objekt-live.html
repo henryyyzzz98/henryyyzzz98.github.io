@@ -200,6 +200,19 @@
   .dot.old { background: #555; }
   .dMsg { color: var(--dim); font-size: 13px; margin-top: 10px; }
   .dMore { margin-top: 12px; }
+  .sb { display: inline-block; font-size: 11px; font-weight: 600; border-radius: 999px; padding: 1px 8px; margin-left: 6px; vertical-align: middle; }
+  .sb.est { color: var(--dim); border: 1px solid var(--line); }
+  .sb.adj { color: #7aa7ff; border: 1px solid rgba(122,167,255,.45); }
+  .sb.ok { color: var(--mint); border: 1px solid rgba(61,220,151,.45); }
+  .dAdmin { margin-top: 26px; padding-top: 14px; border-top: 1px dashed var(--line); font-size: 13px; color: var(--dim); }
+  .dAdmin .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; }
+  .dAdmin input, .dEdit input { background: #1f1f29; border: 1px solid var(--line); color: var(--text); padding: 7px 10px;
+    border-radius: 8px; font: inherit; font-size: 13px; min-width: 0; }
+  .dAdmin input { flex: 1 1 180px; }
+  .linkish { background: none; border: none; color: var(--dim); font: inherit; cursor: pointer; padding: 0; text-decoration: underline; }
+  .dEdit { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .dEdit input { width: 110px; }
+  .dEditMsg { font-size: 12px; color: var(--dim); width: 100%; }
   @media (max-width: 640px) {
     .dSheet { margin: 0; min-height: 100%; border-radius: 0; border-left: none; border-right: none; padding: 16px 14px 40px; }
     .dClose { position: sticky; top: 10px; float: right; z-index: 2; background: rgba(23,23,31,.92); margin: -4px -2px 0 0; }
@@ -307,6 +320,7 @@
     </div>
     <div id="dSerials"></div>
     <div id="dHolders" hidden></div>
+    <div class="dAdmin" id="dAdmin"></div>
   </div>
 </div>
 
@@ -337,11 +351,12 @@ async function loadObjIndex() {
   return objIndex;
 }
 const crawlCaughtUp = ix => ix && (!ix.latest || ix.crawledUpTo >= ix.latest);
-async function localIds(key) {
+async function localColl(key) {
   const r = await fetch(`${OBJEKT_DATA}/c/${key}.json`);
   if (!r.ok) throw new Error(`list ${r.status}`);
-  return (await r.json()).ids.map(BigInt);
+  return r.json();
 }
+async function localIds(key) { return (await localColl(key)).ids.map(BigInt); }
 const HISTORY_BLOCKS = 600;    // how far back to load on page open
 const MAX_CARDS = 120;         // keep the page light
 const POLL_MS = 4000;          // fallback polling interval if WebSocket fails
@@ -1207,6 +1222,164 @@ $("brQ").oninput = () => { clearTimeout(brTimer); brTimer = setTimeout(brChanged
 $("brOpen").onclick = openBrowse;
 $("brClose").onclick = () => $("browse").classList.remove("open");
 
+/* ===== Serials: estimated for physical (A) objekts, with admin corrections ===== */
+// How COSMO numbers physicals (from apollo.cafe's research): each print run gets token IDs reserved in
+// blocks before anyone scans. Inside an unbroken block, (token ID − serial) is constant, and serials carry
+// on across a collection's blocks in order, counting IDs nobody has scanned yet. The hourly build finds the
+// blocks ("segs"); confirmed serials from the admin editor re-anchor their block and everything after it.
+const OVERRIDES_PATH = "data/serial-overrides.json";
+let overrides = null;
+async function loadOverrides(force) {
+  if (overrides && !force) return overrides;
+  try { const r = await fetch(`${OVERRIDES_PATH}?t=${Date.now()}`, { cache: "no-store" }); overrides = r.ok ? await r.json() : { version: 1, serials: {} }; }
+  catch { overrides = { version: 1, serials: {} }; }
+  overrides.serials ||= {};
+  return overrides;
+}
+function physSerials(idsN, segs, conf) {
+  if (!segs || !segs.length) { // not crawled: guess blocks from big gaps
+    segs = []; idsN.forEach((id, k) => { if (k === 0 || id - idsN[k - 1] > 100) segs.push([k, null]); });
+  }
+  const map = new Map();
+  let running = 1, anchored = false;
+  segs.forEach(([start, pf], s) => {
+    const end = s + 1 < segs.length ? segs[s + 1][0] - 1 : idsN.length - 1;
+    const first = idsN[start], last = idsN[end];
+    const resStart = pf != null && first - pf - 1 <= 99 ? pf + 1 : first;   // block starts right after the other collection's token
+    const votes = new Map();
+    for (let k = start; k <= end; k++) {
+      const c = conf[idsN[k]];
+      if (c) { const off = c - (idsN[k] - resStart); votes.set(off, (votes.get(off) || 0) + 1); }
+    }
+    // serial = id − K inside a block. Without corrections the block starts at resStart with the next serial.
+    let K = resStart - running, blockStart = resStart;
+    if (votes.size) {
+      const off = [...votes.entries()].sort((a, b) => b[1] - a[1])[0][0]; // majority of confirmations: serial at resStart
+      K = resStart - off; anchored = true;
+      // the confirmation tells us where the block really began (where it would hit the next expected serial)
+      blockStart = Math.min(first, Math.max(K + running, pf != null ? pf + 1 : -Infinity));
+    }
+    const blockLen = Math.ceil((last - blockStart + 1) / 50) * 50;
+    for (let k = start; k <= end; k++) {
+      const id = idsN[k], c = conf[id];
+      map.set(id, c ? { serial: c, how: "confirmed" } : { serial: id - K, how: anchored ? "adjusted" : "estimated" });
+    }
+    running = blockStart - K + blockLen;
+  });
+  return { map, printed: running - 1 };
+}
+function computeSerials() {
+  const idsN = D.ids.map(Number);
+  if (D.phys) {
+    const conf = overrides?.serials?.[D.key] || {};
+    D.ser = physSerials(idsN, D.segs, conf);
+  } else {
+    D.ser = { map: new Map(idsN.map((id, i) => [id, { serial: i + 1, how: "order" }])), printed: idsN.length };
+  }
+}
+function serialRow(id, no) {
+  if (!D.phys) return `<tr><td>Copy no.</td><td>#${no} <span style="color:var(--dim);font-size:12px">(by mint order — ≈ serial)</span></td></tr>`;
+  const s = D.ser.map.get(Number(id));
+  const badge = s.how === "confirmed" ? `<span class="sb ok" title="Confirmed by an admin">Confirmed ✓</span>`
+    : s.how === "adjusted" ? `<span class="sb adj" title="Estimated, lined up with a confirmed serial">Adjusted</span>`
+    : `<span class="sb est" title="Calculated from the token ID's reserved block">Estimated</span>`;
+  return `<tr><td>Serial</td><td><b>#${s.serial}</b>${badge}</td></tr>`;
+}
+
+/* ----- Admin (GitHub) ----- */
+const ls = { get: k => { try { return localStorage.getItem(k) || ""; } catch { return ""; } },
+             set: (k, v) => { try { v ? localStorage.setItem(k, v) : localStorage.removeItem(k); } catch {} } };
+const isAdmin = () => !!(ls.get("ghToken") && ls.get("ghRepo"));
+function guessRepo() {
+  const h = location.hostname;
+  if (!h.endsWith(".github.io")) return "";
+  const owner = h.split(".")[0], first = location.pathname.split("/").filter(Boolean)[0];
+  return first && !first.includes(".") ? `${owner}/${first}` : `${owner}/${h}`;
+}
+const b64enc = str => btoa(unescape(encodeURIComponent(str)));
+const b64dec = b64 => decodeURIComponent(escape(atob(b64.replace(/\s/g, ""))));
+async function gh(path, opts = {}) {
+  const r = await fetch(`https://api.github.com/repos/${ls.get("ghRepo")}${path}`, { ...opts, cache: "no-store",
+    headers: { Authorization: `Bearer ${ls.get("ghToken")}`, Accept: "application/vnd.github+json", ...(opts.headers || {}) } });
+  const j = await r.json().catch(() => ({}));
+  return { ok: r.ok, status: r.status, j };
+}
+async function saveSerial(key, tokenId, serial) {
+  const branch = ls.get("ghBranch") || "main";
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const cur = await gh(`/contents/${OVERRIDES_PATH}?ref=${encodeURIComponent(branch)}`);
+    if (!cur.ok && cur.status !== 404) throw new Error(`GitHub ${cur.status}: ${cur.j.message || "couldn't read the file"}`);
+    const data = cur.ok ? JSON.parse(b64dec(cur.j.content)) : { version: 1, serials: {} };
+    data.serials ||= {};
+    const col = (data.serials[key] ||= {});
+    if (serial) col[tokenId] = serial; else { delete col[tokenId]; if (!Object.keys(col).length) delete data.serials[key]; }
+    const put = await gh(`/contents/${OVERRIDES_PATH}`, { method: "PUT", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ branch, ...(cur.ok ? { sha: cur.j.sha } : {}),
+        message: serial ? `Confirm serial: ${key} token ${tokenId} = #${serial}` : `Remove serial confirmation: ${key} token ${tokenId}`,
+        content: b64enc(JSON.stringify(data, null, 1) + "\n") }) });
+    if (put.ok) { overrides = data; return; }
+    if (put.status !== 409 && put.status !== 422) throw new Error(`GitHub ${put.status}: ${put.j.message || "save failed"}`);
+    // someone saved at the same moment — re-read and try again
+  }
+  throw new Error("GitHub kept reporting a conflict — try again");
+}
+function editorRow(id) {
+  const s = D.ser.map.get(Number(id));
+  return `<tr><td>Admin</td><td><div class="dEdit">
+    <input id="dEditIn" type="number" inputmode="numeric" min="1" value="${s.serial}" aria-label="Real serial">
+    <button class="chip" id="dEditSave">${s.how === "confirmed" ? "Update" : "Confirm"}</button>
+    ${s.how === "confirmed" ? `<button class="chip" id="dEditDel">Remove</button>` : ""}
+    <div class="dEditMsg" id="dEditMsg">Enter the serial printed on the card, then Confirm. The rest of its block lines up with it.</div>
+  </div></td></tr>`;
+}
+function wireEditor(id, no) {
+  const msg = t => { const el = $("dEditMsg"); if (el) el.textContent = t; };
+  const act = async serial => {
+    const run = dRun;
+    $("dEditSave").disabled = true; $("dEditDel") && ($("dEditDel").disabled = true);
+    msg("Saving to GitHub…");
+    try {
+      await saveSerial(D.key, String(id), serial);
+      if (run !== dRun) return;
+      computeSerials(); D.holders = null;
+      renderSerials();
+      setTimeout(() => { const el = $("dEditMsg"); if (el) el.textContent = `Saved ✓ — you see it now; everyone else after the next site update (a few minutes, or up to ~40 while the big crawl is running).`; }, 50);
+    } catch (e) { msg(`Couldn't save: ${e.message}`); $("dEditSave").disabled = false; $("dEditDel") && ($("dEditDel").disabled = false); }
+  };
+  $("dEditSave").onclick = () => { const v = parseInt($("dEditIn").value, 10); if (v > 0) act(v); else msg("Enter a serial of 1 or more."); };
+  $("dEditDel") && ($("dEditDel").onclick = () => act(null));
+}
+function renderAdminBar() {
+  const box = $("dAdmin");
+  if (isAdmin()) {
+    box.innerHTML = `🔓 Admin: <b>${esc(ls.get("ghRepo"))}</b> (${esc(ls.get("ghBranch") || "main")}) ·
+      <button class="linkish" id="adOut">Sign out</button>
+      <div style="margin-top:6px">Physical (A) cards show a serial editor under each copy.</div>`;
+    $("adOut").onclick = () => { ls.set("ghToken", ""); renderAdminBar(); D && D.ids && renderSerials(); };
+    return;
+  }
+  box.innerHTML = `<button class="linkish" id="adOpen">🔒 Admin</button><div id="adForm" hidden>
+    <div style="margin-top:8px">Sign in with a GitHub token that can edit your site's repo. It's kept only in this browser.</div>
+    <div class="row"><input id="adRepo" placeholder="owner/repo" value="${esc(ls.get("ghRepo") || guessRepo())}">
+      <input id="adBranch" placeholder="branch" value="${esc(ls.get("ghBranch") || "main")}" style="flex:0 1 110px"></div>
+    <div class="row"><input id="adTok" type="password" placeholder="GitHub token (github_pat_…)">
+      <button class="chip" id="adGo">Sign in</button></div>
+    <div id="adMsg" style="margin-top:6px"></div></div>`;
+  $("adOpen").onclick = () => { $("adForm").hidden = !$("adForm").hidden; };
+  $("adGo").onclick = async () => {
+    const repo = $("adRepo").value.trim().replace(/^https?:\/\/github\.com\//, "").replace(/\/$/, "");
+    ls.set("ghRepo", repo); ls.set("ghBranch", $("adBranch").value.trim() || "main"); ls.set("ghToken", $("adTok").value.trim());
+    $("adMsg").textContent = "Checking…";
+    const r = await gh("").catch(e => ({ ok: false, j: { message: e.message } }));
+    if (!r.ok || !r.j.permissions?.push) {
+      ls.set("ghToken", "");
+      $("adMsg").textContent = r.ok ? "That token can't edit this repo — give it Contents: Read and write." : `GitHub said: ${r.j.message || "not found"} — check the repo name and token.`;
+      return;
+    }
+    renderAdminBar(); D && D.ids && renderSerials();
+  };
+}
+
 /* ===== Objekt detail sheet (like objekt.top / apollo.cafe) ===== */
 const SOON = `<span class="soon" title="Coming in a future update">Soon</span>`;
 const apolloSlug = (season, member, coll) => `${season} ${member} ${coll}`.toLowerCase().normalize("NFD")
@@ -1219,7 +1392,7 @@ async function openDetail(m) {
   const key = objKey(m.artist || "", m.season, m.member, m.coll);
   const linked = new URLSearchParams(location.hash.slice(1));
   const wantSerial = linked.get("c") === key ? Number(linked.get("s")) || 1 : 1;
-  D = { m, key, ids: null, idx: 0, holders: null, histDesc: true };
+  D = { m, key, ids: null, segs: null, idx: 0, holders: null, histDesc: true };
   try { history.replaceState(null, "", `#c=${key}${wantSerial > 1 ? "&s=" + wantSerial : ""}`); } catch {}
   $("detail").classList.add("open"); document.body.style.overflow = "hidden";
   $("detail").scrollTop = 0;
@@ -1241,6 +1414,7 @@ async function openDetail(m) {
     <a class="chip" href="https://apollo.cafe/?id=${slug}" target="_blank" rel="noopener">🛸 View in Apollo</a>
     <a class="chip" href="https://opensea.io/collection/${OPENSEA_SLUG}?searchQuery=${encodeURIComponent(name)}" target="_blank" rel="noopener">OpenSea ↗</a>`;
   dTab("serials");
+  renderAdminBar();
   $("dSerials").innerHTML = `<div class="dMsg">Loading copies…</div>`;
   $("dHolders").innerHTML = "";
 
@@ -1248,7 +1422,8 @@ async function openDetail(m) {
   let ids = null, note = "";
   try {
     if (entry) {
-      ids = await localIds(entry.key);
+      const file = await localColl(entry.key);
+      ids = file.ids.map(BigInt); D.segs = file.segs || null;
       if (!crawlCaughtUp(ix)) note = "The crawl is still catching up, so the newest copies may be missing.";
     } else {
       $("dSerials").innerHTML = `<div class="dMsg">This collection isn't in your site's crawled data yet — asking OpenSea…</div>`;
@@ -1265,6 +1440,10 @@ async function openDetail(m) {
   if (run !== dRun) return;
   ids.sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
   D.ids = ids; D.note = note;
+  D.phys = /A$/i.test(m.coll);
+  await loadOverrides();
+  if (run !== dRun) return;
+  computeSerials();
   D.idx = Math.min(Math.max(wantSerial, 1), Math.max(ids.length, 1)) - 1;
   renderSerials();
 }
@@ -1287,14 +1466,15 @@ function renderSerials() {
   if (!n) { $("dSerials").innerHTML = `<div class="dMsg">No copies found.</div>`; return; }
   $("dSerials").innerHTML = `
     <div class="dStats">
-      <div class="dStat"><div class="k">Copies</div><div class="v">${n.toLocaleString()}</div></div>
+      <div class="dStat"><div class="k">${D.phys ? "Scanned" : "Copies"}</div><div class="v">${n.toLocaleString()}</div></div>
+      ${D.phys ? `<div class="dStat"><div class="k">Printed <span style="font-size:11px">(est.)</span></div><div class="v">${D.ser.printed.toLocaleString()}</div></div>` : ""}
       <div class="dStat"><div class="k">Spun</div><div class="v">${SOON}</div></div>
       <div class="dStat"><div class="k">Non-Spin</div><div class="v">${SOON}</div></div>
       <div class="dStat"><div class="k">Transferable</div><div class="v">${SOON}</div></div>
     </div>
     ${D.note ? `<div class="dMsg" style="margin:-6px 0 14px">⏳ ${esc(D.note)}</div>` : ""}
     <div class="dNav">
-      <input id="dSerialIn" type="number" inputmode="numeric" min="1" max="${n}" value="${idx + 1}" aria-label="Copy number">
+      <input id="dSerialIn" type="number" inputmode="numeric" min="1" value="${D.phys ? D.ser.map.get(Number(ids[idx])).serial : idx + 1}" aria-label="${D.phys ? "Serial" : "Copy number"}" placeholder="${D.phys ? "Serial #" : "Copy #"}">
       <button id="dFirst" title="First" ${idx === 0 ? "disabled" : ""}>⏮</button>
       <button id="dPrev" title="Previous" ${idx === 0 ? "disabled" : ""}>‹</button>
       <button id="dNext" title="Next" ${idx >= n - 1 ? "disabled" : ""}>›</button>
@@ -1309,24 +1489,36 @@ function renderSerials() {
   const go = i => { D.idx = Math.min(Math.max(i, 0), n - 1); try { history.replaceState(null, "", `#c=${D.key}&s=${D.idx + 1}`); } catch {} renderSerials(); };
   $("dFirst").onclick = () => go(0); $("dPrev").onclick = () => go(D.idx - 1);
   $("dNext").onclick = () => go(D.idx + 1); $("dLast").onclick = () => go(n - 1);
-  $("dSerialIn").onchange = e => go((parseInt(e.target.value, 10) || 1) - 1);
+  $("dSerialIn").onchange = e => {
+    const v = parseInt(e.target.value, 10) || 1;
+    if (!D.phys) return go(v - 1);
+    // physical: jump to that serial, or the nearest scanned one
+    let best = 0, bestD = Infinity;
+    ids.forEach((id, i) => { const d = Math.abs(D.ser.map.get(Number(id)).serial - v); if (d < bestD) { bestD = d; best = i; } });
+    D.jumpMsg = bestD ? `Serial #${v} hasn't been scanned yet — showing the nearest scanned copy.` : "";
+    go(best);
+  };
   loadCopy(ids[idx], idx + 1);
 }
 
 const blockTimes = new Map();
 async function loadCopy(id, no) {
   const run = dRun, box = $("dCopy");
+  setTimeout(() => { D && (D.jumpMsg = ""); }, 0);
   box.innerHTML = `
     <table class="dCopy">
       <tr><td>Owner</td><td id="dOwner">Loading…</td></tr>
       <tr><td>Token ID</td><td><a href="https://abscan.org/nft/${CONTRACT}/${id}" target="_blank" rel="noopener">${id}</a></td></tr>
-      <tr><td>Copy no.</td><td>#${no} <span style="color:var(--dim);font-size:12px">(by mint order — ≈ serial)</span></td></tr>
+      ${serialRow(id, no)}
       <tr><td>Transferable</td><td>${SOON}</td></tr>
+      ${D.phys && isAdmin() ? editorRow(id) : ""}
     </table>
+    ${D.jumpMsg ? `<div class="dMsg">${esc(D.jumpMsg)}</div>` : ""}
     <table class="dTable"><thead><tr><th>OWNER</th><th class="sort" id="dSort">DATE ${D.histDesc ? "↓" : "↑"}</th></tr></thead>
       <tbody id="dHist"><tr><td colspan="2" style="color:var(--dim)">Loading history…</td></tr></tbody></table>
     <div class="dMsg">History covers Abstract only (from April 2025). Cosmo usernames ${SOON}</div>`;
   $("dSort").onclick = () => { D.histDesc = !D.histDesc; loadCopy(id, no); };
+  if (D.phys && isAdmin()) wireEditor(id, no);
   const topic = "0x" + id.toString(16).padStart(64, "0");
   try {
     const [ownerRaw, logs] = await Promise.all([
@@ -1373,7 +1565,7 @@ async function loadHolders() {
     return;
   }
   if (run !== dRun) return;
-  const copyNo = new Map(ids.map((id, i) => [id, i + 1]));
+  const copyNo = new Map(ids.map((id, i) => [id, D.phys ? D.ser.map.get(Number(id)).serial : i + 1]));
   const tally = new Map();
   owners.forEach((addr, id) => {
     const a = addr.toLowerCase();
