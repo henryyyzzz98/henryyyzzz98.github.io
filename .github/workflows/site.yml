@@ -15,7 +15,9 @@ on:
     - cron: "17 * * * *"   # every hour at :17 (UTC). GitHub may start it late when busy.
   push:
     branches: [main, master]
-    paths-ignore: ["data/meta/**", "data/contest*.json"]   # the bot's own data commits don't need a second run
+    # the bot's own data commits and admin serial edits don't need their own run —
+    # they go live with the next scheduled run (or press "Run workflow" to publish sooner)
+    paths-ignore: ["data/meta/**", "data/contest*.json", "data/serial-overrides.json"]
   workflow_dispatch:
 
 permissions:
@@ -52,7 +54,6 @@ jobs:
         env:
           TIME_BUDGET_MIN: "30"
           COSMO_RPS: "40"
-          COSMO_PARALLEL: "16"
           RPC_URLS: ${{ secrets.RPC_URL && format('{0},https://api.mainnet.abs.xyz', secrets.RPC_URL) || 'https://api.mainnet.abs.xyz,https://abstract.api.onfinality.io/public' }}
         run: node scripts/crawl-meta.mjs
 
