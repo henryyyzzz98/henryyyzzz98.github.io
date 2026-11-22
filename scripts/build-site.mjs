@@ -6,13 +6,17 @@
 //                                    (+ "segs" for physical A collections, used to estimate printed serials)
 // These generated files are published but never committed, so they don't bloat your repo.
 
-import { cp, mkdir, rm, writeFile, readdir } from "node:fs/promises";
+import { cp, mkdir, rm, writeFile, readdir, stat } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { loadAll, collectionKey } from "./crawl-meta.mjs";
 
 const OUT = process.env.SITE_DIR || "_site";
+// Where the crawler's data lives: "store/data" when the workflow has checked out the data branch there.
+const DATA_DIR = process.env.DATA_DIR || "data";
 // Repo folders/files that are not part of the website
-const SKIP = new Set([".git", ".github", "scripts", "node_modules", "_site", "data/meta", "data/contest-state.json", "data/nicks/state.json"]);
+const SKIP = new Set([".git", ".github", "scripts", "node_modules", "_site", "store",
+  "data/meta", "data/contest-state.json", "data/nicks/state.json"]);
+const exists = p => stat(p).then(() => true, () => false);
 
 async function copySite(src = ".", rel = "") {
   for (const e of await readdir(src, { withFileTypes: true })) {
@@ -52,7 +56,15 @@ export async function build() {
   await mkdir(`${OUT}/objekts/c`, { recursive: true });
   await copySite();
 
-  const { collections, ids, state, owner } = await loadAll();
+  // the crawler's published files (contest standings, saved nicknames) from the data branch
+  if (DATA_DIR !== "data") {
+    await mkdir(`${OUT}/data/nicks`, { recursive: true });
+    if (await exists(`${DATA_DIR}/contest.json`)) await cp(`${DATA_DIR}/contest.json`, `${OUT}/data/contest.json`);
+    if (await exists(`${DATA_DIR}/nicks`))
+      for (const f of await readdir(`${DATA_DIR}/nicks`)) if (f.endsWith(".json") && f !== "state.json") await cp(`${DATA_DIR}/nicks/${f}`, `${OUT}/data/nicks/${f}`);
+  }
+
+  const { collections, ids, state, owner } = await loadAll(`${DATA_DIR}/meta`);
   const index = [];
   for (let i = 0; i < collections.length; i++) {
     const [artist, season, member, coll, cls, color, image] = collections[i];
