@@ -1,6 +1,6 @@
 name: Objekt data + publish site
 
-# Every hour: crawl new Objekt metadata, update contest standings, then publish the whole site.
+# Every hour: crawl new Objekt metadata, update contest standings, save wallet nicknames, then publish the whole site.
 # Also publishes whenever you push changes to your site.
 #
 # While the first big crawl is still catching up, each run starts the next one as soon as it
@@ -52,7 +52,7 @@ jobs:
         if: github.event_name != 'push'
         continue-on-error: true    # still publish the site even if COSMO is having a bad day
         env:
-          TIME_BUDGET_MIN: "30"
+          TIME_BUDGET_MIN: "27"
           COSMO_RPS: "40"
           RPC_URLS: ${{ secrets.RPC_URL && format('{0},https://api.mainnet.abs.xyz', secrets.RPC_URL) || 'https://api.mainnet.abs.xyz,https://abstract.api.onfinality.io/public' }}
         run: node scripts/crawl-meta.mjs
@@ -62,9 +62,18 @@ jobs:
         continue-on-error: true
         env:
           OPENSEA_KEY: ${{ secrets.OPENSEA_KEY }}
-          TIME_BUDGET_MIN: "15"
+          TIME_BUDGET_MIN: "12"
           RPC_URLS: ${{ secrets.RPC_URL && format('{0},https://api.mainnet.abs.xyz', secrets.RPC_URL) || 'https://api.mainnet.abs.xyz,https://abstract.api.onfinality.io/public' }}
         run: node scripts/contest.mjs
+
+      - name: Save COSMO nicknames (from objekt.top)
+        if: github.event_name != 'push'
+        continue-on-error: true
+        env:
+          TIME_BUDGET_MIN: "8"
+          NICK_RPS: "3"
+          RPC_URLS: ${{ secrets.RPC_URL && format('{0},https://api.mainnet.abs.xyz', secrets.RPC_URL) || 'https://api.mainnet.abs.xyz,https://abstract.api.onfinality.io/public' }}
+        run: node scripts/nicknames.mjs
 
       - name: Save progress to the repo
         if: always() && github.event_name != 'push'
