@@ -187,12 +187,13 @@ export async function loadAll(dir = DIR) {
   const state = await readJSON(`${dir}/state.json`, { next: 1 });
   const lastChunk = Math.floor(Math.max(1, state.next - 1) / CHUNK);
   const ids = collections.map(() => []);     // collection index → token IDs
+  const owner = new Uint32Array((lastChunk + 1) * CHUNK); // token ID → collection number (index+1), 0 = unknown
   for (let n = 0; n <= lastChunk; n++) {
     const arr = await readJSON(`${dir}/chunks/${n}.json`, null);
     if (!arr) continue;
-    for (let k = 0; k < arr.length; k++) if (arr[k]) ids[arr[k] - 1].push(n * CHUNK + k);
+    for (let k = 0; k < arr.length; k++) if (arr[k]) { ids[arr[k] - 1].push(n * CHUNK + k); owner[n * CHUNK + k] = arr[k]; }
   }
-  return { collections, ids, state };
+  return { collections, ids, state, owner };
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
