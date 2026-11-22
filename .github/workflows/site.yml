@@ -51,7 +51,8 @@ jobs:
         continue-on-error: true    # still publish the site even if COSMO is having a bad day
         env:
           TIME_BUDGET_MIN: "30"
-          COSMO_RPS: "20"
+          COSMO_RPS: "40"
+          COSMO_PARALLEL: "16"
           RPC_URLS: ${{ secrets.RPC_URL && format('{0},https://api.mainnet.abs.xyz', secrets.RPC_URL) || 'https://api.mainnet.abs.xyz,https://abstract.api.onfinality.io/public' }}
         run: node scripts/crawl-meta.mjs
 
