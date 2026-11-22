@@ -1229,3 +1229,4 @@ tr.gb-now td{background:#ffd16622}
 .rot-c{text-align:center;font-size:14px;font-weight:700;color:var(--tc);background:#ffffff05}
 .rot-c.full{background:color-mix(in srgb,var(--tc) 22%,transparent);color:#fff}
 .rot-c.now{outline:2px solid #ffd166;outline-offset:-2px}
+.map3d-btn{position:absolute;right:.6em;bottom:.6em;z-index:3;font-size:11px;padding:3px 8px;border-radius:4px;background:rgba(20,22,28,.85);border:1px solid #ffffff2a;color:#ddd;cursor:pointer}
