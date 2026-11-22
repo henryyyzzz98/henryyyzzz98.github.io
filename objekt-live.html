@@ -335,7 +335,7 @@ const HTTP_RPCS = ["https://api.mainnet.abs.xyz", "https://abstract.api.onfinali
 const WS_RPCS   = ["wss://api.mainnet.abs.xyz/ws", "wss://abstract.api.onfinality.io/public-ws"];
 // "All copies" lookup via OpenSea. Get a free key at https://opensea.io/settings/developer (or docs.opensea.io).
 // Leave empty to just link to OpenSea's search instead.
-const OPENSEA_KEY = "01c0333ec8464a8f97e46611853a3b54"; // optional: or paste it into the 🏆 Contest panel (saved only in your browser)
+const OPENSEA_KEY = ""; // optional: or paste it into the 🏆 Contest panel (saved only in your browser)
 const osKey = () => { try { return OPENSEA_KEY || localStorage.getItem("osKey") || ""; } catch { return OPENSEA_KEY; } };
 const OPENSEA_SLUG = "objekt-2";
 // Standings precomputed hourly by GitHub Actions (scripts/contest.mjs). Path is relative to this page.
@@ -1236,43 +1236,75 @@ async function loadOverrides(force) {
   overrides.serials ||= {};
   return overrides;
 }
-function physSerials(idsN, segs, conf) {
+function physSerials(idsN, segs, conf, dirs = {}) {
   if (!segs || !segs.length) { // not crawled: guess blocks from big gaps
     segs = []; idsN.forEach((id, k) => { if (k === 0 || id - idsN[k - 1] > 100) segs.push([k, null]); });
   }
-  const map = new Map();
+  const map = new Map(), blocks = [];
   let running = 1, anchored = false;
+  const majority = m => [...m.entries()].sort((a, b) => b[1] - a[1])[0][0];
   segs.forEach(([start, pf], s) => {
     const end = s + 1 < segs.length ? segs[s + 1][0] - 1 : idsN.length - 1;
     const first = idsN[start], last = idsN[end];
     const resStart = pf != null && first - pf - 1 <= 99 ? pf + 1 : first;   // block starts right after the other collection's token
-    const votes = new Map();
-    for (let k = start; k <= end; k++) {
-      const c = conf[idsN[k]];
-      if (c) { const off = c - (idsN[k] - resStart); votes.set(off, (votes.get(off) || 0) + 1); }
+    const confirmed = [];
+    for (let k = start; k <= end; k++) if (conf[idsN[k]]) confirmed.push([idsN[k], conf[idsN[k]]]);
+
+    // Which way does this block count? 1) an admin's setting on any of its tokens,
+    // 2) two or more confirmations (serial falling as the ID rises = counts down), 3) up by default.
+    let down = null;
+    for (let k = start; k <= end && down === null; k++) { const d = dirs[idsN[k]]; if (d) down = d === "down"; }
+    let dirFrom = down === null ? "default" : "admin";
+    if (down === null && confirmed.length >= 2) {
+      let up = 0, dn = 0;
+      for (let i = 1; i < confirmed.length; i++) {
+        const [a, sa] = confirmed[i - 1], [b, sb] = confirmed[i];
+        if (sb !== sa) ((sb - sa) * (b - a) > 0 ? up++ : dn++);
+      }
+      if (up || dn) { down = dn > up; dirFrom = "confirmations"; }
     }
-    // serial = id − K inside a block. Without corrections the block starts at resStart with the next serial.
-    let K = resStart - running, blockStart = resStart;
-    if (votes.size) {
-      const off = [...votes.entries()].sort((a, b) => b[1] - a[1])[0][0]; // majority of confirmations: serial at resStart
-      K = resStart - off; anchored = true;
-      // the confirmation tells us where the block really began (where it would hit the next expected serial)
-      blockStart = Math.min(first, Math.max(K + running, pf != null ? pf + 1 : -Infinity));
+    down = !!down;
+
+    let serialOf, nextRunning;
+    if (!down) {
+      // counts up: serial = id − K
+      let K = resStart - running, blockStart = resStart;
+      if (confirmed.length) {
+        const v = new Map(); confirmed.forEach(([id, c]) => { const k = id - c; v.set(k, (v.get(k) || 0) + 1); });
+        K = majority(v); anchored = true;
+        blockStart = Math.min(first, Math.max(K + running, pf != null ? pf + 1 : -Infinity));
+      }
+      const len = Math.ceil((last - blockStart + 1) / 50) * 50;              // blocks come in 50s/100s
+      serialOf = id => id - K;
+      nextRunning = blockStart - K + len;
+    } else {
+      // counts down: serial = M − id (the lowest serial sits at the block's highest token ID)
+      const len0 = Math.ceil((last - resStart + 1) / 50) * 50;
+      let M = resStart + len0 - 1 + running, blockStart = resStart;
+      if (confirmed.length) {
+        const v = new Map(); confirmed.forEach(([id, c]) => { const m = id + c; v.set(m, (v.get(m) || 0) + 1); });
+        M = majority(v); anchored = true;
+        const blockEnd = Math.max(last, M - running);                         // where the next expected serial would sit
+        blockStart = Math.min(first, blockEnd - Math.ceil((blockEnd - Math.min(first, resStart) + 1) / 50) * 50 + 1);
+        if (pf != null) blockStart = Math.max(blockStart, pf + 1);
+      }
+      serialOf = id => M - id;
+      nextRunning = M - blockStart + 1;
     }
-    const blockLen = Math.ceil((last - blockStart + 1) / 50) * 50;
     for (let k = start; k <= end; k++) {
       const id = idsN[k], c = conf[id];
-      map.set(id, c ? { serial: c, how: "confirmed" } : { serial: id - K, how: anchored ? "adjusted" : "estimated" });
+      map.set(id, c ? { serial: c, how: "confirmed", down, seg: s } : { serial: serialOf(id), how: anchored ? "adjusted" : "estimated", down, seg: s });
     }
-    running = blockStart - K + blockLen;
+    blocks.push({ start, end, down, dirFrom });
+    running = Math.max(running, nextRunning);
   });
-  return { map, printed: running - 1 };
+  return { map, blocks, printed: running - 1 };
 }
 function computeSerials() {
   const idsN = D.ids.map(Number);
   if (D.phys) {
     const conf = overrides?.serials?.[D.key] || {};
-    D.ser = physSerials(idsN, D.segs, conf);
+    D.ser = physSerials(idsN, D.segs, conf, overrides?.dirs?.[D.key] || {});
   } else {
     D.ser = { map: new Map(idsN.map((id, i) => [id, { serial: i + 1, how: "order" }])), printed: idsN.length };
   }
@@ -1283,7 +1315,9 @@ function serialRow(id, no) {
   const badge = s.how === "confirmed" ? `<span class="sb ok" title="Confirmed by an admin">Confirmed ✓</span>`
     : s.how === "adjusted" ? `<span class="sb adj" title="Estimated, lined up with a confirmed serial">Adjusted</span>`
     : `<span class="sb est" title="Calculated from the token ID's reserved block">Estimated</span>`;
-  return `<tr><td>Serial</td><td><b>#${s.serial}</b>${badge}</td></tr>`;
+  const blk = D.ser.blocks[s.seg];
+  const dir = s.down ? ` <span style="color:var(--dim);font-size:12px" title="${blk.dirFrom === "admin" ? "Set by an admin" : "Worked out from two or more confirmed serials"}">↓ counts down in this block</span>` : "";
+  return `<tr><td>Serial</td><td><b>#${s.serial}</b>${badge}${dir}</td></tr>`;
 }
 
 /* ----- Admin (GitHub) ----- */
@@ -1304,20 +1338,24 @@ async function gh(path, opts = {}) {
   const j = await r.json().catch(() => ({}));
   return { ok: r.ok, status: r.status, j };
 }
-async function saveSerial(key, tokenId, serial) {
+// change = { serial: number|null } or { dir: "down"|"up"|null }
+async function saveOverride(key, tokenId, change) {
   const branch = ls.get("ghBranch") || "main";
   for (let attempt = 0; attempt < 3; attempt++) {
     const cur = await gh(`/contents/${OVERRIDES_PATH}?ref=${encodeURIComponent(branch)}`);
     if (!cur.ok && cur.status !== 404) throw new Error(`GitHub ${cur.status}: ${cur.j.message || "couldn't read the file"}`);
     const data = cur.ok ? JSON.parse(b64dec(cur.j.content)) : { version: 1, serials: {} };
-    data.serials ||= {};
-    const col = (data.serials[key] ||= {});
-    if (serial) col[tokenId] = serial; else { delete col[tokenId]; if (!Object.keys(col).length) delete data.serials[key]; }
+    const field = "serial" in change ? "serials" : "dirs";
+    const value = "serial" in change ? change.serial : change.dir;
+    data[field] ||= {};
+    const col = (data[field][key] ||= {});
+    if (value) col[tokenId] = value; else { delete col[tokenId]; if (!Object.keys(col).length) delete data[field][key]; }
+    const message = field === "serials"
+      ? (value ? `Confirm serial: ${key} token ${tokenId} = #${value}` : `Remove serial confirmation: ${key} token ${tokenId}`)
+      : (value ? `Set block direction (${value}): ${key} token ${tokenId}` : `Clear block direction: ${key} token ${tokenId}`);
     const put = await gh(`/contents/${OVERRIDES_PATH}`, { method: "PUT", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ branch, ...(cur.ok ? { sha: cur.j.sha } : {}),
-        message: serial ? `Confirm serial: ${key} token ${tokenId} = #${serial}` : `Remove serial confirmation: ${key} token ${tokenId}`,
-        content: b64enc(JSON.stringify(data, null, 1) + "\n") }) });
-    if (put.ok) { overrides = data; return; }
+      body: JSON.stringify({ branch, message, ...(cur.ok ? { sha: cur.j.sha } : {}), content: b64enc(JSON.stringify(data, null, 1) + "\n") }) });
+    if (put.ok) { overrides = data; overrides.serials ||= {}; return; }
     if (put.status !== 409 && put.status !== 422) throw new Error(`GitHub ${put.status}: ${put.j.message || "save failed"}`);
     // someone saved at the same moment — re-read and try again
   }
@@ -1329,7 +1367,10 @@ function editorRow(id) {
     <input id="dEditIn" type="number" inputmode="numeric" min="1" value="${s.serial}" aria-label="Real serial">
     <button class="chip" id="dEditSave">${s.how === "confirmed" ? "Update" : "Confirm"}</button>
     ${s.how === "confirmed" ? `<button class="chip" id="dEditDel">Remove</button>` : ""}
-    <div class="dEditMsg" id="dEditMsg">Enter the serial printed on the card, then Confirm. The rest of its block lines up with it.</div>
+    <label style="display:flex;align-items:center;gap:6px;width:100%;font-size:13px;margin-top:2px">
+      <input type="checkbox" id="dEditDown" ${s.down ? "checked" : ""} style="width:auto"> This block counts down (lower serials at higher token IDs)</label>
+    <div class="dEditMsg" id="dEditMsg">Enter the serial printed on the card, then Confirm. The rest of its block lines up with it.
+      Confirm two cards in a block and the direction is worked out for you.</div>
   </div></td></tr>`;
 }
 function wireEditor(id, no) {
@@ -1339,7 +1380,7 @@ function wireEditor(id, no) {
     $("dEditSave").disabled = true; $("dEditDel") && ($("dEditDel").disabled = true);
     msg("Saving to GitHub…");
     try {
-      await saveSerial(D.key, String(id), serial);
+      await saveOverride(D.key, String(id), { serial });
       if (run !== dRun) return;
       computeSerials(); D.holders = null;
       renderSerials();
@@ -1348,6 +1389,21 @@ function wireEditor(id, no) {
   };
   $("dEditSave").onclick = () => { const v = parseInt($("dEditIn").value, 10); if (v > 0) act(v); else msg("Enter a serial of 1 or more."); };
   $("dEditDel") && ($("dEditDel").onclick = () => act(null));
+  $("dEditDown").onchange = async e => {
+    const run = dRun, want = e.target.checked ? "down" : "up";
+    // store the setting on the first token of this block, replacing any other setting inside the block
+    const blk = D.ser.blocks[D.ser.map.get(Number(id)).seg];
+    const blockIds = D.ids.slice(blk.start, blk.end + 1).map(String);
+    const existing = Object.keys(overrides?.dirs?.[D.key] || {}).filter(t => blockIds.includes(t));
+    e.target.disabled = true; msg("Saving to GitHub…");
+    try {
+      for (const t of existing) if (t !== blockIds[0]) await saveOverride(D.key, t, { dir: null });
+      await saveOverride(D.key, blockIds[0], { dir: want });
+      if (run !== dRun) return;
+      computeSerials(); D.holders = null; renderSerials();
+      setTimeout(() => { const el = $("dEditMsg"); if (el) el.textContent = `Saved ✓ — this block now counts ${want}.`; }, 50);
+    } catch (err) { msg(`Couldn't save: ${err.message}`); e.target.disabled = false; e.target.checked = !e.target.checked; }
+  };
 }
 function renderAdminBar() {
   const box = $("dAdmin");
