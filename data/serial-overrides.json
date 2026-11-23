@@ -31,6 +31,16 @@
     "tint": 0,
     "avg": "#13184c"
    }
+  },
+  "triples-divine01--304a": {
+   "style": {
+    "mode": "image",
+    "text": "black",
+    "image": "images/backs/triples-divine01--304a.png?v=mwte3ovg",
+    "fit": "cover",
+    "tint": 0,
+    "avg": "#c1cad6"
+   }
   }
  }
 }
