@@ -435,9 +435,11 @@
   .be { margin-top: 18px; padding: 14px; border-radius: 14px; background: #ffffff; color: var(--ink); }
   .be h3 { margin: 0 0 10px; font-family: var(--disp); font-weight: 800; font-size: 18px; }
   .be .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
-  .be .seg { display: inline-flex; border: 1.5px solid var(--ink); border-radius: 999px; overflow: hidden; }
+  .be .seg { display: inline-flex; border: 1.5px solid var(--ink); border-radius: 999px; overflow: hidden; flex-wrap: wrap; max-width: 100%; }
   .be .seg button { border: none; background: transparent; color: var(--ink); font: 600 13px var(--disp); padding: 9px 14px; min-height: 40px; cursor: pointer; }
   .be .seg button + button { border-left: 1.5px solid var(--ink); }
+  .be .seg.stack { display: flex; flex-direction: column; border-radius: 14px; width: 100%; }
+  .be .seg.stack button { text-align: left; } .be .seg.stack button + button { border-left: none; border-top: 1.5px solid var(--ink); }
   .be .seg button[aria-checked="true"] { background: var(--ink); color: #ffffff; }
   .be label { font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
   .be input[type=color] { width: 40px; height: 36px; padding: 2px; border: 1.5px solid var(--ink); border-radius: 8px; background: #fff; }
@@ -1596,8 +1598,13 @@ function textColour(st, base) {
   if (hexOk(st?.text)) return st.text;
   return worstContrast("#111111", cols) >= worstContrast("#ffffff", cols) ? "#111111" : "#ffffff";
 }
+// key shared by every member of one collection, e.g. "triples-atom01--101z" (member left blank)
+const groupKey = (artist, season, coll) => objKey(artist || "", season || "", "", coll || "");
+const groupOf = key => { const p = String(key).split("-"); return p.length >= 4 ? [p[0], p[1], "", p.slice(3).join("-")].join("-") : ""; };
+// a member's own design wins; otherwise the design saved for the whole collection
+function savedBack(key) { return overrides?.backs?.[key]?.style || overrides?.backs?.[groupOf(key)]?.style || null; }
 function backStyle(key, base, override) {
-  const st = override !== undefined ? override : overrides?.backs?.[key]?.style || null;
+  const st = override !== undefined ? override : savedBack(key);
   return { bg: backCss(st, base), fg: textColour(st, base), st };
 }
 
@@ -1611,6 +1618,15 @@ function queueChange(key, id, change) {
   setPending(list);
   overrides = overridesView();
   renderAdminBar();
+  if (field === "backs") refreshTileStyles();
+}
+// recolour the collection tiles already on screen after a card-back change
+function refreshTileStyles() {
+  if (typeof objIndex === "undefined" || !objIndex) return;
+  document.querySelectorAll("#brGrid .bc").forEach(a => {
+    const c = objIndex.collections[+a.dataset.i], strip = a.querySelector(".strip"); if (!c || !strip) return;
+    const st = backStyle(c.key, c.color); strip.style.background = st.bg; strip.style.color = st.fg;
+  });
 }
 // Physical serial model, per unbroken block of a collection's token IDs:
 //  • IDs are handed out in chunks of 50 (sometimes 100). Chunks follow on upward: each chunk takes the next 50 serials.
@@ -2049,18 +2065,26 @@ async function uploadBackImage(key, file) {
 function renderBackEditor(box) {
   if (!D) return;
   const base = hexOk(D.color) ? D.color : "#f3f1ea";
-  const saved = overrides?.backs?.[D.key]?.style || null;
-  if (!D.be || D.be.key !== D.key) D.be = { key: D.key, st: JSON.parse(JSON.stringify(saved || { mode: "flat" })), file: null };
+  const gk = groupKey(D.m.artist, D.m.season, D.m.coll);
+  const own = overrides?.backs?.[D.key]?.style || null, shared = overrides?.backs?.[gk]?.style || null;
+  if (!D.be || D.be.key !== D.key) D.be = { key: D.key, scope: own ? "member" : "all", st: JSON.parse(JSON.stringify(own || shared || { mode: "flat" })), file: null };
+  const scope = D.be.scope, target = scope === "all" ? gk : D.key;
+  const saved = scope === "all" ? shared : own;
+  const collName = `${D.m.season || ""} ${D.m.coll || ""}`.trim();
   const st = D.be.st;
   st.angle ??= 150; st.tint ??= 40; st.fit ??= "cover"; st.text ??= "auto";
   if (!st.stops || st.stops.length < 2) st.stops = [{ color: base, at: 0 }, { color: "#ffffff", at: 100 }];
-  const seg = (name, opts, cur) => `<span class="seg" role="radiogroup" aria-label="${name}">${opts.map(([v, l]) =>
+  const seg = (name, opts, cur) => `<span class="seg${name === "scope" ? " stack" : ""}" role="radiogroup" aria-label="${name}">${opts.map(([v, l]) =>
     `<button type="button" role="radio" data-${name}="${v}" aria-checked="${cur === v}">${l}</button>`).join("")}</span>`;
   const textMode = ["auto", "black", "white"].includes(st.text) ? st.text : "custom";
   const wrap = document.createElement("div");
   wrap.className = "be"; wrap.id = "beBox";
   wrap.innerHTML = `
-    <h3>Card back for ${esc(D.m.member)} ${esc(D.m.coll)}</h3>
+    <h3>Card back</h3>
+    <div class="row"><span style="font-size:12px;font-weight:600">Apply to</span>${seg("scope", [["all", `All members · ${esc(collName)}`], ["member", `Only ${esc(D.m.member || "")}`]], scope)}</div>
+    <div class="help">${scope === "all"
+      ? `Saves one design for every member of ${esc(collName)}.${own ? ` ${esc(D.m.member)} has her own design, which will be removed so she uses this one.` : ""} Members given their own design keep it.`
+      : `Only ${esc(D.m.member)}'s ${esc(D.m.coll)}. This overrides the collection-wide design${shared ? " that's set" : ""}.`}</div>
     <div class="row">${seg("mode", [["flat", "Flat"], ["gradient", "Gradient"], ["image", "Image"]], st.mode)}</div>
     ${st.mode === "flat" ? `<div class="help">Uses the card's own colour from Cosmo: <b>${esc(base.toUpperCase())}</b>.</div>` : ""}
     ${st.mode === "gradient" ? `
@@ -2079,7 +2103,7 @@ function renderBackEditor(box) {
     ${textMode === "custom" ? `<div class="row"><label>Colour <input type="color" id="beText" value="${esc(hexOk(st.text) ? st.text : "#3b2a6e")}"></label><span class="contrast" id="beContrast"></span></div>` : `<div class="row"><span class="contrast" id="beContrast"></span></div>`}
     <div class="row">
       <button type="button" class="pill" id="beSave">Add to unpublished changes</button>
-      ${saved ? `<button type="button" class="linkish" id="beReset">Back to flat colour</button>` : ""}
+      ${saved ? `<button type="button" class="linkish" id="beReset">${scope === "all" ? "Remove collection design" : `Remove ${esc(D.m.member || "")}'s own design`}</button>` : ""}
     </div>
     <div class="help" id="beMsg">Previewing on this page only until you add it and publish.</div>`;
   box.querySelector("#beBox")?.remove();
@@ -2093,6 +2117,7 @@ function renderBackEditor(box) {
     b.textContent = (r >= 4.5 ? "Readable · " : "Low contrast · ") + r.toFixed(1) + ":1";
   };
   const redraw = () => renderBackEditor(box);
+  wrap.querySelectorAll("[data-scope]").forEach(b => b.onclick = () => { D.be.scope = b.dataset.scope; redraw(); });
   wrap.querySelectorAll("[data-mode]").forEach(b => b.onclick = () => { st.mode = b.dataset.mode; redraw(); });
   wrap.querySelectorAll("[data-fit]").forEach(b => b.onclick = () => { st.fit = b.dataset.fit; redraw(); });
   wrap.querySelectorAll("[data-text]").forEach(b => b.onclick = () => {
@@ -2115,18 +2140,19 @@ function renderBackEditor(box) {
     if (st.mode === "image" && !st.image && !D.be.file) { msg.textContent = "Choose a back image first."; return; }
     btn.disabled = true;
     try {
-      if (st.mode === "image" && D.be.file) { msg.textContent = "Uploading the image to your repo…"; st.image = await uploadBackImage(D.key, D.be.file); D.be.file = null; }
+      if (st.mode === "image" && D.be.file) { msg.textContent = "Uploading the image to your repo…"; st.image = await uploadBackImage(target, D.be.file); D.be.file = null; }
       const clean = { mode: st.mode, text: st.text };
       if (st.mode === "gradient") Object.assign(clean, { angle: st.angle, stops: st.stops.map(x => ({ color: x.color, at: x.at ?? 0 })) });
       if (st.mode === "image") Object.assign(clean, { image: st.image, fit: st.fit, tint: st.tint });
-      queueChange(D.key, "style", { back: st.mode === "flat" && st.text === "auto" ? null : clean });
+      queueChange(target, "style", { back: st.mode === "flat" && st.text === "auto" ? null : clean });
+      if (scope === "all" && own) queueChange(D.key, "style", { back: null }); // her own design would hide the shared one
       D.be = null;
       applyDetailStyle();
       setTimeout(() => { const m2 = $("beMsg"); if (m2) m2.textContent = "Added ✓ — press Publish above to save it for everyone."; }, 0);
     } catch (e) { msg.textContent = `Couldn't save: ${e.message}`; btn.disabled = false; }
   };
   wrap.querySelector("#beReset") && (wrap.querySelector("#beReset").onclick = () => {
-    queueChange(D.key, "style", { back: null }); D.be = null; applyDetailStyle();
+    queueChange(target, "style", { back: null }); D.be = null; applyDetailStyle();
   });
   preview();
 }
