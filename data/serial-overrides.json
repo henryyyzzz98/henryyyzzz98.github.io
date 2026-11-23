@@ -1,0 +1,16 @@
+{
+ "version": 1,
+ "serials": {},
+ "backs": {
+  "class-special": {
+   "style": {
+    "mode": "image",
+    "text": "black",
+    "image": "images/backs/class-special.png?v=mwtdjqfe",
+    "fit": "cover",
+    "tint": 0,
+    "avg": "#d9d2e8"
+   }
+  }
+ }
+}
