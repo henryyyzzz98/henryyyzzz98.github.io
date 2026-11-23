@@ -41,6 +41,36 @@
     "tint": 0,
     "avg": "#c1cad6"
    }
+  },
+  "artms-binary01--301a": {
+   "style": {
+    "mode": "image",
+    "text": "black",
+    "image": "images/backs/artms-binary01--301a.png?v=mwtfanqw",
+    "fit": "cover",
+    "tint": 0,
+    "avg": "#c1cad6"
+   }
+  },
+  "artms-binary01--302a": {
+   "style": {
+    "mode": "image",
+    "text": "black",
+    "image": "images/backs/artms-binary01--302a.png?v=mwtfdwqj",
+    "fit": "cover",
+    "tint": 0,
+    "avg": "#c1cad6"
+   }
+  },
+  "artms-binary01--303a": {
+   "style": {
+    "mode": "image",
+    "text": "black",
+    "image": "images/backs/artms-binary01--303a.png?v=mwtfh71l",
+    "fit": "cover",
+    "tint": 0,
+    "avg": "#c1cad6"
+   }
   }
  }
 }
