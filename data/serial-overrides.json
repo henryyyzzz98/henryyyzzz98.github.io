@@ -11,6 +11,16 @@
     "tint": 0,
     "avg": "#d9d2e8"
    }
+  },
+  "triples-atom01--302z": {
+   "style": {
+    "mode": "image",
+    "text": "white",
+    "image": "images/backs/triples-atom01--302z.png?v=mwtdrwrs",
+    "fit": "cover",
+    "tint": 0,
+    "avg": "#8b6ab5"
+   }
   }
  }
 }
