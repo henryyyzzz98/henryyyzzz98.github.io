@@ -804,7 +804,7 @@ function render(ev) {
     const th = card.querySelector(".thumb"); th.style.cursor = "pointer"; th.onclick = () => openDetail(m);
     card.querySelector(".sub").textContent = [m.artist, m.cls && m.cls + " Class", "#" + ev.id].filter(Boolean).join(" · ");
     if (m.color) card.style.setProperty("--card", m.color);
-    const st = backStyle(objKey(m.artist || "", m.season || "", m.member || "", m.coll || ""), m.color);
+    const st = backStyle(objKey(m.artist || "", m.season || "", m.member || "", m.coll || ""), m.color, undefined, m.cls);
     card.style.setProperty("--sbg", st.bg); card.style.setProperty("--sfg", st.fg);
     card.dataset.search += " " + [m.name, m.member, m.season, m.coll, m.cls, m.artist].join(" ").toLowerCase();
     const t = card.querySelector(".thumb");
@@ -1497,7 +1497,7 @@ function brAppend() {
   const batch = brList.slice(brShown, brShown + BR_PAGE);
   brShown += batch.length;
   $("brMore").insertAdjacentHTML("beforebegin", batch.map(c => {
-    const st = backStyle(c.key, c.color);
+    const st = backStyle(c.key, c.color, undefined, c.cls);
     return `
     <a class="bc" href="#c=${esc(c.key)}" data-i="${c._i}" aria-label="${esc(`${c.season} ${c.member} ${c.coll}, ${c.cls}, ${c.copies.toLocaleString()} copies`)}">
       <img class="im" loading="lazy" decoding="async" alt="" width="1083" height="1673"
@@ -1592,7 +1592,11 @@ function contrast(a, b) { const [x, y] = [luminance(a), luminance(b)].sort((p, q
 // the colours text has to read against for a style (every gradient stop; a dark tint for images)
 function styleColours(st, base) {
   if (st?.mode === "gradient" && st.stops?.length) return st.stops.map(x => x.color).filter(hexOk);
-  if (st?.mode === "image") { const t = Math.min(0.9, (st.tint ?? 40) / 100); const v = Math.round(255 * (1 - t) * 0.35).toString(16).padStart(2, "0"); return ["#" + v + v + v]; }
+  if (st?.mode === "image") {
+    // the image's average colour (measured when it was picked), darkened by the tint; old saves without it assume a mid-dark image
+    const t = Math.min(0.9, (st.tint ?? 40) / 100), avg = hexOk(st.avg) ? st.avg : "#595959";
+    return ["#" + [1, 3, 5].map(i => Math.round(parseInt(avg.slice(i, i + 2), 16) * (1 - t)).toString(16).padStart(2, "0")).join("")];
+  }
   return [hexOk(base) ? base : "#f3f1ea"];
 }
 const worstContrast = (fg, cols) => Math.min(...cols.map(c => contrast(fg, c)));
@@ -1616,9 +1620,14 @@ function textColour(st, base) {
 const groupKey = (artist, season, coll) => objKey(artist || "", season || "", "", coll || "");
 const groupOf = key => { const p = String(key).split("-"); return p.length >= 4 ? [p[0], p[1], "", p.slice(3).join("-")].join("-") : ""; };
 // a member's own design wins; otherwise the design saved for the whole collection
-function savedBack(key) { return overrides?.backs?.[key]?.style || overrides?.backs?.[groupOf(key)]?.style || null; }
-function backStyle(key, base, override) {
-  const st = override !== undefined ? override : savedBack(key);
+// then the design saved for every card of that class (e.g. all Special cards)
+const classKey = cls => cls ? "class-" + String(cls).toLowerCase().replace(/[^a-z0-9]/g, "") : "";
+function savedBack(key, cls) {
+  const b = overrides?.backs || {};
+  return b[key]?.style || b[groupOf(key)]?.style || (cls && b[classKey(cls)]?.style) || null;
+}
+function backStyle(key, base, override, cls) {
+  const st = override !== undefined ? override : savedBack(key, cls);
   return { bg: backCss(st, base), fg: textColour(st, base), st };
 }
 
@@ -1639,7 +1648,7 @@ function refreshTileStyles() {
   if (typeof objIndex === "undefined" || !objIndex) return;
   document.querySelectorAll("#brGrid .bc").forEach(a => {
     const c = objIndex.collections[+a.dataset.i], strip = a.querySelector(".strip"); if (!c || !strip) return;
-    const st = backStyle(c.key, c.color); strip.style.background = st.bg; strip.style.color = st.fg;
+    const st = backStyle(c.key, c.color, undefined, c.cls); strip.style.background = st.bg; strip.style.color = st.fg;
   });
 }
 // Physical serial model, per unbroken block of a collection's token IDs:
@@ -2080,10 +2089,12 @@ function renderBackEditor(box) {
   if (!D) return;
   const base = hexOk(D.color) ? D.color : "#f3f1ea";
   const gk = groupKey(D.m.artist, D.m.season, D.m.coll);
-  const own = overrides?.backs?.[D.key]?.style || null, shared = overrides?.backs?.[gk]?.style || null;
-  if (!D.be || D.be.key !== D.key) D.be = { key: D.key, scope: own ? "member" : "all", st: JSON.parse(JSON.stringify(own || shared || { mode: "flat" })), file: null };
-  const scope = D.be.scope, target = scope === "all" ? gk : D.key;
-  const saved = scope === "all" ? shared : own;
+  const ck = classKey(D.cls);
+  const own = overrides?.backs?.[D.key]?.style || null, shared = overrides?.backs?.[gk]?.style || null, byClass = ck ? overrides?.backs?.[ck]?.style || null : null;
+  if (!D.be || D.be.key !== D.key) D.be = { key: D.key, scope: own ? "member" : shared ? "all" : byClass ? "class" : "all", st: JSON.parse(JSON.stringify(own || shared || byClass || { mode: "flat" })), file: null };
+  const scope = D.be.scope, target = scope === "all" ? gk : scope === "class" ? ck : D.key;
+  const saved = scope === "all" ? shared : scope === "class" ? byClass : own;
+  const classCount = ck && objIndex ? objIndex.collections.filter(c => c.cls === D.cls).length : 0;
   const collName = `${D.m.season || ""} ${D.m.coll || ""}`.trim();
   const st = D.be.st;
   st.angle ??= 150; st.tint ??= 40; st.fit ??= "cover"; st.text ??= "auto";
@@ -2095,8 +2106,10 @@ function renderBackEditor(box) {
   wrap.className = "be"; wrap.id = "beBox";
   wrap.innerHTML = `
     <h3>Card back</h3>
-    <div class="row"><span style="font-size:12px;font-weight:600">Apply to</span>${seg("scope", [["all", `All members · ${esc(collName)}`], ["member", `Only ${esc(D.m.member || "")}`]], scope)}</div>
-    <div class="help">${scope === "all"
+    <div class="row"><span style="font-size:12px;font-weight:600">Apply to</span>${seg("scope", [["all", `All members · ${esc(collName)}`], ["member", `Only ${esc(D.m.member || "")}`], ...(ck ? [["class", `Every ${esc(D.cls)} card${classCount ? ` · ${classCount.toLocaleString()} collections` : ""}`]] : [])], scope)}</div>
+    <div class="help">${scope === "class"
+      ? `Default design for every ${esc(D.cls)} card, from every artist and season. A collection or member with its own design keeps it.${shared || own ? ` This collection has its own design, so it won't show here until you remove that.` : ""}`
+      : scope === "all"
       ? `Saves one design for every member of ${esc(collName)}.${own ? ` ${esc(D.m.member)} has her own design, which will be removed so she uses this one.` : ""} Members given their own design keep it.`
       : `Only ${esc(D.m.member)}'s ${esc(D.m.coll)}. This overrides the collection-wide design${shared ? " that's set" : ""}.`}</div>
     <div class="row">${seg("mode", [["flat", "Flat"], ["gradient", "Gradient"], ["image", "Image"]], st.mode)}</div>
@@ -2123,7 +2136,7 @@ function renderBackEditor(box) {
     ${textMode === "custom" ? `<div class="row"><label>Colour <input type="color" id="beText" value="${esc(hexOk(st.text) ? st.text : "#3b2a6e")}"></label><span class="contrast" id="beContrast"></span></div>` : `<div class="row"><span class="contrast" id="beContrast"></span></div>`}
     <div class="row">
       <button type="button" class="pill" id="beSave">Add to unpublished changes</button>
-      ${saved ? `<button type="button" class="linkish" id="beReset">${scope === "all" ? "Remove collection design" : `Remove ${esc(D.m.member || "")}'s own design`}</button>` : ""}
+      ${saved ? `<button type="button" class="linkish" id="beReset">${scope === "class" ? `Remove the ${esc(D.cls)} design` : scope === "all" ? "Remove collection design" : `Remove ${esc(D.m.member || "")}'s own design`}</button>` : ""}
     </div>
     <div class="help" id="beMsg">Previewing on this page only until you add it and publish.</div>`;
   box.querySelector("#beBox")?.remove();
@@ -2131,7 +2144,7 @@ function renderBackEditor(box) {
 
   const preview = () => {
     applyDetailStyle(st);
-    const ps = backStyle(D.key, D.color, st);
+    const ps = backStyle(D.key, D.color, st, D.cls);
     for (const el of [wrap.querySelector("#bpCard"), wrap.querySelector("#bpStrip")]) { el.style.background = ps.bg; el.style.color = ps.fg; }
     const cols = styleColours(st, base), fg = textColour(st, base), r = worstContrast(fg, cols);
     const b = wrap.querySelector("#beContrast");
@@ -2155,7 +2168,23 @@ function renderBackEditor(box) {
     const f = e.target.files[0]; if (!f) return;
     if (f.size > 3 * 1024 * 1024) { wrap.querySelector("#beMsg").textContent = "That image is over 3 MB — please use a smaller crop."; return; }
     D.be.file = f;
-    const r = new FileReader(); r.onload = () => { st.preview = r.result; redraw(); }; r.readAsDataURL(f);
+    const r = new FileReader();
+    r.onload = () => {
+      st.preview = r.result;
+      const im = new Image();
+      im.onload = () => {
+        try { const c = document.createElement("canvas"); c.width = c.height = 24; const x = c.getContext("2d"); x.drawImage(im, 0, 0, 24, 24);
+          const d = x.getImageData(0, 0, 24, 24).data; let rr = 0, gg = 0, bb = 0, n = 0;
+          for (let i = 0; i < d.length; i += 4) if (d[i + 3] > 128) { rr += d[i]; gg += d[i + 1]; bb += d[i + 2]; n++; }
+          if (n) st.avg = "#" + [rr, gg, bb].map(v => Math.round(v / n).toString(16).padStart(2, "0")).join("");
+          // a light background (like the holographic Special back) needs no tint and reads best with black text
+          if (n && luminance(st.avg) > 0.45) { st.tint = 0; st.text = "black"; }
+        } catch {}
+        redraw();
+      };
+      im.onerror = () => redraw(); im.src = r.result;
+    };
+    r.readAsDataURL(f);
   });
   wrap.querySelector("#beSave").onclick = async () => {
     const msg = wrap.querySelector("#beMsg"), btn = wrap.querySelector("#beSave");
@@ -2165,7 +2194,7 @@ function renderBackEditor(box) {
       if (st.mode === "image" && D.be.file) { msg.textContent = "Uploading the image to your repo…"; st.image = await uploadBackImage(target, D.be.file); D.be.file = null; }
       const clean = { mode: st.mode, text: st.text };
       if (st.mode === "gradient") Object.assign(clean, { angle: st.angle, stops: st.stops.map(x => ({ color: x.color, at: x.at ?? 0 })) });
-      if (st.mode === "image") Object.assign(clean, { image: st.image, fit: st.fit, tint: st.tint });
+      if (st.mode === "image") Object.assign(clean, { image: st.image, fit: st.fit, tint: st.tint, ...(hexOk(st.avg) ? { avg: st.avg } : {}) });
       queueChange(target, "style", { back: st.mode === "flat" && st.text === "auto" ? null : clean });
       if (scope === "all" && own) queueChange(D.key, "style", { back: null }); // her own design would hide the shared one
       D.be = null;
@@ -2182,7 +2211,7 @@ function renderBackEditor(box) {
 // Colour the details panel and the card's flip side with this collection's back style
 function applyDetailStyle(override) {
   if (!D) return;
-  const st = backStyle(D.key, D.color, override);
+  const st = backStyle(D.key, D.color, override, D.cls);
   const solid = styleColours(st.st, D.color)[0];
   for (const el of [$("dPanel"), $("dBackIn")]) {
     el.style.background = st.bg; el.style.color = st.fg;
