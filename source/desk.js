@@ -160,7 +160,7 @@ function dkWall(kind, S, ord) {
   if (kind === 'race' && mine.length) {
     const mn = typeof modeNames === 'function' ? modeNames(G) : null;
     return mine.map(c => { const pos = ord.indexOf(c) + 1;
-      if (c.out) return `<div class="dk-cmd1"><b style="--tc:${c.t.color}">P${pos} ${esc(c.d.code)}</b><span class="bad">Retired: ${esc(c.out)}</span></div>`;
+      if (c.out || c.elimd) return `<div class="dk-cmd1"><b style="--tc:${c.t.color}">P${pos} ${esc(c.d.code)}</b><span class="bad">${isElimCar(c) ? `Eliminated${c.elimLap != null ? ` · lap ${c.elimLap}` : ''}` : `Retired: ${esc(c.out)}`}</span></div>`;
       if (c.finished) return `<div class="dk-cmd1"><b style="--tc:${c.t.color}">P${pos} ${esc(c.d.code)}</b><span>🏁 Finished</span></div>`;
       return `<div class="dk-cmd1"><b style="--tc:${c.t.color}">P${pos} ${esc(c.d.code)}</b>${dkTy(c.tyre)}<span class="mut">${c.age}L · ${Math.round(c.wear * 100)}%</span>
       <span class="dk-seg">${[['save', 'SAVE'], ['std', 'STD'], ['push', 'PUSH']].map(([k, v]) => `<button class="${c.mode === k ? 'on' : ''}" data-a="mode" data-d="${c.d.id}" data-v="${k}">${v}</button>`).join('')}</span>
@@ -222,7 +222,7 @@ function dkOrderTable(kind, S, ord) {
       if (v == null) return `<td>${live ? '<span class="dk-mut">···</span>' : '-.-'}</td>`;
       const cls = SB[i] != null && Math.abs(v - SB[i]) < 1e-6 ? 'pu' : c._bs && Math.abs(v - c._bs[i]) < 1e-6 ? 'gr' : 'ye';
       return `<td><span class="dksec ${cls}">${v.toFixed(3)}</span></td>`; };
-    const sgap = (c, i) => { if (kind === 'race') { if (c.out) return 'OUT'; if (i === 0) return 'Leader'; if (c.parked) return 'GARAGE'; if (c.pitT > 0) return 'PIT'; return leader.dist - c.dist > RACE.L ? '+' + Math.floor((leader.dist - c.dist) / RACE.L) + 'L' : '+' + gapSeconds(c, leader).toFixed(1) + 's'; }
+    const sgap = (c, i) => { if (kind === 'race') { if (isElimCar(c)) return 'ELIM'; if (c.out) return 'OUT'; if (i === 0) return 'Leader'; if (c.parked) return 'GARAGE'; if (c.pitT > 0) return 'PIT'; return leader.dist - c.dist > RACE.L ? '+' + Math.floor((leader.dist - c.dist) / RACE.L) + 'L' : '+' + gapSeconds(c, leader).toFixed(1) + 's'; }
       return c.best == null ? '—' : i === 0 ? '—' : leader.best != null ? '+' + (c.best - leader.best).toFixed(3) : '—'; };
     return `<table class="dkt dksec-t"><thead><tr><th>Pos</th><th class="l">Driver</th><th class="l hm">Team</th><th>Gap</th><th>Lap</th><th>Last</th><th>S1</th><th>S2</th><th>S3</th></tr></thead><tbody>${ord.map((c, i) => `<tr class="${c.player || c.fav ? 'me' : ''} ${c.out ? 'out' : ''}" style="--tc:${c.t.color};--ti:${dkInk(c.t.color)}" data-a="follow" data-v="${c.d.id}"><td>${i + 1}</td><td class="l">${esc(dkShort(c.d))}</td><td class="l hm">${esc(c.t.full || c.t.name)}</td><td>${sgap(c, i)}</td><td>${kind === 'race' ? Math.min(RACE.laps, c.laps) : c.laps}</td><td>${dkT(kind === 'race' ? c.lastLap : c.last)}</td>${cell(c, 0)}${cell(c, 1)}${cell(c, 2)}</tr>`).join('')}</tbody></table>`;
   }
@@ -235,7 +235,7 @@ function dkOrderTable(kind, S, ord) {
       <td>${i + 1}</td><td>${st}</td><td class="l">${esc(dkShort(c.d))}</td><td class="l hm">${esc(c.t.name)}</td><td class="${purple ? 'pu' : ''}">${dkT(c.best)}</td><td>${c.best == null || i === 0 ? '—' : '+' + (c.best - leader.best).toFixed(3)}</td><td>${dkT(c.last)}</td><td>${c.laps || c.phase !== 'garage' ? dkTy(S.wet > 0.65 ? 'W' : S.wet > 0.25 ? 'I' : 'S') : '-'}</td><td>${c.laps}</td></tr>`; }).join('')}</tbody></table>`;
   }
   const gapOf = (c, i) => {
-    if (c.out) return 'OUT'; if (i === 0) return 'Leader'; if (c.parked) return c.fly ? 'FLY LAP' : 'GARAGE'; if (c.pitT > 0) return 'PIT';
+    if (isElimCar(c)) return 'ELIM'; if (c.out) return 'OUT'; if (i === 0) return 'Leader'; if (c.parked) return c.fly ? 'FLY LAP' : 'GARAGE'; if (c.pitT > 0) return 'PIT';
     const lapped = leader.dist - c.dist > RACE.L && leader.laps - c.laps >= 1;
     if (DK.gap === 'leader') return lapped ? '+' + Math.floor((leader.dist - c.dist) / RACE.L) + ' Lap' : '+' + gapSeconds(c, leader).toFixed(1) + 's';
     const p = ord[i - 1]; return p.dist - c.dist > RACE.L ? '+1 Lap' : '+' + Math.max(0.1, (p.dist - c.dist) / (RACE.L / c.curLT)).toFixed(1) + 's';
@@ -331,8 +331,8 @@ function dkCross(kind, S, ord) {
 }
 function dkStatus(kind, S, ord) {
   return ord.map(c => { let s, cl;
-    if (kind === 'race') { s = c.out ? 'RETIRED' : c.finished ? 'FINISHED' : c.pitT > 0 ? 'IN PIT' : c.pitReq ? 'BOX BOX' : 'ON TRACK'; cl = c.out ? 'r' : c.pitT > 0 || c.pitReq ? 'y' : 'g'; }
-    else { s = c.out ? 'OUT' : c.phase === 'garage' ? 'GARAGE' : c.phase === 'flying' ? 'FLYING' : c.phase === 'out' ? 'OUT LAP' : 'IN LAP'; cl = c.out ? 'r' : c.phase === 'garage' ? 'dim' : c.phase === 'flying' ? 'pu' : 'g'; }
+    if (kind === 'race') { s = isElimCar(c) ? 'ELIMINATED' : c.out ? 'RETIRED' : c.finished ? 'FINISHED' : c.pitT > 0 ? 'IN PIT' : c.pitReq ? 'BOX BOX' : 'ON TRACK'; cl = isElimCar(c) ? 'o' : c.out ? 'r' : c.pitT > 0 || c.pitReq ? 'y' : 'g'; }
+    else { s = isElimCar(c) ? 'ELIMINATED' : c.out ? 'OUT' : c.phase === 'garage' ? 'GARAGE' : c.phase === 'flying' ? 'FLYING' : c.phase === 'out' ? 'OUT LAP' : 'IN LAP'; cl = c.out ? 'r' : c.phase === 'garage' ? 'dim' : c.phase === 'flying' ? 'pu' : 'g'; }
     const rel = kind === 'race' && !c.out ? (c.puStress > 1.15 ? 'y' : 'g') : 'dim';
     return `<div class="dks"><i style="background:${c.t.color}"></i><span>${esc(c.d.code)}</span><b class="${cl}">${s}</b><em class="${rel}">◆</em><em class="${c.out ? 'r' : 'g'}">●</em></div>`; }).join('');
 }
