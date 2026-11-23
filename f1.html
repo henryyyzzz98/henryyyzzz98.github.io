@@ -1253,6 +1253,7 @@ td.sv-gone{outline:2px solid #ff6b6b;outline-offset:-2px}
 .sv-skip{font-size:10px;color:#ffd166;font-weight:700}
 .sv-tag{background:#ffffff14!important;color:#ddd!important}
 tr.sv-danger td{background:#ff6b6b22}
+.sv-regnote{color:#ffd166;line-height:1.5;padding:6px 8px;border:1px solid #ffd16644;border-radius:6px;background:#ffd16610}
 </style></head><body><div id="app"></div><script>
 // ===== DATA: teams, drivers, tracks =====
 const ENGINES = {
@@ -11502,6 +11503,18 @@ applySprintResult = function (G0, race) {
   Object.values(G0.drivers).forEach(d => { d.pts = dp[d.id] != null ? dp[d.id] : 0; }); Object.values(G0.teams).forEach(t => { if (tp[t.id] != null) t.pts = tp[t.id]; });
   (rows || []).forEach(r => { r.pts = 0; });
   return rows;
+};
+// regulations form: in a survival season, hide every rule that only changes points
+const SV_PTS_RULES = ['Points system', 'Pole position bonus', 'Fastest lap bonus', 'Dropped scores', 'Three-part GP points', 'Prize pot points', 'Gamble grid slots'];
+function svCtx() { return VIEW === 'setup' ? SETUP.comp === 'survival' : svOn(); }
+const _sv_dkRegsForm = dkRegsForm;
+dkRegsForm = function (r, act) {
+  let html = _sv_dkRegsForm.apply(this, arguments);
+  if (!svCtx()) return html;
+  SV_PTS_RULES.forEach(n => { html = html.replace(new RegExp(`<label class="small"[^>]*>${n.replace(/[()]/g, '\\$&')}<select[\\s\\S]*?</select></label>`), ''); });
+  html = html.replace(/<label class="small">Points for 1st, 2nd, 3rd…[\s\S]*?<\/label>/, '').replace(/(Points system[\s\S]*?)?<span><\/span>/, '');
+  html = html.replace('each winner skips the next race, which pays half points', 'each winner skips the next race and is safe from elimination');
+  return html.replace(/(<div class="grid g2" style="gap:10px">)/, `$1<div class="small sv-regnote" style="grid-column:1/-1">🏁 Survival season: there are no points, so rules that only change points (points system, pole and fastest-lap bonuses, dropped scores, three-part GP points, prize pot, gamble grid) are hidden.</div>`);
 };
 // ---------- TV-graphics track map (replaces dkDrawMap) ----------
 // Draws the traced layout exactly as stored; only styling is added around it.
