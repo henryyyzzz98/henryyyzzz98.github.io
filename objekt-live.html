@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Objekt Live — tripleS on Abstract</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg: #0d0d12; --panel: #17171f; --line: #26262f; --text: #ececf1; --dim: #8b8b99;
@@ -243,28 +246,271 @@
     .dStat .v { font-size: 21px; }
     .dTable { font-size: 13px; } .dTable td, .dTable th { padding: 9px 8px; }
   }
+
+  /* =====================================================================
+     Card-back theme (redesign). Everything below overrides the older styles above.
+     ===================================================================== */
+  :root {
+    --bg: #141414; --panel: #1d1d20; --line: #34343a; --text: #f2f0e8; --dim: #c9c6ba;
+    --accent: #F7DA4A; --ink: #111111; --cream: #f3f1ea;
+    --mint: #3ddc97; --xfer: #7aa7ff; --burn: #ff6b6b;
+    --disp: "Inter Tight", "Helvetica Neue", Arial, sans-serif;
+  }
+  body { background: var(--bg); font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; }
+  button, input, select { font-family: inherit; }
+  .lbl { display: block; font-size: 11px; font-weight: 500; letter-spacing: .06em; text-transform: uppercase; }
+  .rule { border-top: 1.5px solid currentColor; padding-top: 6px; }
+  /* a card back: white frame around a coloured panel */
+  .cb { background: #ffffff; border-radius: 28px; padding: 12px; }
+  .cb-in { border-radius: 19px; color: var(--ink); }
+  .cream { background: var(--cream); }
+
+  /* ----- header ----- */
+  header.hdr { position: static; display: block; background: none; backdrop-filter: none; border: none;
+    padding: 24px 24px 0; max-width: 1280px; margin: 0 auto; }
+  .hdr-in { background: var(--accent); display: flex; min-height: 0; }
+  .hdr-main { flex: 1 1 auto; min-width: 0; padding: 22px 8px 22px 28px; display: flex; flex-direction: column; gap: 12px; }
+  .hdr-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .brand { font-family: var(--disp); font-weight: 800; font-size: 14px; letter-spacing: .03em; }
+  .views { display: flex; gap: 6px; flex-wrap: wrap; background: none; border: none; padding: 0; }
+  .vt { background: transparent; border: 1.5px solid var(--ink); color: var(--ink); font-family: var(--disp); font-weight: 600;
+    font-size: 14px; padding: 9px 16px; border-radius: 999px; cursor: pointer; min-height: 40px; }
+  .vt.on { background: var(--ink); color: var(--accent); font-weight: 700; }
+  .vbadge { background: var(--ink); color: var(--accent); }
+  .vt.on .vbadge { background: var(--accent); color: var(--ink); }
+  header.hdr h1 { margin: 2px 0 0; font-family: var(--disp); font-weight: 700; font-size: 60px; line-height: 1.02;
+    letter-spacing: -.02em; color: var(--ink); }
+  header.hdr h1 span { color: inherit; }
+  .hdr-stats { display: flex; gap: 14px 40px; flex-wrap: wrap; align-items: flex-end; }
+  .hs b { display: block; font-family: var(--disp); font-weight: 700; font-size: 28px; letter-spacing: -.01em; color: var(--ink);
+    font-variant-numeric: tabular-nums; }
+  .hs .status { display: flex; align-items: center; gap: 8px; font-family: var(--disp); font-weight: 700; font-size: 18px;
+    color: var(--ink); min-height: 34px; }
+  .hs .dot { background: #77756c; } .hs .dot.live { background: #0f7a4a; } .hs .dot.poll { background: #a76a00; }
+  .hs.stats { margin: 0; color: var(--ink); display: block; width: auto; font-size: inherit; }
+  .vstrip { flex: 0 0 56px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: 22px 0; }
+  .vstrip span { writing-mode: vertical-rl; font-family: var(--disp); font-weight: 800; font-size: 18px; }
+  .ctOnly, .colOnly { display: none; }
+  body[data-view="collections"] .colOnly, body[data-view="contest"] .ctOnly { display: block; }
+  header.hdr .controls { width: auto; margin-top: 16px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .chip { background: transparent; border: 1.5px solid #4a4a52; color: var(--text); border-radius: 999px; padding: 8px 14px;
+    font-family: var(--disp); font-weight: 600; font-size: 13px; min-height: 38px; }
+  .chip:hover { border-color: var(--text); }
+  .chip[aria-pressed="true"][data-type] { background: var(--text); color: var(--ink); border-color: var(--text); }
+  .chip[aria-pressed="false"] { opacity: .55; }
+  input[type=search] { background: var(--panel); border: 1.5px solid #4a4a52; color: var(--text); border-radius: 999px; min-height: 38px; }
+  .pill { background: var(--ink); color: var(--cream); border: none; border-radius: 999px; padding: 9px 16px; min-height: 40px;
+    font-family: var(--disp); font-weight: 700; font-size: 14px; cursor: pointer; }
+
+  /* ----- collections ----- */
+  #browse { max-width: 1280px; margin: 0 auto; padding: 20px 24px 60px; background: none; border: none; border-radius: 0; }
+  body[data-view="collections"] #browse { display: block; }
+  #browse .cb { padding: 10px; border-radius: 24px; }
+  .filters { display: grid; grid-template-columns: 2fr repeat(5, minmax(0, 1fr)) auto; gap: 14px 20px; padding: 16px 22px 18px; align-items: end; }
+  .fld { display: flex; flex-direction: column; border-top: 1.5px solid var(--ink); padding-top: 5px; min-width: 0; }
+  .fld.end { border-top: none; justify-content: flex-end; }
+  .fld input, .fld select { border: none !important; background: transparent !important; color: var(--ink) !important; border-radius: 0 !important;
+    font: 700 19px var(--disp) !important; padding: 4px 0 !important; min-width: 0 !important; width: 100%; outline-offset: 2px; }
+  .fld input::placeholder { color: #77756c; font-weight: 600; }
+  .brMeta { display: flex; justify-content: space-between; gap: 8px 16px; flex-wrap: wrap; margin: 16px 2px 14px; font-size: 13px; color: var(--dim); }
+  .brMeta #brCount { color: var(--text); font-weight: 600; }
+  #brGrid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); margin-top: 0; max-height: none; }
+
+  /* Option A tile: photo + info strip in the card's back style */
+  .bc { background: #ffffff; border-radius: 16px; padding: 7px; display: flex; flex-direction: column; gap: 7px; cursor: pointer;
+    border: none; outline: none; text-align: left; color: var(--ink); text-decoration: none; }
+  .bc *, .bc:hover * { text-decoration: none; }
+  .dCopy { width: 100%; border-collapse: collapse; }
+  .bc:hover, .bc:focus-visible { box-shadow: 0 0 0 3px var(--accent); }
+  .bc .im { aspect-ratio: 1083 / 1673; width: 100%; height: auto; border-radius: 10px; object-fit: cover; background: #d9d7d0; display: block; }
+  .strip { border-radius: 9px; padding: 7px 9px 8px; background: var(--cream); color: var(--ink); }
+  .strip .r1, .strip .r2 { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; border-top: 1px solid currentColor; padding-top: 3px; }
+  .strip .r2 { margin-top: 4px; font-size: 11.5px; font-weight: 600; }
+  .strip .r1 b { font-family: var(--disp); font-weight: 700; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .strip .r1 i { font-style: normal; font-family: var(--disp); font-weight: 800; font-size: 15px; flex: none; }
+  .strip .r2 span:first-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+
+  /* ----- live feed cards (same tile, with addresses in the strip) ----- */
+  main#feed { max-width: 1280px; margin: 0 auto; padding: 20px 24px 60px; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+  .card { background: #ffffff; border: none; border-radius: 16px; padding: 7px; gap: 7px; overflow: visible; color: var(--ink); }
+  .card .thumb { border-radius: 10px; background-color: #d9d7d0; }
+  .card .thumb .ph { color: #55524a; }
+  .badge { top: 8px; left: 8px; border-radius: 999px; padding: 3px 9px; font-family: var(--disp); letter-spacing: .04em; }
+  .card .info { border-radius: 9px; padding: 7px 9px 8px; gap: 3px; background: var(--sbg, var(--cream)); color: var(--sfg, var(--ink)); }
+  .card .name { font-family: var(--disp); font-weight: 700; font-size: 15px; color: inherit; border-top: 1px solid currentColor; padding-top: 3px; }
+  .card .name:hover { color: inherit; text-decoration: underline; }
+  .card .sub, .card .addr, .card .meta, .card .addr a, .card .meta a { color: inherit; opacity: .85; }
+  .card .meta { border-top: 1px solid currentColor; padding-top: 3px; margin-top: 2px; }
+  .empty { color: var(--dim); }
+  footer { color: #8f8c82; }
+  footer a { color: #b9b6ab; }
+
+  /* ----- contest (cream card on dark) ----- */
+  #contest { max-width: 1232px; margin: 20px auto 60px; background: var(--cream); border: 12px solid #ffffff; border-radius: 28px;
+    padding: 22px 24px; color: var(--ink); --text: #111111; --dim: #5d5a52; --panel: #ffffff; --line: #d6d2c4; }
+  #contest h2 { font-family: var(--disp); font-weight: 800; font-size: 26px; }
+  #contest .chip { color: var(--ink); border-color: var(--ink); background: transparent; }
+  #contest .chip.run { background: var(--ink); color: var(--accent); }
+  #contest input[type=text], #contest input[type=password], #contest select { background: #ffffff; color: var(--ink); border-color: #b9b5a8; }
+  #contest .prog { background: #e2dfd4; } #contest .prog div { background: var(--ink); }
+  #ctResults .members .chip[aria-pressed="true"] { background: var(--ink); color: var(--accent); }
+  #ctResults td.addr a, #ctResults td.mem:hover { color: var(--ink); }
+  #ctResults th, #ctResults td { border-color: #cfcabb; }
+  .tie { color: #8a5a00; }
+
+  /* ----- detail ----- */
+  #detail { background: rgba(10,10,10,.82); backdrop-filter: blur(6px); }
+  .dSheet { max-width: 1060px; margin: 28px auto; background: transparent; border: none; padding: 0 16px 40px; color: var(--text); }
+  .dBar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; color: var(--text); }
+  .dBack { background: none; border: none; color: var(--text); font-family: var(--disp); font-weight: 700; font-size: 15px; display: inline-flex;
+    align-items: center; gap: 6px; min-height: 44px; cursor: pointer; padding: 0 4px; }
+  .dBar .lbl { color: var(--dim); }
+  .dLayout { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 24px; align-items: start; }
+  .dCardCol { position: sticky; top: 16px; }
+  .dCardWrap { position: relative; }
+  .dImg { width: 100%; aspect-ratio: 1083 / 1673; object-fit: cover; border-radius: 18px; background: #d9d7d0; display: block; }
+  .dImg.noimg { visibility: hidden; }
+  .dBackFace { position: absolute; inset: 0 0 60px 0; background: #ffffff; border-radius: 22px; padding: 9px; }
+  .dBackFace[hidden] { display: none; }
+  .dBackIn { height: 100%; border-radius: 15px; display: flex; overflow: hidden; }
+  .dBackIn .bi { flex: 1 1 auto; min-width: 0; padding: 20px 4px 18px 18px; display: flex; flex-direction: column; gap: 8px; }
+  .dBackIn .big { font-family: var(--disp); font-weight: 700; font-size: 34px; line-height: 1.05; letter-spacing: -.02em; }
+  .dBackIn .mid { font-family: var(--disp); font-weight: 700; font-size: 26px; line-height: 1.1; }
+  .dBackIn .grow { flex: 1 1 auto; }
+  .dBackIn .vs { flex: 0 0 30px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: 20px 0 18px; }
+  .dBackIn .vs span { writing-mode: vertical-rl; font-family: var(--disp); font-weight: 800; font-size: 15px; }
+  .ol { color: transparent; -webkit-text-stroke: 1.2px currentColor; }
+  .dBackIn .ol { -webkit-text-stroke-color: var(--bfg); }
+  .dFlip { position: relative; display: flex; align-items: center; gap: 8px; margin: 12px auto 0; right: auto; bottom: auto; height: 48px; padding: 0 16px 0 14px; border-radius: 999px; border: 2px solid var(--bg);
+    background: var(--ink); color: #ffffff; font-family: var(--disp); font-weight: 700; font-size: 14px; display: flex; align-items: center;
+    gap: 8px; cursor: pointer; }
+  .dPanelWrap { padding: 10px; border-radius: 26px; }
+  .dPanel { border-radius: 18px; padding: 20px 22px 26px; background: var(--accent); color: var(--ink);
+    --text: currentColor; --dim: color-mix(in srgb, currentColor 72%, transparent); --line: currentColor; --accent2: currentColor; }
+  .dPanel h2 { margin: 2px 0 0; font-family: var(--disp); font-weight: 800; font-size: 34px; line-height: 1.05; letter-spacing: -.01em; }
+  .dAttrs { margin-top: 10px; font-size: 14px; }
+  .dAttrs td { border-top: 1px solid currentColor; padding: 7px 0; }
+  .dAttrs td:first-child { color: inherit; font-size: 11px; font-weight: 500; letter-spacing: .06em; text-transform: uppercase; width: 42%; }
+  .dAttrs td:last-child { font-family: var(--disp); font-weight: 700; font-size: 17px; }
+  .dBtns { margin-top: 14px; }
+  .dBtns .chip { background: transparent; color: inherit; border: 1.5px solid currentColor; min-height: 42px; }
+  .dBtns .chip:first-child { background: var(--pfg, var(--ink)); color: var(--pbg, var(--accent)); border-color: var(--pfg, var(--ink)); }
+  .dTabs { border-bottom: 1.5px solid currentColor; gap: 22px; margin: 26px 0 6px; }
+  .dTab { color: inherit; font-family: var(--disp); font-weight: 700; font-size: 24px; padding: 6px 0 8px; border-bottom: 4px solid transparent; }
+  .dTab:not(.on) { color: transparent; -webkit-text-stroke: 1px var(--pfg, var(--ink)); }
+  .dTab.on { color: inherit; border-bottom-color: currentColor; font-weight: 800; }
+  .dStats { gap: 0 16px; }
+  .dStat { border-bottom: 1px solid currentColor; padding: 10px 0 8px; }
+  .dStat .k { color: inherit; font-size: 11px; font-weight: 500; letter-spacing: .06em; text-transform: uppercase; }
+  .dStat .v { font-family: var(--disp); font-size: 26px; }
+  .dStat .v small { color: inherit; opacity: .8; }
+  .dNav input { background: #ffffff; border: 1.5px solid var(--ink); color: var(--ink); font-family: var(--disp); font-weight: 800; }
+  .dNav button { background: transparent; border: 1.5px solid currentColor; color: inherit; }
+  .dNav button:not(:disabled):hover { background: rgba(0,0,0,.08); }
+  .dSeg { border: 1.5px solid currentColor; border-radius: 999px; }
+  .dSeg button { background: transparent; color: inherit; font-family: var(--disp); font-weight: 600; min-height: 40px; }
+  .dSeg button.on { background: var(--pfg, var(--ink)); color: var(--pbg, var(--accent)); }
+  .dSeg button + button { border-left: 1.5px solid currentColor; }
+  .dSeg button:disabled { opacity: .5; }
+  .dCopy td { border-top: 1px solid currentColor; padding: 7px 0; }
+  .dCopy td:first-child { color: inherit; font-size: 11px; font-weight: 500; letter-spacing: .06em; text-transform: uppercase; }
+  .dCopy td:last-child { font-family: var(--disp); font-weight: 700; font-size: 16px; }
+  .dCopy a, .dTable a { color: inherit; font-family: var(--disp) !important; font-weight: 700; }
+  .dTable { border: none; border-radius: 0; font-size: 14px; }
+  .dTable th { background: transparent; color: inherit; border-bottom: 1.5px solid currentColor; padding: 8px 6px; font-size: 11px; }
+  .dTable td { border-top: 1px solid currentColor; padding: 9px 6px; }
+  .dMsg { color: inherit; opacity: .85; }
+  .soon { color: inherit; border: 1.5px solid currentColor; background: transparent; }
+  .sb { border-color: currentColor !important; color: inherit !important; background: transparent; }
+  .sb.ok { background: var(--pfg, var(--ink)); color: var(--pbg, var(--accent)) !important; }
+  .chainTag { border-color: currentColor !important; color: inherit !important; }
+  .chainTag.abs { background: var(--pfg, var(--ink)); color: var(--pbg, var(--accent)) !important; }
+  .dot.old { background: currentColor; opacity: .35; } .dTable .dot:not(.old) { background: currentColor; }
+  .dAdmin { border-top: 1.5px dashed currentColor; color: inherit; }
+  .dAdmin input, .dEdit input { background: #ffffff; color: var(--ink); border: 1.5px solid var(--ink); }
+  .linkish { color: inherit; }
+  a.nick { color: inherit; }
+
+  /* ----- admin: card back editor ----- */
+  .be { margin-top: 18px; padding: 14px; border-radius: 14px; background: #ffffff; color: var(--ink); }
+  .be h3 { margin: 0 0 10px; font-family: var(--disp); font-weight: 800; font-size: 18px; }
+  .be .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
+  .be .seg { display: inline-flex; border: 1.5px solid var(--ink); border-radius: 999px; overflow: hidden; }
+  .be .seg button { border: none; background: transparent; color: var(--ink); font: 600 13px var(--disp); padding: 9px 14px; min-height: 40px; cursor: pointer; }
+  .be .seg button + button { border-left: 1.5px solid var(--ink); }
+  .be .seg button[aria-checked="true"] { background: var(--ink); color: #ffffff; }
+  .be label { font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
+  .be input[type=color] { width: 40px; height: 36px; padding: 2px; border: 1.5px solid var(--ink); border-radius: 8px; background: #fff; }
+  .be input[type=range] { accent-color: var(--ink); }
+  .be .contrast { font-size: 12px; font-weight: 700; padding: 4px 9px; border-radius: 999px; }
+  .be .contrast.ok { background: #d9f0dc; color: #14532d; } .be .contrast.bad { background: #fbe0d6; color: #7a2410; }
+  .be .pv { width: 96px; flex: none; }
+  .be .help { font-size: 12px; color: #55524a; margin-top: 6px; line-height: 1.45; }
+
+  /* ----- phones ----- */
+  @media (max-width: 640px) {
+    header.hdr { padding: 12px 10px 0; }
+    .cb { border-radius: 22px; padding: 8px; } .cb-in { border-radius: 15px; }
+    .hdr-main { padding: 14px 4px 14px 16px; gap: 9px; }
+    header.hdr h1 { font-size: 36px; }
+    .vt { padding: 8px 11px; font-size: 13px; }
+    .views { order: 0; width: auto; } .vt { flex: none; }
+    .hdr-stats { gap: 10px 22px; }
+    .hs b { font-size: 21px; } .hs .status { font-size: 15px; }
+    .vstrip { flex-basis: 34px; padding: 14px 0; } .vstrip span { font-size: 13px; }
+    header.hdr .controls input[type=search] { order: -1; flex: 1 1 100%; }
+    #browse, main#feed { padding: 14px 10px 40px; }
+    .filters { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 12px 14px 14px; gap: 10px 14px; }
+    .fld.wide { grid-column: 1 / -1; }
+    .fld input, .fld select { font-size: 16px !important; }
+    #brGrid, main#feed { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .bc, .card { border-radius: 13px; padding: 5px; gap: 5px; }
+    .strip .r1 b, .strip .r1 i { font-size: 13.5px; } .strip .r2 { font-size: 10.5px; }
+    #contest { margin: 12px 10px 40px; border-width: 8px; padding: 14px; border-radius: 22px; }
+    .dSheet { margin: 0; padding: 10px 10px 40px; }
+    .dLayout { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+    .dLayout > * { min-width: 0; }
+    .dPanel { overflow-x: auto; }
+    .dCardCol { position: static; width: min(300px, 82vw); margin: 0 auto; }
+    .dPanelWrap { padding: 8px; border-radius: 22px; }
+    .dPanel { padding: 16px 16px 22px; }
+    .dPanel h2 { font-size: 28px; }
+    .dTab { font-size: 21px; }
+  }
 </style>
 </head>
 <body>
-<header>
-  <h1>Objekt <span>Live</span></h1>
-  <nav class="views" aria-label="Sections">
-    <button class="vt" data-view="collections">📚 Collections</button>
-    <button class="vt" data-view="live">⚡ Live activity <span class="vbadge" id="liveBadge" hidden></span></button>
-    <button class="vt" data-view="contest">🏆 Contest</button>
-  </nav>
-  <div class="status liveOnly"><div class="dot" id="dot"></div><span id="statusText">Connecting…</span></div>
-  <div class="stats liveOnly">
-    <div>Mints <b id="sMint">0</b></div>
-    <div>Transfers <b id="sXfer">0</b></div>
-    <div>Block <b id="sBlock">—</b></div>
-  </div>
+<header class="hdr">
+  <div class="cb"><div class="cb-in hdr-in">
+    <div class="hdr-main">
+      <div class="hdr-top">
+        <span class="brand">OBJEKT LIVE</span>
+        <nav class="views" aria-label="Sections">
+          <button class="vt" data-view="collections">Collections</button>
+          <button class="vt" data-view="live">Live activity <span class="vbadge" id="liveBadge" hidden></span></button>
+          <button class="vt" data-view="contest">Contest</button>
+        </nav>
+      </div>
+      <div class="rule"><span class="lbl">SECTION</span><h1 id="secTitle">Collections</h1></div>
+      <div class="rule hdr-stats">
+        <div class="hs colOnly"><span class="lbl">CRAWLED</span><b id="hCrawl">—</b></div>
+        <div class="hs colOnly"><span class="lbl">COLLECTIONS</span><b id="hColls">—</b></div>
+        <div class="hs colOnly"><span class="lbl">COPIES</span><b id="hCopies">—</b></div>
+        <div class="hs liveOnly"><span class="lbl">STATUS</span><span class="status"><span class="dot" id="dot"></span><span id="statusText">Connecting…</span></span></div>
+        <div class="hs liveOnly stats"><span class="lbl">MINTS</span><b id="sMint">0</b></div>
+        <div class="hs liveOnly stats"><span class="lbl">TRANSFERS</span><b id="sXfer">0</b></div>
+        <div class="hs liveOnly stats"><span class="lbl">BLOCK</span><b id="sBlock">—</b></div>
+        <div class="hs ctOnly"><span class="lbl">CONTEST</span><b id="hContest">Top buyer per member</b></div>
+      </div>
+    </div>
+    <div class="vstrip" aria-hidden="true"><span>Objekt Live</span><span>tripleS</span></div>
+  </div></div>
   <div class="controls liveOnly">
-    <button class="chip" data-type="mint" aria-pressed="true">🆕 Mints</button>
-    <button class="chip" data-type="transfer" aria-pressed="true">🔁 Transfers</button>
-    <button class="chip" data-type="burn" aria-pressed="true">🔥 Burns</button>
-    <input type="search" id="q" placeholder="Filter: e.g. ChaeWon, Atom02, 113Z, First…">
-    <button class="chip" id="pause" aria-pressed="true">⏸ Pause</button>
+    <button class="chip" data-type="mint" aria-pressed="true">Mints</button>
+    <button class="chip" data-type="transfer" aria-pressed="true">Transfers</button>
+    <button class="chip" data-type="burn" aria-pressed="true">Burns</button>
+    <input type="search" id="q" placeholder="Filter: e.g. ChaeWon, Atom02, 113Z, First…" aria-label="Filter the live feed">
+    <button class="chip" id="pause" aria-pressed="true">Pause</button>
   </div>
 </header>
 
@@ -280,26 +526,22 @@
 </section>
 
 <section id="browse">
-  <div class="head">
-    <h2>📚 Collections</h2>
-    <input type="search" id="brQ" placeholder="e.g. Atom01 JiWoo 100Z, or just Atom01 JiWoo">
-  </div>
-  <div class="brFilters">
-    <select id="brArtist"><option value="">All artists</option></select>
-    <select id="brSeason"><option value="">All seasons</option></select>
-    <select id="brMember"><option value="">All members</option></select>
-    <select id="brClass"><option value="">All classes</option></select>
-    <select id="brSort">
+  <div class="cb"><div class="cb-in cream filters">
+    <label class="fld wide"><span class="lbl">SEARCH</span><input type="search" id="brQ" placeholder="e.g. Atom01 JiWoo 100Z"></label>
+    <label class="fld"><span class="lbl">ARTIST</span><select id="brArtist"><option value="">All</option></select></label>
+    <label class="fld"><span class="lbl">SEASON</span><select id="brSeason"><option value="">All</option></select></label>
+    <label class="fld"><span class="lbl">MEMBER</span><select id="brMember"><option value="">All</option></select></label>
+    <label class="fld"><span class="lbl">CLASS</span><select id="brClass"><option value="">All</option></select></label>
+    <label class="fld"><span class="lbl">SORT</span><select id="brSort">
       <option value="new">Newest first</option>
       <option value="old">Oldest first</option>
       <option value="no">Collection no.</option>
       <option value="most">Most copies</option>
       <option value="least">Fewest copies</option>
-    </select>
-    <button class="chip" id="brReset">Reset</button>
-  </div>
-  <div class="note" id="brNote" style="margin-top:8px"></div>
-  <div class="note" id="brCount" style="margin-top:4px"></div>
+    </select></label>
+    <div class="fld end"><button class="pill" id="brReset">Reset</button></div>
+  </div></div>
+  <div class="brMeta"><span id="brCount"></span><span id="brNote"></span></div>
   <div id="brGrid"></div>
 </section>
 
@@ -324,24 +566,33 @@
   <div id="ctResults"></div>
 </section>
 
-<div id="detail" role="dialog" aria-modal="true">
+<div id="detail" role="dialog" aria-modal="true" aria-labelledby="dName">
   <div class="dSheet" id="dSheet">
-    <button class="chip dClose" id="dClose">✕ Close</button>
-    <div class="dTop">
-      <img class="dImg" id="dImg" alt="" onerror="this.style.visibility='hidden'">
-      <div>
-        <h2 id="dName"></h2>
+    <div class="dBar">
+      <button class="dBack" id="dClose"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3L5 8l5 5"/></svg>Back</button>
+      <span class="lbl" id="dToken"></span>
+    </div>
+    <div class="dLayout">
+      <div class="dCardCol">
+        <div class="dCardWrap">
+          <img class="dImg" id="dImg" alt="" onerror="this.classList.add('noimg')">
+          <div class="dBackFace" id="dBackFace" hidden><div class="dBackIn" id="dBackIn"></div></div>
+          <button class="dFlip" id="dFlip"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg><span id="dFlipText">Flip</span></button>
+        </div>
+      </div>
+      <div class="cb dPanelWrap"><div class="dPanel" id="dPanel">
+        <div class="rule"><span class="lbl">OBJEKT</span><h2 id="dName"></h2></div>
         <table class="dAttrs" id="dAttrs"></table>
         <div class="dBtns" id="dBtns"></div>
-      </div>
+        <div class="dTabs" role="tablist">
+          <button class="dTab on" data-tab="serials" role="tab">Serials</button>
+          <button class="dTab" data-tab="holders" role="tab">Holders</button>
+        </div>
+        <div id="dSerials"></div>
+        <div id="dHolders" hidden></div>
+        <div class="dAdmin" id="dAdmin"></div>
+      </div></div>
     </div>
-    <div class="dTabs">
-      <button class="dTab on" data-tab="serials">Serials</button>
-      <button class="dTab" data-tab="holders">Holders</button>
-    </div>
-    <div id="dSerials"></div>
-    <div id="dHolders" hidden></div>
-    <div class="dAdmin" id="dAdmin"></div>
   </div>
 </div>
 
@@ -536,6 +787,8 @@ function render(ev) {
     const th = card.querySelector(".thumb"); th.style.cursor = "pointer"; th.onclick = () => openDetail(m);
     card.querySelector(".sub").textContent = [m.artist, m.cls && m.cls + " Class", "#" + ev.id].filter(Boolean).join(" · ");
     if (m.color) card.style.setProperty("--card", m.color);
+    const st = backStyle(objKey(m.artist || "", m.season || "", m.member || "", m.coll || ""), m.color);
+    card.style.setProperty("--sbg", st.bg); card.style.setProperty("--sfg", st.fg);
     card.dataset.search += " " + [m.name, m.member, m.season, m.coll, m.cls, m.artist].join(" ").toLowerCase();
     const t = card.querySelector(".thumb");
     if (m.image) { t.style.backgroundImage = `url("${m.image}")`; t.querySelector(".ph").remove(); }
@@ -1158,7 +1411,11 @@ async function openBrowse() {
   if (!ix) { $("brNote").textContent = "No crawled data on this site yet. It appears after the hourly job's first run."; return; }
   const pct = ix.latest ? Math.min(100, ix.crawledUpTo / ix.latest * 100) : 100;
   $("brNote").textContent = `Crawled up to #${ix.crawledUpTo.toLocaleString()}` +
-    (ix.latest && ix.crawledUpTo < ix.latest ? ` of #${ix.latest.toLocaleString()} (${pct.toFixed(1)}%) — newer seasons appear as the crawl continues` : " · fully up to date");
+    (ix.latest && ix.crawledUpTo < ix.latest ? ` of #${ix.latest.toLocaleString()} — newer seasons appear as the crawl continues` : " · fully up to date");
+  $("hCrawl").textContent = (pct >= 99.95 ? "100" : pct.toFixed(1)) + "%";
+  $("hColls").textContent = ix.collections.length.toLocaleString();
+  $("hCopies").textContent = ix.collections.reduce((n, c) => n + (c.copies || 0), 0).toLocaleString();
+  await loadOverrides();
   ix.collections.forEach((c, i) => { c._i = i; });
   fillFilters();
   renderBrowse();
@@ -1222,16 +1479,23 @@ function brAppend() {
   if (brShown >= brList.length) return;
   const batch = brList.slice(brShown, brShown + BR_PAGE);
   brShown += batch.length;
-  $("brMore").insertAdjacentHTML("beforebegin", batch.map(c => `
-    <div class="bc" data-i="${c._i}" style="--card:${esc(c.color || "")}">
+  $("brMore").insertAdjacentHTML("beforebegin", batch.map(c => {
+    const st = backStyle(c.key, c.color);
+    return `
+    <a class="bc" href="#c=${esc(c.key)}" data-i="${c._i}" aria-label="${esc(`${c.season} ${c.member} ${c.coll}, ${c.cls}, ${c.copies.toLocaleString()} copies`)}">
       <img class="im" loading="lazy" decoding="async" alt="" width="1083" height="1673"
         src="${esc(thumbOf(c.image || ""))}" data-full="${esc(c.image || "")}"
         onerror="if(this.src!==this.dataset.full){this.src=this.dataset.full}else{this.style.visibility='hidden'}">
-      <div class="t"><b>${esc(c.season)} ${esc(c.member)} ${esc(c.coll)}</b><span>${esc(c.cls)} · ${c.copies.toLocaleString()} copies</span></div>
-    </div>`).join(""));
+      <div class="strip" style="background:${esc(st.bg)};color:${esc(st.fg)}">
+        <div class="r1"><b>${esc(c.member)}</b><i>${esc(c.coll)}</i></div>
+        <div class="r2"><span>${esc(c.season)} · ${esc(c.cls)}</span><span>${c.copies.toLocaleString()}</span></div>
+      </div>
+    </a>`;
+  }).join(""));
 }
 $("brGrid").onclick = e => {
   const el = e.target.closest(".bc"); if (!el) return;
+  e.preventDefault();
   const c = objIndex.collections[+el.dataset.i];
   openDetail({ artist: c.artist, season: c.season, member: c.member, coll: c.coll, cls: c.cls, color: c.color, image: c.image });
 };
@@ -1247,6 +1511,7 @@ function setView(v, { push = true } = {}) {
   if (!["collections", "live", "contest"].includes(v)) v = "collections";
   document.body.dataset.view = v;
   document.querySelectorAll(".vt").forEach(b => b.classList.toggle("on", b.dataset.view === v));
+  $("secTitle").textContent = { collections: "Collections", live: "Live activity", contest: "Contest" }[v];
   if (v === "collections") openBrowse();
   if (v === "contest") openContest();
   if (v === "live") { liveUnseen = 0; $("liveBadge").hidden = true; }
@@ -1265,6 +1530,7 @@ window.addEventListener("hashchange", () => {
   if (["live", "contest", "collections"].includes(h)) setView(h, { push: false });
   else if (!h) setView("collections", { push: false });
 });
+setTimeout(() => loadOverrides(), 0);   // after the whole script has loaded
 setView(["live", "contest"].includes(location.hash.slice(1)) ? location.hash.slice(1) : "collections", { push: false });
 
 /* ===== Serials: estimated for physical (A) objekts, with admin corrections ===== */
@@ -1298,12 +1564,49 @@ function overridesView() {
   const base = JSON.parse(JSON.stringify(published || { version: 1, serials: {} }));
   return applyChanges(base, isAdmin() ? getPending() : []);
 }
+/* ----- Card back styles: flat colour from metadata, or an admin-set gradient / image, plus text colour -----
+   Saved in data/serial-overrides.json under backs[<collection key>].style = { mode, angle, stops, image, fit, tint, text } */
+const hexOk = h => /^#[0-9a-f]{6}$/i.test(h || "");
+function luminance(hex) {
+  const c = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255).map(v => v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4));
+  return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+}
+function contrast(a, b) { const [x, y] = [luminance(a), luminance(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); }
+// the colours text has to read against for a style (every gradient stop; a dark tint for images)
+function styleColours(st, base) {
+  if (st?.mode === "gradient" && st.stops?.length) return st.stops.map(x => x.color).filter(hexOk);
+  if (st?.mode === "image") { const t = Math.min(0.9, (st.tint ?? 40) / 100); const v = Math.round(255 * (1 - t) * 0.35).toString(16).padStart(2, "0"); return ["#" + v + v + v]; }
+  return [hexOk(base) ? base : "#f3f1ea"];
+}
+const worstContrast = (fg, cols) => Math.min(...cols.map(c => contrast(fg, c)));
+function backCss(st, base) {
+  if (st?.mode === "gradient" && st.stops?.length >= 2)
+    return `linear-gradient(${st.angle ?? 150}deg, ${st.stops.map(x => `${x.color} ${x.at ?? 0}%`).join(", ")})`;
+  if (st?.mode === "image" && st.image) {
+    const t = (st.tint ?? 40) / 100, tile = st.fit === "tile";
+    return `linear-gradient(rgba(0,0,0,${t}), rgba(0,0,0,${t})), url("${st.preview || st.image}") center / ${tile ? "auto" : "cover"} ${tile ? "repeat" : "no-repeat"}`;
+  }
+  return hexOk(base) ? base : "#f3f1ea";
+}
+function textColour(st, base) {
+  const cols = styleColours(st, base);
+  if (st?.text === "black") return "#111111";
+  if (st?.text === "white") return "#ffffff";
+  if (hexOk(st?.text)) return st.text;
+  return worstContrast("#111111", cols) >= worstContrast("#ffffff", cols) ? "#111111" : "#ffffff";
+}
+function backStyle(key, base, override) {
+  const st = override !== undefined ? override : overrides?.backs?.[key]?.style || null;
+  return { bg: backCss(st, base), fg: textColour(st, base), st };
+}
+
 function queueChange(key, id, change) {
-  const field = "serial" in change ? "serials" : "dirs", value = "serial" in change ? change.serial : change.dir;
+  const field = "serial" in change ? "serials" : "dir" in change ? "dirs" : "backs";
+  const value = "serial" in change ? change.serial : "dir" in change ? change.dir : change.back;
   const list = getPending().filter(c => !(c.key === key && c.field === field && c.id === id));
   // skip if it just puts back what's already published
   const cur = published?.[field]?.[key]?.[id] ?? null;
-  if ((value ?? null) !== cur) list.push({ key, field, id, value: value ?? null });
+  if (JSON.stringify(value ?? null) !== JSON.stringify(cur)) list.push({ key, field, id, value: value ?? null });
   setPending(list);
   overrides = overridesView();
   renderAdminBar();
@@ -1484,7 +1787,7 @@ function renderAdminBar() {
           <button class="chip" id="adDiscard">Discard</button>` : "No unpublished changes"}
         <span id="adPubMsg"></span></div>`;
     $("adEthSave") && ($("adEthSave").onclick = () => { ls.set("etherscanKey", $("adEth").value.trim()); polyCache.clear(); renderAdminBar(); D && D.ids && renderSerials(); });
-    $("adOut").onclick = () => { ls.set("ghToken", ""); overrides = overridesView(); renderAdminBar(); D && D.ids && (computeSerials(), renderSerials()); };
+    $("adOut").onclick = () => { ls.set("ghToken", ""); overrides = overridesView(); if (D) D.be = null; renderAdminBar(); applyDetailStyle(); D && D.ids && (computeSerials(), renderSerials()); };
     $("adPub") && ($("adPub").onclick = async () => {
       $("adPub").disabled = true; $("adPubMsg").textContent = "Saving to GitHub…";
       try {
@@ -1495,8 +1798,9 @@ function renderAdminBar() {
     });
     $("adDiscard") && ($("adDiscard").onclick = () => {
       if (!confirm(`Discard ${n} unpublished change${n > 1 ? "s" : ""}?`)) return;
-      setPending([]); overrides = overridesView(); renderAdminBar(); D && D.ids && (computeSerials(), renderSerials());
+      setPending([]); overrides = overridesView(); if (D) D.be = null; renderAdminBar(); applyDetailStyle(); D && D.ids && (computeSerials(), renderSerials());
     });
+    if (D) renderBackEditor(box);
     return;
   }
   box.innerHTML = `<button class="linkish" id="adOpen">🔒 Admin</button><div id="adForm" hidden>
@@ -1667,17 +1971,25 @@ async function openDetail(m) {
   const ix = await loadObjIndex();
   const entry = ix?.collections.find(c => c.key === key);
   const img = m.image || entry?.image || "";
+  $("dImg").classList.remove("noimg");
   $("dImg").src = img; $("dImg").style.visibility = img ? "" : "hidden";
+  $("dImg").alt = `Card photo: ${m.season} ${m.member} ${m.coll}`;
   const name = `${m.season} ${m.member} ${m.coll}`;
   $("dName").textContent = name;
   const type = /A$/i.test(m.coll) ? "Physical" : /Z$/i.test(m.coll) ? "Digital" : "—";
+  $("dToken").textContent = [m.artist || entry?.artist, type].filter(Boolean).join(" · ");
+  D.color = m.color || entry?.color || null; D.cls = m.cls || entry?.cls || ""; D.type = type;
+  await loadOverrides();
+  if (run !== dRun) return;
+  applyDetailStyle();
+  setFlip(false);
   $("dAttrs").innerHTML = [
     ["Artist", esc(m.artist || entry?.artist || "—")], ["Member", esc(m.member)], ["Season", esc(m.season)],
     ["Class", esc(m.cls || entry?.cls || "—")], ["Collection No.", `<span class="mono">${esc(m.coll)}</span>`], ["Type", type],
   ].map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join("");
   const slug = apolloSlug(m.season, m.member, m.coll);
   $("dBtns").innerHTML = `
-    <a class="chip" href="https://apollo.cafe/?id=${slug}" target="_blank" rel="noopener">🛸 View in Apollo</a>
+    <a class="chip" href="https://apollo.cafe/?id=${slug}" target="_blank" rel="noopener">View in Apollo</a>
     <a class="chip" href="https://opensea.io/collection/${OPENSEA_SLUG}?searchQuery=${encodeURIComponent(name)}" target="_blank" rel="noopener">OpenSea ↗</a>`;
   dTab("serials");
   renderAdminBar();
@@ -1720,6 +2032,132 @@ async function openDetail(m) {
   D.idx = Math.min(Math.max(wantSerial, 1), Math.max(ids.length, 1)) - 1;
   renderSerials();
 }
+
+/* ----- Admin: card back editor (one per collection) ----- */
+async function uploadBackImage(key, file) {
+  const ext = (file.name.split(".").pop() || "png").toLowerCase().replace(/[^a-z0-9]/g, "") || "png";
+  const path = `images/backs/${key}.${ext}`;
+  const branch = ls.get("ghBranch") || "main";
+  const b64 = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(",")[1]); r.onerror = rej; r.readAsDataURL(file); });
+  const cur = await gh(`/contents/${path}?ref=${encodeURIComponent(branch)}`);
+  const put = await gh(`/contents/${path}`, { method: "PUT", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ branch, message: `Card back image: ${key}`, content: b64, ...(cur.ok ? { sha: cur.j.sha } : {}) }) });
+  if (!put.ok) throw new Error(`GitHub ${put.status}: ${put.j.message || "upload failed"}`);
+  return path + "?v=" + Date.now().toString(36);
+}
+function renderBackEditor(box) {
+  if (!D) return;
+  const base = hexOk(D.color) ? D.color : "#f3f1ea";
+  const saved = overrides?.backs?.[D.key]?.style || null;
+  if (!D.be || D.be.key !== D.key) D.be = { key: D.key, st: JSON.parse(JSON.stringify(saved || { mode: "flat" })), file: null };
+  const st = D.be.st;
+  st.angle ??= 150; st.tint ??= 40; st.fit ??= "cover"; st.text ??= "auto";
+  if (!st.stops || st.stops.length < 2) st.stops = [{ color: base, at: 0 }, { color: "#ffffff", at: 100 }];
+  const seg = (name, opts, cur) => `<span class="seg" role="radiogroup" aria-label="${name}">${opts.map(([v, l]) =>
+    `<button type="button" role="radio" data-${name}="${v}" aria-checked="${cur === v}">${l}</button>`).join("")}</span>`;
+  const textMode = ["auto", "black", "white"].includes(st.text) ? st.text : "custom";
+  const wrap = document.createElement("div");
+  wrap.className = "be"; wrap.id = "beBox";
+  wrap.innerHTML = `
+    <h3>Card back for ${esc(D.m.member)} ${esc(D.m.coll)}</h3>
+    <div class="row">${seg("mode", [["flat", "Flat"], ["gradient", "Gradient"], ["image", "Image"]], st.mode)}</div>
+    ${st.mode === "flat" ? `<div class="help">Uses the card's own colour from Cosmo: <b>${esc(base.toUpperCase())}</b>.</div>` : ""}
+    ${st.mode === "gradient" ? `
+      <div class="row"><label for="beAngle">Angle</label><input type="range" id="beAngle" min="0" max="360" value="${st.angle}"><span id="beAngleV">${st.angle}°</span></div>
+      ${st.stops.map((x, i) => `<div class="row">
+        <label>Colour ${i + 1} <input type="color" data-stop="${i}" value="${esc(x.color)}"></label>
+        <label>at <input type="number" data-at="${i}" min="0" max="100" value="${x.at ?? 0}" style="width:64px">%</label>
+        ${st.stops.length > 2 ? `<button type="button" class="linkish" data-del="${i}">Remove</button>` : ""}</div>`).join("")}
+      ${st.stops.length < 4 ? `<div class="row"><button type="button" class="chip" id="beAdd" style="color:var(--ink);border-color:var(--ink)">+ Add colour</button></div>` : ""}` : ""}
+    ${st.mode === "image" ? `
+      <div class="row"><label>Back image <input type="file" id="beFile" accept="image/png,image/jpeg,image/webp"></label></div>
+      <div class="help">Use a clean crop of the back with no logo or text. ${st.image && !D.be.file ? `Current: ${esc(st.image.split("?")[0])}` : ""}</div>
+      <div class="row"><span style="font-size:12px;font-weight:600">Fit</span>${seg("fit", [["tile", "Tile"], ["cover", "Stretch"]], st.fit)}</div>
+      <div class="row"><label for="beTint">Tint behind text</label><input type="range" id="beTint" min="0" max="80" step="5" value="${st.tint}"><span id="beTintV">${st.tint}%</span></div>` : ""}
+    <div class="row"><span style="font-size:12px;font-weight:600">Text colour</span>${seg("text", [["auto", "Auto"], ["black", "Black"], ["white", "White"], ["custom", "Custom"]], textMode)}</div>
+    ${textMode === "custom" ? `<div class="row"><label>Colour <input type="color" id="beText" value="${esc(hexOk(st.text) ? st.text : "#3b2a6e")}"></label><span class="contrast" id="beContrast"></span></div>` : `<div class="row"><span class="contrast" id="beContrast"></span></div>`}
+    <div class="row">
+      <button type="button" class="pill" id="beSave">Add to unpublished changes</button>
+      ${saved ? `<button type="button" class="linkish" id="beReset">Back to flat colour</button>` : ""}
+    </div>
+    <div class="help" id="beMsg">Previewing on this page only until you add it and publish.</div>`;
+  box.querySelector("#beBox")?.remove();
+  box.appendChild(wrap);
+
+  const preview = () => {
+    applyDetailStyle(st);
+    const cols = styleColours(st, base), fg = textColour(st, base), r = worstContrast(fg, cols);
+    const b = wrap.querySelector("#beContrast");
+    b.className = "contrast " + (r >= 4.5 ? "ok" : "bad");
+    b.textContent = (r >= 4.5 ? "Readable · " : "Low contrast · ") + r.toFixed(1) + ":1";
+  };
+  const redraw = () => renderBackEditor(box);
+  wrap.querySelectorAll("[data-mode]").forEach(b => b.onclick = () => { st.mode = b.dataset.mode; redraw(); });
+  wrap.querySelectorAll("[data-fit]").forEach(b => b.onclick = () => { st.fit = b.dataset.fit; redraw(); });
+  wrap.querySelectorAll("[data-text]").forEach(b => b.onclick = () => {
+    st.text = b.dataset.text === "custom" ? (hexOk(st.text) ? st.text : "#3b2a6e") : b.dataset.text; redraw(); });
+  wrap.querySelector("#beAngle")?.addEventListener("input", e => { st.angle = +e.target.value; wrap.querySelector("#beAngleV").textContent = st.angle + "°"; preview(); });
+  wrap.querySelector("#beTint")?.addEventListener("input", e => { st.tint = +e.target.value; wrap.querySelector("#beTintV").textContent = st.tint + "%"; preview(); });
+  wrap.querySelectorAll("[data-stop]").forEach(el => el.addEventListener("input", e => { st.stops[+el.dataset.stop].color = e.target.value; preview(); }));
+  wrap.querySelectorAll("[data-at]").forEach(el => el.addEventListener("input", e => { st.stops[+el.dataset.at].at = Math.max(0, Math.min(100, +e.target.value || 0)); preview(); }));
+  wrap.querySelectorAll("[data-del]").forEach(b => b.onclick = () => { st.stops.splice(+b.dataset.del, 1); redraw(); });
+  wrap.querySelector("#beAdd") && (wrap.querySelector("#beAdd").onclick = () => { st.stops.push({ color: "#ffffff", at: 100 }); redraw(); });
+  wrap.querySelector("#beText")?.addEventListener("input", e => { st.text = e.target.value; preview(); });
+  wrap.querySelector("#beFile")?.addEventListener("change", e => {
+    const f = e.target.files[0]; if (!f) return;
+    if (f.size > 3 * 1024 * 1024) { wrap.querySelector("#beMsg").textContent = "That image is over 3 MB — please use a smaller crop."; return; }
+    D.be.file = f;
+    const r = new FileReader(); r.onload = () => { st.preview = r.result; preview(); }; r.readAsDataURL(f);
+  });
+  wrap.querySelector("#beSave").onclick = async () => {
+    const msg = wrap.querySelector("#beMsg"), btn = wrap.querySelector("#beSave");
+    if (st.mode === "image" && !st.image && !D.be.file) { msg.textContent = "Choose a back image first."; return; }
+    btn.disabled = true;
+    try {
+      if (st.mode === "image" && D.be.file) { msg.textContent = "Uploading the image to your repo…"; st.image = await uploadBackImage(D.key, D.be.file); D.be.file = null; }
+      const clean = { mode: st.mode, text: st.text };
+      if (st.mode === "gradient") Object.assign(clean, { angle: st.angle, stops: st.stops.map(x => ({ color: x.color, at: x.at ?? 0 })) });
+      if (st.mode === "image") Object.assign(clean, { image: st.image, fit: st.fit, tint: st.tint });
+      queueChange(D.key, "style", { back: st.mode === "flat" && st.text === "auto" ? null : clean });
+      D.be = null;
+      applyDetailStyle();
+      setTimeout(() => { const m2 = $("beMsg"); if (m2) m2.textContent = "Added ✓ — press Publish above to save it for everyone."; }, 0);
+    } catch (e) { msg.textContent = `Couldn't save: ${e.message}`; btn.disabled = false; }
+  };
+  wrap.querySelector("#beReset") && (wrap.querySelector("#beReset").onclick = () => {
+    queueChange(D.key, "style", { back: null }); D.be = null; applyDetailStyle();
+  });
+  preview();
+}
+
+// Colour the details panel and the card's flip side with this collection's back style
+function applyDetailStyle(override) {
+  if (!D) return;
+  const st = backStyle(D.key, D.color, override);
+  const solid = styleColours(st.st, D.color)[0];
+  for (const el of [$("dPanel"), $("dBackIn")]) {
+    el.style.background = st.bg; el.style.color = st.fg;
+    el.style.setProperty("--pfg", st.fg); el.style.setProperty("--pbg", solid); el.style.setProperty("--bfg", st.fg);
+  }
+  const m = D.m, sw = (m.season || "").match(/^(.*?)(\d+)$/) || [null, m.season || "", ""];
+  $("dBackIn").innerHTML = `
+    <div class="bi">
+      <div class="rule"><span class="lbl">Name</span><div class="big">${esc(m.member)}</div></div>
+      <div class="rule"><span class="lbl">Class</span><div class="mid">${esc(D.cls || "—")}</div></div>
+      <div class="rule"><span class="lbl">Season</span><div class="mid">${esc(sw[1])}<span class="ol">${esc(sw[2])}</span></div></div>
+      <div class="grow"></div>
+      <div class="rule" style="display:flex;justify-content:space-between;align-items:baseline"><span class="mid" style="font-weight:800">${esc(m.coll)}</span><span style="font-size:12px;font-weight:600">${esc(D.type)}</span></div>
+    </div>
+    <div class="vs" aria-hidden="true"><span>${esc(m.member)}</span><span>${esc(m.artist || "tripleS")}</span></div>`;
+}
+function setFlip(back) {
+  if (!D) return;
+  D.flipped = back;
+  $("dBackFace").hidden = !back;
+  $("dFlipText").textContent = back ? "Photo" : "Flip";
+  $("dFlip").setAttribute("aria-label", back ? "Show the card photo" : "Flip to the card back");
+}
+$("dFlip").onclick = () => setFlip(!D?.flipped);
 
 function closeDetail() {
   dRun++; D = null;
