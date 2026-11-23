@@ -2,6 +2,6 @@
 echo '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PitWall — F1 Team Manager</title>'
 echo '<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Titillium+Web:ital,wght@0,400;0,600;0,700;0,900;1,900&display=swap" rel="stylesheet">'
 echo '<style>'; cat style.css; echo '</style></head><body><div id="app"></div><script>'
-cat data.js flags.js turns.js engine.js hist.js hist2.js timeline.js tracer.js app.js studio.js xp_core.js xp_race.js xp_ui.js xp_resume.js desk.js desk2.js desk3.js desk4.js desk5.js hx.js q16.js endu.js elimr.js xreg.js mix.js qgrp.js heats.js bcast.js story.js intr.js pelim.js ui2.js grp.js pot.js docs.js custom.js gamble.js rot.js fy.js map.js
+cat data.js flags.js turns.js engine.js hist.js hist2.js timeline.js tracer.js app.js studio.js xp_core.js xp_race.js xp_ui.js xp_resume.js desk.js desk2.js desk3.js desk4.js desk5.js hx.js q16.js endu.js elimr.js xreg.js mix.js qgrp.js heats.js bcast.js story.js intr.js pelim.js ui2.js grp.js pot.js docs.js custom.js gamble.js rot.js fy.js surv.js map.js
 echo '</script></body></html>'
 } > ../index.html

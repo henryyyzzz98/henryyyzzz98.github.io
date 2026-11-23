@@ -1242,3 +1242,11 @@ i.fk-badge{font-style:normal;display:inline-block;width:15px;text-align:center;b
 i.fk-badge.fk-a{background:#4ea8ff;border:0}i.fk-badge.fk-b{background:#ff9f43;border:0}
 i.yd-badge{font-style:normal;font-size:10px;font-weight:800;padding:0 4px;border-radius:3px;background:#ffd166;color:#111}
 .dks b.o{color:#ff9f43}
+.sv-k{font-size:9px;line-height:1;opacity:.75;margin-top:2px}
+.dkst td.sv-in,.dkst td.sv-out,.dkst td.sv-champ{font-size:11px;white-space:nowrap;text-align:right}
+.sv-in{color:#3ddc84}.sv-out{color:#ff6b6b}.sv-champ{color:#ffd166}
+tr.sv-dim td:not(.pts){opacity:.55}
+td.sv-gone{outline:2px solid #ff6b6b;outline-offset:-2px}
+.sv-skip{font-size:10px;color:#ffd166;font-weight:700}
+.sv-tag{background:#ffffff14!important;color:#ddd!important}
+tr.sv-danger td{background:#ff6b6b22}
