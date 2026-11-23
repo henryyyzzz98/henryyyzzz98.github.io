@@ -71,6 +71,16 @@
     "tint": 0,
     "avg": "#c1cad6"
    }
+  },
+  "triples-divine01--322a": {
+   "style": {
+    "mode": "image",
+    "text": "white",
+    "image": "images/backs/triples-divine01--322a.png?v=mwtrljrk",
+    "fit": "cover",
+    "tint": 0,
+    "avg": "#090600"
+   }
   }
  }
 }
