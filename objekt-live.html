@@ -447,6 +447,20 @@
   .be .contrast { font-size: 12px; font-weight: 700; padding: 4px 9px; border-radius: 999px; }
   .be .contrast.ok { background: #d9f0dc; color: #14532d; } .be .contrast.bad { background: #fbe0d6; color: #7a2410; }
   .be .pv { width: 96px; flex: none; }
+  .bePrev { display: flex; gap: 14px; align-items: flex-start; margin: 12px 0 4px; }
+  .bpCard { flex: 0 0 120px; aspect-ratio: 55 / 85; border-radius: 12px; border: 5px solid #fff; box-shadow: 0 0 0 1px #d8d4c8; display: flex; overflow: hidden; }
+  .bpIn { flex: 1; display: flex; flex-direction: column; padding: 8px 6px 8px 8px; min-width: 0; }
+  .bpIn .lbl { font-size: 7px; letter-spacing: .08em; text-transform: uppercase; opacity: .85; margin-top: 4px; border-top: 1px solid currentColor; padding-top: 2px; }
+  .bpIn b { font: 800 14px var(--disp); line-height: 1.1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bpIn i { font: 700 11px var(--disp); font-style: normal; }
+  .bpIn .bpNo { font-size: 13px; border-top: 1px solid currentColor; padding-top: 3px; }
+  .bpVs { writing-mode: vertical-rl; font: 800 9px var(--disp); padding: 8px 3px; text-align: right; }
+  .bpSide { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+  .bpTile { width: 130px; background: #fff; border-radius: 10px; padding: 4px; box-shadow: 0 0 0 1px #d8d4c8; }
+  .bpPh { height: 54px; border-radius: 7px 7px 0 0; background: linear-gradient(#ddd9cf, #c9c4b6); }
+  .bpTile .strip { border-radius: 0 0 7px 7px; padding: 5px 7px; font-size: 10px; }
+  .bpTile .strip .r1, .bpTile .strip .r2 { display: flex; justify-content: space-between; gap: 4px; }
+  .bpTile .strip i { font-style: normal; font-weight: 800; }
   .be .help { font-size: 12px; color: #55524a; margin-top: 6px; line-height: 1.45; }
 
   /* ----- phones ----- */
@@ -1585,7 +1599,7 @@ const worstContrast = (fg, cols) => Math.min(...cols.map(c => contrast(fg, c)));
 function backCss(st, base) {
   if (st?.mode === "gradient" && st.stops?.length >= 2)
     return `linear-gradient(${st.angle ?? 150}deg, ${st.stops.map(x => `${x.color} ${x.at ?? 0}%`).join(", ")})`;
-  if (st?.mode === "image" && st.image) {
+  if (st?.mode === "image" && (st.preview || st.image)) {
     const t = (st.tint ?? 40) / 100, tile = st.fit === "tile";
     return `linear-gradient(rgba(0,0,0,${t}), rgba(0,0,0,${t})), url("${st.preview || st.image}") center / ${tile ? "auto" : "cover"} ${tile ? "repeat" : "no-repeat"}`;
   }
@@ -2086,6 +2100,12 @@ function renderBackEditor(box) {
       ? `Saves one design for every member of ${esc(collName)}.${own ? ` ${esc(D.m.member)} has her own design, which will be removed so she uses this one.` : ""} Members given their own design keep it.`
       : `Only ${esc(D.m.member)}'s ${esc(D.m.coll)}. This overrides the collection-wide design${shared ? " that's set" : ""}.`}</div>
     <div class="row">${seg("mode", [["flat", "Flat"], ["gradient", "Gradient"], ["image", "Image"]], st.mode)}</div>
+    <div class="bePrev" aria-label="Preview">
+      <div class="bpCard" id="bpCard"><div class="bpIn"><span class="lbl">Name</span><b>${esc(D.m.member || "")}</b><span class="lbl">Season</span><i>${esc(D.m.season || "")}</i><div style="flex:1"></div><b class="bpNo">${esc(D.m.coll || "")}</b></div><div class="bpVs">${esc(D.m.artist || "")}</div></div>
+      <div class="bpSide"><span class="lbl" style="color:#55524a">Preview</span>
+        <div class="bpTile"><div class="bpPh"></div><div class="strip" id="bpStrip"><div class="r1"><b>${esc(D.m.member || "")}</b><i>${esc(D.m.coll || "")}</i></div><div class="r2"><span>${esc(D.m.season || "")}</span><span>123</span></div></div></div>
+        <div class="help" style="margin:0">Card back (left) and the collection tile (right). Updates as you change things.</div></div>
+    </div>
     ${st.mode === "flat" ? `<div class="help">Uses the card's own colour from Cosmo: <b>${esc(base.toUpperCase())}</b>.</div>` : ""}
     ${st.mode === "gradient" ? `
       <div class="row"><label for="beAngle">Angle</label><input type="range" id="beAngle" min="0" max="360" value="${st.angle}"><span id="beAngleV">${st.angle}°</span></div>
@@ -2096,7 +2116,7 @@ function renderBackEditor(box) {
       ${st.stops.length < 4 ? `<div class="row"><button type="button" class="chip" id="beAdd" style="color:var(--ink);border-color:var(--ink)">+ Add colour</button></div>` : ""}` : ""}
     ${st.mode === "image" ? `
       <div class="row"><label>Back image <input type="file" id="beFile" accept="image/png,image/jpeg,image/webp"></label></div>
-      <div class="help">Use a clean crop of the back with no logo or text. ${st.image && !D.be.file ? `Current: ${esc(st.image.split("?")[0])}` : ""}</div>
+      <div class="help">Use a clean crop of the back with no logo or text. ${D.be.file ? `Selected: <b>${esc(D.be.file.name)}</b> (uploads when you add it)` : st.image ? `Current: ${esc(st.image.split("?")[0])}` : ""}</div>
       <div class="row"><span style="font-size:12px;font-weight:600">Fit</span>${seg("fit", [["tile", "Tile"], ["cover", "Stretch"]], st.fit)}</div>
       <div class="row"><label for="beTint">Tint behind text</label><input type="range" id="beTint" min="0" max="80" step="5" value="${st.tint}"><span id="beTintV">${st.tint}%</span></div>` : ""}
     <div class="row"><span style="font-size:12px;font-weight:600">Text colour</span>${seg("text", [["auto", "Auto"], ["black", "Black"], ["white", "White"], ["custom", "Custom"]], textMode)}</div>
@@ -2111,6 +2131,8 @@ function renderBackEditor(box) {
 
   const preview = () => {
     applyDetailStyle(st);
+    const ps = backStyle(D.key, D.color, st);
+    for (const el of [wrap.querySelector("#bpCard"), wrap.querySelector("#bpStrip")]) { el.style.background = ps.bg; el.style.color = ps.fg; }
     const cols = styleColours(st, base), fg = textColour(st, base), r = worstContrast(fg, cols);
     const b = wrap.querySelector("#beContrast");
     b.className = "contrast " + (r >= 4.5 ? "ok" : "bad");
@@ -2133,7 +2155,7 @@ function renderBackEditor(box) {
     const f = e.target.files[0]; if (!f) return;
     if (f.size > 3 * 1024 * 1024) { wrap.querySelector("#beMsg").textContent = "That image is over 3 MB — please use a smaller crop."; return; }
     D.be.file = f;
-    const r = new FileReader(); r.onload = () => { st.preview = r.result; preview(); }; r.readAsDataURL(f);
+    const r = new FileReader(); r.onload = () => { st.preview = r.result; redraw(); }; r.readAsDataURL(f);
   });
   wrap.querySelector("#beSave").onclick = async () => {
     const msg = wrap.querySelector("#beMsg"), btn = wrap.querySelector("#beSave");
