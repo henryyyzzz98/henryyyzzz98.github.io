@@ -1250,3 +1250,4 @@ td.sv-gone{outline:2px solid #ff6b6b;outline-offset:-2px}
 .sv-skip{font-size:10px;color:#ffd166;font-weight:700}
 .sv-tag{background:#ffffff14!important;color:#ddd!important}
 tr.sv-danger td{background:#ff6b6b22}
+.sv-regnote{color:#ffd166;line-height:1.5;padding:6px 8px;border:1px solid #ffd16644;border-radius:6px;background:#ffd16610}

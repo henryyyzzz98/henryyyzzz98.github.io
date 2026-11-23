@@ -248,3 +248,15 @@ applySprintResult = function (G0, race) {
   (rows || []).forEach(r => { r.pts = 0; });
   return rows;
 };
+// regulations form: in a survival season, hide every rule that only changes points
+const SV_PTS_RULES = ['Points system', 'Pole position bonus', 'Fastest lap bonus', 'Dropped scores', 'Three-part GP points', 'Prize pot points', 'Gamble grid slots'];
+function svCtx() { return VIEW === 'setup' ? SETUP.comp === 'survival' : svOn(); }
+const _sv_dkRegsForm = dkRegsForm;
+dkRegsForm = function (r, act) {
+  let html = _sv_dkRegsForm.apply(this, arguments);
+  if (!svCtx()) return html;
+  SV_PTS_RULES.forEach(n => { html = html.replace(new RegExp(`<label class="small"[^>]*>${n.replace(/[()]/g, '\\$&')}<select[\\s\\S]*?</select></label>`), ''); });
+  html = html.replace(/<label class="small">Points for 1st, 2nd, 3rd…[\s\S]*?<\/label>/, '').replace(/(Points system[\s\S]*?)?<span><\/span>/, '');
+  html = html.replace('each winner skips the next race, which pays half points', 'each winner skips the next race and is safe from elimination');
+  return html.replace(/(<div class="grid g2" style="gap:10px">)/, `$1<div class="small sv-regnote" style="grid-column:1/-1">🏁 Survival season: there are no points, so rules that only change points (points system, pole and fastest-lap bonuses, dropped scores, three-part GP points, prize pot, gamble grid) are hidden.</div>`);
+};
