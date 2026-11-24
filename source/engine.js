@@ -581,8 +581,11 @@ function fillAISeats(G, summary) {
 // midseason AI: replace player-poached seats immediately
 function aiFillNow(G) { fillAISeats(G, null); }
 
-function save(G) { try { G.trackLib = LIB; localStorage.setItem('f1mgr_save', JSON.stringify(G)); return true; } catch (e) { return false; } }
-function loadSave() { try { const s = localStorage.getItem('f1mgr_save'); return s ? JSON.parse(s) : null; } catch (e) { return null; } }
+// save slots: slot 1 keeps the original key so existing saves carry over
+let SLOT = (() => { try { return Math.min(3, Math.max(1, +localStorage.getItem('pitwall_slot') || 1)); } catch (e) { return 1; } })();
+const slotKey = n => n > 1 ? 'f1mgr_save_' + n : 'f1mgr_save';
+function save(G) { try { G.trackLib = LIB; G.slot = SLOT; localStorage.setItem(slotKey(SLOT), JSON.stringify(G)); localStorage.setItem('pitwall_slot', SLOT); return true; } catch (e) { return false; } }
+function loadSave(n) { try { const s = localStorage.getItem(slotKey(n || SLOT)); return s ? JSON.parse(s) : null; } catch (e) { return null; } }
 function exportCode(G) { G.trackLib = Object.assign({}, LIB, { defaults: typeof linkedDefaults === "function" ? linkedDefaults() : {} }); return btoa(unescape(encodeURIComponent(JSON.stringify(G)))); }
 function importCode(s) { return JSON.parse(decodeURIComponent(escape(atob(s.trim())))); }
 

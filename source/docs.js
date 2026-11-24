@@ -225,7 +225,7 @@ function docPaper(doc) {
     ${D.ents.map(x => `<tr><td>${x.no}</td><td>${esc(x.code)}</td><td>${esc(x.name)}</td><td>${nat3(x.nat)}</td><td>${esc(x.team)}</td><td>${esc(x.cons)}</td></tr>`).join('')}</tbody></table>${docSigs()}</div>`;
   } else if (B.kind === 'fp') {
     const ord = ['First', 'Second', 'Third'][B.session] || 'Practice';
-    sheet = `<div class="fd-page">${docSheetHead(doc, D, `${ord} Practice Session Classification`)}<table class="fd-tab fd-time"><thead><tr><th></th><th>NO</th><th class="l">DRIVER</th><th>NAT</th><th class="l">ENTRANT</th><th>TIME</th><th>LAPS</th><th>GAP</th><th>INT</th><th>KM/H</th><th>TIME OF DAY</th></tr></thead><tbody>
+    sheet = `<div class="fd-page">${docSheetHead(doc, D, `${B.label || ord + ' Practice Session'} Classification`)}<table class="fd-tab fd-time"><thead><tr><th></th><th>NO</th><th class="l">DRIVER</th><th>NAT</th><th class="l">ENTRANT</th><th>TIME</th><th>LAPS</th><th>GAP</th><th>INT</th><th>KM/H</th><th>TIME OF DAY</th></tr></thead><tbody>
     ${B.rows.map((r, i) => { const x = E(r.id); return `<tr><td>${i + 1}</td><td><b>${x.no}</b></td><td class="l"><b>${esc(docName(x.name))}</b></td><td>${docFlag(x.nat)}</td><td class="l">${esc(x.team)}</td><td><b>${docLap(r.t)}</b></td><td><b>${r.laps}</b></td><td>${r.gap != null ? r.gap.toFixed(3) : ''}</td><td>${r.int != null ? r.int.toFixed(3) : ''}</td><td>${docKmh(D.km, r.t)}</td><td>${docHMS(r.tod)}</td></tr>`; }).join('')}</tbody></table>${foot}</div>`;
   } else if (B.kind === 'quali') {
     const segs = B.segs, cutAt = new Set(B.cuts.map(n => n)); let pole = null, fl = null;
@@ -246,7 +246,7 @@ function docPaper(doc) {
     ${pl ? `<div class="fd-pens"><h4>* PENALTIES</h4>${pl}</div>` : ''}${B.final ? docSigs() : ''}${foot}</div>`;
   }
   if (B.kind === 'race') {
-    const R = B.data, rows = B.final ? R.finalRows : R.provRows, ttl = `Race ${B.final ? 'Final' : 'Provisional'} Classification after ${R.lapsDone} Laps - ${R.dist} km`;
+    const R = B.data, rows = B.final ? R.finalRows : R.provRows, ttl = `${B.label || 'Race'} ${B.final ? 'Final' : 'Provisional'} Classification after ${R.lapsDone} Laps - ${R.dist} km`;
     const tr = (r, i) => { const x = E(r.id); return `<tr><td>${i + 1}</td><td><b>${x.no}</b></td><td class="l"><b>${esc(docName(x.name))}${r.pen ? ' *' : ''}</b></td><td>${docFlag(x.nat)}</td><td class="l">${esc(x.team)}</td><td>${r.laps}</td><td>${docHMSms(r.time)}</td><td>${r.gap}</td><td>${r.int}</td><td>${r.kmh}</td><td>${docLap(r.fast)}</td><td>${r.on || ''}</td><td>${r.pts || ''}</td></tr>`; };
     const ncr = r => { const x = E(r.id); return `<tr><td></td><td><b>${x.no}</b></td><td class="l"><b>${esc(docName(x.name))}</b></td><td>${docFlag(x.nat)}</td><td class="l">${esc(x.team)}</td><td>${r.laps}</td><td>${docHMSms(r.time)}</td><td>${r.why}</td><td></td><td>${r.kmh}</td><td>${docLap(r.fast)}</td><td>${r.on || ''}</td><td></td></tr>`; };
     const head = '<thead><tr><th></th><th>NO</th><th class="l">DRIVER</th><th>NAT</th><th class="l">ENTRANT</th><th>LAPS</th><th>TIME</th><th>GAP</th><th>INT</th><th>KM/H</th><th>FASTEST</th><th>ON</th><th>PTS</th></tr></thead>';

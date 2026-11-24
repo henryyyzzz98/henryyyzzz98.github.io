@@ -2,7 +2,8 @@
 // The season save (G) only covered the HQ. This file also checkpoints the current
 // weekend (WK) and any live race / qualifying session, so Continue drops you back
 // where you left off.
-const WK_KEY = 'f1mgr_wk';
+const WK_KEY0 = 'f1mgr_wk';
+function wkKey() { const n = typeof SLOT !== 'undefined' ? SLOT : 1; return n > 1 ? WK_KEY0 + '_' + n : WK_KEY0; }
 const WK_CLASSES = { Race: () => Race.prototype, QualiLive: () => QualiLive.prototype };
 const WK_SKIP = new Set(['replay', 'pendingClips']); // big, rebuilt as the race goes on
 
@@ -62,11 +63,11 @@ function wkCheckpoint() {
     const live = RACE && (WK.stage === 'race' || WK.stage === 'sprint');
     const pack = wkPack({ wk: WK, race: live ? RACE : null });
     save(G);
-    localStorage.setItem(WK_KEY, JSON.stringify({ tag: G.wkTag, year: G.year, round: WK.round, data: pack }));
+    localStorage.setItem(wkKey(), JSON.stringify({ tag: G.wkTag, year: G.year, round: WK.round, data: pack }));
   } catch (e) { /* storage full: weekend just won't resume */ }
 }
-function wkClear() { try { localStorage.removeItem(WK_KEY); } catch (e) { } if (G) G.wkTag = null; }
-function wkSaved() { try { const s = JSON.parse(localStorage.getItem(WK_KEY)); return s && G && s.tag && s.tag === G.wkTag ? s : null; } catch (e) { return null; } }
+function wkClear() { try { localStorage.removeItem(wkKey()); } catch (e) { } if (G) G.wkTag = null; }
+function wkSaved() { try { const s = JSON.parse(localStorage.getItem(wkKey())); return s && G && s.tag && s.tag === G.wkTag ? s : null; } catch (e) { return null; } }
 
 function wkRestore() {
   const s = wkSaved(); if (!s) return false;

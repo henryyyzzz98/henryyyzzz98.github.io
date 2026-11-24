@@ -1251,3 +1251,22 @@ td.sv-gone{outline:2px solid #ff6b6b;outline-offset:-2px}
 .sv-tag{background:#ffffff14!important;color:#ddd!important}
 tr.sv-danger td{background:#ff6b6b22}
 .sv-regnote{color:#ffd166;line-height:1.5;padding:6px 8px;border:1px solid #ffd16644;border-radius:6px;background:#ffd16610}
+.exw-sub{display:flex;justify-content:space-around;font-size:9px;opacity:.7;margin-top:1px}
+.dkst td.exw-c{min-width:22px;padding:0 1px;font-size:11px}
+.ex-h{margin:14px 0 6px;font-size:14px}
+tr.ex-win td{background:#3ddc8418}
+.ex-chip{display:inline-block;margin:6px 6px 0 0;padding:2px 8px;border-left:4px solid var(--tc);background:#ffffff10;border-radius:4px;color:#fff}
+.ex-ctl{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:8px 0}.ex-ctl button{margin-left:4px}.ex-ctl button.on{background:#3ddc8433;border-color:#3ddc84}
+.ex-badge{background:#111;color:#3ddc84;padding:0 6px;border-radius:3px;font-size:11px;margin-left:4px}
+.ex-st{background:#111;padding:0 7px;border-radius:3px;font-size:11px}
+.dkst th.fl.exw3 > img,.dkst th.fl.exw3 > svg,.dkst th.fl.exw3 > span:first-child{width:26px!important;max-width:26px;height:auto;display:block;margin:0 auto}
+.sv-chips{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:13px}.sv-chipd{white-space:nowrap}
+select:disabled{opacity:.6;cursor:not-allowed}
+.dkt-slots .slots{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media(max-width:800px){.dkt-slots .slots{grid-template-columns:1fr}}
+.slot{border:1px solid #ffffff1f;border-radius:8px;padding:10px;background:#ffffff06;display:flex;flex-direction:column;gap:3px;min-height:90px}
+.slot.tgt{border-color:#3ddc84aa}.slot.last{border-color:#4ea8ff}
+.slot-h{display:flex;justify-content:space-between;align-items:center;font-size:12px;letter-spacing:.06em}
+.slot-last{font-size:10px;color:#4ea8ff}
+.slot-btns{display:flex;flex-wrap:wrap;gap:6px;margin-top:auto;padding-top:6px}
+.slot-del{color:#ff6b6b}.slot-warn{color:#ffd166}

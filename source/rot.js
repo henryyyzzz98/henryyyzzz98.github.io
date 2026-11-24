@@ -16,11 +16,12 @@ function rotSeason(G0, base) {
 }
 // does driver id still have this seat available? (each car of each constructor once)
 function rotFree(R, id, s) { const u = R.used[id]; return !(u && u[s[0]] && u[s[0]].includes(s[1])); }
+function rotExpSkip(G0) { try { const E = typeof expInfo === 'function' ? expInfo(G0) : null, h = E && expHalf(E, G0.round); return h && h.win; } catch (e) { return null; } }
 function rotDraw(G0, R) {
   const n = R.seats.length;
   // who races: everyone if the pool fits, else the drivers with fewest starts (random tie-break)
   const starts = id => Object.values(R.used[id] || {}).reduce((a, l) => a + l.length, 0);
-  let drivers = R.pool.filter(id => G0.drivers[id] && !G0.drivers[id].retired).map(id => [id, starts(id) + Math.random()]).sort((a, b) => a[1] - b[1]).slice(0, n).map(x => x[0]);
+  let drivers = R.pool.filter(id => G0.drivers[id] && !G0.drivers[id].retired && !(G0.survival && G0.sv && G0.sv.year === G0.year && G0.sv.out[id]) && id !== rotExpSkip(G0)).map(id => [id, starts(id) + Math.random()]).sort((a, b) => a[1] - b[1]).slice(0, n).map(x => x[0]);
   // a driver who has driven every car on the grid starts a fresh cycle
   drivers.forEach(id => { if (R.seats.every(s => !rotFree(R, id, s))) { R.used[id] = {}; R.cyc = R.cyc || {}; R.cyc[id] = (R.cyc[id] || 1) + 1; } });
   const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };

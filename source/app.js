@@ -912,14 +912,14 @@ const A = {
   stt(el) { const e = WK.entries.find(e => e.d.id === el.dataset.d); if (WK.stage === 'sgrid') e.sStartTyre = el.dataset.v; else e.startTyre = el.dataset.v; render(); },
   autostrat(el) { WK.entries.find(e => e.d.id === el.dataset.d).auto = el.checked; },
   skipgp() {
-    if (!WK || (WK.stage !== 'grid' && WK.stage !== 'sgrid' && WK.stage !== 'hbreak' && WK.stage !== 'gbreak')) return;
+    if (!WK || (WK.stage !== 'grid' && WK.stage !== 'sgrid' && WK.stage !== 'hbreak' && WK.stage !== 'gbreak' && WK.stage !== 'xbreak')) return;
     let guard = 0;
     do {
       A.startrace(true); cancelAnimationFrame(raf);
       RACE.started = true; LIGHTS = null; PAUSED = false; let n = 0;
       while (!RACE.done && n++ < 3000000) { RACE.step(0.25); RACE.events.length = 0; }
       finishRace();
-    } while ((WK.stage === 'hbreak' || WK.stage === 'gbreak') && guard++ < 6);
+    } while ((WK.stage === 'hbreak' || WK.stage === 'gbreak' || WK.stage === 'xbreak') && guard++ < 6);
   },
   startrace(q) {
     const sprint = WK.stage === 'sgrid';

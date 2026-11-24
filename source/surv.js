@@ -17,6 +17,7 @@ const _sv_viewSetup = viewSetup;
 viewSetup = function () {
   let html = _sv_viewSetup.apply(this, arguments);
   const c = SETUP.comp || 'points';
+  if (SETUP.regs && SETUP.regs.format === 'exempt') return html.replace('<div class="row" style="margin:16px 0 40px">', `<div class="card sv-setup" style="margin-top:12px"><h3>Competition</h3><div class="small mut">🏁 Exemption weekend runs its own survival season: no points, one driver out every weekend, and the winner of Grand Prix 1 at the last round is champion.</div></div><div class="row" style="margin:16px 0 40px">`);
   const card = `<div class="card sv-setup" style="margin-top:12px"><h3>Competition</h3><div class="row">${[['points', '🏆 Points championship'], ['survival', '🏁 Survival season']].map(([k, v]) => `<button data-a="setcomp" data-v="${k}" class="${c === k ? 'on' : ''}">${v}</button>`).join('')}</div>
     <div class="small mut" style="margin-top:8px">${c === 'survival' ? 'Amazing Race style: no points at all. After every Grand Prix the last-placed driver(s) still in the competition are eliminated for the rest of the season, until three drivers reach the final round. Whoever wins the final is champion. If the express pass race is on, its winner skips the next race and is safe from elimination. Points-based rules (prize pot, gamble grid) are switched off.' : 'The usual season: points for each race decide the championships.'}</div></div>`;
   return html.replace('<div class="row" style="margin:16px 0 40px">', card + '<div class="row" style="margin:16px 0 40px">');
@@ -165,7 +166,7 @@ function svExpMap(G0) { const m = {}; try { const E = typeof expInfo === 'functi
 function svArchive(G0) {
   const S = svCur(G0); if (!S) return;
   G0.svArch = G0.svArch || {};
-  G0.svArch[G0.year] = { pool: S.pool.slice(), out: JSON.parse(JSON.stringify(S.out)), sched: S.sched.slice(), champ: S.champ, final: S.final ? S.final.slice() : null, exp: svExpMap(G0) };
+  G0.svArch[G0.year] = { pool: S.pool.slice(), out: JSON.parse(JSON.stringify(S.out)), sched: S.sched.slice(), champ: S.champ, final: S.final ? S.final.slice() : null, exp: svExpMap(G0), exr: S.exr ? JSON.parse(JSON.stringify(S.exr)) : null, exw: !!(G0.rules && G0.rules.exempt) };
 }
 const _sv_dkArchiveSeason = dkArchiveSeason;
 dkArchiveSeason = function (G0) { const r = _sv_dkArchiveSeason.apply(this, arguments); try { if (svOn(G0)) svArchive(G0); } catch (e) { } return r; };
@@ -196,7 +197,8 @@ deskStandings = function () {
   const tcell = (id, extra = '') => { const t = tm(id); return t ? `<td class="l tcell ${extra}" style="--tc:${t.color};--ti:${dkInk(t.color)}">${esc(t.name)}</td>` : `<td class="l ${extra}">—</td>`; };
   const rounds = D.n || D.cal.length, done = D.results.length, mode = DK2.st, cal = D.cal;
   const isFinal = i => i === rounds - 1;
-  const flags = cal.map((c, i) => { const k = S && S.sched ? S.sched[i] : 0; return `<th class="fl ${i < done ? '' : 'todo'}" title="R${i + 1} ${esc(c[0])}">${dkFlag(c[1])}<div class="sv-k">${isFinal(i) ? 'F' : k ? '−' + k : '·'}</div></th>`; }).join('');
+  const EXW = S && (S.exw || S.exr || (cur && typeof exOn === 'function' && exOn()));
+  const flags = cal.map((c, i) => { const k = S && S.sched ? S.sched[i] : 0; return `<th class="fl ${i < done ? '' : 'todo'} ${EXW ? 'exw3' : ''}" ${EXW ? 'colspan="3"' : ''} title="R${i + 1} ${esc(c[0])}">${dkFlag(c[1])}<div class="sv-k">${isFinal(i) ? 'F' : k ? '−' + k : '·'}</div>${EXW ? '<div class="exw-sub"><span>1</span><span>2</span><span>3</span></div>' : ''}</th>`; }).join('');
   const alive = S ? S.pool.filter(id => !S.out[id]).length : 0;
   const seasonSel = years.length ? `<select class="dk-season" data-dkc="dkseason">${[G.year, ...years].map(y => `<option value="${y}" ${y === D.year ? 'selected' : ''}>${y}${y === G.year ? ' — current season' : ''}</option>`).join('')}</select>` : '';
   let body;
@@ -217,6 +219,13 @@ deskStandings = function () {
     else sd = S.pool.map(id => byId.get(id)).filter(Boolean);
     const XM = cur ? svExpMap(G) : (S.exp || {});
     body = `<div class="dk-h"><b>Survival Board ${D.year}</b><span class="dk-mut"> · ${S.champ ? 'season complete' : `${alive} still in · ${S.pool.length - alive} eliminated`}</span></div><div class="dk-scroll"><table class="dkst ${DK2.modern ? 'modern' : 'classic'}"><thead><tr><th class="stk0">Pos</th><th class="l stk1">Driver</th><th></th><th class="l">Team</th>${flags}<th class="pts">Status</th></tr></thead><tbody>${sd.map((d, i) => {
+      const exCells = k => { const res = D.results[k], m = S.exr && S.exr[k] && S.exr[k][d.id], gone = S.out[d.id] && S.out[d.id].r === k;
+        if (!m) { const skip = res && (XM[k] === d.id || (S.pool.includes(d.id) && (!S.out[d.id] || k < S.out[d.id].r)));
+          return skip ? `<td class="rc exw-c" colspan="3"><span class="sv-skip">EXP</span></td>` : `<td class="rc exw-c">${S.out[d.id] && k > S.out[d.id].r ? '<span class="dk-mut">×</span>' : ''}</td><td class="rc exw-c"></td><td class="rc exw-c"></td>`; }
+        const lastG = m[2] ? 2 : m[1] ? 1 : 0;
+        return m.map((v, g) => `<td class="rc exw-c ${v ? dkResCls(v === 'NC' ? { pos: 99, out: 'NC' } : { pos: +v }) : ''} ${gone && g === lastG ? 'sv-gone' : ''}">${v ? (v === 'NC' ? 'NC' : v) : ''}</td>`).join(''); };
+      if (EXW) return (() => { const tid = teamOf(d), t = tm(tid), st = svStatusGen(S, cal, d.id);
+        return `<tr class="${cur && (G.player ? d.team === G.player : d.id === G.follow) ? 'me' : ''} ${S.out[d.id] ? 'sv-dim' : ''}" data-prof="${d.id}"><td class="pos" style="border-left:3px solid ${t ? t.color : '#444'}">${i + 1}</td><td class="l nm">${esc(d.name)}</td><td class="flc">${dkFlag(d.nat)}</td>${tid ? tcell(tid) : '<td class="l"></td>'}${cal.map((_, k) => exCells(k)).join('')}<td class="pts ${st.c}">${st.t}</td></tr>`; })();
       const cells = cal.map((_, k) => { const res = D.results[k]; const r = res && res.rows.find(x => x.id === d.id); const gone = S.out[d.id] && S.out[d.id].r === k;
         const skip = !r && res && (XM[k] === d.id || (S.pool.includes(d.id) && (!S.out[d.id] || k < S.out[d.id].r))); // still in but didn't race = express-pass skip
         return `<td class="rc ${dkResCls(r)} ${gone ? 'sv-gone' : ''}">${r ? dkResTxt(r, res) : skip ? '<span class="sv-skip" title="Express pass — skipped and safe">EXP</span>' : S.out[d.id] && k > S.out[d.id].r ? '<span class="dk-mut">×</span>' : ''}</td>`; }).join('');
@@ -235,7 +244,7 @@ deskStandings = function () {
   return `<div class="dk dk-page" id="dk"><div class="dk-pagehead"><h1>Survival Season</h1><span class="sp"></span><span class="dk-mut">${D.year} · Round ${done} of ${rounds} · no points</span><button data-a="tab" data-v="home">Back</button></div>
   <div class="dk-pagebar"><span class="dk-tabs2">${[['d', 'Drivers'], ['t', 'Constructors']].map(([k, v]) => `<button class="${mode === k && DK2.panel !== 'hist' ? 'on' : ''}" data-a="dkst" data-v="${k}">${v}</button>`).join('')}</span><span class="sp"></span>${nx}${seasonSel}<button class="${DK2.panel === 'hist' ? 'on' : ''}" data-a="dkst2" data-v="hist">Champions</button></div>
   <section class="dk-stbox">${body}</section>
-  <div class="dk-legend"><span class="dk-mut">Under each flag: −N = drivers eliminated that round · · = non-elimination round · F = final. The last-placed drivers still in the competition are eliminated; retirements count as last.</span></div></div>`;
+  <div class="dk-legend"><span class="dk-mut">${EXW ? 'Each round shows Grand Prix 1, 2 and 3 (NC = not classified). The winner of Grand Prix 1 at the last round is champion. ' : ''}Under each flag: −N = drivers eliminated that round · · = non-elimination round · F = final. The last-placed drivers still in the competition are eliminated; retirements count as last.</span></div></div>`;
 };
 
 // ---------- race weekend: grid note, live board, results ----------
@@ -244,6 +253,7 @@ deskGrid = function (sprint) {
   let html = _sv_deskGrid.apply(this, arguments);
   if (!svOn()) return html;
   html = html.replace(/, which pays half points\./g, ' and is safe from elimination.').replace(/½ <b>Half points this race\.<\/b>/g, '🎟️ <b>Express pass in use.</b>');
+  if (typeof exOn === 'function' && exOn()) return html;
   if (sprint) return html.replace(/(<div class="dk-mut dkg-note">)/, `<div class="dk-mut dkg-note sv-note">🏁 Survival season: the sprint is for glory only — nobody is eliminated.</div>$1`);
   return html.replace(/(<div class="dk-mut dkg-note">)/, `<div class="dk-mut dkg-note sv-note"><b>🏁 Survival season · ${esc(svCountTxt(G, G.round))}.</b> ${svFinal(G, G.round) ? '' : (G.sv && G.sv.sched[G.round]) ? 'The last-placed driver(s) at the flag are out for the rest of the season.' : 'Everyone races on, whatever the result.'}</div>$1`);
 };
@@ -266,7 +276,7 @@ const _sv_updRace = updateRaceUI;
 updateRaceUI = function () {
   const r = _sv_updRace.apply(this, arguments);
   try {
-    if (!svOn() || !RACE || RACE.sprint || !svCur()) return r;
+    if (!svOn() || !RACE || RACE.sprint || !svCur() || (typeof exOn === 'function' && exOn())) return r;
     const S = G.sv, ds = document.getElementById('dksess'), fin = svFinal(G, G.round), k = S.sched[G.round] || 0;
     const run = RACE.order().filter(c => svAlive(S, c.d.id)), danger = fin ? [] : run.slice(-k);
     const tag = ` <span class="rng-chip pend sv-chip">${fin ? '🏁 FINAL' : k ? `⛔ OUT: ${danger.map(c => c.d.code).join(' ')}` : '🟢 NO ELIMINATION'}</span>`;
@@ -279,7 +289,7 @@ updateRaceUI = function () {
 const _sv_lcsHtml = lcsHtml;
 lcsHtml = function () {
   if (!svOn() || !svCur()) return _sv_lcsHtml.apply(this, arguments);
-  const R = RACE, S = G.sv, fin = svFinal(G, G.round), k = R.sprint ? 0 : S.sched[G.round] || 0, run = R.order().filter(c => svAlive(S, c.d.id)), lead = run[0], lap = lead ? Math.min(R.laps, lead.laps + (lead.finished ? 0 : 1)) : 0;
+  const R = RACE, S = G.sv, fin = svFinal(G, G.round), k = R.sprint || (typeof exOn === 'function' && exOn()) ? 0 : S.sched[G.round] || 0, run = R.order().filter(c => svAlive(S, c.d.id)), lead = run[0], lap = lead ? Math.min(R.laps, lead.laps + (lead.finished ? 0 : 1)) : 0;
   const me = c => (G.player ? c.t.id === G.player : c.d.id === G.follow) ? 'me' : '';
   const rows = run.map((c, i) => { const out = !fin && i >= run.length - k; return `<tr class="${me(c)} ${out ? 'sv-danger' : ''}"><td>${i + 1}</td><td class="l"><i class="lcs-sw" style="background:${c.t.color}"></i>${dkFlag(c.d.nat)} ${esc(c.d.name)}</td><td class="ra">${c.out ? 'DNF' : 'P' + (R.order().indexOf(c) + 1)}</td><td class="ra">${fin ? (i === 0 ? '🏆' : '') : out ? '<b class="bad">OUT</b>' : '<span class="good">SAFE</span>'}</td></tr>`; }).join('');
   const gone = S.pool.filter(id => S.out[id]).map(id => G.drivers[id]).filter(Boolean);
@@ -294,6 +304,7 @@ dkRaceView = function (o) {
   if (!svOn()) return html;
   const s = G.results[o.k];
   html = html.replace('<th class="ra">Pts</th></tr></thead>', '<th class="ra">Survival</th></tr></thead>');
+  html = html.replace(/<section><div class="dk-h"><b>(DRIVERS|TEAMS) STANDINGS AFTER[\s\S]*?<\/section>/g, ''); // no points → no points tables
   html = html.replace(/<tr class="([^"]*)" data-prof="([^"]+)"([\s\S]*?)<td class="ra plain">[^<]*<\/td><\/tr>/g, (m, cls, id, mid) => {
     let t = '';
     if (!o.sprint && s && s.surv) { if (s.surv.final) t = s.surv.champ === id ? '<b class="sv-champ">🏆 CHAMPION</b>' : G.sv && G.sv.final && G.sv.final.includes(id) ? 'Finalist' : '';
@@ -302,7 +313,7 @@ dkRaceView = function (o) {
   });
   if (!o.sprint && s && s.surv && !s.surv.final) {
     const el = s.surv.elim.map(id => G.drivers[id]).filter(Boolean);
-    html = html.replace('<table class="dkfp dkrr">', `<div class="heat-strip sv-strip"><span><b>🏁 Survival</b> · ${el.length ? `Eliminated: ${el.map(d => esc(d.name)).join(', ')}` : 'Non-elimination round — everyone races on'}</span><span>${G.sv ? G.sv.pool.filter(id => !G.sv.out[id] || G.sv.out[id].r > s.round - 1).length - el.length : ''} drivers remain</span></div><table class="dkfp dkrr">`);
+    html = html.replace('<table class="dkfp dkrr">', `<div class="heat-strip sv-strip"><span><b>🏁 Survival</b> · ${el.length ? `Eliminated: ${el.map(d => esc(d.name)).join(', ')}` : 'Non-elimination round — everyone races on'}</span><span>${G.sv ? G.sv.pool.filter(id => !G.sv.out[id] || G.sv.out[id].r > s.round - 1).length : ''} drivers remain</span></div><table class="dkfp dkrr">`);
   } else if (!o.sprint && s && s.surv && s.surv.final && G.drivers[s.surv.champ]) html = html.replace('<table class="dkfp dkrr">', `<div class="heat-strip sv-strip"><span><b>🏆 ${esc(G.drivers[s.surv.champ].name)} wins the final and the survival season!</b></span></div><table class="dkfp dkrr">`);
   return html;
 };
@@ -326,9 +337,54 @@ function svCtx() { return VIEW === 'setup' ? SETUP.comp === 'survival' : svOn();
 const _sv_dkRegsForm = dkRegsForm;
 dkRegsForm = function (r, act) {
   let html = _sv_dkRegsForm.apply(this, arguments);
-  if (!svCtx()) return html;
+  if (!svCtx() && !(r && r.format === 'exempt')) return html;
   SV_PTS_RULES.forEach(n => { html = html.replace(new RegExp(`<label class="small"[^>]*>${n.replace(/[()&]/g, '\\$&')}<select[\\s\\S]*?</select></label>`), ''); });
   html = html.replace(/<label class="small">Points for 1st, 2nd, 3rd…[\s\S]*?<\/label>/, '').replace(/(Points system[\s\S]*?)?<span><\/span>/, '');
   html = html.replace('each winner skips the next race, which pays half points', 'each winner skips the next race and is safe from elimination');
   return html.replace(/(<div class="grid g2" style="gap:10px">)/, `$1<div class="small sv-regnote" style="grid-column:1/-1">🏁 Survival season: there are no points, so rules that only change points (points system, pole and fastest-lap bonuses, dropped scores, three-part GP points, prize pot, gamble grid) are hidden, and so are stand-ins — every driver still in the competition races each round.</div>`);
 };
+
+// ---------- HQ home: no title fight / points tables in a survival season ----------
+function svHomeCard() {
+  const S = svView(G); if (!S) return '';
+  const alive = S.pool.filter(id => !S.out[id]).map(id => G.drivers[id]).filter(Boolean);
+  const gone = S.pool.filter(id => S.out[id]).sort((a, b) => S.out[b].r - S.out[a].r).map(id => G.drivers[id]).filter(Boolean);
+  const done = G.results.length, R = G.cal.length;
+  const head = S.champ ? `<div class="big">🏆 ${esc(G.drivers[S.champ].name)}</div><div class="mut small">${G.year} survival champion</div>`
+    : `<div class="big">${alive.length} still in</div><div class="mut small">${gone.length} eliminated · ${done < R ? `next: R${done + 1} ${esc(roundTrack(G, done).short)} — ${esc(svCountTxt(G, done))}` : ''}</div>`;
+  const fav = G.follow && G.drivers[G.follow], st = fav && svStatus(G, fav.id);
+  const me = G.player ? S.pool.filter(id => G.drivers[id] && G.drivers[id].team === G.player).map(id => G.drivers[id]) : [];
+  const mine = (fav ? [fav] : []).concat(me).map(d => { const s2 = svStatus(G, d.id); return `<div class="news">${G.follow === d.id ? '⭐ ' : ''}${flag(d.nat)} <b>${esc(d.name)}</b> — <span class="${s2.c}">${esc(s2.t)}</span></div>`; }).join('');
+  return `<div class="card"><h3>Survival season</h3>${head}${mine}</div>
+  <div class="card"><h3>Still in · ${alive.length}</h3><div class="sv-chips">${alive.map(d => `<span class="sv-chipd">${tbar(d.team)}${esc(d.name)}</span>`).join('')}</div>
+  ${gone.length ? `<h3 style="margin-top:12px">Eliminated · ${gone.length}</h3><table>${gone.slice(0, 8).map(d => `<tr><td>${tbar(d.team)}${esc(d.name)}</td><td class="mut small" style="text-align:right">R${S.out[d.id].r + 1} ${esc(roundTrack(G, S.out[d.id].r).short)}</td></tr>`).join('')}</table>${gone.length > 8 ? `<div class="mut small">+${gone.length - 8} more on the Standings page</div>` : ''}` : ''}</div>`;
+}
+function svHomeFix(html) {
+  if (!svOn()) return html;
+  const re = /<div class="card"><h3>(Title fight|Drivers' championship|Constructors)<\/h3>[\s\S]*?<\/div>\s*(?=<div class="card")/g;
+  let first = true;
+  html = html.replace(re, () => { if (first) { first = false; return svHomeCard(); } return ''; });
+  // manager team card: no points / constructors position
+  html = html.replace(/-?\d+ pts · P\d+/g, '');
+  return html.replace(/<div><div class="big">P\d+<\/div><div class="mut small">Constructors<\/div><\/div><div><div class="big">-?\d+<\/div><div class="mut small">Points<\/div><\/div>/, '');
+}
+const _sv_specHome = specHome; specHome = function () { return svHomeFix(_sv_specHome.apply(this, arguments)); };
+const _sv_hqHome = hqHome; hqHome = function () { return svHomeFix(_sv_hqHome.apply(this, arguments)); };
+
+// ---------- the weekend format can't change once the game has started ----------
+const _sv_dkRegsForm2 = dkRegsForm;
+dkRegsForm = function (r, act) {
+  let html = _sv_dkRegsForm2.apply(this, arguments);
+  const started = G && ((G.results && G.results.length) || (G.histYears && G.histYears.length) || G.round > 0 || WK);
+  if (VIEW !== 'setup' && started) html = html.replace(/(<select[^>]*data-k="format"[^>]*)>/, '$1 disabled title="The weekend format is fixed for the whole game">').replace(/(Weekend format)(<select)/, '$1 <span class="dk-mut small">(fixed for this game)</span>$2');
+  return html;
+};
+// storylines: no points-based title fight / constructors stories in a survival season
+if (typeof stHeadlines === 'function') {
+  const _sv_stHeadlines = stHeadlines;
+  stHeadlines = function () {
+    const L = _sv_stHeadlines.apply(this, arguments);
+    if (!svOn()) return L;
+    return L.filter(x => !/world champion|championship|Match point|Neck and neck|Constructors|season preview/i.test(x.title || '') && !/\bpoints?\b/i.test(x.text || ''));
+  };
+}
