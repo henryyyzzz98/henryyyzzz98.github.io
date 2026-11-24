@@ -461,6 +461,11 @@
   .bpTile .strip { border-radius: 0 0 7px 7px; padding: 5px 7px; font-size: 10px; }
   .bpTile .strip .r1, .bpTile .strip .r2 { display: flex; justify-content: space-between; gap: 4px; }
   .bpTile .strip i { font-style: normal; font-weight: 800; }
+  .beLib { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 8px; margin: 6px 0 10px; max-height: 320px; overflow: auto; padding: 2px; }
+  .beLibItem { display: flex; flex-direction: column; gap: 4px; padding: 4px; border: 1.5px solid #d8d4c8; border-radius: 10px; background: #fff; cursor: pointer; font: 600 10px var(--body, inherit); color: var(--ink); text-align: left; min-width: 0; }
+  .beLibItem img { width: 100%; aspect-ratio: 55 / 85; object-fit: cover; border-radius: 6px; background: #eee; }
+  .beLibItem span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .beLibItem.on { border-color: var(--ink); box-shadow: 0 0 0 2px var(--ink); }
   .be .help { font-size: 12px; color: #55524a; margin-top: 6px; line-height: 1.45; }
 
   /* ----- phones ----- */
@@ -577,6 +582,10 @@
     <label>OpenSea API key <input type="password" id="ctKey" placeholder="saved in this browser only" size="22"></label>
     <button class="chip run" id="ctRun">Run live</button>
     <button class="chip" id="ctCsv" disabled>⬇ CSV</button>
+  </div>
+  <div id="ctAdmin" class="note" style="margin-top:12px" hidden>
+    <button class="chip" id="ctMakeHourly">📌 Make this the hourly contest</button>
+    <div id="ctAdminMsg" style="margin-top:8px"></div>
   </div>
   <div id="ctSaved" class="note" style="margin-top:12px"></div>
   <div id="ctStatus"></div>
@@ -1274,6 +1283,31 @@ async function ownerLookupFast(ids, run, onProgress) {
   return res;
 }
 
+// Admin: save the season + collections typed above as the contest the hourly GitHub job tracks
+function ctShowAdmin() { $("ctAdmin").hidden = !isAdmin(); }
+$("ctMakeHourly").onclick = async () => {
+  const season = $("ctSeason").value.trim();
+  const colls = $("ctColls").value.split(/[,\s]+/).map(c => c.trim().toUpperCase()).filter(Boolean);
+  const msg = t => { $("ctAdminMsg").innerHTML = t; };
+  if (!season || !colls.length) return msg("Enter a season and at least one collection first.");
+  if (!confirm(`Track ${season} ${colls.join(", ")} every hour?\nThe current hourly standings will be replaced.`)) return;
+  const btn = $("ctMakeHourly"); btn.disabled = true; msg("Saving…");
+  try {
+    const branch = ls.get("ghBranch") || "main", path = "contest-config.json";
+    const cur = await gh(`/contents/${path}?ref=${encodeURIComponent(branch)}`);
+    const body = { season, collections: colls, updated: new Date().toISOString() };
+    const put = await gh(`/contents/${path}`, { method: "PUT", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ branch, message: `Contest: ${season} ${colls.join(", ")}`, content: b64enc(JSON.stringify(body, null, 1) + "\n"), ...(cur.ok ? { sha: cur.j.sha } : {}) }) });
+    if (!put.ok) throw new Error(`GitHub ${put.status}: ${put.j.message || "save failed"}`);
+    // start the job now instead of waiting for the next hour (needs the token's Actions permission)
+    const run = await gh(`/actions/workflows/crawler.yml/dispatches`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ref: branch }) });
+    msg(run.ok || run.status === 204
+      ? `✅ Saved. The job has started — new standings appear here in about 15–20 minutes.`
+      : `✅ Saved. New standings appear after the next hourly run (couldn't start it now: your token needs the <b>Actions: write</b> permission).`);
+  } catch (e) { msg(`⚠️ ${esc(e.message)}`); }
+  btn.disabled = false;
+};
+
 $("ctRun").onclick = async () => {
   const run = ++ctRun;
   const season = $("ctSeason").value.trim();
@@ -1413,6 +1447,7 @@ $("ctMode").onchange = () => { if (saved && !$("ctStatus").classList.contains("e
 function openContest() {
   $("contest").classList.add("open");
   if (!saved) loadSaved();
+  ctShowAdmin();
   if (osKey()) $("ctKey").placeholder = "saved ✓ (paste to replace)";
 }
 
@@ -2074,6 +2109,17 @@ async function openDetail(m) {
 }
 
 /* ----- Admin: card back editor (one per collection) ----- */
+// images already uploaded to images/backs in the repo, so one image can be reused for many collections
+let backLib = null;
+async function loadBackLib() {
+  const branch = ls.get("ghBranch") || "main";
+  const r = await gh(`/contents/images/backs?ref=${encodeURIComponent(branch)}`);
+  if (r.status === 404) return (backLib = []);
+  if (!r.ok || !Array.isArray(r.j)) return (backLib = { error: `Couldn't list your images (GitHub ${r.status}).` });
+  backLib = r.j.filter(f => f.type === "file" && /\.(png|jpe?g|webp)$/i.test(f.name))
+    .map(f => ({ name: f.name, path: f.path, sha: f.sha, url: f.download_url || f.path }));
+  return backLib;
+}
 async function uploadBackImage(key, file) {
   const ext = (file.name.split(".").pop() || "png").toLowerCase().replace(/[^a-z0-9]/g, "") || "png";
   const path = `images/backs/${key}.${ext}`;
@@ -2128,8 +2174,14 @@ function renderBackEditor(box) {
         ${st.stops.length > 2 ? `<button type="button" class="linkish" data-del="${i}">Remove</button>` : ""}</div>`).join("")}
       ${st.stops.length < 4 ? `<div class="row"><button type="button" class="chip" id="beAdd" style="color:var(--ink);border-color:var(--ink)">+ Add colour</button></div>` : ""}` : ""}
     ${st.mode === "image" ? `
-      <div class="row"><label>Back image <input type="file" id="beFile" accept="image/png,image/jpeg,image/webp"></label></div>
-      <div class="help">Use a clean crop of the back with no logo or text. ${D.be.file ? `Selected: <b>${esc(D.be.file.name)}</b> (uploads when you add it)` : st.image ? `Current: ${esc(st.image.split("?")[0])}` : ""}</div>
+      <div class="row"><label>Back image <input type="file" id="beFile" accept="image/png,image/jpeg,image/webp"></label>
+        <button type="button" class="pill" id="beLibBtn">${D.be.libOpen ? "Hide uploaded images" : "Use an uploaded image"}</button></div>
+      ${D.be.libOpen ? `<div class="beLib" id="beLib">${backLib === null ? `<span class="help">Loading your images…</span>`
+        : backLib.error ? `<span class="help">${esc(backLib.error)}</span>`
+        : !backLib.length ? `<span class="help">No images in images/backs yet. Upload one with the file box above.</span>`
+        : backLib.map((f, i) => `<button type="button" class="beLibItem${st.image && st.image.split("?")[0] === f.path ? " on" : ""}" data-lib="${i}" title="${esc(f.name)}">
+            <img src="${esc(f.url)}" alt="" loading="lazy"><span>${esc(f.name.replace(/\.[a-z0-9]+$/i, ""))}</span></button>`).join("")}</div>` : ""}
+      <div class="help">Use a clean crop of the back with no logo or text. ${D.be.file ? `Selected: <b>${esc(D.be.file.name)}</b> (uploads when you add it)` : st.image ? `Using: <b>${esc(st.image.split("?")[0].split("/").pop())}</b> (already in your repo, nothing to upload)` : ""}</div>
       <div class="row"><span style="font-size:12px;font-weight:600">Fit</span>${seg("fit", [["tile", "Tile"], ["cover", "Stretch"]], st.fit)}</div>
       <div class="row"><label for="beTint">Tint behind text</label><input type="range" id="beTint" min="0" max="80" step="5" value="${st.tint}"><span id="beTintV">${st.tint}%</span></div>` : ""}
     <div class="row"><span style="font-size:12px;font-weight:600">Text colour</span>${seg("text", [["auto", "Auto"], ["black", "Black"], ["white", "White"], ["custom", "Custom"]], textMode)}</div>
@@ -2164,26 +2216,36 @@ function renderBackEditor(box) {
   wrap.querySelectorAll("[data-del]").forEach(b => b.onclick = () => { st.stops.splice(+b.dataset.del, 1); redraw(); });
   wrap.querySelector("#beAdd") && (wrap.querySelector("#beAdd").onclick = () => { st.stops.push({ color: "#ffffff", at: 100 }); redraw(); });
   wrap.querySelector("#beText")?.addEventListener("input", e => { st.text = e.target.value; preview(); });
+  // average colour of the chosen image, so Auto text and the light-image defaults work
+  const measure = src => {
+    const im = new Image(); im.crossOrigin = "anonymous";
+    im.onload = () => {
+      try { const c = document.createElement("canvas"); c.width = c.height = 24; const x = c.getContext("2d"); x.drawImage(im, 0, 0, 24, 24);
+        const d = x.getImageData(0, 0, 24, 24).data; let rr = 0, gg = 0, bb = 0, n = 0;
+        for (let i = 0; i < d.length; i += 4) if (d[i + 3] > 128) { rr += d[i]; gg += d[i + 1]; bb += d[i + 2]; n++; }
+        if (n) st.avg = "#" + [rr, gg, bb].map(v => Math.round(v / n).toString(16).padStart(2, "0")).join("");
+        // a light background (like the holographic Special back) needs no tint and reads best with black text
+        if (n && luminance(st.avg) > 0.45) { st.tint = 0; st.text = "black"; }
+      } catch {}
+      redraw();
+    };
+    im.onerror = () => redraw(); im.src = src;
+  };
+  wrap.querySelector("#beLibBtn")?.addEventListener("click", () => {
+    D.be.libOpen = !D.be.libOpen; redraw();
+    if (D.be.libOpen && (backLib === null || backLib.error)) { backLib = null; loadBackLib().then(() => { if (D?.be?.libOpen) redraw(); }); }
+  });
+  wrap.querySelectorAll("[data-lib]").forEach(b => b.onclick = () => {
+    const f = backLib[+b.dataset.lib]; if (!f) return;
+    D.be.file = null; st.image = f.path + "?v=" + f.sha.slice(0, 7); st.preview = f.url; delete st.avg;
+    measure(f.url);
+  });
   wrap.querySelector("#beFile")?.addEventListener("change", e => {
     const f = e.target.files[0]; if (!f) return;
     if (f.size > 3 * 1024 * 1024) { wrap.querySelector("#beMsg").textContent = "That image is over 3 MB — please use a smaller crop."; return; }
     D.be.file = f;
     const r = new FileReader();
-    r.onload = () => {
-      st.preview = r.result;
-      const im = new Image();
-      im.onload = () => {
-        try { const c = document.createElement("canvas"); c.width = c.height = 24; const x = c.getContext("2d"); x.drawImage(im, 0, 0, 24, 24);
-          const d = x.getImageData(0, 0, 24, 24).data; let rr = 0, gg = 0, bb = 0, n = 0;
-          for (let i = 0; i < d.length; i += 4) if (d[i + 3] > 128) { rr += d[i]; gg += d[i + 1]; bb += d[i + 2]; n++; }
-          if (n) st.avg = "#" + [rr, gg, bb].map(v => Math.round(v / n).toString(16).padStart(2, "0")).join("");
-          // a light background (like the holographic Special back) needs no tint and reads best with black text
-          if (n && luminance(st.avg) > 0.45) { st.tint = 0; st.text = "black"; }
-        } catch {}
-        redraw();
-      };
-      im.onerror = () => redraw(); im.src = r.result;
-    };
+    r.onload = () => { st.preview = r.result; measure(r.result); };
     r.readAsDataURL(f);
   });
   wrap.querySelector("#beSave").onclick = async () => {
