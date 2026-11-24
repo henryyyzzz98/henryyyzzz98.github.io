@@ -17,7 +17,9 @@ permissions:
 
 concurrency:
   group: pages
-  cancel-in-progress: true   # a newer publish replaces an older one that hasn't finished
+  # Never cut a deployment off halfway (GitHub Pages then refuses the next one). A newer publish waits
+  # for the current one, and if several are waiting, only the newest runs.
+  cancel-in-progress: false
 
 jobs:
   publish:
@@ -25,7 +27,7 @@ jobs:
     timeout-minutes: 15
     environment:
       name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
+      url: ${{ steps.deploy.outputs.page_url || steps.deploy_retry.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
 
@@ -46,8 +48,23 @@ jobs:
           node scripts/build-site.mjs
 
       - uses: actions/configure-pages@v5
+      # a unique name per attempt, so pressing "Re-run" doesn't trip over the first attempt's copy
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
+          name: github-pages-${{ github.run_attempt }}
       - id: deploy
+        continue-on-error: true
         uses: actions/deploy-pages@v4
+        with:
+          artifact_name: github-pages-${{ github.run_attempt }}
+
+      # GitHub sometimes refuses a deployment right after another one — wait and try once more
+      - name: Wait before retrying
+        if: steps.deploy.outcome == 'failure'
+        run: sleep 45
+      - id: deploy_retry
+        if: steps.deploy.outcome == 'failure'
+        uses: actions/deploy-pages@v4
+        with:
+          artifact_name: github-pages-${{ github.run_attempt }}
