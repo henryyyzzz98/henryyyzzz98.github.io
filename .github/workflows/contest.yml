@@ -1,0 +1,76 @@
+name: Contest standings
+
+# Updates the "Top buyer per member" contest every hour, separately from the long crawler so a new
+# contest shows up within about 10–15 minutes. Which contest it tracks comes from contest-config.json,
+# which the website saves when you press "Make this the hourly contest" on the Contest tab (as admin).
+on:
+  schedule:
+    - cron: "47 * * * *"   # every hour at :47 (UTC)
+  workflow_dispatch:
+
+permissions:
+  actions: write    # ask the site to publish
+  contents: write   # save to the data branch
+
+concurrency:
+  group: objekt-contest
+  cancel-in-progress: false
+
+env:
+  RPC_URLS: ${{ secrets.RPC_URL && format('{0},https://api.mainnet.abs.xyz', secrets.RPC_URL) || 'https://api.mainnet.abs.xyz,https://abstract.api.onfinality.io/public' }}
+  META_DIR: store/data/meta
+  OUT_FILE: store/data/contest.json
+  STATE_FILE: store/data/contest-state.json
+
+jobs:
+  contest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4      # main branch: the scripts and contest-config.json
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Get the data branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          url="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          if git ls-remote --exit-code --heads "$url" data >/dev/null 2>&1; then
+            git clone --quiet --depth 1 --branch data "$url" store
+          else
+            echo "No data branch yet: the crawler creates it on its first run. Trying again next hour."
+            exit 1
+          fi
+
+      - name: Update contest standings
+        env:
+          OPENSEA_KEY: ${{ secrets.OPENSEA_KEY }}
+          TIME_BUDGET_MIN: "25"
+        run: node scripts/contest.mjs
+
+      - name: Save to the data branch
+        if: always()
+        run: |
+          cd store
+          git config user.name "objekt-bot"
+          git config user.email "objekt-bot@users.noreply.github.com"
+          git add data/contest.json data/contest-state.json 2>/dev/null || true
+          if git diff --cached --quiet; then echo "No changes"; exit 0; fi
+          git commit --quiet -m "Update contest standings"
+          # the crawler may have saved in the meantime: put this on top of it and retry
+          for i in 1 2 3 4 5; do
+            git push --quiet origin data && exit 0
+            git pull --quiet --rebase -X theirs origin data || true
+            sleep $((i * 5))
+          done
+          exit 1
+
+      - name: Publish the site with the new standings
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: gh workflow run site.yml --ref "${{ github.event.repository.default_branch }}"
