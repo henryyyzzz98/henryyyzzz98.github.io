@@ -11802,12 +11802,13 @@ hxChain('raceInit', race => {
     : `⛔ Grand Prix 3 — Elimination Grand Prix: ${race.laps} laps · ${race.cars.length} cars. The last-placed driver is out of the season.`, true);
 });
 function exClassify(R) {
-  const ord = R.order(), lead = ord.find(c => c.finished) || ord[0], need = Math.floor(0.9 * (lead ? lead.laps : R.laps));
-  return ord.map((c, i) => ({ e: c.e || exEnt(c.d.id), id: c.d.id, pos: i + 1, laps: c.laps, time: c.finished ? c.finishT : null, out: c.out, elimd: !!c.elimd, best: c.best, stops: c.stops, grid: c.grid, cls: c.elimd ? true : (c.laps >= need && !/disq/i.test(c.out || '')) }));
+  // classified = took the chequered flag on the lead lap; lapped cars (+1 lap, +2 laps…) and retirements are not classified
+  const ord = R.order(), lead = ord.find(c => c.finished) || ord[0], need = lead ? lead.laps : R.laps;
+  return ord.map((c, i) => ({ e: c.e || exEnt(c.d.id), id: c.d.id, pos: i + 1, laps: c.laps, time: c.finished ? c.finishT : null, out: c.out, lapped: !c.out && c.laps < need, elimd: !!c.elimd, best: c.best, stops: c.stops, grid: c.grid, cls: c.elimd ? true : (!c.out && c.finished && c.laps >= need) }));
 }
 function exDoc(R, k, rows) {
   try {
-    const s = { rows: rows.map(r => ({ id: r.id, pos: r.pos, out: r.cls ? null : (r.out || 'Not classified'), laps: r.laps, time: r.time, best: r.best, pts: 0 })) };
+    const s = { rows: rows.map(r => ({ id: r.id, pos: r.pos, out: r.cls ? null : (r.out || (r.lapped ? `Not classified (+${rows[0].laps - r.laps} lap${rows[0].laps - r.laps > 1 ? 's' : ''})` : 'Not classified')), laps: r.laps, time: r.time, best: r.best, pts: 0 })) };
     // classified-but-retired cars still appear in the classified list
     s.rows.forEach((x, i) => { if (rows[i].cls && rows[i].out) x.time = x.time || null; });
     const D = docRaceData(s), sc = docSched(WK), end = sc.race[1] + (k - 1) * 70 + Math.round((D.leadT || 1800) / 60);
@@ -11883,14 +11884,14 @@ elimTimeTxt = function (r) { return r.exTxt || _ex_elimTimeTxt.apply(this, argum
 function exBreakPage() {
   const X = WK.exg, P = X.parts[X.parts.length - 1], t = WK.track, k = P.k, mine = e => (G.player && e.t.id === G.player) || G.follow === e.d.id;
   const lead = P.rows[0], nextIds = X.gridNow.map(e => e.d.id);
-  const timeTxt = r => !r.cls ? `NC${r.out ? ` (${String(r.out).split(/[ (]/)[0]})` : ''}` : r === lead ? fmtTime(r.time) : r.laps < lead.laps ? `+${lead.laps - r.laps} Lap${lead.laps - r.laps > 1 ? 's' : ''}` : r.time != null && lead.time != null ? '+' + (r.time - lead.time).toFixed(3) : '';
+  const timeTxt = r => !r.cls ? `NC${r.out ? ` (${String(r.out).split(/[ (]/)[0]})` : r.lapped ? ` (+${lead.laps - r.laps} Lap${lead.laps - r.laps > 1 ? 's' : ''})` : ''}` : r === lead ? fmtTime(r.time) : r.laps < lead.laps ? `+${lead.laps - r.laps} Lap${lead.laps - r.laps > 1 ? 's' : ''}` : r.time != null && lead.time != null ? '+' + (r.time - lead.time).toFixed(3) : '';
   const cls = P.rows.filter(r => r.cls), nc = P.rows.filter(r => !r.cls);
   const tr = r => { const e = r.e, go = nextIds.includes(r.id); return `<tr class="${mine(e) ? 'me' : ''} ${go ? 'elim' : ''}" data-prof="${r.id}" style="--tc:${e.t.color};--ti:${dkInk(e.t.color)}"><td class="pos">${r.cls ? 'P' + String(r.pos).padStart(2, '0') : 'NC'}</td><td class="l">${dkFlag(e.d.nat)} ${dkNm(e.d.name)}</td><td class="l hm tcell">${esc(e.t.name)}</td><td class="ra">${r.laps}</td><td class="ra">${timeTxt(r)}</td><td class="l">${go ? `<b class="ex-st bad">→ GP${X.k}</b>` : '<b class="ex-st good">Safe</b>'}</td></tr>`; };
   const head = '<thead><tr><th>Pos</th><th class="l">Driver</th><th class="l hm">Team</th><th class="ra">Laps</th><th class="ra">Time/Gap</th><th class="l">Status</th></tr></thead>';
   const why = k === 1 ? (X.why2 === 'nc' ? `${nc.length} driver${nc.length > 1 ? 's were' : ' was'} not classified and race${nc.length > 1 ? '' : 's'} Grand Prix 2.` : `Every driver was classified, so the last ${X.gridNow.length} classified drivers race Grand Prix 2.`)
     : `${nc.length} drivers were not classified in Grand Prix 2 and race Grand Prix 3 — an Elimination Grand Prix. Last place is out of the season.`;
   return `<div class="dk dk-fp" id="dk"><div class="dk-fptitle">Grand Prix ${k} Classification - ${esc(t.short)}<span class="dk-mut">ROUND ${WK.round + 1} · ${G.year} · ${P.laps} LAPS · NEXT: GRAND PRIX ${X.k} · ${exLaps()} LAPS · ${X.gridNow.length} CARS</span></div>
-  <div class="dk-fpbox"><div class="dk-mut heat-note">🏁 ${why} Classified = completed at least 90% of the winner's laps. Grand Prix ${X.k} starts in the order of the ${X.why2 === 'last10' && k === 1 ? 'classification' : 'not-classified list'}: ${X.gridNow.map(e => esc(e.d.code)).join(' · ')}</div>
+  <div class="dk-fpbox"><div class="dk-mut heat-note">🏁 ${why} Classified = took the chequered flag on the lead lap; lapped cars and retirements are not classified. Grand Prix ${X.k} starts in the order of the ${X.why2 === 'last10' && k === 1 ? 'classification' : 'not-classified list'}: ${X.gridNow.map(e => esc(e.d.code)).join(' · ')}</div>
   <table class="dkfp">${head}<tbody>${cls.map(tr).join('')}</tbody></table>${nc.length ? `<h3 class="ex-h">Not classified</h3><table class="dkfp">${head}<tbody>${nc.map(tr).join('')}</tbody></table>` : ''}</div>
   <div class="dk-fpfoot"><span class="dk-mut kbhint">Press ENTER/SPACE or click Form up.</span><span class="sp"></span><button data-a="skipgp">⏩ Skip to the result</button><button class="pri" data-a="startrace" data-enter="1">Form up for Grand Prix ${X.k} →</button></div></div>`;
 }
