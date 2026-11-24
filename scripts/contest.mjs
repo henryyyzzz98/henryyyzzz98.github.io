@@ -9,7 +9,7 @@ import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { loadAll } from "./crawl-meta.mjs";
 
-/* ===== Contest settings — edit these for a new contest ===== */
+/* ===== Default contest — normally set from the website instead (Contest tab → "Make this the hourly contest", saved to contest-config.json) ===== */
 export const CONFIG = {
   season: "Cream02",
   collections: ["372Z", "373Z", "374Z"],
@@ -222,8 +222,19 @@ export function rank(copiesByColl, walletOf, colls, top) {
 /* ===== Main ===== */
 async function readJSON(file, fallback) { try { return JSON.parse(await readFile(file, "utf8")); } catch { return fallback; } }
 
+// contest-config.json (set from the website's Contest tab as admin) overrides the defaults above
+async function contestConfig() {
+  const file = await readJSON(process.env.CONTEST_CONFIG || "contest-config.json", null);
+  const c = { ...CONFIG };
+  if (file?.season && Array.isArray(file.collections) && file.collections.length) {
+    c.season = String(file.season).trim();
+    c.collections = file.collections.map(x => String(x).trim().toUpperCase()).filter(Boolean);
+  }
+  return c;
+}
+
 export async function main() {
-  const { season, collections: colls, topPerMember, checkHolders } = CONFIG;
+  const { season, collections: colls, topPerMember, checkHolders } = await contestConfig();
   const t0 = Date.now();
   log(`Contest: ${season} ${colls.join(" + ")} · time budget ${BUDGET_MS / 60000} min`);
   await mkdir(OUT_FILE.replace(/\/[^/]+$/, "") || ".", { recursive: true });
