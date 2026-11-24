@@ -1,7 +1,7 @@
 name: Objekt crawler
 
-# Collects Objekt data in the background: crawls COSMO metadata, updates contest standings and saves
-# wallet nicknames. Everything it collects is saved on a separate "data" branch, so it never commits
+# Collects Objekt data in the background: crawls COSMO metadata and saves wallet nicknames.
+# (Contest standings have their own quicker workflow, contest.yml.) Everything it collects is saved on a separate "data" branch, so it never commits
 # to your main branch and never gets in the way of your own pushes. When it finishes, it asks the
 # "Publish site" workflow to put the new data live.
 #
@@ -59,16 +59,9 @@ jobs:
       - name: Crawl new Objekt metadata
         continue-on-error: true
         env:
-          TIME_BUDGET_MIN: "30"
+          TIME_BUDGET_MIN: "40"
           COSMO_RPS: "20"
         run: node scripts/crawl-meta.mjs
-
-      - name: Update contest standings
-        continue-on-error: true
-        env:
-          OPENSEA_KEY: ${{ secrets.OPENSEA_KEY }}
-          TIME_BUDGET_MIN: "12"
-        run: node scripts/contest.mjs
 
       - name: Save COSMO nicknames (from objekt.top)
         continue-on-error: true
@@ -86,7 +79,12 @@ jobs:
           git add -A
           if git diff --cached --quiet; then echo "No changes"; else
             git commit --quiet -m "Update Objekt data"
-            git push --quiet origin data
+            # the contest workflow may have saved in the meantime: put this on top of it and retry
+            for i in 1 2 3 4 5; do
+              git push --quiet origin data && break
+              git pull --quiet --rebase -X theirs origin data || true
+              sleep $((i * 5))
+            done
           fi
 
       - name: Publish the site with the new data
