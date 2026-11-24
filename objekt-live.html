@@ -6,7 +6,7 @@
 <title>Objekt Live — tripleS on Abstract</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg: #0d0d12; --panel: #17171f; --line: #26262f; --text: #ececf1; --dim: #8b8b99;
@@ -370,17 +370,27 @@
   .dCardWrap { position: relative; }
   .dImg { width: 100%; aspect-ratio: 1083 / 1673; object-fit: cover; border-radius: 18px; background: #d9d7d0; display: block; }
   .dImg.noimg { visibility: hidden; }
-  .dBackFace { position: absolute; inset: 0 0 60px 0; background: #ffffff; border-radius: 22px; padding: 9px; }
+  /* Card back, laid out like the official template: Name / Class / Season, number box with a white square, vertical artist name */
+  .dBackFace { position: absolute; inset: 0 0 60px 0; background: #fff; border-radius: 22px; overflow: hidden; container-type: inline-size;
+    padding: 9.2% 9.3% 8.9% 0; }
   .dBackFace[hidden] { display: none; }
-  .dBackIn { height: 100%; border-radius: 15px; display: flex; overflow: hidden; }
-  .dBackIn .bi { flex: 1 1 auto; min-width: 0; padding: 20px 4px 18px 18px; display: flex; flex-direction: column; gap: 8px; }
-  .dBackIn .big { font-family: var(--disp); font-weight: 700; font-size: 34px; line-height: 1.05; letter-spacing: -.02em; }
-  .dBackIn .mid { font-family: var(--disp); font-weight: 700; font-size: 26px; line-height: 1.1; }
+  .dBackIn { height: 100%; border-radius: 0 4.3cqw 4.3cqw 0; display: flex; overflow: hidden; container-type: inline-size; font-family: "Inter Tight", "Helvetica Neue", Helvetica, Arial, sans-serif; }
+  .dBackIn .bi { flex: 1 1 auto; min-width: 0; padding: 26cqw 0 5.8cqw 5.9cqw; display: flex; flex-direction: column; }
+  .dBackIn .sec { border-top: max(1px, .14cqw) solid currentColor; padding-top: 1.4cqw; min-height: 22cqw; }
+  .dBackIn .lbl { display: block; font-size: 3.7cqw; letter-spacing: .02em; text-transform: uppercase; font-weight: 400; opacity: 1; color: inherit; }
+  .dBackIn .val { display: block; font-size: 11.2cqw; font-weight: 600; line-height: 1.15; letter-spacing: -.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: .8cqw; }
+  .dBackIn .box { border-top: max(1px, .14cqw) solid currentColor; border-bottom: max(1px, .14cqw) solid currentColor; display: flex; justify-content: space-between; align-items: stretch; }
+  .dBackIn .box .no { display: flex; flex-direction: column; justify-content: space-between; padding: 2cqw 0 2cqw; min-width: 0; }
+  .dBackIn .box .no b { font-size: 8cqw; font-weight: 500; letter-spacing: -.02em; letter-spacing: -.01em; line-height: 1; }
+  .dBackIn .box .no span { font-size: 3.5cqw; }
+  .dBackIn .box .sq { width: 32cqw; aspect-ratio: 1; background: #fff; flex: 0 0 auto; }
   .dBackIn .grow { flex: 1 1 auto; }
-  .dBackIn .vs { flex: 0 0 30px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: 20px 0 18px; }
-  .dBackIn .vs span { writing-mode: vertical-rl; font-family: var(--disp); font-weight: 800; font-size: 15px; }
+  .dBackIn .foot { font-size: 3.4cqw; padding-top: 3cqw; }
+  .dBackIn .vs { flex: 0 0 16cqw; display: flex; flex-direction: column; justify-content: space-between; align-items: flex-end; padding: 5.4cqw 3.4cqw 5.6cqw 0; min-height: 0; }
+  .dBackIn .vs span { max-height: 46%; overflow: hidden; }
+  .dBackIn .vs span { writing-mode: vertical-rl; font-size: 6.8cqw; font-weight: 700; letter-spacing: -.01em; }
   .ol { color: transparent; -webkit-text-stroke: 1.2px currentColor; }
-  .dBackIn .ol { -webkit-text-stroke-color: var(--bfg); }
+  .dBackIn .ol { -webkit-text-stroke: max(1px, .22cqw) var(--bfg); font-weight: 400; }
   .dFlip { position: relative; display: flex; align-items: center; gap: 8px; margin: 12px auto 0; right: auto; bottom: auto; height: 48px; padding: 0 16px 0 14px; border-radius: 999px; border: 2px solid var(--bg);
     background: var(--ink); color: #ffffff; font-family: var(--disp); font-weight: 700; font-size: 14px; display: flex; align-items: center;
     gap: 8px; cursor: pointer; }
@@ -1300,9 +1310,9 @@ $("ctMakeHourly").onclick = async () => {
       body: JSON.stringify({ branch, message: `Contest: ${season} ${colls.join(", ")}`, content: b64enc(JSON.stringify(body, null, 1) + "\n"), ...(cur.ok ? { sha: cur.j.sha } : {}) }) });
     if (!put.ok) throw new Error(`GitHub ${put.status}: ${put.j.message || "save failed"}`);
     // start the job now instead of waiting for the next hour (needs the token's Actions permission)
-    const run = await gh(`/actions/workflows/crawler.yml/dispatches`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ref: branch }) });
+    const run = await gh(`/actions/workflows/contest.yml/dispatches`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ref: branch }) });
     msg(run.ok || run.status === 204
-      ? `✅ Saved. The job has started — new standings appear here in about 15–20 minutes.`
+      ? `✅ Saved. The contest job has started — new standings appear here in about 10–15 minutes.`
       : `✅ Saved. New standings appear after the next hourly run (couldn't start it now: your token needs the <b>Actions: write</b> permission).`);
   } catch (e) { msg(`⚠️ ${esc(e.message)}`); }
   btn.disabled = false;
@@ -1430,12 +1440,19 @@ async function loadSaved() {
     if (!r.ok) throw new Error(r.status);
     saved = await r.json();
     $("ctSeason").value = saved.season; $("ctColls").value = saved.collections.join(", ");
+    // a newer contest chosen with "Make this the hourly contest" whose first standings aren't ready yet
+    let next = null;
+    try { const c = await fetch("contest-config.json?t=" + Date.now(), { cache: "no-store" }); if (c.ok) next = await c.json(); } catch {}
+    const norm = a => (a || []).map(x => String(x).trim().toUpperCase()).join(",");
+    const pendingNote = next?.season && next.collections?.length &&
+      (next.season.toLowerCase() !== String(saved.season).toLowerCase() || norm(next.collections) !== norm(saved.collections))
+      ? `<br>⏳ Switching to <b>${esc(next.season)} ${esc(next.collections.join(", "))}</b> (chosen ${ago(next.updated)}). Its first standings appear after the next contest run, at most about an hour. The standings below are still for the old contest.` : "";
     $("ctMode").querySelector('option[value="owner"]').disabled = !saved.modes.owner;
     $("ctSaved").innerHTML = `📌 Standings updated <b>${ago(saved.updated)}</b> (${new Date(saved.updated).toLocaleString()}) · refreshed hourly. ` +
       `Change the fields and press <b>Run live</b> for a different contest.` +
       (saved.progress && !saved.progress.complete
         ? `<br>⏳ Still catching up: ${saved.progress.mintsChecked.toLocaleString()} of ${saved.progress.total.toLocaleString()} copies checked so far. Buyer totals will grow over the next few hourly runs.`
-        : "");
+        : "") + pendingNote;
     showSaved();
   } catch {
     saved = null;
@@ -2282,13 +2299,14 @@ function applyDetailStyle(override) {
   const m = D.m, sw = (m.season || "").match(/^(.*?)(\d+)$/) || [null, m.season || "", ""];
   $("dBackIn").innerHTML = `
     <div class="bi">
-      <div class="rule"><span class="lbl">Name</span><div class="big">${esc(m.member)}</div></div>
-      <div class="rule"><span class="lbl">Class</span><div class="mid">${esc(D.cls || "—")}</div></div>
-      <div class="rule"><span class="lbl">Season</span><div class="mid">${esc(sw[1])}<span class="ol">${esc(sw[2])}</span></div></div>
+      <div class="sec"><span class="lbl">Name</span><span class="val">${esc(m.member || "")}</span></div>
+      <div class="sec"><span class="lbl">Class</span><span class="val">${esc(D.cls || "—")}</span></div>
+      <div class="sec"><span class="lbl">Season</span><span class="val">${esc(sw[1])}<span class="ol">${esc(sw[2])}</span></span></div>
+      <div class="box"><div class="no"><b>${esc(m.coll || "")}</b><span>${esc(D.type || "")}</span></div><div class="sq" aria-hidden="true"></div></div>
       <div class="grow"></div>
-      <div class="rule" style="display:flex;justify-content:space-between;align-items:baseline"><span class="mid" style="font-weight:800">${esc(m.coll)}</span><span style="font-size:12px;font-weight:600">${esc(D.type)}</span></div>
+      <div class="foot">${esc(m.artist || "tripleS")} · Objekt</div>
     </div>
-    <div class="vs" aria-hidden="true"><span>${esc(m.member)}</span><span>${esc(m.artist || "tripleS")}</span></div>`;
+    <div class="vs" aria-hidden="true"><span>${esc(m.member || "")}</span><span>${esc(m.artist || "tripleS")}</span></div>`;
 }
 function setFlip(back) {
   if (!D) return;
