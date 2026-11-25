@@ -1,0 +1,75 @@
+name: Polygon spins (one-off)
+
+# Collects every copy that was sent to COSMO's spin wallet on Polygon (before April 2025), so the
+# Spun / Non-Spin counts include Polygon-era spins. Run it once from the Actions tab
+# ("Run workflow"). If there's more than one run's worth, it starts itself again until it's finished.
+on:
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: write
+
+concurrency:
+  group: polygon-spun
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Get the data branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          url="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          if git ls-remote --exit-code --heads "$url" data >/dev/null 2>&1; then
+            git clone --quiet --depth 1 --branch data "$url" store
+          else
+            echo "No data branch yet: run the crawler first."; exit 1
+          fi
+
+      - name: Collect Polygon spins
+        id: collect
+        continue-on-error: true
+        env:
+          # your own Etherscan key as a repository secret if you add one, otherwise the key already in objekt-live.html
+          ETHERSCAN_KEY: ${{ secrets.ETHERSCAN_KEY || '6ECSPQV6KX4BBNSY94KVI391ENKIJ4MWYH' }}
+          OUT_DIR: store/data/polyspun
+          TIME_BUDGET_MIN: "300"
+        run: node scripts/polygon-spun.mjs
+
+      - name: Save to the data branch
+        run: |
+          cd store
+          git config user.name "objekt-bot"
+          git config user.email "objekt-bot@users.noreply.github.com"
+          git add data/polyspun
+          if git diff --cached --quiet; then echo "No changes"; exit 0; fi
+          git commit --quiet -m "Polygon spins"
+          for i in 1 2 3 4 5; do
+            git push --quiet origin data && exit 0
+            git pull --quiet --rebase -X theirs origin data || true
+            sleep $((i * 5))
+          done
+          exit 1
+
+      - name: Publish the site
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: gh workflow run site.yml --ref "${{ github.event.repository.default_branch }}"
+
+      - name: Keep going if not finished
+        if: steps.collect.outcome == 'success' && steps.collect.outputs.done != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: gh workflow run polygon-spun.yml --ref "${{ github.event.repository.default_branch }}"
