@@ -15,7 +15,7 @@ const OUT = process.env.SITE_DIR || "_site";
 const DATA_DIR = process.env.DATA_DIR || "data";
 // Repo folders/files that are not part of the website
 const SKIP = new Set([".git", ".github", "scripts", "node_modules", "_site", "store",
-  "data/meta", "data/contest-state.json", "data/nicks/state.json"]);
+  "data/meta", "data/contest-state.json", "data/nicks/state.json", "data/polyspun/state.json"]);
 const exists = p => stat(p).then(() => true, () => false);
 
 async function copySite(src = ".", rel = "") {
@@ -60,6 +60,11 @@ export async function build() {
   if (DATA_DIR !== "data") {
     await mkdir(`${OUT}/data/nicks`, { recursive: true });
     if (await exists(`${DATA_DIR}/contest.json`)) await cp(`${DATA_DIR}/contest.json`, `${OUT}/data/contest.json`);
+    // Polygon-era spins (from the one-off polygon-spun workflow)
+    if (await exists(`${DATA_DIR}/polyspun`)) {
+      await mkdir(`${OUT}/data/polyspun`, { recursive: true });
+      for (const f of await readdir(`${DATA_DIR}/polyspun`)) if (f.endsWith(".txt")) await cp(`${DATA_DIR}/polyspun/${f}`, `${OUT}/data/polyspun/${f}`);
+    }
     if (await exists(`${DATA_DIR}/nicks`))
       for (const f of await readdir(`${DATA_DIR}/nicks`)) if (f.endsWith(".json") && f !== "state.json") await cp(`${DATA_DIR}/nicks/${f}`, `${OUT}/data/nicks/${f}`);
   }
