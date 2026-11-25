@@ -27,9 +27,10 @@ QualiLive = class extends _q16_QualiLive {
     const lap = qLapElim() && !opts.elim;
     let lapSt = 3;
     if (lap) { // Q1 and Q2 knock out the usual knockout number; Q3 runs down to the final three and a shootout
-      lapSt = Math.min(3, (WK.Q && WK.Q.stage) || 1);
+      const one = !!(WK.ex && WK.ex.oneQ && WK.stage === 'quali'); // exemption weekend, tiny field: a single session, no shootout
+      lapSt = one ? 3 : Math.min(3, (WK.Q && WK.Q.stage) || 1);
       const k = lapSt < 3 ? Math.max(1, Math.min(list.length - 1, qCut(WK.entries.length))) : Math.max(1, list.length - 1);
-      opts = Object.assign({}, opts, { dur: 1e6, label: 'Q' + lapSt, cut: lapSt < 3 ? k : 0, runs: 1, elim: k, windows: [[0, 1e-6]] });
+      opts = Object.assign({}, opts, { dur: 1e6, label: one ? 'Qualifying' : 'Q' + lapSt, cut: lapSt < 3 ? k : 0, runs: 1, elim: k, windows: [[0, 1e-6]] });
     }
     else if (qElim() && !opts.elim && WK.stage !== 'squali') { const I = qualiInfo('Q'); opts = Object.assign({}, opts, { dur: I.dur, label: I.label, cut: I.cut, runs: 3, elim: I.elimN, windows: Q16_WIN }); }
     super(G0, wk, list, opts);
@@ -44,7 +45,7 @@ QualiLive = class extends _q16_QualiLive {
     const st = this.lapStage, n = this.cars.length;
     this.msg(st < 3
       ? `🟢 Q${st} is under way — no time limit. Once everyone has a time, the slowest driver is out every 2 × pole lap until ${n - this.elim.left} remain for Q${st + 1}. Laps already started still count. Times reset for the next session.`
-      : `🟢 Q3 is under way — no time limit. The slowest driver is out every 2 × pole lap. Final three: one-lap shootout for pole.`, true);
+      : WK.ex && WK.ex.oneQ ? `🟢 Qualifying is under way — one session, no time limit. The slowest driver is out every 2 × pole lap until one remains: that's pole. No shootout.` : `🟢 Q3 is under way — no time limit. The slowest driver is out every 2 × pole lap. Final three: one-lap shootout for pole.`, true);
   }
   // one stint: out lap, push laps with cool-down laps between, in lap
   planStint(c, t0) {
@@ -147,7 +148,7 @@ QualiLive = class extends _q16_QualiLive {
     }
     super.step(dt);
     const left = this.aliveCars();
-    if (!this.done && this.lapStage === 3 && left.length <= 3 && !this.so) {
+    if (!this.done && this.lapStage === 3 && left.length <= 3 && !this.so && !(WK.ex && WK.ex.oneQ)) {
       this.so = { phase: 'wait', cars: left, cur: null, queue: [] };
       left.forEach(c => c.runs.forEach(r => { if (r.start > this.t) r.done = true; })); // cancel planned runs
       this.msg(`🎯 Three drivers left — eliminations stop. They return to the pits for a one-lap shootout.`, true);
