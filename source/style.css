@@ -1270,3 +1270,4 @@ select:disabled{opacity:.6;cursor:not-allowed}
 .slot-last{font-size:10px;color:#4ea8ff}
 .slot-btns{display:flex;flex-wrap:wrap;gap:6px;margin-top:auto;padding-top:6px}
 .slot-del{color:#ff6b6b}.slot-warn{color:#ffd166}
+.dkst td.sv-revwin{background:#3ddc84;color:#111;font-weight:800}

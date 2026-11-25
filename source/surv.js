@@ -61,7 +61,7 @@ function svState(G0, base) {
 }
 const svAlive = (S, id) => S.pool.includes(id) && !S.out[id];
 const svFinal = (G0, i) => i === G0.cal.length - 1;
-function svCountTxt(G0, i) { const S = svView(G0); if (!S) return ''; if (svFinal(G0, i)) return '🏁 FINAL — the winner is champion'; const k = S.sched[i] || 0; return k ? `⛔ ${k} driver${k > 1 ? 's' : ''} eliminated` : '🟢 Non-elimination round'; }
+function svCountTxt(G0, i) { const S = svView(G0); if (!S) return ''; if (typeof exIsRev === 'function' && exIsRev(G0 || G, i)) return '♻️ Revival round — eliminated drivers race to come back'; if (svFinal(G0, i)) return '🏁 FINAL — the winner is champion'; const k = S.sched[i] || 0; return k ? `⛔ ${k} driver${k > 1 ? 's' : ''} eliminated` : '🟢 Non-elimination round'; }
 
 const _sv_weekendEntries = weekendEntries;
 weekendEntries = function (G0) {
@@ -198,7 +198,7 @@ deskStandings = function () {
   const rounds = D.n || D.cal.length, done = D.results.length, mode = DK2.st, cal = D.cal;
   const isFinal = i => i === rounds - 1;
   const EXW = S && (S.exw || S.exr || (cur && typeof exOn === 'function' && exOn()));
-  const flags = cal.map((c, i) => { const k = S && S.sched ? S.sched[i] : 0; return `<th class="fl ${i < done ? '' : 'todo'} ${EXW ? 'exw3' : ''}" ${EXW ? 'colspan="3"' : ''} title="R${i + 1} ${esc(c[0])}">${dkFlag(c[1])}<div class="sv-k">${isFinal(i) ? 'F' : k ? '−' + k : '·'}</div>${EXW ? '<div class="exw-sub"><span>1</span><span>2</span><span>3</span></div>' : ''}</th>`; }).join('');
+  const flags = cal.map((c, i) => { const k = S && S.sched ? S.sched[i] : 0; return `<th class="fl ${i < done ? '' : 'todo'} ${EXW ? 'exw3' : ''}" ${EXW ? 'colspan="2"' : ''} title="R${i + 1} ${esc(c[0])}">${dkFlag(c[1])}<div class="sv-k">${isFinal(i) ? 'F' : (S && S.revR && i in S.revR) || (cur && typeof exIsRev === 'function' && exIsRev(G, i)) ? '♻' : k ? '−' + k : '·'}</div>${EXW ? (S.revR && i in S.revR || (cur && typeof exIsRev === 'function' && exIsRev(G, i)) ? '<div class="exw-sub"><span>REV</span></div>' : '<div class="exw-sub"><span>1</span><span>2</span></div>') : ''}</th>`; }).join('');
   const alive = S ? S.pool.filter(id => !S.out[id]).length : 0;
   const seasonSel = years.length ? `<select class="dk-season" data-dkc="dkseason">${[G.year, ...years].map(y => `<option value="${y}" ${y === D.year ? 'selected' : ''}>${y}${y === G.year ? ' — current season' : ''}</option>`).join('')}</select>` : '';
   let body;
@@ -219,11 +219,15 @@ deskStandings = function () {
     else sd = S.pool.map(id => byId.get(id)).filter(Boolean);
     const XM = cur ? svExpMap(G) : (S.exp || {});
     body = `<div class="dk-h"><b>Survival Board ${D.year}</b><span class="dk-mut"> · ${S.champ ? 'season complete' : `${alive} still in · ${S.pool.length - alive} eliminated`}</span></div><div class="dk-scroll"><table class="dkst ${DK2.modern ? 'modern' : 'classic'}"><thead><tr><th class="stk0">Pos</th><th class="l stk1">Driver</th><th></th><th class="l">Team</th>${flags}<th class="pts">Status</th></tr></thead><tbody>${sd.map((d, i) => {
-      const exCells = k => { const res = D.results[k], m = S.exr && S.exr[k] && S.exr[k][d.id], gone = S.out[d.id] && S.out[d.id].r === k;
-        if (!m) { const skip = res && (XM[k] === d.id || (S.pool.includes(d.id) && (!S.out[d.id] || k < S.out[d.id].r)));
-          return skip ? `<td class="rc exw-c" colspan="3"><span class="sv-skip">EXP</span></td>` : `<td class="rc exw-c">${S.out[d.id] && k > S.out[d.id].r ? '<span class="dk-mut">×</span>' : ''}</td><td class="rc exw-c"></td><td class="rc exw-c"></td>`; }
-        const lastG = m[2] ? 2 : m[1] ? 1 : 0;
-        return m.map((v, g) => `<td class="rc exw-c ${v ? dkResCls(v === 'NC' ? { pos: 99, out: 'NC' } : { pos: +v }) : ''} ${gone && g === lastG ? 'sv-gone' : ''}">${v ? (v === 'NC' ? 'NC' : v) : ''}</td>`).join(''); };
+      const RV = (S.revived || []).filter(x => x.id === d.id);
+      const exCells = k => { const res = D.results[k], m = S.exr && S.exr[k] && S.exr[k][d.id], isRev = S.revR && k in S.revR;
+        const wasOut = S.out[d.id] && k > S.out[d.id].r || RV.some(x => k > x.outR && k < x.revR);
+        const gone = (S.out[d.id] && S.out[d.id].r === k) || RV.some(x => x.outR === k);
+        if (!m) { const skip = !isRev && res && !wasOut && (XM[k] === d.id || (S.pool.includes(d.id) && (!S.out[d.id] || k < S.out[d.id].r)));
+          return skip ? `<td class="rc exw-c" colspan="2"><span class="sv-skip">EXP</span></td>` : `<td class="rc exw-c" ${isRev ? 'colspan="2"' : ''}>${wasOut ? '<span class="dk-mut">×</span>' : ''}</td>${isRev ? '' : '<td class="rc exw-c"></td>'}`; }
+        if (isRev) { const v = m[0], won = S.revR[k] === d.id; return `<td class="rc exw-c ${won ? 'sv-revwin' : v ? dkResCls(v === 'NC' ? { pos: 99, out: 'NC' } : { pos: +v + 3 }) : ''}" colspan="2" title="Revival round">${won ? '♻ 1' : v}</td>`; }
+        const lastG = m[1] ? 1 : 0;
+        return m.slice(0, 2).map((v, g) => `<td class="rc exw-c ${v ? dkResCls(v === 'NC' ? { pos: 99, out: 'NC' } : { pos: +v }) : ''} ${gone && g === lastG ? 'sv-gone' : ''}">${v ? (v === 'NC' ? 'NC' : v) : ''}</td>`).join(''); };
       if (EXW) return (() => { const tid = teamOf(d), t = tm(tid), st = svStatusGen(S, cal, d.id);
         return `<tr class="${cur && (G.player ? d.team === G.player : d.id === G.follow) ? 'me' : ''} ${S.out[d.id] ? 'sv-dim' : ''}" data-prof="${d.id}"><td class="pos" style="border-left:3px solid ${t ? t.color : '#444'}">${i + 1}</td><td class="l nm">${esc(d.name)}</td><td class="flc">${dkFlag(d.nat)}</td>${tid ? tcell(tid) : '<td class="l"></td>'}${cal.map((_, k) => exCells(k)).join('')}<td class="pts ${st.c}">${st.t}</td></tr>`; })();
       const cells = cal.map((_, k) => { const res = D.results[k]; const r = res && res.rows.find(x => x.id === d.id); const gone = S.out[d.id] && S.out[d.id].r === k;
@@ -244,7 +248,7 @@ deskStandings = function () {
   return `<div class="dk dk-page" id="dk"><div class="dk-pagehead"><h1>Survival Season</h1><span class="sp"></span><span class="dk-mut">${D.year} · Round ${done} of ${rounds} · no points</span><button data-a="tab" data-v="home">Back</button></div>
   <div class="dk-pagebar"><span class="dk-tabs2">${[['d', 'Drivers'], ['t', 'Constructors']].map(([k, v]) => `<button class="${mode === k && DK2.panel !== 'hist' ? 'on' : ''}" data-a="dkst" data-v="${k}">${v}</button>`).join('')}</span><span class="sp"></span>${nx}${seasonSel}<button class="${DK2.panel === 'hist' ? 'on' : ''}" data-a="dkst2" data-v="hist">Champions</button></div>
   <section class="dk-stbox">${body}</section>
-  <div class="dk-legend"><span class="dk-mut">${EXW ? 'Each round shows Grand Prix 1, 2 and 3 (NC = not classified). The winner of Grand Prix 1 at the last round is champion. ' : ''}Under each flag: −N = drivers eliminated that round · · = non-elimination round · F = final. The last-placed drivers still in the competition are eliminated; retirements count as last.</span></div></div>`;
+  <div class="dk-legend"><span class="dk-mut">${EXW ? 'Each round shows Grand Prix 1 and 2 (NC = not classified); ♻ = revival round for eliminated drivers. The winner of Grand Prix 1 at the last round is champion. ' : ''}Under each flag: −N = drivers eliminated that round · · = non-elimination round · F = final. The last-placed drivers still in the competition are eliminated; retirements count as last.</span></div></div>`;
 };
 
 // ---------- race weekend: grid note, live board, results ----------
@@ -263,7 +267,7 @@ if (typeof deskCalendar === 'function') {
     let html = _sv_deskCalendar.apply(this, arguments);
     if (!svOn()) return html;
     html = html.replace(/½ PTS/g, '🎟️ SAFE');
-    G.cal.forEach((_, i) => { const S = svView(); if (!S || !S.sched) return; const t = svFinal(G, i) ? 'FINAL' : S.sched[i] ? `−${S.sched[i]}` : 'NO ELIM';
+    G.cal.forEach((_, i) => { const S = svView(); if (!S || !S.sched) return; const t = svFinal(G, i) ? 'FINAL' : typeof exIsRev === 'function' && exIsRev(G, i) ? 'REVIVAL' : S.sched[i] ? `−${S.sched[i]}` : 'NO ELIM';
       html = html.replace(new RegExp(`(data-a="dkcalsel" data-v="${i}">[\\s\\S]*?<span class="nm">[^<]*</span>)`), `$1<span class="exp sv-tag">${t}</span>`); });
     return html;
   };
@@ -307,11 +311,13 @@ dkRaceView = function (o) {
   html = html.replace(/<section><div class="dk-h"><b>(DRIVERS|TEAMS) STANDINGS AFTER[\s\S]*?<\/section>/g, ''); // no points → no points tables
   html = html.replace(/<tr class="([^"]*)" data-prof="([^"]+)"([\s\S]*?)<td class="ra plain">[^<]*<\/td><\/tr>/g, (m, cls, id, mid) => {
     let t = '';
-    if (!o.sprint && s && s.surv) { if (s.surv.final) t = s.surv.champ === id ? '<b class="sv-champ">🏆 CHAMPION</b>' : G.sv && G.sv.final && G.sv.final.includes(id) ? 'Finalist' : '';
+    if (!o.sprint && s && s.surv && s.surv.rev !== undefined) t = s.surv.rev === id ? '<b class="good">♻️ REVIVED</b>' : '<span class="dk-mut">Still out</span>';
+    else if (!o.sprint && s && s.surv) { if (s.surv.final) t = s.surv.champ === id ? '<b class="sv-champ">🏆 CHAMPION</b>' : G.sv && G.sv.final && G.sv.final.includes(id) ? 'Finalist' : '';
       else if (s.surv.elim.includes(id)) t = '<b class="bad">ELIMINATED</b>'; else if (G.sv && G.sv.pool.includes(id)) t = '<span class="good">Safe</span>'; }
     return `<tr class="${cls}" data-prof="${id}"${mid}<td class="ra plain">${t}</td></tr>`;
   });
-  if (!o.sprint && s && s.surv && !s.surv.final) {
+  if (!o.sprint && s && s.surv && s.surv.rev !== undefined) {}
+  else if (!o.sprint && s && s.surv && !s.surv.final) {
     const el = s.surv.elim.map(id => G.drivers[id]).filter(Boolean);
     html = html.replace('<table class="dkfp dkrr">', `<div class="heat-strip sv-strip"><span><b>🏁 Survival</b> · ${el.length ? `Eliminated: ${el.map(d => esc(d.name)).join(', ')}` : 'Non-elimination round — everyone races on'}</span><span>${G.sv ? G.sv.pool.filter(id => !G.sv.out[id] || G.sv.out[id].r > s.round - 1).length : ''} drivers remain</span></div><table class="dkfp dkrr">`);
   } else if (!o.sprint && s && s.surv && s.surv.final && G.drivers[s.surv.champ]) html = html.replace('<table class="dkfp dkrr">', `<div class="heat-strip sv-strip"><span><b>🏆 ${esc(G.drivers[s.surv.champ].name)} wins the final and the survival season!</b></span></div><table class="dkfp dkrr">`);
