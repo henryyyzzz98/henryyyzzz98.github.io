@@ -44,11 +44,10 @@ button:disabled { cursor: not-allowed; }
 :focus-visible { outline: 3px solid #daaa00; outline-offset: 2px; }
 
 /* Messages are written upper-case in the script; show them in sentence case */
-.instruction, .message, .banker-hint, #superChestInstruction, .super-chest-result {
+.instruction, .message, .banker-hint, .super-chest-result {
   text-transform: lowercase;
 }
-.instruction::first-letter, .message::first-letter, .banker-hint::first-letter,
-#superChestInstruction::first-letter { text-transform: uppercase; }
+.instruction::first-letter, .message::first-letter, .banker-hint::first-letter { text-transform: uppercase; }
 
 /* =========================================================
    SETUP
@@ -94,6 +93,18 @@ button:disabled { cursor: not-allowed; }
   font-weight: 600; font-variant-numeric: tabular-nums;
 }
 .presets button:hover { border-color: #daaa00; }
+/* Case values dropdown + custom values box */
+.select, .custom-values {
+  width: 100%; padding: 14px 16px; background: var(--ink); color: var(--text);
+  border: 2px solid var(--line); border-radius: var(--radius); font-family: inherit; font-size: 16px; font-weight: 600;
+}
+.select { min-height: 52px; appearance: none; background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%); background-position: calc(100% - 22px) 50%, calc(100% - 16px) 50%; background-size: 6px 6px; background-repeat: no-repeat; padding-right: 40px; }
+.select:focus, .custom-values:focus { border-color: #daaa00; outline: 0; }
+.custom-values { resize: vertical; min-height: 120px; font-variant-numeric: tabular-nums; line-height: 1.5; }
+.custom-values.invalid { border-color: var(--stop); }
+#topPrizeField > label:first-child, #customField > label:first-child { margin-top: 18px; }
+#prizeSetNote { margin: 8px 0 0; }
+.field-note + label, #customField + label { margin-top: 20px; }
 .count-wrapper { margin-top: 0; }
 .count-wrapper input { text-align: left; }
 .setup-box label + .count-wrapper, .presets + label { margin-top: 18px; }
@@ -316,6 +327,25 @@ button:disabled { cursor: not-allowed; }
 .super-chest-result { margin-top: 14px; padding: 14px; background: var(--ink); border-radius: 10px; line-height: 1.6; text-transform: none; }
 .super-chest-result span { color: var(--muted); }
 .super-chest-continue { position: sticky; bottom: 0; width: calc(100% + 40px); margin: 14px -20px 0; border-radius: 0; background: #daaa00; color: #1b1503; padding-bottom: env(safe-area-inset-bottom); }
+
+/* Chest Duel */
+.duel-bar { height: 10px; margin: 0 0 8px; background: var(--ink); border-radius: 999px; overflow: hidden; box-shadow: inset 0 0 0 1px var(--line); }
+.duel-bar-fill { height: 100%; width: 50%; background: var(--you); border-radius: 999px; transition: width 0.5s ease-out; }
+.duel-taunt { min-height: 24px; margin: 0 0 12px; font-weight: 700; font-style: italic; color: #daaa00; }
+.duel-bar.hidden + .duel-taunt { display: none; }
+.duel-bar ~ .super-chest-side-label { margin-top: 18px; }
+.super-chest-case.owner-player { background: linear-gradient(160deg, #7fa8ff, var(--you)); color: #fff; box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.25); }
+.super-chest-case.owner-banker { background: var(--ink); color: var(--muted); box-shadow: inset 0 0 0 2px var(--line); }
+.super-chest-case.swap-pick { outline: 3px solid #daaa00; outline-offset: 2px; }
+.super-chest-case:disabled { cursor: default; }
+.super-chest-case.revealed.owner-player { background: var(--you); color: #fff; font-stretch: 85%; }
+.super-chest-case.revealed.owner-banker { background: var(--ink); color: var(--text); font-stretch: 85%; }
+.super-chest-case.duel-active { animation: shake 0.35s linear infinite; outline: 3px solid #daaa00; outline-offset: 1px; }
+.super-chest-case.duel-win { outline: 2px solid #daaa00; outline-offset: 1px; transform: scale(1.05); }
+.super-chest-case.duel-lose { opacity: 0.5; }
+.duel-actions button { background: transparent; border: 2px solid var(--line); color: var(--text); }
+.duel-actions button:last-child { background: #daaa00; border-color: #daaa00; color: #1b1503; }
+.duel-actions button:disabled { opacity: 0.4; }
 
 /* =========================================================
    TABLET (720–1100)
