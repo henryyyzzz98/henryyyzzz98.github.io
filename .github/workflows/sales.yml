@@ -1,0 +1,76 @@
+name: First Class sales
+
+# Counts First Class sales (1st/2nd/3rd editions) for each member's 24-hour sale, using the start
+# times saved from the website's Sales tab (sales-config.json). Runs every 30 minutes; when no sale
+# is on it finishes in seconds.
+on:
+  schedule:
+    - cron: "13,43 * * * *"
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: write
+
+concurrency:
+  group: objekt-sales
+  cancel-in-progress: false
+
+jobs:
+  sales:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4      # main branch: the scripts and sales-config.json
+
+      - name: Anything to count?
+        id: check
+        run: |
+          if [ -f sales-config.json ]; then echo "go=true" >> "$GITHUB_OUTPUT"; else echo "No sales set up yet."; fi
+
+      - uses: actions/setup-node@v4
+        if: steps.check.outputs.go == 'true'
+        with:
+          node-version: 20
+
+      - name: Get the data branch
+        if: steps.check.outputs.go == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          url="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git clone --quiet --depth 1 --branch data "$url" store
+
+      - name: Count sales
+        if: steps.check.outputs.go == 'true'
+        env:
+          OPENSEA_KEY: ${{ secrets.OPENSEA_KEY }}
+          RPC_URLS: ${{ secrets.RPC_URL && format('{0},https://api.mainnet.abs.xyz', secrets.RPC_URL) || 'https://api.mainnet.abs.xyz,https://abstract.api.onfinality.io/public' }}
+          OUT_FILE: store/data/sales.json
+          STATE_FILE: store/data/sales-state.json
+          TIME_BUDGET_MIN: "25"
+        run: node scripts/sales.mjs
+
+      - name: Save to the data branch
+        id: save
+        if: steps.check.outputs.go == 'true'
+        run: |
+          cd store
+          git config user.name "objekt-bot"
+          git config user.email "objekt-bot@users.noreply.github.com"
+          git add data/sales.json data/sales-state.json
+          if git diff --cached --quiet; then echo "No changes"; exit 0; fi
+          git commit --quiet -m "Update First Class sales"
+          for i in 1 2 3 4 5; do
+            if git push --quiet origin data; then echo "saved=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+            git pull --quiet --rebase -X theirs origin data || true
+            sleep $((i * 5))
+          done
+          exit 1
+
+      - name: Publish the site
+        if: steps.save.outputs.saved == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: gh workflow run site.yml --ref "${{ github.event.repository.default_branch }}"
