@@ -13,9 +13,9 @@
 ];*/
 
 const BASE_PRIZES = [
-  100, 500, 1000, 1500, 2000, 2500, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000,
-  15000, 20000, 25000, 30000, 35000, 40000, 45000, 50000, 60000,
-  70000, 85000,100000,
+  100, 500, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 12000,
+  14000, 16000, 18000, 20000, 25000, 30000, 35000, 40000, 45000, 50000, 60000,
+  75000, 100000,
 ];
 
 /* =========================================================
@@ -23,6 +23,71 @@ const BASE_PRIZES = [
 ========================================================= */
 
 const TOTAL_CASES = 26;
+
+/*
+    Prize sets shown in the main menu dropdown.
+    "ref" is the top prize the base list was written for;
+    other top prizes scale the whole list proportionally.
+*/
+
+const CLASSIC_PRIZES = [
+  0.01, 1, 5, 10, 25, 50, 75, 100, 200, 300, 400, 500, 750, 1000, 5000, 10000,
+  25000, 50000, 75000, 100000, 200000, 300000, 400000, 500000, 750000, 1000000,
+];
+
+const SET_1 = [
+  1, 5, 10, 25, 50, 75, 100, 200, 300, 400, 500, 750, 1000, 2000, 2500, 5000, 7500, 10000, 20000, 30000, 40000, 50000, 100000, 200000, 250000, 500000,
+];
+
+const SET_2 = [
+  1, 10, 100, 500, 1000, 2000, 3000, 5000, 8000, 10000, 30000, 50000, 100000, 500000, 800000, 1000000, 1500000, 2000000, 2500000, 3000000, 4000000, 5000000, 6000000, 7000000, 8000000, 10000000,
+];
+
+const SET_3 = [
+  1, 5, 10, 15, 20, 25, 50, 75, 100, 150, 250, 500, 750, 1000, 1500, 2500, 5000, 7500, 10000, 15000, 25000, 50000, 75000, 100000, 150000, 250000,
+];
+
+const PRIZE_SETS = {
+  standard: {
+    label: "Standard",
+    base: BASE_PRIZES,
+    ref: 100000,
+    note: "26 values from $100, scaled to your top prize.",
+  },
+  classic: {
+    label: "Classic",
+    base: CLASSIC_PRIZES,
+    ref: 1000000,
+    note: "The TV show ladder from 1¢, scaled to your top prize.",
+  },
+  custom: {
+    label: "Custom",
+    base: null,
+    ref: null,
+    note: "Type exactly 26 values. Top prize cases still replace the bottom of the right side.",
+  },
+  set1: {
+    label: "Set 1",
+    base: SET_1,
+    ref: 500000, // the top value in your list
+    note: "This set default values are 1 to 500,000",
+  },
+  set2: {
+    label: "Set 2",
+    base: SET_2,
+    ref: 10000000, // the top value in your list
+    note: "This set range from 1 to 10,000,000",
+  },
+  set3: {
+    label: "Set 3",
+    base: SET_3,
+    ref: 250000, // the top value in your list
+    note: "This set range from 1 to 250,000",
+  },
+};
+
+let prizeSetKey = "set2";
+let customPrizeValues = [];
 
 /* Most cases that may share the top prize (keeps the hint side unambiguous) */
 const MAX_TOP_PRIZE_CASES = 12;
@@ -47,7 +112,7 @@ const ROUND_CASES = [6, 5, 4, 3, 2, 1, 1, 1, 1];
    GAME STATE
 ========================================================= */
 
-let maxPrize = 100000;
+let maxPrize = 10000;
 
 let topPrizeCount = 1;
 
@@ -184,6 +249,12 @@ const newGameButton = document.getElementById("newGameButton");
 /* New UI elements */
 const setupError = document.getElementById("setupError");
 const topCountInput = document.getElementById("topCount");
+const prizeSetSelect = document.getElementById("prizeSet");
+const prizeSetNote = document.getElementById("prizeSetNote");
+const topPrizeField = document.getElementById("topPrizeField");
+const customField = document.getElementById("customField");
+const customValuesInput = document.getElementById("customValues");
+const customCountElement = document.getElementById("customCount");
 const openPips = document.getElementById("openPips");
 const topPrizeElement = document.getElementById("topPrize");
 const prizesLeftElement = document.getElementById("prizesLeft");
@@ -217,7 +288,22 @@ function startGame() {
     return;
   }
 
-  if (!maxPrize || maxPrize <= 0) {
+  prizeSetKey = prizeSetSelect.value;
+
+  if (prizeSetKey === "custom") {
+    const parsed = parseCustomPrizes(customValuesInput.value);
+
+    if (parsed.error) {
+      setupError.textContent = parsed.error;
+      customValuesInput.classList.add("invalid");
+      customValuesInput.focus();
+      return;
+    }
+
+    customValuesInput.classList.remove("invalid");
+    customPrizeValues = parsed.values;
+    maxPrize = Math.max(...customPrizeValues);
+  } else if (!maxPrize || maxPrize <= 0) {
     setupError.textContent = "Enter a top prize greater than 0.";
     maxPrizeInput.focus();
 
@@ -256,6 +342,8 @@ function startGame() {
     maximumPrize: maxPrize,
 
     topPrizeCount: topPrizeCount,
+
+    prizeSet: PRIZE_SETS[prizeSetKey].label,
 
     prizeBoard: [...prizes],
   });
@@ -389,9 +477,25 @@ function resetGame() {
 ========================================================= */
 
 function generatePrizeBoard(maximumPrize) {
-  const multiplier = maximumPrize / 100000;
+  /*
+        Custom set: the player typed every value,
+        so use them as they are (sorted ascending).
+    */
 
-  let generated = BASE_PRIZES.map((value) => {
+  if (prizeSetKey === "custom") {
+    const custom = [...customPrizeValues].sort((a, b) => a - b);
+
+    for (let k = 0; k < topPrizeCount; k++) {
+      custom[custom.length - 1 - k] = maximumPrize;
+    }
+
+    return custom;
+  }
+
+  const set = PRIZE_SETS[prizeSetKey] || PRIZE_SETS.standard;
+  const multiplier = maximumPrize / set.ref;
+
+  let generated = set.base.map((value) => {
     const scaled = value * multiplier;
 
     return smartRound(scaled);
@@ -724,6 +828,16 @@ async function openCase(gameCase) {
   await delay(500);
 
   /*
+        Only top prize cases left? The player has won.
+    */
+
+  if (onlyTopPrizesRemain()) {
+    declareTopPrizeWin();
+
+    return;
+  }
+
+  /*
         Round complete?
     */
 
@@ -843,6 +957,11 @@ function getBankerHint() {
     return null;
   }
 
+  /* Same value on both sides of the board: the hint would be a guess. */
+  if ((prizes.lastIndexOf(playerCaseValue) < half) !== (playerPrizeIndex < half)) {
+    return null;
+  }
+
   return playerPrizeIndex < half ? "LEFT" : "RIGHT";
 }
 
@@ -927,7 +1046,61 @@ async function showBanker() {
 superChestBenefitButton.addEventListener("click", useSuperChestBenefit);
 superChestContinueButton.addEventListener("click", finishSuperChest);
 
+/* ---------------------------------------------------------
+   CHEST DUEL
+
+   You pick 10 of the 20 sealed chests. The Banker gets the
+   other 10. Chests are then paired off and opened, and the
+   higher total wins.
+
+   Why it is a fair 50-50: every chest is hidden and shuffled,
+   so any 10 chests are as good as any other 10. Nothing the
+   player can choose gives either side an edge.
+
+   The values add up to an ODD number, so the totals can never tie.
+   If you edit the list, keep the sum odd.
+--------------------------------------------------------- */
+
+const SUPER_CHEST_VALUES = [
+  15, 10, 20, 20, 30, 30, 50, 50, 75, 75, 100, 100, 150, 150, 200, 200, 300,
+  400, 500, 1000,
+];
+
+const SUPER_CHEST_PICKS = 10;
+
+let duelSwapUsed = false;
+let duelSwapSelection = null;
+
+const duelBar = document.getElementById("duelBar");
+const duelBarFill = document.getElementById("duelBarFill");
+const duelTaunt = document.getElementById("duelTaunt");
+const duelActions = document.getElementById("duelActions");
+const duelSecondaryButton = document.getElementById("duelSecondaryButton");
+const duelPrimaryButton = document.getElementById("duelPrimaryButton");
+
+duelSecondaryButton.addEventListener("click", pickForMe);
+duelPrimaryButton.addEventListener("click", () => {
+  if (superChestPhase === "pick") lockDuelPicks();
+  else if (superChestPhase === "swap") startDuelReveal();
+});
+
+function countOwner(owner) {
+  return superChestCases.filter((c) => c.owner === owner).length;
+}
+
+function padCase(n) {
+  return String(n).padStart(2, "0");
+}
+
 function startSuperChest() {
+  if (SUPER_CHEST_VALUES.length !== SUPER_CHEST_CASE_COUNT) {
+    throw new Error("Super Chest must contain exactly 20 chests.");
+  }
+
+  if (SUPER_CHEST_VALUES.reduce((t, v) => t + v, 0) % 2 === 0) {
+    console.warn("Super Chest values add up to an even number: ties are possible.");
+  }
+
   superChestAvailable = true;
   superChestBenefitAvailable = false;
   superChestBenefitUsed = false;
@@ -938,38 +1111,41 @@ function startSuperChest() {
   superChestTurn = 0;
   superChestBusy = false;
   superChestPendingCase = null;
-  superChestPhase = "select";
+  superChestPhase = "pick";
+  duelSwapUsed = false;
+  duelSwapSelection = null;
 
-  const values = [
-    10, 10, 20, 20, 30, 30, 50, 50, 75, 75, 100, 100, 150, 150, 200, 200, 300,
-    400, 500, 1000,
-  ];
-  if (values.length !== SUPER_CHEST_CASE_COUNT)
-    throw new Error("Super Chest must contain exactly 20 cases.");
-  shuffle(values);
+  const values = shuffle([...SUPER_CHEST_VALUES]);
   superChestCases = values.map((value, index) => ({
     number: index + 1,
     value,
-    status: "available",
     owner: null,
+    revealed: false,
+    duel: null,
   }));
 
   waitingForDeal = true;
   bankerSection.classList.add("hidden");
   finalChoice.classList.add("hidden");
   superChestElement.classList.remove("hidden");
-  superChestInstruction.textContent =
-    "Choose one case to reveal. Then KEEP it or THROW it to the Banker.";
   superChestResultElement.classList.add("hidden");
   superChestContinueButton.classList.add("hidden");
-  updateSuperChestScoreboard();
-  renderSuperChestCases();
+  duelBar.classList.add("hidden");
+  duelTaunt.textContent = "";
+
   instruction.textContent = "SUPER CHEST";
   message.textContent =
-    "WIN THE SUPER CHEST TO EARN A ONE-TIME +50% BANKER OFFER BENEFIT.";
+    "BEAT THE BANKER TO EARN A ONE-TIME +50% BANKER OFFER BENEFIT.";
+
+  superChestInstruction.textContent = pickPrompt();
+  renderSuperChestCases();
+  updateSuperChestScoreboard();
+  updateDuelControls();
+
   addLog({
     type: "SUPER_CHEST_START",
     round: 3,
+    mode: "DUEL",
     caseCount: superChestCases.length,
     values: superChestCases.map(({ number, value }) => ({
       caseNumber: number,
@@ -978,235 +1154,248 @@ function startSuperChest() {
   });
 }
 
+function pickPrompt() {
+  const n = countOwner("player");
+
+  return n < SUPER_CHEST_PICKS
+    ? `Pick ${SUPER_CHEST_PICKS} chests. The Banker gets the rest. (${n} of ${SUPER_CHEST_PICKS})`
+    : "10 chests picked. Lock them in, or tap one to swap it out.";
+}
+
 function renderSuperChestCases() {
   superChestCasesElement.innerHTML = "";
-  superChestCases.forEach((miniCase) => {
+
+  superChestCases.forEach((c) => {
     const button = document.createElement("button");
+    button.type = "button";
     button.className = "super-chest-case";
-    button.textContent =
-      miniCase.status === "available"
-        ? String(miniCase.number).padStart(2, "0")
-        : formatMoney(miniCase.value);
-    button.dataset.miniCaseNumber = miniCase.number;
-    if (miniCase.owner === "player") button.classList.add("selected");
-    if (miniCase.status !== "available") button.classList.add("revealed");
-    button.disabled =
-      miniCase.status !== "available" ||
-      superChestPhase !== "select" ||
-      superChestBusy;
-    if (!button.disabled)
-      button.addEventListener("click", () => selectSuperChestCase(miniCase));
+    button.dataset.miniCaseNumber = c.number;
+    button.textContent = c.revealed ? formatMoney(c.value) : padCase(c.number);
+
+    if (c.owner === "player") button.classList.add("owner-player");
+    if (c.owner === "banker") button.classList.add("owner-banker");
+    if (c.revealed) button.classList.add("revealed");
+    if (c.duel) button.classList.add(`duel-${c.duel}`);
+    if (duelSwapSelection === c) button.classList.add("swap-pick");
+
+    const who = c.owner === "player" ? ", yours" : c.owner === "banker" ? ", the Banker's" : "";
+    button.setAttribute(
+      "aria-label",
+      c.revealed ? `Chest ${padCase(c.number)}${who}: ${formatMoney(c.value)}` : `Chest ${padCase(c.number)}${who}`,
+    );
+
+    const interactive =
+      !superChestBusy && (superChestPhase === "pick" || superChestPhase === "swap");
+
+    button.disabled = !interactive;
+    if (interactive) button.addEventListener("click", () => handleSuperChestClick(c));
+
     superChestCasesElement.appendChild(button);
   });
 }
 
-async function selectSuperChestCase(miniCase) {
-  if (
-    superChestPhase !== "select" ||
-    superChestBusy ||
-    miniCase.status !== "available"
-  )
-    return;
-  superChestBusy = true;
-  superChestPhase = "decision";
-  superChestPendingCase = miniCase;
-  miniCase.status = "pending";
-  miniCase.owner = "pending";
-  superChestTurn++;
-  addLog({
-    type: "SUPER_CHEST_CASE_REVEALED",
-    round: 3,
-    turn: superChestTurn,
-    caseNumber: miniCase.number,
-    value: miniCase.value,
-  });
-  renderSuperChestCases();
-  const button = superChestCasesElement.querySelector(
-    `.super-chest-case[data-mini-case-number="${miniCase.number}"]`,
-  );
-  if (button) button.classList.add("banker-reveal");
-  await delay(350);
-  if (button) button.classList.add("revealed");
-  superChestInstruction.textContent = `Case ${String(miniCase.number).padStart(2, "0")} contains ${formatMoney(miniCase.value)}. Keep it or throw it to the Banker.`;
-  renderSuperChestDecisionButtons();
-  superChestBusy = false;
+function updateDuelControls() {
+  const phase = superChestPhase;
+  const showing = phase === "pick" || phase === "swap";
+
+  duelActions.classList.toggle("hidden", !showing);
+  duelSecondaryButton.classList.toggle("hidden", phase !== "pick");
+
+  if (phase === "pick") {
+    duelPrimaryButton.textContent = "Lock in picks";
+    duelPrimaryButton.disabled = countOwner("player") !== SUPER_CHEST_PICKS;
+  } else if (phase === "swap") {
+    duelPrimaryButton.textContent = "Start the duel";
+    duelPrimaryButton.disabled = false;
+  }
 }
 
-function renderSuperChestDecisionButtons() {
-  document.getElementById("superChestDecision")?.remove();
-  const choices = document.createElement("div");
-  choices.id = "superChestDecision";
-  choices.className = "super-chest-decision";
-  const keep = document.createElement("button");
-  keep.type = "button";
-  keep.textContent = "Keep";
-  keep.addEventListener("click", () => resolveSuperChestChoice("keep"));
-  const throwCase = document.createElement("button");
-  throwCase.type = "button";
-  throwCase.textContent = "Throw to Banker";
-  throwCase.disabled = !superChestCases.some(
-    (item) => item.status === "available",
-  );
-  throwCase.title = throwCase.disabled
-    ? "No unpicked cases remain for a replacement."
-    : "Give this case to the Banker and receive a random unpicked case.";
-  throwCase.addEventListener("click", () => resolveSuperChestChoice("throw"));
-  choices.append(keep, throwCase);
-  superChestCasesElement.after(choices);
-}
+function handleSuperChestClick(c) {
+  if (superChestBusy) return;
 
-async function resolveSuperChestChoice(choice) {
-  if (
-    superChestPhase !== "decision" ||
-    superChestBusy ||
-    !superChestPendingCase ||
-    (choice !== "keep" && choice !== "throw")
-  ) {
-    return;
-  }
-
-  const selectedCase = superChestPendingCase;
-
-  // THROW requires at least one other unpicked case for the replacement.
-  const availableCases = superChestCases.filter(
-    (item) => item.status === "available",
-  );
-
-  if (choice === "throw" && availableCases.length === 0) {
-    return;
-  }
-
-  superChestBusy = true;
-  document.getElementById("superChestDecision")?.remove();
-
-  try {
-    // The revealed case is now permanently allocated.
-    selectedCase.status = "allocated";
-    selectedCase.owner = choice === "keep" ? "player" : "banker";
-
-    if (choice === "keep") {
-      superChestPlayerCases.push(selectedCase);
-      superChestPlayerTotal += selectedCase.value;
-
-      addLog({
-        type: "SUPER_CHEST_KEEP",
-        round: 3,
-        turn: superChestTurn,
-        caseNumber: selectedCase.number,
-        value: selectedCase.value,
-        owner: "player",
-      });
-
-      superChestInstruction.textContent = `${formatMoney(selectedCase.value)} stays on your side.`;
+  if (superChestPhase === "pick") {
+    if (c.owner === "player") {
+      c.owner = null;
+    } else if (countOwner("player") < SUPER_CHEST_PICKS) {
+      c.owner = "player";
     } else {
-      // The thrown case goes to the Banker.
-      superChestBankerCases.push(selectedCase);
-      superChestBankerTotal += selectedCase.value;
+      superChestInstruction.textContent =
+        "You already have 10 chests. Tap one of yours to put it back first.";
+      return;
+    }
 
-      // Give the player exactly one random replacement from the cases
-      // that have not yet been picked.
-      const replacement =
-        availableCases[Math.floor(Math.random() * availableCases.length)];
+    superChestInstruction.textContent = pickPrompt();
+  } else if (superChestPhase === "swap") {
+    if (duelSwapUsed) {
+      superChestInstruction.textContent = "You've used your swap. Start the duel when you're ready.";
+      return;
+    }
 
-      replacement.status = "allocated";
-      replacement.owner = "player";
+    if (c.owner === "player") {
+      duelSwapSelection = duelSwapSelection === c ? null : c;
+      superChestInstruction.textContent = duelSwapSelection
+        ? `Chest ${padCase(c.number)} selected. Now tap one of the Banker's chests to trade for it.`
+        : swapPrompt();
+    } else if (c.owner === "banker") {
+      if (!duelSwapSelection) {
+        superChestInstruction.textContent = "Tap one of your blue chests first.";
+        return;
+      }
 
-      superChestPlayerCases.push(replacement);
-      superChestPlayerTotal += replacement.value;
+      const mine = duelSwapSelection;
+      mine.owner = "banker";
+      c.owner = "player";
+      duelSwapUsed = true;
+      duelSwapSelection = null;
 
       addLog({
-        type: "SUPER_CHEST_THROW_AND_REPLACE",
+        type: "SUPER_CHEST_SWAP",
         round: 3,
-        turn: superChestTurn,
-        thrownCase: {
-          caseNumber: selectedCase.number,
-          value: selectedCase.value,
-        },
-        replacementCase: {
-          caseNumber: replacement.number,
-          value: replacement.value,
-        },
-        bankerTotal: superChestBankerTotal,
-        playerTotal: superChestPlayerTotal,
+        gave: mine.number,
+        received: c.number,
       });
 
-      superChestInstruction.textContent =
-        `You gave ${formatMoney(selectedCase.value)} to the Banker. ` +
-        `Random replacement: Case ${String(replacement.number).padStart(2, "0")} ` +
-        `— ${formatMoney(replacement.value)} added to your side.`;
-    }
-
-    // Clear the pending decision before rendering the next state.
-    superChestPendingCase = null;
-    superChestPhase = "select";
-
-    renderSuperChestCases();
-    updateSuperChestScoreboard();
-
-    // Briefly show the result before enabling the next pick.
-    await delay(800);
-
-    // Once the player has 10 allocated cases, stop making picks.
-    // The Banker automatically receives and reveals every remaining case.
-    if (superChestPlayerCases.length >= 10) {
-      await revealRemainingSuperChestForBanker();
-      return;
-    }
-
-    const remainingAvailable = superChestCases.filter(
-      (item) => item.status === "available",
-    ).length;
-
-    if (remainingAvailable === 0) {
-      await finishSuperChestAllocation();
-      return;
-    }
-
-    superChestInstruction.textContent =
-      "Choose one of the remaining cases to reveal.";
-  } finally {
-    // Always unlock the Super Chest, even if a UI/update operation throws.
-    // This prevents a decision from permanently freezing the mini-game.
-    superChestBusy = false;
-
-    if (superChestPhase === "select") {
-      renderSuperChestCases();
+      superChestInstruction.textContent = `Swapped: Chest ${padCase(mine.number)} for Chest ${padCase(c.number)}. Nobody has seen inside either one.`;
     }
   }
+
+  renderSuperChestCases();
+  updateDuelControls();
 }
 
-async function revealRemainingSuperChestForBanker() {
-  superChestPhase = "banker-reveal";
+function swapPrompt() {
+  return "Chests locked in. Want to trade one blind? Tap one of yours, then one of the Banker's. Or just start.";
+}
+
+function pickForMe() {
+  if (superChestPhase !== "pick" || superChestBusy) return;
+
+  const open = shuffle(superChestCases.filter((c) => c.owner === null));
+  while (countOwner("player") < SUPER_CHEST_PICKS && open.length) {
+    open.pop().owner = "player";
+  }
+
+  superChestInstruction.textContent = pickPrompt();
+  renderSuperChestCases();
+  updateDuelControls();
+}
+
+function lockDuelPicks() {
+  if (superChestPhase !== "pick" || countOwner("player") !== SUPER_CHEST_PICKS) {
+    return;
+  }
+
+  superChestCases.forEach((c) => {
+    if (c.owner === null) c.owner = "banker";
+  });
+
+  superChestPhase = "swap";
+
+  addLog({
+    type: "SUPER_CHEST_PICKS",
+    round: 3,
+    playerCaseNumbers: superChestCases.filter((c) => c.owner === "player").map((c) => c.number),
+  });
+
+  superChestInstruction.textContent = swapPrompt();
+  renderSuperChestCases();
+  updateDuelControls();
+}
+
+/* Pairs each of your chests with one of the Banker's, lowest stakes first. */
+function buildDuelPairs() {
+  const mine = superChestCases.filter((c) => c.owner === "player");
+  const theirs = shuffle(superChestCases.filter((c) => c.owner === "banker"));
+
+  return mine
+    .map((c, i) => ({ player: c, banker: theirs[i] }))
+    .sort((x, y) => x.player.value + x.banker.value - (y.player.value + y.banker.value));
+}
+
+function duelTauntFor(diff, step, total) {
+  if (step === total) {
+    return diff > 0 ? "It all comes down to this." : "Last chests. Don't blink.";
+  }
+
+  if (step === 1) return "Let's see what you picked.";
+  if (diff === 0) return "All square.";
+
+  const lead = Math.abs(diff);
+  const big = lead > 300;
+
+  if (diff > 0) {
+    return big ? "Enjoy the lead. It won't last." : "A lucky streak. For now.";
+  }
+
+  return big ? "The Banker always collects." : "Behind already?";
+}
+
+function updateDuelBar() {
+  const total = superChestPlayerTotal + superChestBankerTotal;
+  const pct = total === 0 ? 50 : (superChestPlayerTotal / total) * 100;
+
+  duelBar.classList.remove("hidden");
+  duelBarFill.style.width = `${pct}%`;
+}
+
+async function startDuelReveal() {
+  if (superChestPhase !== "swap" || superChestBusy) return;
+
   superChestBusy = true;
-  document.getElementById("superChestDecision")?.remove();
+  superChestPhase = "reveal";
+  duelSwapSelection = null;
+  updateDuelControls();
 
-  const remaining = superChestCases.filter(
-    (item) => item.status === "available",
-  );
+  const pairs = buildDuelPairs();
+  superChestPlayerCases = pairs.map((p) => p.player);
+  superChestBankerCases = pairs.map((p) => p.banker);
 
-  superChestInstruction.textContent =
-    "YOU HAVE 10 CASES. THE BANKER'S REMAINING CASES ARE BEING REVEALED...";
+  updateDuelBar();
+  renderSuperChestCases();
 
-  for (const miniCase of remaining) {
-    miniCase.status = "allocated";
-    miniCase.owner = "banker";
+  for (let i = 0; i < pairs.length; i++) {
+    const { player: mine, banker: theirs } = pairs[i];
+    const step = i + 1;
 
-    superChestBankerCases.push(miniCase);
-    superChestBankerTotal += miniCase.value;
+    superChestInstruction.textContent = `Round ${step} of ${pairs.length}`;
+    duelTaunt.textContent = "";
+
+    mine.duel = "active";
+    theirs.duel = "active";
+    renderSuperChestCases();
+
+    /* Build the tension: slower as the stakes rise */
+    await delay(step < 6 ? 600 : step < pairs.length ? 1000 : 1700);
+
+    mine.revealed = true;
+    theirs.revealed = true;
+    mine.duel = mine.value > theirs.value ? "win" : "lose";
+    theirs.duel = theirs.value > mine.value ? "win" : "lose";
+
+    superChestPlayerTotal += mine.value;
+    superChestBankerTotal += theirs.value;
 
     addLog({
-      type: "SUPER_CHEST_BANKER_REVEAL",
+      type: "SUPER_CHEST_DUEL_ROUND",
       round: 3,
-      turn: superChestTurn,
-      caseNumber: miniCase.number,
-      value: miniCase.value,
-      owner: "banker",
+      step,
+      playerCase: { caseNumber: mine.number, value: mine.value },
+      bankerCase: { caseNumber: theirs.number, value: theirs.value },
+      playerTotal: superChestPlayerTotal,
+      bankerTotal: superChestBankerTotal,
     });
 
     renderSuperChestCases();
     updateSuperChestScoreboard();
+    updateDuelBar();
 
-    await delay(350);
+    duelTaunt.textContent = duelTauntFor(
+      superChestPlayerTotal - superChestBankerTotal,
+      step,
+      pairs.length,
+    );
+
+    await delay(step < pairs.length ? 700 : 400);
   }
 
   await finishSuperChestAllocation();
@@ -1215,49 +1404,45 @@ async function revealRemainingSuperChestForBanker() {
 async function finishSuperChestAllocation() {
   superChestPhase = "complete";
   superChestBusy = false;
+
   const playerWins = superChestPlayerTotal > superChestBankerTotal;
+  const tie = superChestPlayerTotal === superChestBankerTotal;
   superChestBenefitAvailable = playerWins;
+
   addLog({
     type: "SUPER_CHEST_RESULT",
     round: 3,
-    turns: superChestTurn,
+    mode: "DUEL",
+    turns: superChestPlayerCases.length,
     playerTotal: superChestPlayerTotal,
     bankerTotal: superChestBankerTotal,
     won: playerWins,
-    tie: superChestPlayerTotal === superChestBankerTotal,
+    tie,
     benefit: playerWins ? "+50% BANKER OFFER ONCE" : "NONE",
-    playerCases: superChestPlayerCases.map((c) => ({
-      caseNumber: c.number,
-      value: c.value,
-    })),
-    bankerCases: superChestBankerCases.map((c) => ({
-      caseNumber: c.number,
-      value: c.value,
-    })),
+    playerCases: superChestPlayerCases.map((c) => ({ caseNumber: c.number, value: c.value })),
+    bankerCases: superChestBankerCases.map((c) => ({ caseNumber: c.number, value: c.value })),
   });
+
+  const totals = `You: ${formatMoney(superChestPlayerTotal)} &nbsp;|&nbsp; Banker: ${formatMoney(superChestBankerTotal)}`;
+
   superChestResultElement.classList.remove("hidden");
   superChestResultElement.innerHTML = playerWins
-    ? `<strong>You win the Super Chest!</strong><br>You: ${formatMoney(superChestPlayerTotal)} &nbsp;|&nbsp; Banker: ${formatMoney(superChestBankerTotal)}<br><span>You've earned a one-time +50% Banker Offer benefit.</span>`
-    : superChestPlayerTotal === superChestBankerTotal
-      ? `<strong>The Super Chest is a tie.</strong><br>You: ${formatMoney(superChestPlayerTotal)} &nbsp;|&nbsp; Banker: ${formatMoney(superChestBankerTotal)}<br><span>No benefit this time.</span>`
-      : `<strong>The Banker wins the Super Chest.</strong><br>You: ${formatMoney(superChestPlayerTotal)} &nbsp;|&nbsp; Banker: ${formatMoney(superChestBankerTotal)}<br><span>No benefit this time.</span>`;
-  superChestInstruction.textContent = "All 20 cases have been allocated.";
+    ? `<strong>You win the Super Chest!</strong><br>${totals}<br><span>You've earned a one-time +50% Banker offer benefit.</span>`
+    : tie
+      ? `<strong>The Super Chest is a tie.</strong><br>${totals}<br><span>No benefit this time.</span>`
+      : `<strong>The Banker wins the Super Chest.</strong><br>${totals}<br><span>No benefit this time.</span>`;
+
+  superChestInstruction.textContent = playerWins ? "You beat the Banker." : "The Banker takes this one.";
+  duelTaunt.textContent = playerWins ? "Well played." : "Better luck next time.";
+  updateDuelControls();
   superChestContinueButton.classList.remove("hidden");
 }
 
-/* Legacy function retained as an explicit entry point for old saved pages. */
-async function revealSuperChestBankerCases() {
-  if (superChestCases.every((item) => item.status !== "available"))
-    await finishSuperChestAllocation();
-}
-
-/*
-  Old ten-pick implementation removed. The turn based choices above
-  allocate each case exactly once and log both the reveal and decision.
-*/
 function updateSuperChestScoreboard() {
-  superChestPlayerTotalElement.textContent = formatMoney(superChestPlayerTotal);
-  superChestBankerTotalElement.textContent = formatMoney(superChestBankerTotal);
+  const hidden = superChestPhase === "pick" || superChestPhase === "swap";
+
+  superChestPlayerTotalElement.textContent = hidden ? "?" : formatMoney(superChestPlayerTotal);
+  superChestBankerTotalElement.textContent = hidden ? "?" : formatMoney(superChestBankerTotal);
 }
 
 function finishSuperChest() {
@@ -1296,7 +1481,28 @@ function useSuperChestBenefit() {
   if (!superChestBenefitAvailable || superChestBenefitUsed || gameOver) return;
   const currentOffer = Number(bankerOffer.textContent.replace(/[$,]/g, ""));
   if (!currentOffer || currentOffer <= 0) return;
-  const boostedOffer = smartRoundOffer(currentOffer * 1.5);
+
+  /*
+      The boosted offer can never exceed the biggest prize
+      still in play (unopened cases, including the player's).
+  */
+
+  const topPrizeInPlay = getTopPrizeInPlay();
+  const uncappedOffer = smartRoundOffer(currentOffer * 1.5);
+  const boostedOffer = Math.min(uncappedOffer, topPrizeInPlay);
+  const wasCapped = uncappedOffer > topPrizeInPlay;
+
+  /*
+      An offer already at the top prize cannot be improved,
+      so keep the benefit instead of wasting it.
+  */
+
+  if (boostedOffer <= currentOffer) {
+    message.textContent =
+      "THIS OFFER IS ALREADY AT THE TOP PRIZE LEFT. YOUR BONUS IS SAVED FOR LATER.";
+    return;
+  }
+
   superChestBenefitUsed = true;
   superChestBenefitAvailable = false;
   bankerOffer.textContent = formatMoney(boostedOffer);
@@ -1307,9 +1513,13 @@ function useSuperChestBenefit() {
     originalOffer: currentOffer,
     boostedOffer,
     multiplier: 1.5,
+    cappedAtTopPrize: wasCapped,
+    topPrizeInPlay,
   });
   instruction.textContent = "SUPER CHEST BENEFIT ACTIVATED";
-  message.textContent = `THE BANKER'S OFFER HAS BEEN INCREASED BY 50%: ${formatMoney(boostedOffer)}.`;
+  message.textContent = wasCapped
+    ? `THE BANKER'S OFFER HAS BEEN RAISED TO ${formatMoney(boostedOffer)}, THE TOP PRIZE STILL IN PLAY.`
+    : `THE BANKER'S OFFER HAS BEEN INCREASED BY 50%: ${formatMoney(boostedOffer)}.`;
 }
 
 /* =========================================================
@@ -1802,6 +2012,8 @@ function generateGameLog() {
 
   output += `Game Date: ${gameStart ? gameStart.date : "Unknown"}\n`;
 
+  output += `Case Values: ${gameStart && gameStart.prizeSet ? gameStart.prizeSet : "Standard"}\n`;
+
   output += `Top Prize Cases: ${gameStart ? gameStart.topPrizeCount || 1 : "Unknown"}\n`;
 
   output += `Maximum Prize: ${
@@ -1978,6 +2190,8 @@ function generateGameLog() {
 
     if (finalGameEnd.reason === "DEAL") {
       output += `Result: DEAL\n`;
+    } else if (finalGameEnd.reason === "TOP_PRIZE_GUARANTEED") {
+      output += `Result: TOP PRIZE (ALL REMAINING CASES HELD THE TOP PRIZE)\n`;
     } else {
       output += `Result: FINAL CASE\n`;
     }
@@ -2098,8 +2312,8 @@ let offerHistory = [];
 /* Prize tier by share of the top prize: drives colour on board + cases */
 function getTier(value) {
   const share = value / maxPrize;
-  if (share <= 0.09) return "low";
-  if (share <= 0.49) return "mid";
+  if (share <= 0.1) return "low";
+  if (share <= 0.4) return "mid";
   return "high";
 }
 
@@ -2152,6 +2366,50 @@ function focusBanker() {
   if (panel) panel.focus({ preventScroll: true });
 }
 
+/* Biggest prize in any unopened case (the player's case included) */
+function getTopPrizeInPlay() {
+  return Math.max(
+    ...cases.filter((c) => !c.opened).map((c) => c.value),
+  );
+}
+
+/* True once every unopened case, including the player's, holds the top prize */
+function onlyTopPrizesRemain() {
+  const unopened = cases.filter((c) => !c.opened);
+
+  return (
+    unopened.length > 0 && unopened.every((c) => c.value === maxPrize)
+  );
+}
+
+/* Ends the game immediately: the player is guaranteed the top prize */
+function declareTopPrizeWin() {
+  gameOver = true;
+  waitingForDeal = false;
+
+  bankerSection.classList.add("hidden");
+  finalChoice.classList.add("hidden");
+
+  playerCaseValue = maxPrize;
+  revealPlayerCase();
+
+  instruction.textContent = "TOP PRIZE WINNER!";
+  message.textContent = `EVERY CASE LEFT HOLDS ${formatMoney(maxPrize)}.`;
+
+  addLog({
+    type: "GAME_END",
+    reason: "TOP_PRIZE_GUARANTEED",
+    round: round,
+    winnings: maxPrize,
+    playerCase: playerCase,
+    playerCaseValue: maxPrize,
+  });
+
+  showGameLogButton();
+  newGameButton.classList.remove("hidden");
+  showResult();
+}
+
 function showResult() {
   const end = [...gameLog].reverse().find((e) => e.type === "GAME_END");
   if (!end) return;
@@ -2171,6 +2429,10 @@ function showResult() {
         : diff < 0
           ? `Your case held ${formatMoney(held)}. You beat it by ${formatMoney(-diff)}.`
           : `Your case held exactly ${formatMoney(held)}.`;
+  } else if (end.reason === "TOP_PRIZE_GUARANTEED") {
+    resultTitle.textContent = `Top prize: ${formatMoney(end.winnings)}`;
+    resultDetail.textContent =
+      "You opened every case that held a smaller prize. Every case left holds the top prize, so you win it.";
   } else {
     const other = cases.find((c) => !c.opened && c.number !== playerCase);
     resultTitle.textContent = `You won ${formatMoney(end.winnings)}`;
@@ -2216,3 +2478,92 @@ document.querySelectorAll(".presets button").forEach((b) =>
 maxPrizeInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter") startGame();
 });
+
+
+/* =========================================================
+   CASE VALUE DROPDOWN (MAIN MENU)
+========================================================= */
+
+/*
+    Accepts one value per line, or values separated by
+    commas, spaces or semicolons. "$" and thousands
+    separators ("10,000") are understood.
+*/
+
+function tokenizeCustomPrizes(text) {
+  const tokens = [];
+
+  text
+    .split(/[\s;]+/)
+    .filter(Boolean)
+    .forEach((chunk) => {
+      const clean = chunk.replace(/\$/g, "");
+
+      if (/^\d{1,3}(,\d{3})+(\.\d+)?$/.test(clean)) {
+        tokens.push(clean.replace(/,/g, ""));
+      } else {
+        clean.split(",").filter(Boolean).forEach((t) => tokens.push(t));
+      }
+    });
+
+  return tokens;
+}
+
+function parseCustomPrizes(text) {
+  const tokens = tokenizeCustomPrizes(text);
+
+  const values = tokens.map(Number);
+
+  if (tokens.some((t, i) => !Number.isFinite(values[i]))) {
+    const bad = tokens.find((t, i) => !Number.isFinite(values[i]));
+    return { error: `"${bad}" is not a number. Use digits only, like 2500 or 0.5.` };
+  }
+
+  if (values.some((v) => v <= 0)) {
+    return { error: "Every case value must be greater than 0." };
+  }
+
+  if (values.some((v) => v > 1e12)) {
+    return { error: "Case values must be below $1,000,000,000,000." };
+  }
+
+  if (values.length !== TOTAL_CASES) {
+    return {
+      error: `Enter exactly ${TOTAL_CASES} values. You have ${values.length}.`,
+    };
+  }
+
+  return { values: values.map((v) => Math.round(v * 100) / 100) };
+}
+
+function updateCustomCount() {
+  const n = tokenizeCustomPrizes(customValuesInput.value).length;
+
+  customCountElement.textContent = `${n} of ${TOTAL_CASES}`;
+  customValuesInput.classList.remove("invalid");
+}
+
+function applyPrizeSetChoice() {
+  const key = prizeSetSelect.value;
+  const isCustom = key === "custom";
+
+  prizeSetNote.textContent = PRIZE_SETS[key].note;
+  topPrizeField.classList.toggle("hidden", isCustom);
+  customField.classList.toggle("hidden", !isCustom);
+  setupError.textContent = "";
+
+  /* First time on Custom: start from the standard list so it is easy to edit */
+  if (isCustom && !customValuesInput.value.trim()) {
+    const top = Number(maxPrizeInput.value) || 100000;
+    const mult = top / PRIZE_SETS.standard.ref;
+    customValuesInput.value = PRIZE_SETS.standard.base
+      .map((v) => smartRound(v * mult))
+      .join("\n");
+  }
+
+  updateCustomCount();
+}
+
+prizeSetSelect.addEventListener("change", applyPrizeSetChoice);
+customValuesInput.addEventListener("input", updateCustomCount);
+applyPrizeSetChoice();
