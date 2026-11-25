@@ -371,7 +371,7 @@
   .dImg { width: 100%; aspect-ratio: 1083 / 1673; object-fit: cover; border-radius: 18px; background: #d9d7d0; display: block; }
   .dImg.noimg { visibility: hidden; }
   /* Card back, laid out like the official template: Name / Class / Season, number box with a white square, vertical artist name */
-  .dBackFace { position: absolute; inset: 0 0 60px 0; background: #fff; border-radius: 22px; overflow: hidden; container-type: inline-size;
+  .dBackFace { position: absolute; inset: 0 0 60px 0; background: #fff; border-radius: 18px; overflow: hidden; container-type: inline-size;
     padding: 9.2% 9.3% 8.9% 0; }
   .dBackFace[hidden] { display: none; }
   .dBackIn { height: 100%; border-radius: 0 4.3cqw 4.3cqw 0; display: flex; overflow: hidden; container-type: inline-size; font-family: "Inter Tight", "Helvetica Neue", Helvetica, Arial, sans-serif; }
@@ -1232,25 +1232,25 @@ const MULTICALL_CANDIDATES = [
   "0xcA11bde05977b3631167028862bE2a173976CA11",
 ];
 const pad64 = h => h.padStart(64, "0");
-function encAggregate3(target, ids) { // aggregate3((address,bool,bytes)[]) with ownerOf(id) calls
+function encAggregate3(target, ids, sel = "6352211e") { // aggregate3((address,bool,bytes)[]) with sel(id) calls, ownerOf by default
   const n = ids.length, t = target.slice(2).toLowerCase();
   const offsets = [], tuples = [];
   let cur = n * 32;
   for (const id of ids) {
-    const data = "6352211e" + pad64(id.toString(16)) + "0".repeat(56); // 36 bytes, padded to 64
+    const data = sel + pad64(id.toString(16)) + "0".repeat(56); // 36 bytes, padded to 64
     const tuple = pad64(t) + pad64("1") + pad64("60") + pad64((36).toString(16)) + data;
     offsets.push(pad64(cur.toString(16))); cur += tuple.length / 2; tuples.push(tuple);
   }
   return "0x82ad56cb" + pad64("20") + pad64(n.toString(16)) + offsets.join("") + tuples.join("");
 }
-function decAggregate3(result) { // → array of owner addresses (null if that call failed)
+function decAggregate3(result, raw = false) { // → array of owner addresses, or the raw return data (null if that call failed)
   const h = result.slice(2), at = b => Number(BigInt("0x" + h.slice(b * 2, b * 2 + 64)));
   const arr = at(0), n = at(arr), base = arr + 32, out = [];
   for (let i = 0; i < n; i++) {
     const tOff = base + at(base + 32 * i);
     const ok = at(tOff) === 1, bOff = tOff + at(tOff + 32), len = at(bOff);
     const data = h.slice((bOff + 32) * 2, (bOff + 32 + len) * 2);
-    out.push(ok && data.length >= 64 ? "0x" + data.slice(24, 64) : null);
+    out.push(!ok ? null : raw ? data : data.length >= 64 ? "0x" + data.slice(24, 64) : null);
   }
   return out;
 }
@@ -2017,6 +2017,62 @@ async function polygonHistory(id) {
   return rows;
 }
 
+/* ===== Transferable: read from the Objekt contract (abscan "Read as Proxy", function 21) ===== */
+// The function takes a token ID and returns true/false. Its exact name isn't published, so the page tries
+// the likely names once (a call to a name that doesn't exist fails) and remembers the one that answers.
+const TRANSFERABLE_FNS = [
+  ["b2c03a50", "isObjektTransferable"], ["b2564569", "isTransferable"], ["f4c3b4d7", "transferable"],
+  ["783891a6", "objektTransferable"], ["1e78bf08", "getTransferable"], ["6895de3f", "transferability"],
+];
+let transferSel, transferSearch; // undefined = not looked for yet, null = none found
+const boolOf = hex => { const h = (hex || "").replace(/^0x/, ""); return h.length === 64 && /^0{63}[01]$/.test(h) ? h.endsWith("1") : null; };
+function findTransferSel(sampleId) {
+  return transferSearch ||= searchTransferSel(sampleId);   // one search, shared by everything that asks
+}
+async function searchTransferSel(sampleId) {
+  const known = ls.get("transferSel");
+  const tryOrder = known ? [TRANSFERABLE_FNS.find(f => f[0] === known) || [known, "saved"], ...TRANSFERABLE_FNS.filter(f => f[0] !== known)] : TRANSFERABLE_FNS;
+  transferSel = null;
+  for (const [sel, name] of tryOrder) {
+    try {
+      const out = await rpc("eth_call", [{ to: CONTRACT, data: "0x" + sel + pad64(BigInt(sampleId).toString(16)) }, "latest"]);
+      if (boolOf(out) !== null) { transferSel = sel; ls.set("transferSel", sel); console.log("Transferable via", name, sel); break; }
+    } catch {}
+  }
+  if (!transferSel) console.warn("Couldn't find the transferable function on the Objekt contract");
+  return transferSel;
+}
+async function isTransferable(id) {
+  const sel = await findTransferSel(id);
+  if (!sel) return null;
+  return boolOf(await rpc("eth_call", [{ to: CONTRACT, data: "0x" + sel + pad64(BigInt(id).toString(16)) }, "latest"]));
+}
+const transCache = new Map(); // collection key → Set of transferable token IDs (as strings)
+async function loadTransferable(key, ids, onProgress) {
+  if (transCache.has(key)) return transCache.get(key);
+  const sel = await findTransferSel(ids[0]);
+  if (!sel) throw new Error("couldn't find the contract's transferable check");
+  const mc = await findMulticall(ids[0]);
+  const yes = new Set();
+  let size = mc ? 200 : 1;
+  for (let i = 0; i < ids.length; ) {
+    const chunk = ids.slice(i, i + size);
+    try {
+      if (mc) {
+        const outs = decAggregate3(await rpc("eth_call", [{ to: mc, data: encAggregate3(CONTRACT, chunk, sel) }, "latest"]), true);
+        chunk.forEach((id, k) => { if (boolOf(outs[k])) yes.add(id.toString()); });
+      } else if (await isTransferable(chunk[0])) yes.add(chunk[0].toString());
+      i += chunk.length;
+      onProgress?.(i, ids.length);
+    } catch (e) {
+      if (size > 25) { size = Math.floor(size / 2); continue; }
+      throw e;
+    }
+  }
+  transCache.set(key, yes);
+  return yes;
+}
+
 /* ===== Spun copies: any copy ever sent to COSMO's spin wallet ===== */
 const SPIN_WALLET = "0xD3D5f29881ad87Bb10C1100e2c709c9596dE345F";
 const SPIN_TOPIC = "0x" + SPIN_WALLET.slice(2).toLowerCase().padStart(64, "0");
@@ -2038,8 +2094,25 @@ async function loadSpun(key, ids, onProgress) {
       throw e;
     }
   }
+  // add copies spun back on Polygon (before April 2025), collected once by the polygon-spun job
+  for (const id of await polygonSpun(ids)) spun.add(id);
   spunCache.set(key, spun);
   return spun;
+}
+// data/polyspun/<n>.txt holds spun token IDs n*100000 … n*100000+99999 as base-36 gaps between IDs
+const polyChunks = new Map();
+function polyChunk(n) {
+  if (!polyChunks.has(n)) polyChunks.set(n, fetch(`data/polyspun/${n}.txt`).then(r => r.ok ? r.text() : "").catch(() => "").then(t => {
+    const set = new Set(); let cur = n * 100000;
+    for (const d of t.trim() ? t.trim().split(",") : []) { cur += parseInt(d, 36); set.add(String(cur)); }
+    return set;
+  }));
+  return polyChunks.get(n);
+}
+async function polygonSpun(ids) {
+  const want = ids.map(id => String(id)), chunks = [...new Set(want.map(id => Math.floor(Number(id) / 100000)))];
+  const sets = await Promise.all(chunks.map(polyChunk));
+  return want.filter(id => sets.some(set => set.has(id)));
 }
 
 /* ===== Objekt detail sheet (like objekt.top / apollo.cafe) ===== */
@@ -2121,6 +2194,13 @@ async function openDetail(m) {
     const el = $("dSpunV"); if (el) el.innerHTML = `<span style="font-size:13px;color:var(--dim)">Checking… ${Math.round(D.spunProg * 100)}%</span>`;
   }).then(set => { if (run !== dRun) return; D.spun = set; D.holders && renderHolders(); renderSerials(); })
     .catch(e => { if (run !== dRun) return; D.spunErr = e.message; renderSerials(); });
+  D.trans = null; D.transProg = 0; D.transErr = null;
+  loadTransferable(key, ids, (done, total) => {
+    if (run !== dRun) return;
+    D.transProg = done / total;
+    const el = $("dTransV"); if (el) el.innerHTML = `<span style="font-size:13px;color:var(--dim)">Checking… ${Math.round(D.transProg * 100)}%</span>`;
+  }).then(set => { if (run !== dRun) return; D.trans = set; renderSerials(); })
+    .catch(e => { if (run !== dRun) return; D.transErr = e.message; renderSerials(); });
   D.idx = Math.min(Math.max(wantSerial, 1), Math.max(ids.length, 1)) - 1;
   renderSerials();
 }
@@ -2312,10 +2392,17 @@ function setFlip(back) {
   if (!D) return;
   D.flipped = back;
   $("dBackFace").hidden = !back;
+  $("dImg").style.opacity = back ? "0" : "";   // keep the photo's edge from peeking out round the back's corners
   $("dFlipText").textContent = back ? "Photo" : "Flip";
   $("dFlip").setAttribute("aria-label", back ? "Show the card photo" : "Flip to the card back");
 }
 $("dFlip").onclick = () => setFlip(!D?.flipped);
+// tapping the card itself flips it too
+for (const el of [$("dImg"), $("dBackFace")]) {
+  el.style.cursor = "pointer";
+  el.title = "Tap to flip";
+  el.addEventListener("click", () => setFlip(!D?.flipped));
+}
 
 function closeDetail() {
   dRun++; D = null;
@@ -2349,7 +2436,9 @@ function renderSerials() {
       ${D.phys ? `<div class="dStat"><div class="k">Printed <span style="font-size:11px">(est.)</span></div><div class="v">${D.ser.printed.toLocaleString()}</div></div>` : ""}
       <div class="dStat"><div class="k">Spun</div><div class="v" id="dSpunV">${spunV}${D.spun ? pct(spunN) : ""}</div></div>
       <div class="dStat"><div class="k">Non-Spin</div><div class="v">${D.spun ? (n - spunN).toLocaleString() + pct(n - spunN) : "—"}</div></div>
-      <div class="dStat"><div class="k">Transferable</div><div class="v">${SOON}</div></div>
+      <div class="dStat"><div class="k">Transferable</div><div class="v" id="dTransV">${D.trans ? D.trans.size.toLocaleString() + pct(D.trans.size)
+        : D.transErr ? `<span style="font-size:13px;color:var(--dim)" title="${esc(D.transErr)}">Couldn't check</span>`
+        : `<span style="font-size:13px;color:var(--dim)">Checking… ${Math.round((D.transProg || 0) * 100)}%</span>`}</div></div>
     </div>
     ${D.note ? `<div class="dMsg" style="margin:-6px 0 14px">⏳ ${esc(D.note)}</div>` : ""}
     <div class="dNav">
@@ -2391,13 +2480,14 @@ async function loadCopy(id, no) {
       <tr><td>Token ID</td><td><a href="https://abscan.org/nft/${CONTRACT}/${id}" target="_blank" rel="noopener">${id}</a></td></tr>
       ${serialRow(id, no)}
       <tr><td>Spun</td><td>${D.spun ? (D.spun.has(id.toString()) ? `<span class="sb adj" style="margin:0">🌀 Spun</span>` : "No") : "Checking…"}</td></tr>
-      <tr><td>Transferable</td><td>${SOON}</td></tr>
+      <tr><td>Transferable</td><td id="dTrans">${D.trans ? (D.trans.has(id.toString()) ? "✅ Yes" : "🚫 No") : "Checking…"}</td></tr>
       ${D.phys && isAdmin() ? editorRow(id) : ""}
     </table>
     ${D.jumpMsg ? `<div class="dMsg">${esc(D.jumpMsg)}</div>` : ""}
     <table class="dTable"><thead><tr><th>OWNER</th><th class="sort" id="dSort">DATE ${D.histDesc ? "↓" : "↑"}</th></tr></thead>
       <tbody id="dHist"><tr><td colspan="2" style="color:var(--dim)">Loading history…</td></tr></tbody></table>
     <div class="dMsg"><span id="dHistNote">Loading…</span> Usernames from objekt.top.</div>`;
+  if (!D.trans) isTransferable(id).then(v => { const el = $("dTrans"); if (el && run === dRun && !D.trans) el.textContent = v === null ? "—" : v ? "✅ Yes" : "🚫 No"; }).catch(() => {});
   $("dSort").onclick = () => { D.histDesc = !D.histDesc; loadCopy(id, no); };
   if (D.phys && isAdmin()) wireEditor(id, no);
   const topic = "0x" + id.toString(16).padStart(64, "0");
