@@ -138,6 +138,7 @@
   body:not([data-view="collections"]) #browse { display: none !important; }
   body[data-view="contest"] #contest { display: block; }
   body:not([data-view="contest"]) #contest { display: none !important; }
+  body:not([data-view="sales"]) #sales { display: none !important; }
   body:not([data-view="live"]) #copies { display: none !important; }
 
   /* ===== Phones ===== */
@@ -290,8 +291,8 @@
   .hs.stats { margin: 0; color: var(--ink); display: block; width: auto; font-size: inherit; }
   .vstrip { flex: 0 0 56px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: 22px 0; }
   .vstrip span { writing-mode: vertical-rl; font-family: var(--disp); font-weight: 800; font-size: 18px; }
-  .ctOnly, .colOnly { display: none; }
-  body[data-view="collections"] .colOnly, body[data-view="contest"] .ctOnly { display: block; }
+  .ctOnly, .colOnly, .slOnly { display: none; }
+  body[data-view="collections"] .colOnly, body[data-view="contest"] .ctOnly, body[data-view="sales"] .slOnly { display: block; }
   header.hdr .controls { width: auto; margin-top: 16px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
   .chip { background: transparent; border: 1.5px solid #4a4a52; color: var(--text); border-radius: 999px; padding: 8px 14px;
     font-family: var(--disp); font-weight: 600; font-size: 13px; min-height: 38px; }
@@ -357,6 +358,48 @@
   #ctResults td.addr a, #ctResults td.mem:hover { color: var(--ink); }
   #ctResults th, #ctResults td { border-color: #cfcabb; }
   .tie { color: #8a5a00; }
+
+  /* ----- First Class sales (cream card on dark, like the contest) ----- */
+  #sales { max-width: 1232px; margin: 20px auto 60px; background: var(--cream); border: 12px solid #ffffff; border-radius: 28px;
+    padding: 22px 24px; color: var(--ink); --text: #111111; --dim: #5d5a52; --line: #d6d2c4; }
+  #sales h2 { font-family: var(--disp); font-weight: 800; font-size: 26px; margin: 0; }
+  .slHead { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .slHead select, #slAdmin input, #slAdmin select, #slAdmin textarea { background: #fff; color: var(--ink); border: 1.5px solid #b9b5a8; border-radius: 10px; padding: 7px 10px; font: inherit; }
+  .slIntro { color: var(--dim); margin: 8px 0 14px; font-size: 14px; }
+  .slEd { border-top: 2px solid var(--ink); padding-top: 12px; margin-top: 20px; }
+  .slEdHead { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .slEdHead h3 { font-family: var(--disp); font-weight: 800; font-size: 20px; margin: 0; }
+  .slEdHead h3 small { font-weight: 600; color: var(--dim); font-size: 14px; margin-left: 6px; }
+  .slTot { display: flex; gap: 18px; }
+  .slTot div { text-align: right; } .slTot .lbl { display: block; } .slTot b { font-family: var(--disp); font-size: 22px; font-weight: 800; }
+  .slTable { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+  .slTable th { text-align: left; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--dim); font-weight: 600; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+  .slTable td { padding: 9px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .slTable .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .slTable td.mem { font-weight: 700; }
+  .slTable tr.upcoming td { color: var(--dim); }
+  .slSt { display: inline-block; font-size: 12px; font-weight: 700; padding: 2px 9px; border-radius: 999px; border: 1.5px solid currentColor; white-space: nowrap; }
+  .slSt.live { background: var(--ink); color: var(--accent); border-color: var(--ink); }
+  .slWhen { color: var(--dim); font-size: 12px; white-space: nowrap; }
+  .slColls { font-size: 12px; color: var(--dim); margin-top: 4px; display: flex; flex-wrap: wrap; gap: 4px 10px; }
+  .slColls b { color: var(--ink); font-weight: 700; }
+  .slMore summary { font-size: 12px; font-weight: 600; color: var(--dim); cursor: pointer; margin-top: 3px; }
+  .slWhen.phoneOnly { display: none; margin-top: 4px; }
+  #slAdmin { margin-top: 26px; border-top: 2px dashed var(--ink); padding-top: 14px; }
+  #slAdmin h3 { font-family: var(--disp); font-weight: 800; font-size: 18px; margin: 0 0 6px; }
+  .slAdRow { display: flex; gap: 10px; flex-wrap: wrap; align-items: end; margin: 10px 0; }
+  .slAdRow label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; }
+  .slTimes { display: grid; grid-template-columns: minmax(90px, 140px) minmax(0, 230px); gap: 6px 10px; align-items: center; font-size: 13px; }
+  .slTimes input { min-width: 0; }
+  #slAdmin .chip { color: var(--ink); border-color: var(--ink); background: transparent; }
+  #slAdmin .chip.run { background: var(--ink); color: var(--accent); }
+  @media (max-width: 640px) {
+    #sales { margin: 12px 8px 40px; padding: 16px 14px; border-width: 8px; border-radius: 22px; }
+    .slTable { font-size: 13px; } .slTable th, .slTable td { padding: 7px 4px; }
+    .slTable .whenCol { display: none; }
+    .slWhen.phoneOnly { display: block; }
+    .slTot b { font-size: 18px; }
+  }
 
   /* ----- detail ----- */
   #detail { background: rgba(10,10,10,.82); backdrop-filter: blur(6px); }
@@ -521,6 +564,7 @@
           <button class="vt" data-view="collections">Collections</button>
           <button class="vt" data-view="live">Live activity <span class="vbadge" id="liveBadge" hidden></span></button>
           <button class="vt" data-view="contest">Contest</button>
+          <button class="vt" data-view="sales">Sales</button>
         </nav>
       </div>
       <div class="rule"><span class="lbl">SECTION</span><h1 id="secTitle">Collections</h1></div>
@@ -533,6 +577,7 @@
         <div class="hs liveOnly stats"><span class="lbl">TRANSFERS</span><b id="sXfer">0</b></div>
         <div class="hs liveOnly stats"><span class="lbl">BLOCK</span><b id="sBlock">—</b></div>
         <div class="hs ctOnly"><span class="lbl">CONTEST</span><b id="hContest">Top buyer per member</b></div>
+        <div class="hs slOnly"><span class="lbl">FIRST CLASS</span><b id="hSales">Sales</b></div>
       </div>
     </div>
     <div class="vstrip" aria-hidden="true"><span>Objekt Live</span><span>tripleS</span></div>
@@ -600,6 +645,17 @@
   <div id="ctSaved" class="note" style="margin-top:12px"></div>
   <div id="ctStatus"></div>
   <div id="ctResults"></div>
+</section>
+
+<section id="sales">
+  <div class="slHead">
+    <h2>First Class sales</h2>
+    <label id="slPickWrap" hidden>Season <select id="slPick"></select></label>
+  </div>
+  <p class="slIntro">Copies sold during each member's 24-hour sale. Copies won from a spin are not counted as sales and are shown separately.</p>
+  <div id="slNote" class="note"></div>
+  <div id="slEditions"></div>
+  <div id="slAdmin" hidden></div>
 </section>
 
 <div id="detail" role="dialog" aria-modal="true" aria-labelledby="dName">
@@ -1461,6 +1517,153 @@ async function loadSaved() {
 }
 $("ctMode").onchange = () => { if (saved && !$("ctStatus").classList.contains("err")) showSaved(); };
 
+/* ===== First Class sales: copies sold in each member's 24-hour sale (counted by sales.yml) ===== */
+const SALES_EDITIONS = { 1: { name: "1st edition", from: 101, to: 108 }, 2: { name: "2nd edition", from: 109, to: 116 }, 3: { name: "3rd edition", from: 117, to: 120 } };
+// tripleS members in S-number order (the admin can change the list)
+const TRIPLES_MEMBERS = ["SeoYeon", "HyeRin", "JiWoo", "ChaeYeon", "YooYeon", "SooMin", "NaKyoung", "YuBin", "Kaede", "DaHyun", "Kotone", "YeonJi",
+  "Nien", "SoHyun", "Xinyu", "Mayu", "Lynn", "JooBin", "HaYeon", "ShiOn", "ChaeWon", "Sullin", "SeoAh", "JiYeon"];
+const SALE_MS = 24 * 3600_000;
+let salesCfg = null, salesOut = null, salesSeason = null, salesTimer = null, salesLoaded = 0;
+
+async function openSales() {
+  if (!salesLoaded || Date.now() - salesLoaded > 5 * 60_000) {
+    $("slNote").textContent = "Loading…";
+    const get = async u => { try { const r = await fetch(u + "?t=" + Date.now(), { cache: "no-store" }); return r.ok ? await r.json() : null; } catch { return null; } };
+    [salesCfg, salesOut] = await Promise.all([get("sales-config.json"), get("data/sales.json")]);
+    salesLoaded = Date.now();
+  }
+  salesSeason ||= salesCfg?.current || salesOut?.current || null;
+  renderSales();
+  clearInterval(salesTimer);
+  salesTimer = setInterval(() => { if (document.body.dataset.view === "sales") renderSalesStatus(); else clearInterval(salesTimer); }, 30_000);
+}
+
+const fmtWhen = ms => new Date(ms).toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+const hm = ms => { const m = Math.max(1, Math.ceil(ms / 60000)); return m < 60 ? `${m}m` : `${Math.floor(m / 60)}h ${m % 60}m`; };
+function saleStatus(start, now = Date.now()) {
+  if (now < start) return { k: "upcoming", t: start - now < SALE_MS ? `Starts in ${hm(start - now)}` : "Upcoming" };
+  if (now < start + SALE_MS) return { k: "live", t: `Live · ${hm(start + SALE_MS - now)} left` };
+  return { k: "ended", t: "Ended" };
+}
+
+function renderSales() {
+  const seasons = [...new Set([...Object.keys(salesCfg?.seasons || {}), ...(salesOut?.seasons || [])])];
+  $("hSales").textContent = salesSeason ? `${salesSeason} sales` : "Sales";
+  $("slPickWrap").hidden = seasons.length < 2;
+  $("slPick").innerHTML = seasons.map(s => `<option${s === salesSeason ? " selected" : ""}>${esc(s)}</option>`).join("");
+  $("slPick").onchange = e => { salesSeason = e.target.value; renderSales(); };
+
+  const conf = salesCfg?.seasons?.[salesSeason], res = salesOut?.data?.[salesSeason];
+  if (!salesSeason || !conf) {
+    $("slNote").innerHTML = isAdmin() ? "No sales set up yet. Add the season and sale times below." : "No First Class sales have been set up yet.";
+    $("slEditions").innerHTML = "";
+  } else {
+    $("slNote").innerHTML = salesOut?.updated
+      ? `Counts updated <b>${ago(salesOut.updated)}</b>. During a sale they refresh about every 30 minutes.`
+      : "The first counts appear shortly after a sale starts.";
+    $("slEditions").innerHTML = Object.entries(SALES_EDITIONS).map(([ed, def]) => {
+      const starts = conf.windows?.[ed] || {};
+      const rows = Object.entries(starts).map(([member, iso]) => {
+        const start = Date.parse(iso);
+        const got = res?.editions?.[ed]?.members?.find(m => m.member === member && Date.parse(m.start) === start);
+        return { member, start, got };
+      }).filter(r => Number.isFinite(r.start)).sort((a, b) => a.start - b.start);
+      if (!rows.length) return "";
+      const sold = rows.reduce((a, r) => a + (r.got?.sold || 0), 0), spins = rows.reduce((a, r) => a + (r.got?.spinWins || 0), 0);
+      return `<div class="slEd">
+        <div class="slEdHead"><h3>${def.name}<small>${def.from}Z–${def.to}Z</small></h3>
+          <div class="slTot"><div><span class="lbl">Sold</span><b>${sold.toLocaleString()}</b></div><div><span class="lbl">Spin wins</span><b>${spins.toLocaleString()}</b></div></div></div>
+        <table class="slTable"><thead><tr><th>Member</th><th class="whenCol">Sale (your time)</th><th>Status</th><th class="num">Sold</th><th class="num">Spin wins</th></tr></thead><tbody>
+        ${rows.map(r => {
+          const st = saleStatus(r.start), g = r.got;
+          const counted = g && st.k !== "upcoming";
+          const per = counted && g.perColl ? Object.entries(g.perColl).sort().map(([c, v]) => `<span>${esc(c)} <b>${v.sold.toLocaleString()}</b>${v.spinWins ? ` +${v.spinWins} 🌀` : ""}</span>`).join("") : "";
+          return `<tr class="${st.k}">
+            <td class="mem">${esc(r.member)}${per ? `<details class="slMore"><summary>By collection</summary><div class="slColls">${per}</div></details>` : ""}</td>
+            <td class="whenCol"><span class="slWhen">${fmtWhen(r.start)} – ${fmtWhen(r.start + SALE_MS)}</span></td>
+            <td><span class="slSt ${st.k}" data-start="${r.start}">${st.t}</span><div class="slWhen phoneOnly">${fmtWhen(r.start)}</div>${counted && g.stale ? `<div class="slWhen">may be behind</div>` : ""}</td>
+            <td class="num">${counted ? g.sold.toLocaleString() : st.k === "upcoming" ? "—" : "…"}</td>
+            <td class="num">${counted ? g.spinWins.toLocaleString() : st.k === "upcoming" ? "—" : "…"}</td></tr>`;
+        }).join("")}</tbody></table></div>`;
+    }).join("") || `<p class="slIntro">No sale times set for ${esc(salesSeason)} yet.</p>`;
+  }
+  renderSalesAdmin();
+}
+function renderSalesStatus() {
+  document.querySelectorAll("#slEditions .slSt[data-start]").forEach(el => {
+    const st = saleStatus(+el.dataset.start); el.textContent = st.t; el.className = "slSt " + st.k;
+  });
+}
+
+/* ----- admin: season, members and sale start times, saved to sales-config.json ----- */
+const toLocalInput = ms => { const d = new Date(ms); return new Date(d - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16); };
+function renderSalesAdmin() {
+  const box = $("slAdmin");
+  box.hidden = !isAdmin();
+  if (box.hidden) return;
+  const cfg = salesCfg ? JSON.parse(JSON.stringify(salesCfg)) : { current: "", seasons: {} };
+  const season = salesSeason || "";
+  const conf = cfg.seasons[season] || { members: TRIPLES_MEMBERS, windows: {} };
+  const members = conf.members?.length ? conf.members : TRIPLES_MEMBERS;
+  const ed = box.dataset.ed || "1";
+  const starts = conf.windows?.[ed] || {};
+  box.innerHTML = `
+    <h3>🔒 Admin · sale times</h3>
+    <div class="slAdRow">
+      <label>Season <input id="slSeason" value="${esc(season)}" placeholder="e.g. Cream02" size="10"></label>
+      <label>Edition <select id="slEd">${Object.entries(SALES_EDITIONS).map(([k, d]) => `<option value="${k}"${k === ed ? " selected" : ""}>${d.name} (${d.from}Z–${d.to}Z)</option>`).join("")}</select></label>
+    </div>
+    <div class="slAdRow" style="align-items:stretch"><label style="flex:1">Members, in sale order (comma-separated)
+      <textarea id="slMembers" rows="2">${esc(members.join(", "))}</textarea></label></div>
+    <p class="slIntro" style="margin:4px 0 8px">Sale start for each member, in your time zone. Each sale is counted for 24 hours from its start. Leave a member blank if she isn't in this edition.</p>
+    <div class="slTimes">${members.map(m => `<span>${esc(m)}</span><input type="datetime-local" data-m="${esc(m)}" value="${starts[m] ? toLocalInput(Date.parse(starts[m])) : ""}">`).join("")}</div>
+    <div class="slAdRow">
+      <button class="chip" id="slFill" type="button">Fill the blanks 24 h apart</button>
+      <button class="chip" id="slClear" type="button">Clear this edition</button>
+      <button class="chip run" id="slSave" type="button">Save sale times</button>
+    </div>
+    <div id="slMsg" class="note"></div>`;
+  const readTimes = () => Object.fromEntries([...box.querySelectorAll("input[data-m]")].filter(i => i.value).map(i => [i.dataset.m, new Date(i.value).toISOString()]));
+  $("slEd").onchange = e => { box.dataset.ed = e.target.value; renderSalesAdmin(); };
+  $("slMembers").onchange = () => {
+    const list = $("slMembers").value.split(/[,\n]/).map(x => x.trim()).filter(Boolean);
+    salesCfg = cfg; (cfg.seasons[season] ||= { windows: {} }).members = list; renderSalesAdmin();
+  };
+  $("slFill").onclick = () => {
+    const inputs = [...box.querySelectorAll("input[data-m]")];
+    const firstIdx = inputs.findIndex(i => i.value);
+    if (firstIdx < 0) { $("slMsg").textContent = "Enter the first member's start time, then press this again."; return; }
+    let t = new Date(inputs[firstIdx].value).getTime();
+    for (let k = firstIdx + 1; k < inputs.length; k++) { if (inputs[k].value) t = new Date(inputs[k].value).getTime(); else { t += SALE_MS; inputs[k].value = toLocalInput(t); } }
+    $("slMsg").textContent = "Filled in. Check them, then press Save.";
+  };
+  $("slClear").onclick = () => box.querySelectorAll("input[data-m]").forEach(i => i.value = "");
+  $("slSave").onclick = async () => {
+    const name = $("slSeason").value.trim();
+    if (!name) { $("slMsg").textContent = "Enter the season name first (e.g. Cream02)."; return; }
+    const list = $("slMembers").value.split(/[,\n]/).map(x => x.trim()).filter(Boolean);
+    const next = JSON.parse(JSON.stringify(salesCfg || { seasons: {} }));
+    if (season && season !== name && next.seasons[season] && !Object.keys(next.seasons[season].windows || {}).length) delete next.seasons[season];
+    const sc = (next.seasons[name] ||= { windows: {} });
+    sc.members = list; sc.windows ||= {}; sc.windows[ed] = readTimes();
+    if (!Object.keys(sc.windows[ed]).length) delete sc.windows[ed];
+    next.current = name; next.updated = new Date().toISOString();
+    const btn = $("slSave"); btn.disabled = true; $("slMsg").textContent = "Saving…";
+    try {
+      const branch = ls.get("ghBranch") || "main", path = "sales-config.json";
+      const cur = await gh(`/contents/${path}?ref=${encodeURIComponent(branch)}`);
+      const put = await gh(`/contents/${path}`, { method: "PUT", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ branch, message: `Sales: ${name} ${SALES_EDITIONS[ed].name} times`, content: b64enc(JSON.stringify(next, null, 1) + "\n"), ...(cur.ok ? { sha: cur.j.sha } : {}) }) });
+      if (!put.ok) throw new Error(`GitHub ${put.status}: ${put.j.message || "save failed"}`);
+      salesCfg = next; salesSeason = name;
+      const run = await gh(`/actions/workflows/sales.yml/dispatches`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ref: branch }) });
+      renderSales();
+      $("slMsg").innerHTML = run.ok || run.status === 204 ? "✅ Saved. Counting has started; numbers appear in a few minutes." : "✅ Saved. Counting picks it up at its next run (within 30 minutes).";
+    } catch (e) { $("slMsg").textContent = "⚠️ " + e.message; }
+    btn.disabled = false;
+  };
+}
+
 function openContest() {
   $("contest").classList.add("open");
   if (!saved) loadSaved();
@@ -1577,12 +1780,13 @@ $("brQ").oninput = () => { clearTimeout(brTimer); brTimer = setTimeout(brChanged
 /* ----- Sections: Collections (home) · Live activity · Contest ----- */
 let liveUnseen = 0;
 function setView(v, { push = true } = {}) {
-  if (!["collections", "live", "contest"].includes(v)) v = "collections";
+  if (!["collections", "live", "contest", "sales"].includes(v)) v = "collections";
   document.body.dataset.view = v;
   document.querySelectorAll(".vt").forEach(b => b.classList.toggle("on", b.dataset.view === v));
-  $("secTitle").textContent = { collections: "Collections", live: "Live activity", contest: "Contest" }[v];
+  $("secTitle").textContent = { collections: "Collections", live: "Live activity", contest: "Contest", sales: "Sales" }[v];
   if (v === "collections") openBrowse();
   if (v === "contest") openContest();
+  if (v === "sales") openSales();
   if (v === "live") { liveUnseen = 0; $("liveBadge").hidden = true; }
   if (push && !location.hash.startsWith("#c=")) try { history.replaceState(null, "", v === "collections" ? location.pathname + location.search : `#${v}`); } catch {}
   window.scrollTo({ top: 0 });
@@ -1596,11 +1800,11 @@ function noteLiveActivity() {
 document.querySelectorAll(".vt").forEach(b => b.onclick = () => setView(b.dataset.view));
 window.addEventListener("hashchange", () => {
   const h = location.hash.slice(1);
-  if (["live", "contest", "collections"].includes(h)) setView(h, { push: false });
+  if (["live", "contest", "collections", "sales"].includes(h)) setView(h, { push: false });
   else if (!h) setView("collections", { push: false });
 });
 setTimeout(() => loadOverrides(), 0);   // after the whole script has loaded
-setView(["live", "contest"].includes(location.hash.slice(1)) ? location.hash.slice(1) : "collections", { push: false });
+setView(["live", "contest", "sales"].includes(location.hash.slice(1)) ? location.hash.slice(1) : "collections", { push: false });
 
 /* ===== Serials: estimated for physical (A) objekts, with admin corrections ===== */
 // How COSMO numbers physicals (from apollo.cafe's research): each print run gets token IDs reserved in
