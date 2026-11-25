@@ -73,7 +73,15 @@ async function getLogs(fromBlock) {
   }
 }
 
-const state = await readJSON(`${OUT}/state.json`, { nextBlock: 0, done: false, logs: 0 });
+// COSMO spin started on 28 Feb 2025, so there's nothing to find before then: start at that day's first block
+async function blockOnSpinLaunch() {
+  const ts = Math.floor(Date.parse("2025-02-27T00:00:00Z") / 1000);   // a day early, to be safe
+  const u = new URL("https://api.etherscan.io/v2/api");
+  Object.entries({ chainid: "137", module: "block", action: "getblocknobytime", timestamp: String(ts), closest: "before", apikey: KEY }).forEach(([a, b]) => u.searchParams.set(a, b));
+  try { const j = await (await fetch(u)).json(); const n = Number(j.result); if (j.status === "1" && n > 0) return n; } catch {}
+  return 0;
+}
+const state = await readJSON(`${OUT}/state.json`, null) || { nextBlock: await blockOnSpinLaunch(), done: false, logs: 0 };
 const ids = await loadIds();
 console.log(`Starting at Polygon block ${state.nextBlock}, ${ids.size.toLocaleString()} spun copies found so far.`);
 
