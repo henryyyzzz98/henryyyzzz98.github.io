@@ -13,9 +13,7 @@
 ];*/
 
 const BASE_PRIZES = [
-  100, 500, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 12000,
-  14000, 16000, 18000, 20000, 25000, 30000, 35000, 40000, 45000, 50000, 60000,
-  75000, 100000,
+   1, 10, 100, 500, 1000, 2000, 3000, 5000, 8000, 10000, 30000, 50000, 100000, 500000, 800000, 1000000, 1500000, 2000000, 2500000, 3000000, 4000000, 5000000, 6000000, 7000000, 8000000, 10000000,
 ];
 
 /* =========================================================
@@ -40,7 +38,7 @@ const SET_1 = [
 ];
 
 const SET_2 = [
-  1, 10, 100, 500, 1000, 2000, 3000, 5000, 8000, 10000, 30000, 50000, 100000, 500000, 800000, 1000000, 1500000, 2000000, 2500000, 3000000, 4000000, 5000000, 6000000, 7000000, 8000000, 10000000,
+   100, 500, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 12000, 14000, 16000, 18000, 20000, 25000, 30000, 35000, 40000, 45000, 50000, 60000, 75000, 100000,
 ];
 
 const SET_3 = [
@@ -51,8 +49,8 @@ const PRIZE_SETS = {
   standard: {
     label: "Standard",
     base: BASE_PRIZES,
-    ref: 100000,
-    note: "26 values from $100, scaled to your top prize.",
+    ref: 10000000,
+    note: "26 values, scaled to your top prize.",
   },
   classic: {
     label: "Classic",
@@ -70,13 +68,13 @@ const PRIZE_SETS = {
     label: "Set 1",
     base: SET_1,
     ref: 500000, // the top value in your list
-    note: "This set default values are 1 to 500,000",
+    note: "This set range from 1 to 500,000",
   },
   set2: {
     label: "Set 2",
     base: SET_2,
-    ref: 10000000, // the top value in your list
-    note: "This set range from 1 to 10,000,000",
+    ref: 100000, // the top value in your list
+    note: "This set range from 1 to 100,000",
   },
   set3: {
     label: "Set 3",
@@ -86,7 +84,7 @@ const PRIZE_SETS = {
   },
 };
 
-let prizeSetKey = "set2";
+let prizeSetKey = "standard";
 let customPrizeValues = [];
 
 /* Most cases that may share the top prize (keeps the hint side unambiguous) */
@@ -112,7 +110,7 @@ const ROUND_CASES = [6, 5, 4, 3, 2, 1, 1, 1, 1];
    GAME STATE
 ========================================================= */
 
-let maxPrize = 10000;
+let maxPrize = 10000000;
 
 let topPrizeCount = 1;
 
