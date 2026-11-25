@@ -121,6 +121,46 @@
     "tint": 0,
     "avg": "#090600"
    }
+  },
+  "triples-ever01--324a": {
+   "style": {
+    "mode": "image",
+    "text": "white",
+    "image": "images/backs/triples-divine01--322a.png?v=f4d6495",
+    "fit": "cover",
+    "tint": 0,
+    "avg": "#090600"
+   }
+  },
+  "triples-ever01--323a": {
+   "style": {
+    "mode": "image",
+    "text": "white",
+    "image": "images/backs/triples-divine01--322a.png?v=f4d6495",
+    "fit": "cover",
+    "tint": 0,
+    "avg": "#090600"
+   }
+  },
+  "triples-ever01--322a": {
+   "style": {
+    "mode": "image",
+    "text": "white",
+    "image": "images/backs/triples-divine01--322a.png?v=f4d6495",
+    "fit": "cover",
+    "tint": 0,
+    "avg": "#090600"
+   }
+  },
+  "class-premier": {
+   "style": {
+    "mode": "image",
+    "text": "white",
+    "image": "images/backs/class-premier.png?v=mww22mi6",
+    "fit": "cover",
+    "tint": 0,
+    "avg": "#2d2e8f"
+   }
   }
  }
 }
