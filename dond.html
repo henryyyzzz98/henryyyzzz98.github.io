@@ -18,11 +18,11 @@
         <h1 class="setup-logo"><span>Deal</span><i>or</i><span>No Deal</span></h1>
         <label for="prizeSet">Case values</label>
         <select id="prizeSet" class="select">
-          <option value="standard">Standard ($100 and up)</option>
+          <option value="standard">Standard</option>
           <option value="classic">Classic (1¢ and up)</option>
           <option value="custom">Custom (your own values)</option>
           <option value="set1">Actual Set 1 ($1 to $500,000)</option>
-          <option value="set2">Actual Set 2 ($1 to $10,000,000)</option>
+          <option value="set2">Actual Set 2 ($1 to $100,000)</option>
           <option value="set3">Actual Set 3 ($1 to $250,000)</option>
         </select>
         <p id="prizeSetNote" class="field-note"></p>
@@ -31,7 +31,7 @@
           <label for="maxPrize">Top prize</label>
           <div class="input-wrapper">
             <span>$</span>
-            <input type="number" id="maxPrize" value="100000" min="1" step="1" inputmode="numeric" />
+            <input type="number" id="maxPrize" value="" min="1" step="1" inputmode="numeric" />
           </div>
           <div class="presets" role="group" aria-label="Quick amounts">
             <button type="button" data-amount="10000">$10,000</button>
@@ -48,7 +48,7 @@
 
         <label for="topCount">Cases holding the top prize</label>
         <div class="input-wrapper count-wrapper">
-          <input type="number" id="topCount" value="1" min="1" max="10" step="1" inputmode="numeric" />
+          <input type="number" id="topCount" value="1" min="1" max="12" step="1" inputmode="numeric" />
         </div>
         <p class="field-note">They replace the biggest prizes on the right side of the board, counting up from the bottom.</p>
         <p id="setupError" class="setup-error" role="alert"></p>
