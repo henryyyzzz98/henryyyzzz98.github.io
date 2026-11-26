@@ -398,6 +398,12 @@
     .slTable { font-size: 13px; } .slTable th, .slTable td { padding: 7px 4px; }
     .slTable .whenCol { display: none; }
     .slWhen.phoneOnly { display: block; }
+    .slTable { table-layout: fixed; }
+    .slTable th:nth-child(1) { width: 28%; } .slTable th:nth-child(4) { width: 18%; } .slTable th:nth-child(5) { width: 19%; }
+    .slTable th { font-size: 10px; letter-spacing: .04em; }
+    .slSt { white-space: normal; font-size: 11px; padding: 3px 8px; line-height: 1.3; border-radius: 10px; }
+    .slWhen { white-space: normal; }
+    .slTable td.mem { overflow-wrap: anywhere; }
     .slTot b { font-size: 18px; }
   }
 
@@ -652,7 +658,7 @@
     <h2>First Class sales</h2>
     <label id="slPickWrap" hidden>Season <select id="slPick"></select></label>
   </div>
-  <p class="slIntro">Copies sold during each member's 24-hour sale. Copies won from a spin are not counted as sales and are shown separately.</p>
+  <p class="slIntro">Copies sold during each member's 24-hour sale, and the Premier objekts that came with them (same wallet, same transaction or within a minute).</p>
   <div id="slNote" class="note"></div>
   <div id="slEditions"></div>
   <div id="slAdmin" hidden></div>
@@ -1569,21 +1575,22 @@ function renderSales() {
         return { member, start, got };
       }).filter(r => Number.isFinite(r.start)).sort((a, b) => a.start - b.start);
       if (!rows.length) return "";
-      const sold = rows.reduce((a, r) => a + (r.got?.sold || 0), 0), spins = rows.reduce((a, r) => a + (r.got?.spinWins || 0), 0);
+      const sold = rows.reduce((a, r) => a + (r.got?.sold || 0), 0), prem = rows.reduce((a, r) => a + (r.got?.premier || 0), 0);
       return `<div class="slEd">
         <div class="slEdHead"><h3>${def.name}<small>${def.from}Z–${def.to}Z</small></h3>
-          <div class="slTot"><div><span class="lbl">Sold</span><b>${sold.toLocaleString()}</b></div><div><span class="lbl">Spin wins</span><b>${spins.toLocaleString()}</b></div></div></div>
-        <table class="slTable"><thead><tr><th>Member</th><th class="whenCol">Sale (your time)</th><th>Status</th><th class="num">Sold</th><th class="num">Spin wins</th></tr></thead><tbody>
+          <div class="slTot"><div><span class="lbl">Sold</span><b>${sold.toLocaleString()}</b></div><div><span class="lbl">Premier</span><b>${prem.toLocaleString()}</b></div></div></div>
+        <table class="slTable"><thead><tr><th>Member</th><th class="whenCol">Sale (your time)</th><th>Status</th><th class="num">Sold</th><th class="num">Premier</th></tr></thead><tbody>
         ${rows.map(r => {
           const st = saleStatus(r.start), g = r.got;
           const counted = g && st.k !== "upcoming";
-          const per = counted && g.perColl ? Object.entries(g.perColl).sort().map(([c, v]) => `<span>${esc(c)} <b>${v.sold.toLocaleString()}</b>${v.spinWins ? ` +${v.spinWins} 🌀` : ""}</span>`).join("") : "";
+          const per = counted && g.perColl ? [...Object.entries(g.perColl).sort().map(([c, v]) => `<span>${esc(c)} <b>${v.sold.toLocaleString()}</b></span>`),
+            ...Object.entries(g.premierColl || {}).sort().map(([c, n]) => `<span>Premier ${esc(c)} <b>${n.toLocaleString()}</b></span>`)].join("") : "";
           return `<tr class="${st.k}">
             <td class="mem">${esc(r.member)}${per ? `<details class="slMore"><summary>By collection</summary><div class="slColls">${per}</div></details>` : ""}</td>
             <td class="whenCol"><span class="slWhen">${fmtWhen(r.start)} – ${fmtWhen(r.start + SALE_MS)}</span></td>
-            <td><span class="slSt ${st.k}" data-start="${r.start}">${st.t}</span><div class="slWhen phoneOnly">${fmtWhen(r.start)}</div>${counted && g.stale ? `<div class="slWhen" title="${esc(g.error || "")}">${g.error && isAdmin() ? "⚠️ " + esc(g.error.slice(0, 80)) : "counting… numbers still catching up"}</div>` : ""}</td>
+            <td class="stCell"><span class="slSt ${st.k}" data-start="${r.start}">${st.t}</span><div class="slWhen phoneOnly">${fmtWhen(r.start)}</div>${counted && g.stale ? `<div class="slWhen" title="${esc(g.error || "")}">${g.error && isAdmin() ? "⚠️ " + esc(g.error.slice(0, 80)) : "still counting…"}</div>` : ""}</td>
             <td class="num">${counted ? g.sold.toLocaleString() : st.k === "upcoming" ? "—" : "…"}</td>
-            <td class="num">${counted ? g.spinWins.toLocaleString() : st.k === "upcoming" ? "—" : "…"}</td></tr>`;
+            <td class="num">${counted ? (g.premier || 0).toLocaleString() : st.k === "upcoming" ? "—" : "…"}</td></tr>`;
         }).join("")}</tbody></table></div>`;
     }).join("") || `<p class="slIntro">No sale times set for ${esc(salesSeason)} yet.</p>`;
   }
