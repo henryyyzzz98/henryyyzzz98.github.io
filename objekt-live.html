@@ -620,7 +620,7 @@
     <label class="fld"><span class="lbl">ARTIST</span><select id="brArtist"><option value="">All</option></select></label>
     <label class="fld"><span class="lbl">SEASON</span><select id="brSeason"><option value="">All</option></select></label>
     <label class="fld"><span class="lbl">MEMBER</span><select id="brMember"><option value="">All</option></select></label>
-    <label class="fld"><span class="lbl">CLASS</span><select id="brClass"><option value="">All</option></select></label>
+    <label class="fld"><span class="lbl" id="brClassLbl">CLASS</span><select id="brClass"><option value="">All</option></select></label>
     <label class="fld"><span class="lbl">SORT</span><select id="brSort">
       <option value="new">Newest first</option>
       <option value="old">Oldest first</option>
@@ -831,7 +831,7 @@ function getMeta(id) {
           name: (season && member && coll) ? `${season} ${member} ${coll}` : (m.name || `Objekt #${id}`).replace(/\s*#\d+$/, ""),
           image: m.image || null,
           season, member, coll,
-          cls: attr(m, "Class"),
+          cls: attr(m, "Class") || (/^idntt$/i.test(attr(m, "Artist") || "") ? attr(m, "Type") : ""),
           artist: attr(m, "Artist"),
           color: m.background_color || null,
         };
@@ -1747,6 +1747,10 @@ async function openBrowse() {
 }
 
 // Dropdowns only offer values that exist with the other filters applied (like apollo.cafe)
+// idntt calls an objekt's class its "type" (Basic, Special, Unit, Event…), so it's labelled that way for them,
+// and the Digital/Physical line becomes "Format" so the two don't clash
+const isIdntt = artist => /^idntt$/i.test(String(artist || "").trim());
+const clsLabel = artist => isIdntt(artist) ? "Type" : "Class";
 const BR_FIELDS = [["brArtist", "artist"], ["brSeason", "season"], ["brMember", "member"], ["brClass", "cls"]];
 function brMatches(c, skip) {
   for (const [id, f] of BR_FIELDS) { const v = $(id).value; if (id !== skip && v && c[f] !== v) return false; }
@@ -1759,6 +1763,8 @@ function brMatches(c, skip) {
 }
 function fillFilters() {
   const ix = objIndex; if (!ix) return;
+  const art = $("brArtist").value, hasIdntt = ix.collections.some(c => isIdntt(c.artist));
+  $("brClassLbl").textContent = art ? clsLabel(art).toUpperCase() : hasIdntt ? "CLASS / TYPE" : "CLASS";
   const seasonOrder = new Map(); // season → first collection position (crawl order ≈ release order)
   ix.collections.forEach(c => { if (!seasonOrder.has(c.season)) seasonOrder.set(c.season, c._i); });
   for (const [id, f] of BR_FIELDS) {
@@ -2304,13 +2310,45 @@ async function absLogsBack(topics, toBlock, span) {   // Abstract logs in (toBlo
   return out;
 }
 const SPIN_LAUNCH = Date.parse("2025-02-28T00:00:00+09:00");   // COSMO spin started 28 Feb 2025: nothing minted before can be a prize
-const SPIN_CLASSES = new Set(["first", "special", "premier"]);   // the only classes COSMO spin gives out
+// Which objekts COSMO spin can give out (anything else can't be a spin prize). Digital (Z) only.
+//   tripleS  First 101Z–120Z · Premier 402Z · Special: Atom01 201Z 202Z 216Z–219Z, Binary01–Atom02 201Z–206Z, none from Binary02
+//   ARTMS    First 101Z–120Z · Special 201Z–206Z from Atom01 to Divine01, none from Ever01
+//   idntt    Basic 101Z–108Z · Special 301Z 302Z · Unit 401Z (all seasons)
+const SPIN_SEASONS = ["Atom01", "Binary01", "Cream01", "Divine01", "Ever01", "Atom02", "Binary02", "Cream02", "Divine02"];
+const seasonIdx = s => { const i = SPIN_SEASONS.findIndex(x => x.toLowerCase() === String(s || "").toLowerCase()); return i < 0 ? Infinity : i; };   // later seasons sort last
+const between = (s, a, b) => seasonIdx(s) >= seasonIdx(a) && seasonIdx(s) <= seasonIdx(b);
+function spinEligible(artist, season, cls, coll) {   // → true / false, or null if the artist isn't known
+  if (!/z$/i.test(String(coll || ""))) return false;   // physical cards are never spin prizes
+  const n = parseInt(coll, 10), c = String(cls || "").toLowerCase(), a = String(artist || "").toLowerCase();
+  if (a === "triples") {
+    if (c === "first") return n >= 101 && n <= 120;
+    if (c === "premier") return n === 402;
+    if (c === "special") {
+      if (seasonIdx(season) === seasonIdx("Atom01")) return [201, 202, 216, 217, 218, 219].includes(n);
+      if (between(season, "Binary01", "Atom02")) return n >= 201 && n <= 206;
+      return false;
+    }
+    return false;
+  }
+  if (a === "artms") {
+    if (c === "first") return n >= 101 && n <= 120;
+    if (c === "special") return between(season, "Atom01", "Divine01") && n >= 201 && n <= 206;
+    return false;
+  }
+  if (a === "idntt") {
+    if (c === "basic") return n >= 101 && n <= 108;
+    if (c === "special") return n === 301 || n === 302;
+    if (c === "unit") return n === 401;
+    return false;
+  }
+  return null;
+}
 const spinWinCache = new Map();
 async function wonFromSpin(id, absLogs, poly) {
   const k = String(id);
   if (spinWinCache.has(k)) return spinWinCache.get(k);
   let res = null;
-  if (D?.cls && !SPIN_CLASSES.has(String(D.cls).toLowerCase())) return { won: false, notSpinClass: true };
+  if (D && spinEligible(D.artist, D.season, D.cls, D.coll) === false) return { won: false, notSpinClass: true };
   const polyMint = Array.isArray(poly) ? poly.find(r => r.from.toLowerCase() === NO_ADDR) : null;
   if (polyMint && polyMint.t && polyMint.t < SPIN_LAUNCH) res = { won: false, chain: "Polygon" };
   else if (polyMint && Number.isFinite(polyMint.block)) {
@@ -2460,14 +2498,14 @@ async function openDetail(m) {
   $("dName").textContent = name;
   const type = /A$/i.test(m.coll) ? "Physical" : /Z$/i.test(m.coll) ? "Digital" : "—";
   $("dToken").textContent = [m.artist || entry?.artist, type].filter(Boolean).join(" · ");
-  D.color = m.color || entry?.color || null; D.cls = m.cls || entry?.cls || ""; D.type = type;
+  D.color = m.color || entry?.color || null; D.cls = m.cls || entry?.cls || ""; D.type = type; D.artist = m.artist || entry?.artist || ""; D.season = m.season || entry?.season || ""; D.coll = m.coll || entry?.coll || "";
   await loadOverrides();
   if (run !== dRun) return;
   applyDetailStyle();
   setFlip(false);
   $("dAttrs").innerHTML = [
     ["Artist", esc(m.artist || entry?.artist || "—")], ["Member", esc(m.member)], ["Season", esc(m.season)],
-    ["Class", esc(m.cls || entry?.cls || "—")], ["Collection No.", `<span class="mono">${esc(m.coll)}</span>`], ["Type", type],
+    [clsLabel(D.artist), esc(m.cls || entry?.cls || "—")], ["Collection No.", `<span class="mono">${esc(m.coll)}</span>`], [isIdntt(D.artist) ? "Format" : "Type", type],
   ].map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join("");
   const slug = apolloSlug(m.season, m.member, m.coll);
   $("dBtns").innerHTML = `
@@ -2720,7 +2758,7 @@ function applyDetailStyle(override) {
   $("dBackIn").innerHTML = `
     <div class="bi">
       <div class="sec"><span class="lbl">Name</span><span class="val">${esc(m.member || "")}</span></div>
-      <div class="sec"><span class="lbl">Class</span><span class="val">${esc(D.cls || "—")}</span></div>
+      <div class="sec"><span class="lbl">${clsLabel(D.artist)}</span><span class="val">${esc(D.cls || "—")}</span></div>
       <div class="sec"><span class="lbl">Season</span><span class="val">${esc(sw[1])}<span class="ol">${esc(sw[2])}</span></span></div>
       <div class="box"><div class="no"></div><div class="sq" aria-hidden="true"></div></div>
       <div class="grow"></div>
@@ -2865,7 +2903,7 @@ async function loadCopy(id, no) {
       : `<tr><td colspan="2" style="color:var(--dim)">No transfers found for this copy.</td></tr>`;
     wonFromSpin(id, logs, poly).then(r => {
       const el = $("dWon"); if (!el || run !== dRun) return;
-      el.innerHTML = !r ? `<span style="color:var(--dim)">—</span>` : r.notSpinClass ? `No <span style="color:var(--dim);font-size:12px">${esc(D.cls)} isn't a spin prize</span>` : r.won ? `🎰 Yes <span style="color:var(--dim);font-size:12px">spin prize on ${r.chain}</span>` : "No";
+      el.innerHTML = !r ? `<span style="color:var(--dim)">—</span>` : r.notSpinClass ? `No <span style="color:var(--dim);font-size:12px">${esc([D.season, D.cls, D.coll].filter(Boolean).join(" "))} isn't a spin prize</span>` : r.won ? `🎰 Yes <span style="color:var(--dim);font-size:12px">spin prize on ${r.chain}</span>` : "No";
     }).catch(e => { const el = $("dWon"); if (el && run === dRun) el.innerHTML = `<span style="color:var(--dim)" title="${esc(e.message)}">Couldn't check</span>`; });
     $("dHistNote").innerHTML = poly?.noKey ? `Showing Abstract only (from April 2025). Add an Etherscan key to include Polygon history.`
       : poly?.error ? `Couldn't load Polygon history: ${esc(poly.error)}. Showing Abstract only.`
