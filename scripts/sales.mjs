@@ -132,7 +132,8 @@ async function scanMints(st, season, members, fromBlock, toBlock) {
 
 /* ---------- Premier objekts that came with a sale copy ---------- */
 // A Premier counts for a member's sale when it went to the same wallet as one of her sale copies, in the same
-// transaction or within PREMIER_SECONDS of it. Premier minted on their own (e.g. spin prizes) aren't counted.
+// transaction or within PREMIER_SECONDS of it. Premier objekts are per member (e.g. JiWoo 402Z), so her own
+// sale is preferred when a wallet bought from several. Premier minted on their own (e.g. spin prizes) aren't counted.
 const PREMIER_SECONDS = Number(process.env.PREMIER_SECONDS || 60);
 function attributePremier(st, sales, result, latest, latestTime) {
   const counted = sales.filter(x => x.saleMints && x.b0 != null);
@@ -146,10 +147,13 @@ function attributePremier(st, sales, result, latest, latestTime) {
     let best = null;
     for (const x of counted) {
       if (p.block < x.b0 - near || p.block >= x.b1 + near) continue;
+      const sameMember = x.member.toLowerCase() === String(p.m).toLowerCase();
       for (const s of x.saleMints) {
         if (s.to !== p.to) continue;
-        const score = s.tx === p.tx ? -1 : Math.abs(s.block - p.block);
-        if (score > near) continue;
+        const gap = s.tx === p.tx ? 0 : Math.abs(s.block - p.block);
+        if (s.tx !== p.tx && gap > near) continue;
+        // best: same transaction and same member; then same transaction; then same member nearby; then nearest
+        const score = (s.tx === p.tx ? 0 : 2 * (near + 1)) + (sameMember ? 0 : near + 1) + gap;
         if (!best || score < best.score) best = { x, score };
       }
     }
@@ -176,6 +180,9 @@ export async function main() {
   for (const [sName, sConf] of Object.entries(config.seasons)) {
     const st = state[sName] = { mints: {}, prem: {}, final: {}, blocks: {}, ...(state[sName] || {}) };
     delete st.copies; delete st.spin;   // from earlier versions
+    // a newer version of this job keeps more (e.g. Premier): read the sale period again from the start, once
+    const STATE_VERSION = 2;
+    if (st.v !== STATE_VERSION) { delete st.scanned; st.prem = {}; st.final = {}; st.v = STATE_VERSION; log(`${sName}: re-reading the sales from the start (job updated)`); }
     const prevSeason = prevOut?.data?.[sName];
 
     // every member's sale in this season, with its block range
