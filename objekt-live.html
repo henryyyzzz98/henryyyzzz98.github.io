@@ -1581,7 +1581,7 @@ function renderSales() {
           return `<tr class="${st.k}">
             <td class="mem">${esc(r.member)}${per ? `<details class="slMore"><summary>By collection</summary><div class="slColls">${per}</div></details>` : ""}</td>
             <td class="whenCol"><span class="slWhen">${fmtWhen(r.start)} – ${fmtWhen(r.start + SALE_MS)}</span></td>
-            <td><span class="slSt ${st.k}" data-start="${r.start}">${st.t}</span><div class="slWhen phoneOnly">${fmtWhen(r.start)}</div>${counted && g.stale ? `<div class="slWhen">may be behind</div>` : ""}</td>
+            <td><span class="slSt ${st.k}" data-start="${r.start}">${st.t}</span><div class="slWhen phoneOnly">${fmtWhen(r.start)}</div>${counted && g.stale ? `<div class="slWhen" title="${esc(g.error || "")}">${g.error && isAdmin() ? "⚠️ " + esc(g.error.slice(0, 80)) : "counting… numbers still catching up"}</div>` : ""}</td>
             <td class="num">${counted ? g.sold.toLocaleString() : st.k === "upcoming" ? "—" : "…"}</td>
             <td class="num">${counted ? g.spinWins.toLocaleString() : st.k === "upcoming" ? "—" : "…"}</td></tr>`;
         }).join("")}</tbody></table></div>`;
@@ -2251,11 +2251,13 @@ async function absLogsBack(topics, toBlock, span) {   // Abstract logs in (toBlo
   return out;
 }
 const SPIN_LAUNCH = Date.parse("2025-02-28T00:00:00+09:00");   // COSMO spin started 28 Feb 2025: nothing minted before can be a prize
+const SPIN_CLASSES = new Set(["first", "special", "premier"]);   // the only classes COSMO spin gives out
 const spinWinCache = new Map();
 async function wonFromSpin(id, absLogs, poly) {
   const k = String(id);
   if (spinWinCache.has(k)) return spinWinCache.get(k);
   let res = null;
+  if (D?.cls && !SPIN_CLASSES.has(String(D.cls).toLowerCase())) return { won: false, notSpinClass: true };
   const polyMint = Array.isArray(poly) ? poly.find(r => r.from.toLowerCase() === NO_ADDR) : null;
   if (polyMint && polyMint.t && polyMint.t < SPIN_LAUNCH) res = { won: false, chain: "Polygon" };
   else if (polyMint && Number.isFinite(polyMint.block)) {
@@ -2810,7 +2812,7 @@ async function loadCopy(id, no) {
       : `<tr><td colspan="2" style="color:var(--dim)">No transfers found for this copy.</td></tr>`;
     wonFromSpin(id, logs, poly).then(r => {
       const el = $("dWon"); if (!el || run !== dRun) return;
-      el.innerHTML = !r ? `<span style="color:var(--dim)">—</span>` : r.won ? `🎰 Yes <span style="color:var(--dim);font-size:12px">spin prize on ${r.chain}</span>` : "No";
+      el.innerHTML = !r ? `<span style="color:var(--dim)">—</span>` : r.notSpinClass ? `No <span style="color:var(--dim);font-size:12px">${esc(D.cls)} isn't a spin prize</span>` : r.won ? `🎰 Yes <span style="color:var(--dim);font-size:12px">spin prize on ${r.chain}</span>` : "No";
     }).catch(e => { const el = $("dWon"); if (el && run === dRun) el.innerHTML = `<span style="color:var(--dim)" title="${esc(e.message)}">Couldn't check</span>`; });
     $("dHistNote").innerHTML = poly?.noKey ? `Showing Abstract only (from April 2025). Add an Etherscan key to include Polygon history.`
       : poly?.error ? `Couldn't load Polygon history: ${esc(poly.error)}. Showing Abstract only.`
