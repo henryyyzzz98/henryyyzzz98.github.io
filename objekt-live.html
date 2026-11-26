@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Objekt Live — tripleS on Abstract</title>
+<title>Objekt Live by jyuubin318</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -571,7 +571,7 @@
   <div class="cb"><div class="cb-in hdr-in">
     <div class="hdr-main">
       <div class="hdr-top">
-        <span class="brand">OBJEKT LIVE</span>
+        <span class="brand">Objekt Live by jyuubin318</span>
         <nav class="views" aria-label="Sections">
           <button class="vt" data-view="collections">Collections</button>
           <button class="vt" data-view="live">Live activity <span class="vbadge" id="liveBadge" hidden></span></button>
@@ -592,7 +592,7 @@
         <div class="hs slOnly"><span class="lbl">FIRST CLASS</span><b id="hSales">Sales</b></div>
       </div>
     </div>
-    <div class="vstrip" aria-hidden="true"><span>Objekt Live</span><span>By: jyuubin318</span></div>
+    <div class="vstrip" aria-hidden="true"><span>Objekt Live</span><span>jyuubin318</span></div>
   </div></div>
   <div class="controls liveOnly">
     <button class="chip" data-type="mint" aria-pressed="true">Mints</button>
@@ -1273,20 +1273,27 @@ async function mintLookupFast(ids, run, onProgress) {
   // searching the whole chain history for each group (which public nodes often refuse), find where the
   // first copy was minted, then search small block windows moving forward from there.
   todo.sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
-  const latest = Number(await rpc("eth_blockNumber", []));
+  let latest = Number(await rpc("eth_blockNumber", []));
   const found = (id, w, block) => { res.set(id, w); cache.set(id.toString(), w); };
+  const BACK = 30000;   // COSMO doesn't mint strictly in ID order: start each search a little before the last group
   const firstLogs = await rpc("eth_getLogs", [{ address: CONTRACT, fromBlock: "0x0", toBlock: "latest", topics: [TRANSFER, ZERO32, null, topicOf(todo[0])] }]);
-  let cursor = firstLogs[0] ? Number(firstLogs[0].blockNumber) : 0;
+  let cursor = firstLogs[0] ? Number(firstLogs[0].blockNumber) : 0, groupLow = cursor;
   let size = 100, span = 20000, slow = [], saved = 0;
   const pending = [...todo];
   while (pending.length) {
     if (run !== ctRun) throw new Error("cancelled");
     const group = pending.slice(0, size);
     const want = new Set(group.map(id => topicOf(id)));
-    let from = cursor, refused = false;
+    let from = Math.max(0, Math.min(cursor, groupLow) - BACK), refused = false, low = Infinity, topUp = false;
     span = Math.min(span, 50000);
     // widen the window until every copy in the group has turned up (or we reach the newest block)
-    while (want.size && from <= latest) {
+    while (want.size) {
+      if (from > latest) {
+        // a live sale keeps minting: check once for blocks made since this run started
+        if (topUp) break;
+        topUp = true; latest = Number(await rpc("eth_blockNumber", []));
+        if (from > latest) break;
+      }
       const to = Math.min(latest, from + span - 1);
       let logs;
       try {
@@ -1300,13 +1307,14 @@ async function mintLookupFast(ids, run, onProgress) {
         const t = l.topics[3]; if (!want.has(t)) continue;
         want.delete(t);
         found(BigInt(t), "0x" + l.topics[2].slice(26), Number(l.blockNumber));
-        cursor = Math.max(cursor, Number(l.blockNumber));
+        cursor = Math.max(cursor, Number(l.blockNumber)); low = Math.min(low, Number(l.blockNumber));
       }
       from = to + 1;
       if (!logs.length && span < 2_000_000) span *= 2;   // quiet stretch: look further at once
       else if (logs.length > 50 && span > 2000) span = Math.floor(span / 2);
     }
     if (refused) continue;   // same copies again, in a smaller group
+    if (low < Infinity) groupLow = low;
     // anything not found going forward (IDs out of order): full-history search for those at the end
     for (const t of want) slow.push(BigInt(t));
     pending.splice(0, group.length);
@@ -1314,8 +1322,9 @@ async function mintLookupFast(ids, run, onProgress) {
     onProgress(res.size, ids.length);
   }
   if (slow.length) { // last resort: old one-by-one method
-    const left = slow.filter(id => !res.has(id));
-    const more = await chainLookup(left, mintCall, mintParse, run, () => onProgress(res.size, ids.length));
+    const left = [...new Set(slow.map(String))].map(BigInt).filter(id => !res.has(id));
+    const done0 = res.size;
+    const more = await chainLookup(left, mintCall, mintParse, run, d => onProgress(Math.min(ids.length, done0 + d), ids.length));
     more.forEach((w, id) => { res.set(id, w); cache.set(id.toString(), w); });
   }
   saveMintCache(cache);
