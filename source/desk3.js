@@ -76,7 +76,7 @@ const _dk3_startWeekend = startWeekend;
 startWeekend = function () { dkApplyRegs(G); return _dk3_startWeekend.apply(this, arguments); };
 function dkRegsForm(r, act) {
   const sel = (k, opts) => `<select data-dkc="${act}" data-k="${k}" style="width:100%">${opts.map(([v, l]) => `<option value="${v}" ${String(r[k]) === String(v) ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>`;
-  const fmt = `<label class="small" style="grid-column:1/-1">Weekend format${sel('format', [['f1', 'Formula 1 weekend'], ['academy', 'F1 Academy weekend — qualifying, Reverse Grid Race, Feature Race'], ['exempt', 'Exemption weekend — FP1-3, three Exemption Qualifying sessions, Grand Prix 1 (¾) and 2 (¼); no points, 1–3 out per weekend, revival rounds, endless final']])}</label>`;
+  const fmt = `<label class="small" style="grid-column:1/-1">Weekend format${sel('format', [['f1', 'Formula 1 weekend'], ['academy', 'F1 Academy weekend — qualifying, Reverse Grid Race, Feature Race'], ['exempt', 'Exemption weekend — FP1-3, three Exemption Qualifying sessions, Grand Prix 1 (¾) and an endless Grand Prix 2; no points, 1–3 out per weekend, revival rounds, endless final']])}</label>`;
   if (r.format === 'academy') return `<div class="grid g2" style="gap:10px">${fmt}<div class="small" style="grid-column:1/-1;line-height:1.5">
     <b>Every round:</b> up to two practice sessions · one 30-minute qualifying · two short races (about 100 km each).<br>
     <b>Reverse Grid Race:</b> the top 8 from qualifying start in reverse order · points 10-8-6-5-4-3-2-1 · +1 for fastest lap if in the top 8.<br>

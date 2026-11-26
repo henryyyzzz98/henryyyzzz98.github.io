@@ -22,7 +22,7 @@ dkApplyRegs = function (G0) {
   const r = _ex_dkApplyRegs.apply(this, arguments);
   if (G0 && G0.exSurv && G0.regs && G0.regs.format !== 'exempt' && !(G0.results || []).length) { G0.survival = false; G0.exSurv = false; delete G0.sv; } // changed their mind before the first race
   if (G0 && G0.regs && G0.regs.format === 'exempt' && G0.rules) {
-    Object.assign(G0.rules, { exempt: true, quali: 'lapelim', endu: false, elimRace: false, heats: false, hybrid: false, intruder: false, poleElim: false, groups: false, forkRace: false, yieldRace: false, academy: false, polePts: 0 });
+    Object.assign(G0.rules, { exempt: true, quali: 'single', endu: false, elimRace: false, heats: false, hybrid: false, intruder: false, poleElim: false, groups: false, forkRace: false, yieldRace: false, academy: false, polePts: 0 });
     if (!G0.survival) G0.exSurv = true; G0.survival = true;
     Object.assign(G0.regs, EX_FORCED); G0.regs.format = 'exempt';
   }
@@ -66,7 +66,8 @@ startWeekend = function () {
 };
 const _ex_docSched = docSched;
 docSched = function (wk) { if (exOn() && wk && wk.ex) return { fp: [[0, 690, 60], [0, 960, 60], [1, 690, 60]], eq: [[1, 900, 40], [1, 960, 40], [1, 1020, 40]], q: [1, 900, 160], race: [2, 780] }; return _ex_docSched.apply(this, arguments); };
-function exRunEQ(k) {
+function exRunEQ(k) { exRecordEQ(k, exGenEQ()); }
+function exGenEQ() {
   const X = WK.ex, track = WK.track, rows = [], wet0 = (WK.weather.quali || 0) * rnd(0.5, 1);
   WK.entries.filter(e => !X.exempt.includes(e.d.id)).forEach(e => {
     const app = X.risk[e.d.id] || (myEntries().includes(e) ? 'std' : pick(['safe', 'std', 'std', 'push']));
@@ -83,6 +84,10 @@ function exRunEQ(k) {
     const avg = laps.reduce((a, x) => a + x, 0) / EX_LAPS;
     rows.push({ id: e.d.id, avg, best: Math.min(...laps), laps, mist, app });
   });
+  return rows;
+}
+function exRecordEQ(k, rows) {
+  const X = WK.ex;
   rows.sort((a, b) => a.avg - b.avg);
   X.eq[k - 1] = rows; X.exempt.push(rows[0].id);
   try { // FIA timing sheet
@@ -134,7 +139,7 @@ function exEqPage() {
   return `<div class="dk dk-fp" id="dk"><div class="dk-fptitle">Exemption Qualifying - ${esc(t.short)}<span class="dk-mut">ROUND ${WK.round + 1} · ${G.year} · SATURDAY · ${more ? `NEXT: EQ${k + 1} OF ${EX_EQN}` : 'COMPLETE'}</span></div>
   <div class="dk-fpbox"><div class="dk-mut heat-note">⏱️ Three sessions, one after another. Every driver runs ${EX_LAPS} laps on their own and the best <b>average</b> lap time wins: EQ1's winner starts Grand Prix 1 from P1, EQ2's from P2 and EQ3's from P3 — each winner sits out the later sessions. Everyone else lines up from P4 on the average of their three session averages. ${ex ? `<br>${ex}` : ''}</div>${ctl}
   ${comb}${X.eq.map((r, i) => tbl(r, i + 1)).reverse().join('')}</div>
-  <div class="dk-fpfoot"><span class="sp"></span>${more ? `<button data-a="exsat">⏩ Run all</button><button class="pri" data-a="exeq" data-enter="1">Run Exemption Qualifying ${k + 1} →</button>` : `<button class="pri" data-a="exgrid" data-enter="1">Sunday: form up for Grand Prix 1 →</button>`}</div></div>`;
+  <div class="dk-fpfoot"><span class="sp"></span>${more ? `<button data-a="exsat">⏩ Simulate all</button><button data-a="exeq">⏩ Simulate EQ${k + 1}</button><button class="pri" data-a="exeqlive" data-enter="1">▶ Watch Exemption Qualifying ${k + 1} →</button>` : `<button class="pri" data-a="exgrid" data-enter="1">Sunday: form up for Grand Prix 1 →</button>`}</div></div>`;
 }
 function fmtLap(t) { if (t == null || !isFinite(t)) return '—'; const m = Math.floor(t / 60), s = t - m * 60; return m + ':' + s.toFixed(3).padStart(6, '0'); }
 
@@ -166,7 +171,7 @@ hxChain('raceInit', race => {
   race.rules = Object.assign({}, race.rules, { twoCompound: false });
   const S = svCur(), elim = S && S.sched[WK.round];
   race.msg(X.k === 1 ? `🏁 Grand Prix 1: ${race.laps} laps · ${race.cars.length} cars. ${svFinal(G, WK.round) ? 'Endless final!' : elim ? `${elim} driver${elim > 1 ? 's' : ''} will be out of the season. Everyone outside the podium goes on to Grand Prix 2.` : 'Nobody can be eliminated this weekend.'}`
-    : `⛔ Grand Prix 2: ${race.laps} laps · ${race.cars.length} cars. The last ${elim} driver${elim > 1 ? 's are' : ' is'} out of the season — if ${elim} car${elim > 1 ? 's retire' : ' retires'}, the flag comes out at the end of the next lap.`, true);
+    : `⛔ Grand Prix 2: ${race.cars.length} cars.`, true);
 });
 function exClassify(R) {
   // classified = took the chequered flag on the lead lap; lapped cars (+1 lap, +2 laps…) and retirements are not classified
@@ -188,7 +193,7 @@ finishRace = function () {
   const R = RACE, X = WK && WK.exg;
   if (!R || R.sprint || !R.exk || !X) return _ex_finishRace.apply(this, arguments);
   const k = R.exk, rows = exClassify(R);
-  X.parts.push({ k, laps: R.laps, rows });
+  X.parts.push({ k, laps: R.endless ? Math.max(...rows.map(r => r.laps || 0)) : R.laps, rows, endless: !!R.endless });
   exDoc(R, k, rows);
   const S = svCur(), kOut = S ? S.sched[WK.round] || 0 : 0, canElim = kOut > 0;
   let next = null, outs = [];
@@ -210,8 +215,8 @@ finishRace = function () {
   const used = new Set(), res = [];
   const add = (r, extra) => { if (used.has(r.id)) return; used.add(r.id); res.push(exEndRow(r, extra)); };
   const P = X.parts, later = j => new Set(P.slice(j).flatMap(p => p.rows.map(r => r.id)));
-  if (R.endless) P[0].rows.forEach((r, i) => { const c = R.cars.find(x => x.d.id === r.id), pts = c ? c.epts : null; add(r, { exTxt: r.out === 'Out of points' ? `Out of points · lap ${r.laps}` : r.out ? `${r.out} · lap ${r.laps}` : `${pts} points left`, elimLap: 'END' }); });
-  P.forEach((p, j) => { const nx = later(j + 1); p.rows.forEach(r => { if (!nx.has(r.id) && !X.outs.includes(r.id)) add(r, p.k > 1 ? { exTxt: `Grand Prix ${p.k} · P${r.pos}${r.cls ? '' : ' (NC)'}`, elimLap: 'GP' + p.k } : (r.cls ? {} : { exTxt: WK.rev ? 'not classified' : 'GP1 · not classified', elimLap: 'GP1' })); }); });
+  if (R.endless && R.endless.fin) P[0].rows.forEach((r, i) => { const c = R.cars.find(x => x.d.id === r.id), pts = c ? c.epts : null; add(r, { exTxt: r.out === 'Out of points' ? `Out of points · lap ${r.laps}` : r.out ? `${r.out} · lap ${r.laps}` : `${pts} points left`, elimLap: 'END' }); });
+  P.forEach((p, j) => { const nx = later(j + 1); p.rows.forEach(r => { if (!nx.has(r.id) && !X.outs.includes(r.id)) add(r, p.k > 1 ? { exTxt: `Grand Prix ${p.k} · P${r.pos}${R.endless && p.k === 2 ? ` · ${(R.cars.find(x => x.d.id === r.id) || {}).epts ?? '?'} points left` : r.cls ? '' : ' (NC)'}`, elimLap: 'GP' + p.k } : (r.cls ? {} : { exTxt: WK.rev ? 'not classified' : 'GP1 · not classified', elimLap: 'GP1' })); }); });
   outs.forEach(out => { const lastK = P.map(p => p.k).reverse().find(kk => P.find(p => p.k === kk).rows.some(r => r.id === out.id)); add(out, { exTxt: `OUT · Grand Prix ${lastK} P${out.pos}`, elimLap: 'GP' + lastK }); });
   res.forEach((r, i) => { r.pos = i + 1; });
   R.result = res;
@@ -230,7 +235,7 @@ applyRaceResult = function (G0, race, wk) {
   try {
     if (race && race.exk && wk.exg) {
       const s = G0.results[G0.results.length - 1], X = wk.exg;
-      s.exw = { parts: X.parts.map(p => ({ k: p.k, laps: p.laps, rows: p.rows.map(r => ({ id: r.id, pos: r.pos, cls: r.cls })) })), out: X.out, outs: X.outs, gp2: X.gp2, eq: (wk.ex && wk.ex.exempt) || [] };
+      s.exw = { parts: X.parts.map(p => ({ k: p.k, laps: p.laps, endless: p.endless, rows: p.rows.map(r => ({ id: r.id, pos: r.pos, cls: r.cls })) })), out: X.out, outs: X.outs, gp2: X.gp2, eq: (wk.ex && wk.ex.exempt) || [] };
       s.elimR = s.exw.parts.length > 1;
       s.rows.forEach(r => { const x = race.result.find(y => y.id === r.id); if (x && x.exTxt) { r.exTxt = x.exTxt; r.elimLap = x.elimLap; } else if (s.elimR) { delete r.elimLap; } });
       const S = svCur(G0);
@@ -253,8 +258,8 @@ function exBreakPage() {
   const tr = r => { const e = r.e, go = nextIds.includes(r.id); return `<tr class="${mine(e) ? 'me' : ''} ${go ? 'elim' : ''}" data-prof="${r.id}" style="--tc:${e.t.color};--ti:${dkInk(e.t.color)}"><td class="pos">${r.cls ? 'P' + String(r.pos).padStart(2, '0') : 'NC'}</td><td class="l">${dkFlag(e.d.nat)} ${dkNm(e.d.name)}</td><td class="l hm tcell">${esc(e.t.name)}</td><td class="ra">${r.laps}</td><td class="ra">${timeTxt(r)}</td><td class="l">${go ? `<b class="ex-st bad">→ GP${X.k}</b>` : '<b class="ex-st good">Safe</b>'}</td></tr>`; };
   const head = '<thead><tr><th>Pos</th><th class="l">Driver</th><th class="l hm">Team</th><th class="ra">Laps</th><th class="ra">Time/Gap</th><th class="l">Status</th></tr></thead>';
   const g = X.gp2 || { size: X.gridNow.length, kOut: 1, ret: 0, lap: 0 };
-  const why = `This weekend <b>${g.kOut}</b> driver${g.kOut > 1 ? 's are' : ' is'} out of the season. Everyone except the Grand Prix 1 podium — <b>${g.size}</b> cars — races Grand Prix 2, and the last ${g.kOut} there are out. If ${g.kOut} car${g.kOut > 1 ? 's retire' : ' retires'} in Grand Prix 2, the chequered flag comes out at the end of the next lap.`;
-  return `<div class="dk dk-fp" id="dk"><div class="dk-fptitle">Grand Prix ${k} Classification - ${esc(t.short)}<span class="dk-mut">ROUND ${WK.round + 1} · ${G.year} · ${P.laps} LAPS · NEXT: GRAND PRIX ${X.k} · ${exLaps(X.k)} LAPS · ${X.gridNow.length} CARS</span></div>
+  const why = `This weekend <b>${g.kOut}</b> driver${g.kOut > 1 ? 's are' : ' is'} out of the season. Everyone except the Grand Prix 1 podium — <b>${g.size}</b> cars — races Grand Prix 2, an <b>endless</b> race: everyone starts on ${EX_EPTS} points, more than ${EX_GAP} s behind the car in front at a timing line costs 1 point, and at 0 you're out (a mechanical failure can be fixed for ${EX_FIX} points). It stops as soon as ${g.kOut} driver${g.kOut > 1 ? 's are' : ' is'} out — they're out of the season. After 2 hours, the fewest points left go out.`;
+  return `<div class="dk dk-fp" id="dk"><div class="dk-fptitle">Grand Prix ${k} Classification - ${esc(t.short)}<span class="dk-mut">ROUND ${WK.round + 1} · ${G.year} · ${P.laps} LAPS · NEXT: GRAND PRIX ${X.k} · ENDLESS · ${X.gridNow.length} CARS</span></div>
   <div class="dk-fpbox"><div class="dk-mut heat-note">🏁 ${why} Classified = took the chequered flag on the lead lap; lapped cars and retirements are not classified. Grand Prix ${X.k} starts in Grand Prix 1 classification order: ${X.gridNow.map(e => esc(e.d.code)).join(' · ')}</div>
   <table class="dkfp">${head}<tbody>${cls.map(tr).join('')}</tbody></table>${nc.length ? `<h3 class="ex-h">Not classified</h3><table class="dkfp">${head}<tbody>${nc.map(tr).join('')}</tbody></table>` : ''}</div>
   <div class="dk-fpfoot"><span class="dk-mut kbhint">Press ENTER/SPACE or click Form up.</span><span class="sp"></span><button data-a="skipgp">⏩ Skip to the result</button><button class="pri" data-a="startrace" data-enter="1">Form up for Grand Prix ${X.k} →</button></div></div>`;
@@ -280,7 +285,7 @@ deskGrid = function (sprint) {
   if (WK.rev) return html.replace(/(<div class="dk-mut dkg-note">)/, `<div class="dk-mut dkg-note sv-note"><b>♻️ Revival round:</b> only eliminated drivers race — one Grand Prix of ${exLaps()} laps (half distance), starting with the most recently eliminated at the front. The first ${(svCur() && svCur().revN && svCur().revN[WK.round]) || 1} across the finish line rejoin${((svCur() && svCur().revN && svCur().revN[WK.round]) || 1) > 1 ? '' : 's'} the competition at the next race.</div>$1`);
   const ex = WK.ex.exempt.map((id, i) => `${esc((exEnt(id) || { d: { code: id } }).d.code)} P${i + 1}`).join(', ') + (WK.ex.noQ ? ' (with so few drivers left there was no Saturday qualifying — the rest line up in Exemption Qualifying 2 order)' : WK.ex.oneQ ? ' (with so few drivers left, Saturday was a single pole-lap session with no shootout)' : '');
   const body = fin ? `<b>♾️ Endless final:</b> everyone starts on ${EX_EPTS} points; more than ${EX_GAP} s behind the car in front at a timing line costs 1 point, at 0 you're out; a mechanical failure can be fixed for ${EX_FIX} points. The last driver running is champion — or, if the 2-hour limit is reached, whoever has the most points left (ties go to the driver ahead on track).`
-    : `Grand Prix 1 · ${exLaps(1)} laps (¾ distance) · all cars. ` + (elim ? `${elim} driver${elim > 1 ? 's' : ''} out this weekend: everyone from P4 in Grand Prix 1 → Grand Prix 2 (${exLaps(2)} laps, ¼ distance). The last ${elim} in Grand Prix 2 ${elim > 1 ? 'are' : 'is'} out of the season.` : 'Nobody can be eliminated this weekend.');
+    : `Grand Prix 1 · ${exLaps(1)} laps (¾ distance) · all cars. ` + (elim ? `${elim} driver${elim > 1 ? 's' : ''} out this weekend: everyone from P4 in Grand Prix 1 → Grand Prix 2, an endless race on 100 points each. The first ${elim} out of points (or retired) ${elim > 1 ? 'are' : 'is'} out of the season.` : 'Nobody can be eliminated this weekend.');
   return html.replace(/(<div class="dk-mut dkg-note">)/, `<div class="dk-mut dkg-note sv-note"><b>🏁 Exemption weekend:</b> Exemption Qualifying winners: ${ex}; everyone else on their three-session average. ${body}</div>$1`);
 };
 // live header
@@ -291,7 +296,7 @@ updateRaceUI = function () {
     if (!exOn() || !RACE || !RACE.exk || !WK.exg) return r;
     const k = RACE.exk, lead = RACE.order().find(c => !c.out), lap = lead ? Math.min(RACE.laps, lead.laps + (lead.finished ? 0 : 1)) : 0;
     const S = svCur(), canElim = S && S.sched[WK.round] > 0;
-    const tag = k === 1 ? (svFinal(G, WK.round) ? 'ENDLESS FINAL' : canElim ? `${S.sched[WK.round]} OUT · P4+ → GP2` : 'NO ELIMINATION') : `LAST ${S.sched[WK.round]} OUT OF THE SEASON`;
+    const tag = k === 1 ? (svFinal(G, WK.round) ? 'ENDLESS FINAL' : canElim ? `${S.sched[WK.round]} OUT · P4+ → GP2` : 'NO ELIMINATION') : `ENDLESS · ${S.sched[WK.round]} OUT`;
     const h = RACE.exRev ? `REVIVAL ROUND · LAP ${lap}/${RACE.laps} · FIRST ACROSS THE LINE IS BACK IN` : `GRAND PRIX ${k}/2 · LAP ${lap}/${RACE.laps} · ${tag}`;
     const ds = document.getElementById('dksess'); if (ds && (ds._x !== h || ds._xsrc !== ds._h)) { ds.innerHTML = h; ds._x = h; ds._xsrc = ds._h; ds.title = ds.textContent; }
   } catch (e) { }
@@ -305,7 +310,7 @@ dkRaceView = function (o) {
   const s = G.results[o.k]; if (!s || !s.exw || o.sprint) return html;
   const nm = id => G.drivers[id] ? esc(G.drivers[id].code || G.drivers[id].name) : id;
   html = html.replace(/(<div class="dk-reshead">[\s\S]*?<h1>)(Elimination )?(Race )?Results/, '$1Exemption Weekend Results');
-  let strip = `<div class="heat-strip">${s.exw.eq.length ? `<span><b>Exempt</b> · ${s.exw.eq.map((id, i) => `P${i + 1} ${nm(id)}`).join(' · ')}</span>` : ''}${s.exw.parts.map(p => { const w = p.rows[0], nc = p.rows.filter(r => !r.cls); return `<span><b>Grand Prix ${p.k}</b> · ${p.laps} laps · ${p.rows.length} cars · won by ${nm(w.id)}${nc.length ? ` · NC: ${nc.map(r => nm(r.id)).join(', ')}` : ''}</span>`; }).join('')}${(s.exw.outs || (s.exw.out ? [s.exw.out] : [])).length ? `<span><b class="bad">⛔ Out of the season: ${(s.exw.outs || [s.exw.out]).map(nm).join(', ')}</b></span>` : ''}</div>`;
+  let strip = `<div class="heat-strip">${s.exw.eq.length ? `<span><b>Exempt</b> · ${s.exw.eq.map((id, i) => `P${i + 1} ${nm(id)}`).join(' · ')}</span>` : ''}${s.exw.parts.map(p => { const w = p.rows[0], nc = p.rows.filter(r => !r.cls); return `<span><b>Grand Prix ${p.k}</b>${p.endless ? ' · ♾️ endless' : ''} · ${p.laps} laps · ${p.rows.length} cars · ${p.endless ? `led by ${nm(w.id)}` : `won by ${nm(w.id)}`}${nc.length && !p.endless ? ` · NC: ${nc.map(r => nm(r.id)).join(', ')}` : ''}</span>`; }).join('')}${(s.exw.outs || (s.exw.out ? [s.exw.out] : [])).length ? `<span><b class="bad">⛔ Out of the season: ${(s.exw.outs || [s.exw.out]).map(nm).join(', ')}</b></span>` : ''}</div>`;
   if (s.exw.rev) { strip = `<div class="heat-strip"><span><b>♻️ Revival round</b> · eliminated drivers only · ${s.exw.parts[0].laps} laps</span><span>${(s.exw.revWins || [s.exw.revWin]).filter(Boolean).length ? `<b class="good">Back in the competition: ${(s.exw.revWins || [s.exw.revWin]).filter(Boolean).map(nm).join(', ')}</b>` : 'Nobody finished — no driver returns'}</span></div>`; html = html.replace(/(<div class="dk-reshead">[\s\S]*?<h1>)Exemption Weekend Results/, '$1Revival Round Results'); }
   if (s.exw.parts.length > 1) html = html.replace(/<section><div class="dk-h"><b>LAP LEADERS[\s\S]*?<\/section>/, ''); // leaders span three separate races
   return html.replace('<table class="dkfp dkrr">', strip + '<table class="dkfp dkrr">');
@@ -321,7 +326,7 @@ dkRegsForm = function (r, act) {
   html = html.replace(/<label class="small"[^>]*>([^<$]*)<select[\s\S]*?<\/select><\/label>/g, (m, lab) => EX_KEEP.test(lab.trim()) ? m : '');
   html = html.replace(/<label class="small">Points for 1st[\s\S]*?<\/label>/, '');
   html = html.replace(/<div class="small sv-regnote"[^>]*>[\s\S]*?<\/div>/, '');
-  return html.replace(/(<div class="grid g2" style="gap:10px">)/, `$1<div class="small sv-regnote" style="grid-column:1/-1">🏁 Exemption weekend sets its own rules: no points, FP1-3, three Exemption Qualifying sessions on Saturday, 1–3 drivers out per weekend, revival rounds (2 back), exactly 4 in an endless final, two Grands Prix (¾ and ¼ distance), no sprints, testing, refuelling, team orders, express pass, random laps, rotation or 107% rule; real safety-car rules and retirements on. Only equal cars and weather can be changed.</div>`);
+  return html.replace(/(<div class="grid g2" style="gap:10px">)/, `$1<div class="small sv-regnote" style="grid-column:1/-1">🏁 Exemption weekend sets its own rules: no points, FP1-3, three Exemption Qualifying sessions on Saturday, 1–3 drivers out per weekend, revival rounds (2 back), exactly 4 in an endless final, Grand Prix 1 (¾ distance) and an endless Grand Prix 2, no sprints, testing, refuelling, team orders, express pass, random laps, rotation or 107% rule; real safety-car rules and retirements on. Only equal cars and weather can be changed.</div>`);
 };
 
 // ---------- revival rounds ----------
@@ -375,7 +380,7 @@ applyQualiStage = function (QS, res) {
 
 // ---------- Grand Prix 2: early chequered flag once enough cars have retired ----------
 hxChain('onStep', race => {
-  if (!race.exk || race.exk !== 2 || race.exEarly || race.done || !exOn()) return;
+  if (!race.exk || race.exk !== 2 || race.exEarly || race.done || !exOn() || race.endless) return; // (Grand Prix 2 is now endless — kept for old saves)
   const S = svCur(), k = S ? S.sched[WK.round] || 0 : 0; if (!k) return;
   if (race.cars.filter(c => c.out).length >= k) {
     const lead = race.order().find(c => !c.out); if (!lead) return;
@@ -390,9 +395,12 @@ hxChain('onStep', race => {
 // the car is fixed and rejoins from the pit lane. The last driver still running wins the title; after 2 hours, the most points left wins.
 const EX_EPTS = 100, EX_GAP = 5, EX_FIX = 10, EX_FIXT = 25, EX_TLIM = 7200;
 hxChain('raceInit', race => {
-  if (race.sprint || !exOn() || race.wk !== WK || !race.exk || WK.rev || !svFinal(G, WK.round)) return;
-  race.endless = { out: [], t0: null }; race.laps = 999; // no lap count: points or the 2-hour limit end it
+  if (race.sprint || !exOn() || race.wk !== WK || !race.exk || WK.rev) return;
+  const fin = svFinal(G, WK.round); if (!fin && race.exk !== 2) return;
+  const S = svCur(), need = fin ? race.cars.length - 1 : Math.min(race.cars.length - 1, (S && S.sched[WK.round]) || 1);
+  race.endless = { out: [], t0: null, need, fin }; race.laps = 999; // no lap count: points or the 2-hour limit end it
   race.cars.forEach(c => { c.epts = EX_EPTS; c.esec = 0; });
+  if (!fin) { race.msg(`♾️ GRAND PRIX 2 — ENDLESS: everyone starts on ${EX_EPTS} points. More than ${EX_GAP} s behind the car in front at a timing line costs 1 point; at 0 you're out. A mechanical failure can be fixed for ${EX_FIX} points. It ends as soon as ${need} driver${need > 1 ? 's are' : ' is'} out — they're out of the season. After 2 hours, the fewest points left go out.`, true); return; }
   race.msg(`♾️ ENDLESS FINAL: everyone starts on ${EX_EPTS} points. More than ${EX_GAP} s behind the car in front at a timing line costs 1 point; at 0 you're out. A mechanical failure can be fixed for ${EX_FIX} points. Last driver running is champion! After 2 hours, the most points left wins.`, true);
 });
 const exCrash = why => /crash|collision|wall|spun|gravel|accident|barrier|contact|hit|off|out of points|disq/i.test(why || '');
@@ -404,7 +412,7 @@ hxChain('onStep', race => {
     const run = race.order().filter(c => !c.out && !c.finished), rank = run.map((c, i) => ({ c, i })).sort((a, b) => b.c.epts - a.c.epts || a.i - b.i);
     rank.forEach(({ c }, j) => { c.finished = true; c.finishT = race.t + j * 0.001; });
     const w = rank[0] && rank[0].c;
-    race.msg(`⏱️ 2 hours are up! ${w ? `${w.d.name} has the most points left (${w.epts}) and is champion!` : ''}`, true);
+    race.msg(E.fin ? `⏱️ 2 hours are up! ${w ? `${w.d.name} has the most points left (${w.epts}) and is champion!` : ''}` : `⏱️ 2 hours are up! The drivers with the fewest points left are out of the season.`, true);
     race.finish(); return;
   }
   const L = race.L, ord = race.order().filter(c => !c.out && !c.finished);
@@ -415,11 +423,15 @@ hxChain('onStep', race => {
     const f = ord[i - 1], gap = (f.dist - c.dist) / (L / (c.curLT || 90));
     if (gap > EX_GAP) {
       c.epts--;
-      if (c.epts <= 0) { c.epts = 0; c.epOut = true; E.out.push(c); race.retire(c, 'Out of points'); race.msg(`⛔ ${c.d.name} has run out of points — out of the final! ${ord.length - 1} left.`, true); }
+      if (c.epts <= 0) { c.epts = 0; c.epOut = true; E.out.push(c); race.retire(c, 'Out of points'); race.msg(`⛔ ${c.d.name} has run out of points — out of the ${E.fin ? 'final' : 'race and the season'}! ${ord.length - 1} left.`, true); }
     }
   });
   const alive = race.cars.filter(c => !c.out && !c.finished);
-  if (alive.length === 1 && !race.chequered) { alive[0].finished = true; alive[0].finishT = race.t; race.msg(`🏆 ${alive[0].d.name} is the last driver running — champion!`, true); race.finish(); }
+  if (E.fin && alive.length === 1 && !race.chequered) { alive[0].finished = true; alive[0].finishT = race.t; race.msg(`🏆 ${alive[0].d.name} is the last driver running — champion!`, true); race.finish(); return; }
+  if (!E.fin && race.cars.length - alive.length >= E.need) { // Grand Prix 2: enough drivers are out — stop, the rest are safe
+    race.order().filter(c => !c.out && !c.finished).forEach((c, j) => { c.finished = true; c.finishT = race.t + j * 0.001; });
+    race.msg(`🏁 ${E.need} driver${E.need > 1 ? 's are' : ' is'} out — Grand Prix 2 is over. Everyone still running is safe!`, true); race.finish();
+  }
 });
 const _ex_retire = Race.prototype.retire;
 Race.prototype.retire = function (c, why) {
@@ -444,12 +456,69 @@ updateRaceUI = function () {
     if (!RACE || !RACE.endless) return r;
     const ord = RACE.order(), lead = ord.find(c => !c.out), lap = lead ? lead.laps + 1 : 0, run = ord.filter(c => !c.out && !c.finished);
     const E = RACE.endless, left = E.t0 == null ? EX_TLIM : Math.max(0, EX_TLIM - (RACE.t - E.t0)), clk = `${Math.floor(left / 3600)}:${String(Math.floor(left % 3600 / 60)).padStart(2, '0')}:${String(Math.floor(left % 60)).padStart(2, '0')}`;
-    const h = `♾️ ENDLESS FINAL · LAP ${lap} · ${E.timeUp ? 'TIME UP' : '⏱ ' + clk} · ${run.length} LEFT · ${run.map(c => `${c.d.code} ${c.epts}`).join(' · ')}`;
+    const h = `♾️ ${E.fin ? 'ENDLESS FINAL' : `GRAND PRIX 2 · ENDLESS · ${E.need} OUT (${RACE.cars.length - run.length}/${E.need})`} · LAP ${lap} · ${E.timeUp ? 'TIME UP' : '⏱ ' + clk} · ${run.length} LEFT · ${run.map(c => `${c.d.code} ${c.epts}`).join(' · ')}`;
     const ds = document.getElementById('dksess'); if (ds && (ds._x !== h || ds._xsrc !== ds._h)) { ds.innerHTML = h; ds._x = h; ds._xsrc = ds._h; ds.title = ds.textContent; }
     if (!E.timeUp) document.querySelectorAll('#dk td').forEach(td => { if (td.childElementCount === 0 && /\/999$/.test(td.textContent)) td.textContent = td.textContent.replace('/999', ''); });
     document.querySelectorAll('#dk tr[data-v]').forEach(tr => { const c = RACE.cars.find(x => x.d.id === tr.dataset.v); if (!c || c.epts == null) return;
       const td = tr.children[1]; if (!td) return; const b = td.querySelector('.ep-badge'), t = c.epOut ? 'OUT' : String(c.epts);
       if (!b) td.insertAdjacentHTML('beforeend', ` <i class="yd-badge ep-badge ${c.epts < 20 ? 'low' : ''}" title="Endless final points">${t}</i>`); else if (b.textContent !== t) { b.textContent = t; b.classList.toggle('low', c.epts < 20); } });
+  } catch (e) { }
+  return r;
+};
+
+// ---------- watch an Exemption Qualifying session live (same live timing screen as qualifying) ----------
+function exEqLive() {
+  const X = WK.ex, k = X.eq.length + 1, gen = exGenEQ(), list = gen.map(r => exEnt(r.id)).filter(Boolean);
+  const Q = new QualiLive(G, WK, list, { dur: 600, label: `Exemption Qualifying ${k}`, cut: 0, runs: 1, risks: WK.risks || {} });
+  const base = Q.base, OL = base * 1.35, IL = base * 1.4;
+  let end = 0;
+  Q.cars.forEach(c => {
+    const g = gen.find(r => r.id === c.d.id); c.eqGen = g; c.eqL = [];
+    let t = rnd(0, 0.25) * (OL + g.laps.reduce((a, x) => a + x, 0)); // their own time: staggered starts
+    c.runs = g.laps.map((lt, i) => { const r = { start: t, OL: i === 0 ? OL * rnd(0.97, 1.04) : 0, IL: i === g.laps.length - 1 ? IL * rnd(0.97, 1.04) : 0, fly: lt, crash: false, done: false, aborted: false }; t += r.OL + lt; return r; });
+    end = Math.max(end, t + IL);
+  });
+  Q.dur = end + 5; Q.eqk = k; Q.log = []; Q.msg(`🟢 Exemption Qualifying ${k} is under way — every driver runs ${EX_LAPS} timed laps; the best average wins and starts Grand Prix 1 from P${k}`);
+  WK.ex.liveQ = { prevStage: WK.stage, prevQ: WK.Q };
+  WK.Q = { stage: 1, alive: list, rounds: [], live: Q, exEq: k };
+  WK.stage = 'quali'; PAUSED = false; SPEED = 16; render(); window.scrollTo(0, 0);
+}
+// each lap updates the driver's running average; the timing tower ranks on it
+const _ex_lapDone = QualiLive.prototype.lapDone;
+QualiLive.prototype.lapDone = function (c, lt) {
+  const r = _ex_lapDone.apply(this, arguments);
+  if (this.eqk && c.eqL) {
+    c.eqL.push(lt); c.best = c.eqL.reduce((a, x) => a + x, 0) / c.eqL.length;
+    if (c.eqL.length === EX_LAPS) { const done = this.cars.filter(o => o.eqL && o.eqL.length === EX_LAPS).sort((a, b) => a.best - b.best);
+      if (done[0] === c) this.msg(`⏱️ ${c.d.name} completes ${EX_LAPS} laps with an average of ${fmtLap(c.best)} — the new benchmark`, true);
+      else if (c.fav || c.player) this.msg(`⏱️ ${c.d.code} finishes: average ${fmtLap(c.best)} (P${done.indexOf(c) + 1} of the finished runs)`, false); }
+  }
+  return r;
+};
+const _ex_applyQualiStage2 = applyQualiStage;
+applyQualiStage = function (QS, res) {
+  if (QS && QS.exEq && WK.ex && WK.ex.liveQ) {
+    const Q = WK.Q, k = QS.exEq, rows = [];
+    (QS._cars || []).forEach(c => { const g = c.eqGen; rows.push(g); });
+    exRecordEQ(k, rows);
+    WK.Q = WK.ex.liveQ.prevQ; WK.stage = 'exq'; WK.ex.liveQ = null;
+    return;
+  }
+  return _ex_applyQualiStage2.apply(this, arguments);
+};
+// keep the generated runs with the session object so the result can be recorded
+const _ex_finishQualiLive = finishQualiLive;
+finishQualiLive = function () {
+  const QS = curQS(); if (QS && QS.exEq && QS.live) QS._cars = QS.live.cars;
+  return _ex_finishQualiLive.apply(this, arguments);
+};
+A.exeqlive = function () { if (exEqLeft()) exEqLive(); };
+const _ex_updQuali = updateQualiUI;
+updateQualiUI = function () {
+  const r = _ex_updQuali.apply(this, arguments);
+  try {
+    const Q = WK && WK.Q && WK.Q.exEq && WK.Q.live; if (!Q) return r;
+    document.querySelectorAll('#dk th').forEach(th => { if (th.textContent === 'Best Lap') th.textContent = `Average (${EX_LAPS} laps)`; });
   } catch (e) { }
   return r;
 };
