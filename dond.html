@@ -31,7 +31,7 @@
           <label for="maxPrize">Top prize</label>
           <div class="input-wrapper">
             <span>$</span>
-            <input type="number" id="maxPrize" value="" min="1" step="1" inputmode="numeric" />
+            <input type="number" id="maxPrize" value="1" min="1" step="1" inputmode="numeric" />
           </div>
           <div class="presets" role="group" aria-label="Quick amounts">
             <button type="button" data-amount="10000">$10,000</button>
@@ -58,6 +58,7 @@
 
     <!-- GAME -->
     <div id="gameScreen" class="screen game-screen hidden">
+      <div class="stage-lights" aria-hidden="true"><i class="beam-l"></i><i class="beam-c"></i><i class="beam-r"></i><i class="floor"></i></div>
       <header class="hud">
         <div class="show-logo"><span>Deal</span><i>or</i><span>No Deal</span></div>
         <div class="hud-stats">
@@ -65,6 +66,19 @@
           <div class="stat"><span>Cases left</span><strong id="casesLeft">26</strong></div>
         </div>
       </header>
+
+      <!-- BANKER OFFER BAR (replaces the top bar while the Banker is on the line) -->
+      <section id="bankerSection" class="banker-bar hidden" tabindex="-1" aria-label="The Banker's offer" aria-live="polite">
+        <div id="bankerWaiting" class="banker-waiting">
+          <span class="ring-icon" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"></path></svg></span>
+          <span>The Banker is calling…</span>
+        </div>
+        <div id="bankerOfferContent" class="banker-offer-content hidden">
+          <button id="dealButton" class="deal">Deal</button>
+          <div class="offer-box"><strong id="bankerOffer">$0</strong></div>
+          <button id="noDealButton" class="no-deal">No Deal</button>
+        </div>
+      </section>
 
       <main class="stage">
         <div class="prompt-row">
@@ -89,6 +103,13 @@
             </div>
             <div class="money-column left" id="leftMoneyBoard"></div>
             <div class="money-column right" id="rightMoneyBoard"></div>
+            <div id="offerLadder" class="offer-ladder" aria-label="Prizes still in play, with the current offer"></div>
+          </aside>
+
+          <aside id="bankerInfo" class="banker-info" aria-label="Offer details">
+            <div id="offerHistory" class="offer-history"></div>
+            <div id="bankerHint" class="banker-hint hidden"></div>
+            <button id="superChestBenefitButton" class="super-chest-benefit-button hidden">Use Super Chest bonus (+50%)</button>
           </aside>
 
           <section class="cases-area">
@@ -101,28 +122,6 @@
         <span class="pt-main"><small>Biggest prize left</small><strong id="topPrize">$0</strong></span>
         <span class="pt-count"><strong id="prizesLeft">26</strong> prizes · view board</span>
       </button>
-
-      <!-- BANKER -->
-      <section id="bankerSection" class="banker-section hidden" role="dialog" aria-modal="true" aria-label="The Banker's offer">
-        <div class="banker-overlay"></div>
-        <div class="banker-panel" tabindex="-1">
-          <div id="bankerWaiting" class="banker-waiting">
-            <div class="phone-ringing">☎</div>
-            <p>The Banker is calling…</p>
-          </div>
-          <div id="bankerOfferContent" class="banker-offer-content hidden">
-            <div class="banker-title">The Banker offers</div>
-            <div class="offer-box"><strong id="bankerOffer">$0</strong></div>
-            <div id="offerHistory" class="offer-history"></div>
-            <div id="bankerHint" class="banker-hint hidden"></div>
-            <button id="superChestBenefitButton" class="super-chest-benefit-button hidden">Use Super Chest bonus (+50%)</button>
-            <div class="deal-buttons">
-              <button id="dealButton" class="deal">Deal</button>
-              <button id="noDealButton" class="no-deal">No deal</button>
-            </div>
-          </div>
-        </div>
-      </section>
 
       <!-- SUPER CHEST -->
       <section id="superChest" class="super-chest hidden" role="dialog" aria-modal="true" aria-label="Super Chest bonus game">
