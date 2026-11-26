@@ -592,7 +592,7 @@
         <div class="hs slOnly"><span class="lbl">FIRST CLASS</span><b id="hSales">Sales</b></div>
       </div>
     </div>
-    <div class="vstrip" aria-hidden="true"><span>Objekt Live</span><span>tripleS</span></div>
+    <div class="vstrip" aria-hidden="true"><span>Objekt Live</span><span>By: jyuubin318</span></div>
   </div></div>
   <div class="controls liveOnly">
     <button class="chip" data-type="mint" aria-pressed="true">Mints</button>
@@ -758,7 +758,7 @@ let rpcId = 1, rpcIdx = 0, lastCall = 0;
 const MIN_GAP_MS = 300; // ~3 requests/sec max
 let rpcChain = Promise.resolve();
 
-function rpc(method, params) {
+function rpc(method, params, opts = {}) {
   const run = async () => {
     for (let attempt = 0; attempt < 4; attempt++) {
       const wait = lastCall + MIN_GAP_MS - Date.now();
@@ -771,6 +771,8 @@ function rpc(method, params) {
         if (r.status === 429) throw new Error("rate limited");
         const j = await r.json();
         if (j.error) {
+          // a search the node refuses as too big: callers that can shrink it ask to hear straight away
+          if (opts.noRetryOnLimit && /limit|too many|range|exceed|timeout/i.test(j.error.message)) throw Object.assign(new Error(j.error.message), { fatal: true, tooBig: true });
           if (/limit|too many|range/i.test(j.error.message)) throw new Error(j.error.message);
           throw Object.assign(new Error(j.error.message), { fatal: true });
         }
@@ -1266,27 +1268,54 @@ async function mintLookupFast(ids, run, onProgress) {
   const cache = loadMintCache(), res = new Map(), todo = [];
   for (const id of ids) { const w = cache.get(id.toString()); if (w) res.set(id, w); else todo.push(id); }
   onProgress(res.size, ids.length);
-  let size = 100, slow = [];
-  for (let i = 0; i < todo.length; ) {
+  if (!todo.length) return res;
+  // Token IDs are handed out in order, so copies with nearby IDs were minted at nearby blocks. Instead of
+  // searching the whole chain history for each group (which public nodes often refuse), find where the
+  // first copy was minted, then search small block windows moving forward from there.
+  todo.sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+  const latest = Number(await rpc("eth_blockNumber", []));
+  const found = (id, w, block) => { res.set(id, w); cache.set(id.toString(), w); };
+  const firstLogs = await rpc("eth_getLogs", [{ address: CONTRACT, fromBlock: "0x0", toBlock: "latest", topics: [TRANSFER, ZERO32, null, topicOf(todo[0])] }]);
+  let cursor = firstLogs[0] ? Number(firstLogs[0].blockNumber) : 0;
+  let size = 100, span = 20000, slow = [], saved = 0;
+  const pending = [...todo];
+  while (pending.length) {
     if (run !== ctRun) throw new Error("cancelled");
-    const chunk = todo.slice(i, i + size);
-    try {
-      const logs = await rpc("eth_getLogs", [{ address: CONTRACT, fromBlock: "0x0", toBlock: "latest",
-        topics: [TRANSFER, ZERO32, null, chunk.map(topicOf)] }]);
-      for (const l of logs) {
-        const id = BigInt(l.topics[3]), w = "0x" + l.topics[2].slice(26);
-        res.set(id, w); cache.set(id.toString(), w);
+    const group = pending.slice(0, size);
+    const want = new Set(group.map(id => topicOf(id)));
+    let from = cursor, refused = false;
+    span = Math.min(span, 50000);
+    // widen the window until every copy in the group has turned up (or we reach the newest block)
+    while (want.size && from <= latest) {
+      const to = Math.min(latest, from + span - 1);
+      let logs;
+      try {
+        logs = await rpc("eth_getLogs", [{ address: CONTRACT, fromBlock: hex(from), toBlock: hex(to), topics: [TRANSFER, ZERO32, null, [...want]] }], { noRetryOnLimit: true });
+      } catch (e) {
+        if (span > 500) { span = Math.floor(span / 2); continue; }   // node refused: smaller window
+        if (size > 10) { size = Math.floor(size / 2); refused = true; break; }   // still refused: try a smaller group
+        slow.push(...group); want.clear(); break;                     // give up on this group
       }
-      i += chunk.length;
-      if ((i / size) % 10 === 0) saveMintCache(cache);
-    } catch (e) {
-      if (size > 10) { size = Math.max(10, Math.floor(size / 2)); continue; } // server refused: smaller groups
-      slow.push(...chunk); i += chunk.length;                                 // give up on grouping for these
+      for (const l of logs) {
+        const t = l.topics[3]; if (!want.has(t)) continue;
+        want.delete(t);
+        found(BigInt(t), "0x" + l.topics[2].slice(26), Number(l.blockNumber));
+        cursor = Math.max(cursor, Number(l.blockNumber));
+      }
+      from = to + 1;
+      if (!logs.length && span < 2_000_000) span *= 2;   // quiet stretch: look further at once
+      else if (logs.length > 50 && span > 2000) span = Math.floor(span / 2);
     }
+    if (refused) continue;   // same copies again, in a smaller group
+    // anything not found going forward (IDs out of order): full-history search for those at the end
+    for (const t of want) slow.push(BigInt(t));
+    pending.splice(0, group.length);
+    if (++saved % 10 === 0) saveMintCache(cache);
     onProgress(res.size, ids.length);
   }
   if (slow.length) { // last resort: old one-by-one method
-    const more = await chainLookup(slow, mintCall, mintParse, run, () => onProgress(res.size, ids.length));
+    const left = slow.filter(id => !res.has(id));
+    const more = await chainLookup(left, mintCall, mintParse, run, () => onProgress(res.size, ids.length));
     more.forEach((w, id) => { res.set(id, w); cache.set(id.toString(), w); });
   }
   saveMintCache(cache);
