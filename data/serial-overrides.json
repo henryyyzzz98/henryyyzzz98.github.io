@@ -1216,6 +1216,144 @@
     "mode": "flat",
     "text": "white"
    }
+  },
+  "artms-binary01--304a": {
+   "style": {
+    "mode": "flat",
+    "text": "#46117f"
+   }
+  },
+  "artms-binary01--305a": {
+   "style": {
+    "mode": "flat",
+    "text": "#46117f"
+   }
+  },
+  "artms-binary01--306a": {
+   "style": {
+    "mode": "flat",
+    "text": "#46117f"
+   }
+  },
+  "artms-binary01--307a": {
+   "style": {
+    "mode": "flat",
+    "text": "#46117f"
+   }
+  },
+  "artms-binary01--308z": {
+   "style": {
+    "mode": "flat",
+    "text": "#c7e8ff"
+   }
+  },
+  "artms-binary01--309z": {
+   "style": {
+    "mode": "flat",
+    "text": "white"
+   }
+  },
+  "artms-binary01--310z": {
+   "style": {
+    "mode": "flat",
+    "text": "#532aad"
+   }
+  },
+  "artms-binary01--311z": {
+   "style": {
+    "mode": "flat",
+    "text": "white"
+   }
+  },
+  "artms-binary01--312z": {
+   "style": {
+    "mode": "flat",
+    "text": "#e1cfff"
+   }
+  },
+  "artms-binary01--313a": {
+   "style": {
+    "mode": "flat",
+    "text": "#e1cfff"
+   }
+  },
+  "artms-binary01--314z": {
+   "style": {
+    "mode": "flat",
+    "text": "#1d71a0"
+   }
+  },
+  "artms-binary01--315z": {
+   "style": {
+    "mode": "flat",
+    "text": "#1d71a0"
+   }
+  },
+  "artms-binary01--316z": {
+   "style": {
+    "mode": "flat",
+    "text": "#1d71a0"
+   }
+  },
+  "artms-binary01--317z": {
+   "style": {
+    "mode": "flat",
+    "text": "#2b3d58"
+   }
+  },
+  "artms-binary01--318z": {
+   "style": {
+    "mode": "flat",
+    "text": "#ff008a"
+   }
+  },
+  "artms-binary01--319z": {
+   "style": {
+    "mode": "flat",
+    "text": "#ff008a"
+   }
+  },
+  "artms-binary01--320z": {
+   "style": {
+    "mode": "flat",
+    "text": "#bdd8ff"
+   }
+  },
+  "artms-binary01--321z": {
+   "style": {
+    "mode": "flat",
+    "text": "#bdd8ff"
+   }
+  },
+  "artms-binary01--322z": {
+   "style": {
+    "mode": "flat",
+    "text": "#92d5fb"
+   }
+  },
+  "artms-binary01--323z": {
+   "style": {
+    "mode": "flat",
+    "text": "#bdd8ff"
+   }
+  },
+  "artms-binary01--324z": {
+   "style": {
+    "mode": "flat",
+    "text": "#bdd8ff"
+   }
+  },
+  "artms-binary01--325z": {
+   "style": {
+    "mode": "flat",
+    "text": "#bdd8ff"
+   }
+  },
+  "artms-binary01--326z": {
+   "style": {
+    "mode": "flat",
+    "text": "#bdd8ff"
+   }
   }
  }
 }
