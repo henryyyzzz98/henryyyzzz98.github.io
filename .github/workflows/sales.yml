@@ -44,7 +44,6 @@ jobs:
       - name: Count sales
         if: steps.check.outputs.go == 'true'
         env:
-          OPENSEA_KEY: ${{ secrets.OPENSEA_KEY }}
           RPC_URLS: ${{ secrets.RPC_URL && format('{0},https://api.mainnet.abs.xyz', secrets.RPC_URL) || 'https://api.mainnet.abs.xyz,https://abstract.api.onfinality.io/public' }}
           OUT_FILE: store/data/sales.json
           STATE_FILE: store/data/sales-state.json
