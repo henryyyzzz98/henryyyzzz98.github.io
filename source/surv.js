@@ -17,7 +17,7 @@ const _sv_viewSetup = viewSetup;
 viewSetup = function () {
   let html = _sv_viewSetup.apply(this, arguments);
   const c = SETUP.comp || 'points';
-  if (SETUP.regs && SETUP.regs.format === 'exempt') return html.replace('<div class="row" style="margin:16px 0 40px">', `<div class="card sv-setup" style="margin-top:12px"><h3>Competition</h3><div class="small mut">🏁 Exemption weekend runs its own survival season: no points, a random 1–4 drivers out every weekend, revival rounds bring 1 or 2 back, exactly 4 drivers race the final round, and the winner of Grand Prix 1 there is champion.</div></div><div class="row" style="margin:16px 0 40px">`);
+  if (SETUP.regs && SETUP.regs.format === 'exempt') return html.replace('<div class="row" style="margin:16px 0 40px">', `<div class="card sv-setup" style="margin-top:12px"><h3>Competition</h3><div class="small mut">🏁 Exemption weekend runs its own survival season: no points, a random 1–3 drivers out every weekend, revival rounds bring 2 back, and exactly 4 drivers race an endless final — the last driver running is champion.</div></div><div class="row" style="margin:16px 0 40px">`);
   const card = `<div class="card sv-setup" style="margin-top:12px"><h3>Competition</h3><div class="row">${[['points', '🏆 Points championship'], ['survival', '🏁 Survival season']].map(([k, v]) => `<button data-a="setcomp" data-v="${k}" class="${c === k ? 'on' : ''}">${v}</button>`).join('')}</div>
     <div class="small mut" style="margin-top:8px">${c === 'survival' ? 'Amazing Race style: no points at all. After every Grand Prix the last-placed driver(s) still in the competition are eliminated for the rest of the season, until three drivers reach the final round. Whoever wins the final is champion. If the express pass race is on, its winner skips the next race and is safe from elimination. Points-based rules (prize pot, gamble grid) are switched off.' : 'The usual season: points for each race decide the championships.'}</div></div>`;
   return html.replace('<div class="row" style="margin:16px 0 40px">', card + '<div class="row" style="margin:16px 0 40px">');
@@ -62,7 +62,7 @@ function svState(G0, base) {
 const svAlive = (S, id) => S.pool.includes(id) && !S.out[id];
 const svFinal = (G0, i) => i === G0.cal.length - 1;
 function svCountTxt(G0, i) { const S = svView(G0); if (!S) return ''; if (typeof exIsRev === 'function' && exIsRev(G0 || G, i)) { const v = S.revN && S.revN[i]; return `♻️ Revival round — eliminated drivers race${v ? `, the first ${v} come back` : ' to come back'}`; }
-  if (typeof exOn === 'function' && exOn(G0 || G) && S.preview && i < (G0 || G).cal.length - 1) return '🎲 1–4 drivers eliminated'; if (svFinal(G0, i)) return '🏁 FINAL — the winner is champion'; const k = S.sched[i] || 0; return k ? `⛔ ${k} driver${k > 1 ? 's' : ''} eliminated` : '🟢 Non-elimination round'; }
+  if (typeof exOn === 'function' && exOn(G0 || G) && S.preview && i < (G0 || G).cal.length - 1) return '🎲 1–3 drivers eliminated'; if (svFinal(G0, i)) return '🏁 FINAL — the winner is champion'; const k = S.sched[i] || 0; return k ? `⛔ ${k} driver${k > 1 ? 's' : ''} eliminated` : '🟢 Non-elimination round'; }
 
 const _sv_weekendEntries = weekendEntries;
 weekendEntries = function (G0) {
@@ -249,7 +249,7 @@ deskStandings = function () {
   return `<div class="dk dk-page" id="dk"><div class="dk-pagehead"><h1>Survival Season</h1><span class="sp"></span><span class="dk-mut">${D.year} · Round ${done} of ${rounds} · no points</span><button data-a="tab" data-v="home">Back</button></div>
   <div class="dk-pagebar"><span class="dk-tabs2">${[['d', 'Drivers'], ['t', 'Constructors']].map(([k, v]) => `<button class="${mode === k && DK2.panel !== 'hist' ? 'on' : ''}" data-a="dkst" data-v="${k}">${v}</button>`).join('')}</span><span class="sp"></span>${nx}${seasonSel}<button class="${DK2.panel === 'hist' ? 'on' : ''}" data-a="dkst2" data-v="hist">Champions</button></div>
   <section class="dk-stbox">${body}</section>
-  <div class="dk-legend"><span class="dk-mut">${EXW ? 'Each round shows Grand Prix 1 and 2 (NC = not classified); ♻ = revival round for eliminated drivers. The winner of Grand Prix 1 at the last round is champion. ' : ''}Under each flag: −N = drivers eliminated that round · · = non-elimination round · F = final. The last-placed drivers still in the competition are eliminated; retirements count as last.</span></div></div>`;
+  <div class="dk-legend"><span class="dk-mut">${EXW ? 'Each round shows Grand Prix 1 and 2 (NC = not classified); ♻ = revival round for eliminated drivers. The last driver running in the endless final is champion. ' : ''}Under each flag: −N = drivers eliminated that round · · = non-elimination round · F = final. The last-placed drivers still in the competition are eliminated; retirements count as last.</span></div></div>`;
 };
 
 // ---------- race weekend: grid note, live board, results ----------
