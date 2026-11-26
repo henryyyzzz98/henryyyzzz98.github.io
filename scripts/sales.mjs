@@ -5,9 +5,9 @@
 //   1st edition 101Z–108Z · 2nd edition 109Z–116Z · 3rd edition 117Z–120Z
 // Sale start times come from sales-config.json, which the website's Sales tab saves (as admin).
 //
-// Copies won from a spin are left out of the sales count and counted separately. A copy counts as a
-// spin win when its new owner's previous move on the chain was sending a card to COSMO's spin wallet
-// (this also covers a spin where both happen in the same transaction).
+// COSMO spin doesn't give out these sale copies, so every copy minted in the 24 hours counts as sold.
+// Premier objekts of the same season are counted too when they came with a sale copy: same wallet,
+// same transaction or within a minute (see attributePremier).
 //
 // Writes data/sales.json for the website, and data/sales-state.json to remember work between runs.
 // How: every copy minted since the first sale started is read from the chain, and COSMO's metadata says
@@ -22,8 +22,6 @@ import { fetchMeta } from "./crawl-meta.mjs";
 const CONTRACT = "0x99bb83ae9bb0c0a6be865cacf67760947f91cb70";
 const TRANSFER = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
 const ZERO32 = "0x" + "0".repeat(64);
-const SPIN_WALLET = "0xd3d5f29881ad87bb10c1100e2c709c9596de345f";
-const SPIN_TOPIC = "0x" + SPIN_WALLET.slice(2).padStart(64, "0");
 export const EDITIONS = {
   1: { name: "1st edition", colls: range(101, 108) },
   2: { name: "2nd edition", colls: range(109, 116) },
@@ -93,19 +91,6 @@ async function logsInRange(topics, from, to) {
     from: "0x" + l.topics[1].slice(26), to: "0x" + l.topics[2].slice(26), id: BigInt(l.topics[3]).toString() }));
 }
 
-/* ---------- spin wins: was the new owner's previous move sending a card to the spin wallet? ---------- */
-async function spinCheck(mint, spinsByWallet) {
-  const sends = (spinsByWallet.get(mint.to) || []).filter(s => before(s, mint));
-  if (!sends.length) return false;
-  const last = sends[sends.length - 1];
-  // any other transfer to or from this wallet between that spin and this mint means the spin wasn't the previous move
-  const [outs, ins] = await Promise.all([
-    logsInRange([TRANSFER, addrTopic(mint.to)], last.block, mint.block),
-    logsInRange([TRANSFER, null, addrTopic(mint.to)], last.block, mint.block),
-  ]);
-  return ![...outs, ...ins].some(e => before(last, e) && before(e, mint));
-}
-
 /* ---------- read new mints from the chain and keep this season's First Class copies ---------- */
 async function scanMints(st, season, members, fromBlock, toBlock) {
   const wantColls = new Set(Object.values(EDITIONS).flatMap(e => e.colls));
@@ -120,6 +105,10 @@ async function scanMints(st, season, members, fromBlock, toBlock) {
     for (const id of retry) { const m = metas.get(id); if (m === undefined) continue; keep(id, st.retry[id], m); delete st.retry[id]; }
   }
   function keep(id, mint, m) {
+    // Premier objekts of this season: counted later if they came with a sale copy
+    if (m && m.season.toLowerCase() === season.toLowerCase() && (m.cls || "").toLowerCase() === "premier") {
+      (st.prem ||= {})[id] = { ...mint, m: m.member, c: m.coll.toUpperCase() }; kept++; return;
+    }
     if (!m || m.season.toLowerCase() !== season.toLowerCase() || !wantColls.has(m.coll.toUpperCase())
       || !wantMembers.has(m.member.toLowerCase()) || (m.cls && m.cls.toLowerCase() !== "first")) return;
     st.mints[id] = { ...mint, m: m.member, c: m.coll.toUpperCase() }; kept++;
@@ -138,7 +127,36 @@ async function scanMints(st, season, members, fromBlock, toBlock) {
     seen += mints.length; st.scanned = b + 1;
     if (logs.length < 300 && step < 20000) step *= 2;   // quiet stretch: take bigger steps
   }
-  log(`  scanned to block ${st.scanned - 1}: ${seen.toLocaleString()} new mints, ${kept} for ${season} First Class`);
+  log(`  scanned to block ${st.scanned - 1}: ${seen.toLocaleString()} new mints, ${kept} for ${season} First Class / Premier`);
+}
+
+/* ---------- Premier objekts that came with a sale copy ---------- */
+// A Premier counts for a member's sale when it went to the same wallet as one of her sale copies, in the same
+// transaction or within PREMIER_SECONDS of it. Premier minted on their own (e.g. spin prizes) aren't counted.
+const PREMIER_SECONDS = Number(process.env.PREMIER_SECONDS || 60);
+function attributePremier(st, sales, result, latest, latestTime) {
+  const counted = sales.filter(x => x.saleMints && x.b0 != null);
+  if (!counted.length || !st.prem) return;
+  // rough seconds per block, from the sales' own block ranges (Abstract blocks are about a second apart)
+  const spans = counted.map(x => ({ blocks: Math.min(x.b1, latest) - x.b0, secs: (Math.min(x.end, latestTime) - x.start) / 1000 })).filter(v => v.blocks > 0 && v.secs > 0);
+  const secPerBlock = spans.length ? spans.reduce((a, v) => a + v.secs, 0) / spans.reduce((a, v) => a + v.blocks, 0) : 1;
+  const near = Math.max(1, Math.round(PREMIER_SECONDS / secPerBlock));
+  const rowOf = x => result.editions[x.ed].members.find(r => r.member === x.member && Date.parse(r.start) === x.start);
+  for (const p of Object.values(st.prem)) {
+    let best = null;
+    for (const x of counted) {
+      if (p.block < x.b0 - near || p.block >= x.b1 + near) continue;
+      for (const s of x.saleMints) {
+        if (s.to !== p.to) continue;
+        const score = s.tx === p.tx ? -1 : Math.abs(s.block - p.block);
+        if (score > near) continue;
+        if (!best || score < best.score) best = { x, score };
+      }
+    }
+    if (!best) continue;
+    const row = rowOf(best.x); if (!row) continue;
+    row.premier++; row.premierColl[p.c] = (row.premierColl[p.c] || 0) + 1;
+  }
 }
 
 export async function main() {
@@ -156,8 +174,8 @@ export async function main() {
     seasons: Object.keys(config.seasons), data: { ...(prevOut?.data || {}) } };
 
   for (const [sName, sConf] of Object.entries(config.seasons)) {
-    const st = state[sName] = { mints: {}, spin: {}, final: {}, blocks: {}, ...(state[sName] || {}) };
-    delete st.copies;   // from the old OpenSea version
+    const st = state[sName] = { mints: {}, prem: {}, final: {}, blocks: {}, ...(state[sName] || {}) };
+    delete st.copies; delete st.spin;   // from earlier versions
     const prevSeason = prevOut?.data?.[sName];
 
     // every member's sale in this season, with its block range
@@ -188,40 +206,33 @@ export async function main() {
       const members = [];
       for (const x of sales.filter(y => y.ed === ed)) {
         const row = { member: x.member, start: new Date(x.start).toISOString(), end: new Date(x.end).toISOString(),
-          status: x.status, sold: 0, spinWins: 0, perColl: {} };
+          status: x.status, sold: 0, perColl: {} };
         const old = prevSeason?.editions?.[ed]?.members?.find(m => m.member === x.member && m.start === row.start);
         if (x.status === "upcoming") { members.push(row); continue; }
-        if (st.final[x.key] && old) { members.push({ ...old, status: "ended" }); continue; }
+        if (st.final[x.key] && old && !Object.keys(st.mints).length) { members.push({ ...old, status: "ended" }); continue; }
         if (x.b0 == null) { members.push({ ...(old || row), status: x.status, stale: true, ...(scanErr ? { error: scanErr } : {}) }); continue; }
 
-        // this member's sale copies minted inside her 24 hours
+        // this member's sale copies minted inside her 24 hours (spins don't give out these, so every copy is a sale)
         const inWindow = Object.entries(st.mints).filter(([, m]) => m.m.toLowerCase() === x.member.toLowerCase() && def.colls.includes(m.c) && m.block >= x.b0 && m.block < x.b1);
-        let spinsByWallet = null;
-        for (const [id, mint] of inWindow) {
-          if (!(id in st.spin) && !outOfTime(2 * 60_000)) {
-            if (!spinsByWallet) {
-              const spins = await logsInRange([TRANSFER, null, SPIN_TOPIC], Math.max(0, x.b0 - 50), Math.min(x.b1, latest));
-              spinsByWallet = new Map();
-              for (const s of spins) { if (!spinsByWallet.has(s.from)) spinsByWallet.set(s.from, []); spinsByWallet.get(s.from).push(s); }
-              for (const list of spinsByWallet.values()) list.sort((a, b) => before(a, b) ? -1 : 1);
-            }
-            try { st.spin[id] = await spinCheck(mint, spinsByWallet); } catch (e) { log(`  spin check failed: ${e.message}`); }
-          }
-          const pc = (row.perColl[mint.c] ||= { sold: 0, spinWins: 0 });
-          if (st.spin[id]) { row.spinWins++; pc.spinWins++; } else { row.sold++; pc.sold++; }
-        }
+        for (const [, mint] of inWindow) { (row.perColl[mint.c] ||= { sold: 0 }).sold++; row.sold++; }
+        x.saleMints = inWindow.map(([, m]) => m);
+        row.premier = 0; row.premierColl = {};
         const scannedAll = (st.scanned ?? 0) >= Math.min(x.b1, latest + 1) && !Object.keys(st.retry || {}).length;
-        row.checked = scannedAll && inWindow.every(([id]) => id in st.spin);
+        row.checked = scannedAll;
         if (!row.checked) row.stale = true;
         if (scanErr) row.error = scanErr;
         if (x.status === "ended" && row.checked) st.final[x.key] = true;
         members.push(row);
       }
-      result.editions[ed] = { name: def.name, colls: def.colls, members,
-        sold: members.reduce((a, m) => a + (m.sold || 0), 0), spinWins: members.reduce((a, m) => a + (m.spinWins || 0), 0) };
+      result.editions[ed] = { name: def.name, colls: def.colls, members };
+    }
+    attributePremier(st, sales, result, latest, latestTime);
+    for (const e of Object.values(result.editions)) {
+      e.sold = e.members.reduce((a, m) => a + (m.sold || 0), 0);
+      e.premier = e.members.reduce((a, m) => a + (m.premier || 0), 0);
     }
     // copies from finished sales are no longer needed
-    if (sales.length && sales.every(x => x.status === "ended" && st.final[x.key])) st.mints = {};
+    if (sales.length && sales.every(x => x.status === "ended" && st.final[x.key])) { st.mints = {}; st.prem = {}; }
     out.data[sName] = result;
     await writeFile(STATE_FILE, JSON.stringify(state));
   }
