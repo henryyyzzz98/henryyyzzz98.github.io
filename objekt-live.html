@@ -365,6 +365,11 @@
   #sales h2 { font-family: var(--disp); font-weight: 800; font-size: 26px; margin: 0; }
   .slHead { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
   .slHead select, #slAdmin input, #slAdmin select, #slAdmin textarea { background: #fff; color: var(--ink); border: 1.5px solid #b9b5a8; border-radius: 10px; padding: 7px 10px; font: inherit; }
+  .slOpts { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .slTz { display: inline-flex; border: 1.5px solid var(--ink); border-radius: 999px; overflow: hidden; }
+  .slTz button { background: transparent; color: var(--ink); border: 0; padding: 6px 12px; font: 600 13px var(--body, inherit); cursor: pointer; }
+  .slTz button + button { border-left: 1.5px solid var(--ink); }
+  .slTz button.on { background: var(--ink); color: var(--accent); }
   .slIntro { color: var(--dim); margin: 8px 0 14px; font-size: 14px; }
   .slEd { border-top: 2px solid var(--ink); padding-top: 12px; margin-top: 20px; }
   .slEdHead { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
@@ -662,7 +667,10 @@
 <section id="sales">
   <div class="slHead">
     <h2>First Class sales</h2>
-    <label id="slPickWrap" hidden>Season <select id="slPick"></select></label>
+    <div class="slOpts">
+      <label id="slPickWrap" hidden>Season <select id="slPick"></select></label>
+      <span class="slTz" role="group" aria-label="Show times in"><button type="button" data-tz="local">Your time</button><button type="button" data-tz="kst">KST</button></span>
+    </div>
   </div>
   <p class="slIntro">Copies sold during each member's 24-hour sale, and the Premier objekts that came with them (same wallet, same transaction or within a minute).</p>
   <div id="slNote" class="note"></div>
@@ -1588,7 +1596,11 @@ async function openSales() {
   salesTimer = setInterval(() => { if (document.body.dataset.view === "sales") renderSalesStatus(); else clearInterval(salesTimer); }, 30_000);
 }
 
-const fmtWhen = ms => new Date(ms).toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+// sale times in the viewer's own time zone, or Korea Standard Time (remembered in this browser)
+let salesTz = (() => { try { return localStorage.getItem("salesTz") === "kst" ? "kst" : "local"; } catch { return "local"; } })();
+const fmtWhen = ms => new Date(ms).toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
+  ...(salesTz === "kst" ? { timeZone: "Asia/Seoul" } : {}) });
+const tzName = () => salesTz === "kst" ? "KST" : "your time";
 const hm = ms => { const m = Math.max(1, Math.ceil(ms / 60000)); return m < 60 ? `${m}m` : `${Math.floor(m / 60)}h ${m % 60}m`; };
 function saleStatus(start, now = Date.now()) {
   if (now < start) return { k: "upcoming", t: start - now < SALE_MS ? `Starts in ${hm(start - now)}` : "Upcoming" };
@@ -1598,6 +1610,10 @@ function saleStatus(start, now = Date.now()) {
 
 const collList = def => Array.from({ length: def.to - def.from + 1 }, (_, i) => `${def.from + i}Z`);
 function renderSales() {
+  document.querySelectorAll(".slTz [data-tz]").forEach(b => {
+    b.classList.toggle("on", b.dataset.tz === salesTz);
+    b.onclick = () => { salesTz = b.dataset.tz; try { localStorage.setItem("salesTz", salesTz); } catch {} renderSales(); };
+  });
   const seasons = [...new Set([...Object.keys(salesCfg?.seasons || {}), ...(salesOut?.seasons || [])])];
   $("hSales").textContent = salesSeason ? `${salesSeason} sales` : "Sales";
   $("slPickWrap").hidden = seasons.length < 2;
@@ -1624,7 +1640,7 @@ function renderSales() {
       return `<div class="slEd">
         <div class="slEdHead"><h3>${def.name}<small>${def.from}Z–${def.to}Z</small></h3>
           <div class="slTot"><div><span class="lbl">Sold</span><b>${sold.toLocaleString()}</b></div><div><span class="lbl">Premier</span><b>${prem.toLocaleString()}</b></div></div></div>
-        <table class="slTable"><thead><tr><th>Member</th><th class="whenCol">Sale (your time)</th><th>Status</th>${collList(def).map(c => `<th class="num collCol">${c}</th>`).join("")}<th class="num soldCol">Sold</th><th class="num premCol">Premier</th></tr></thead><tbody>
+        <table class="slTable"><thead><tr><th>Member</th><th class="whenCol">Sale (${tzName()})</th><th>Status</th>${collList(def).map(c => `<th class="num collCol">${c}</th>`).join("")}<th class="num soldCol">Sold</th><th class="num premCol">Premier</th></tr></thead><tbody>
         ${rows.map(r => {
           const st = saleStatus(r.start), g = r.got;
           const counted = g && st.k !== "upcoming";
