@@ -5,7 +5,8 @@
 //   1st edition 101Z–108Z · 2nd edition 109Z–116Z · 3rd edition 117Z–120Z
 // Sale start times come from sales-config.json, which the website's Sales tab saves (as admin).
 //
-// COSMO spin doesn't give out these sale copies, so every copy minted in the 24 hours counts as sold.
+// Spins for an edition only open after its last member's sale ends, so every copy minted in a member's
+// 24 hours counts as sold; anything minted after the 24 hours is never counted (the figures are locked).
 // Premier objekts of the same season are counted too when they came with a sale copy: same wallet,
 // same transaction or within a minute (see attributePremier).
 //
@@ -146,7 +147,9 @@ function attributePremier(st, sales, result, latest, latestTime) {
   for (const p of Object.values(st.prem)) {
     let best = null;
     for (const x of counted) {
-      if (p.block < x.b0 - near || p.block >= x.b1 + near) continue;
+      // locked to the 24 hours: nothing minted before the start or after the end counts, even a minute over
+      // (spins for an edition open after its last sale ends, and those copies must not touch the sales figures)
+      if (p.block < x.b0 || p.block >= x.b1) continue;
       const sameMember = x.member.toLowerCase() === String(p.m).toLowerCase();
       for (const s of x.saleMints) {
         if (s.to !== p.to) continue;
