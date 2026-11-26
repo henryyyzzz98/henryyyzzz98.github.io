@@ -424,3 +424,150 @@ button:disabled { cursor: not-allowed; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* =========================================================
+   NEON STUDIO LOOK
+   Dark studio, light beams, neon cases and prize pills.
+   The Banker's offer replaces the top bar.
+========================================================= */
+:root { --ink: #06071a; --ink-2: #0b0d2a; --panel: #11143a; --gold: #daaa00; }
+
+.game-screen { position: relative; isolation: isolate; background: var(--ink); }
+.stage-lights { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
+.stage-lights i { position: absolute; display: block; filter: blur(20px); transition: background 0.6s; }
+.stage-lights .beam-l, .stage-lights .beam-r { top: -15vh; width: 22vw; max-width: 300px; height: 130vh; }
+.stage-lights .beam-l { left: 8vw; transform: rotate(18deg); background: linear-gradient(180deg, rgba(41,165,200,0.32), rgba(41,165,200,0)); }
+.stage-lights .beam-r { right: 8vw; transform: rotate(-18deg); background: linear-gradient(180deg, rgba(199,62,85,0.32), rgba(199,62,85,0)); }
+.stage-lights .beam-c { left: 50%; top: -10vh; width: 36vw; max-width: 480px; height: 110vh; transform: translateX(-50%); background: linear-gradient(180deg, rgba(218,170,0,0.22), rgba(218,170,0,0)); }
+.stage-lights .floor { left: 0; right: 0; bottom: 0; height: 26vh; filter: none; background: linear-gradient(0deg, rgba(41,165,200,0.16), rgba(6,7,26,0)); }
+body.banker-active .stage-lights .beam-l { background: linear-gradient(180deg, rgba(199,62,85,0.38), rgba(199,62,85,0)); }
+body.banker-active .stage-lights .beam-c { background: linear-gradient(180deg, rgba(218,170,0,0.34), rgba(218,170,0,0)); }
+body.banker-active .stage-lights .floor { background: linear-gradient(0deg, rgba(199,62,85,0.16), rgba(6,7,26,0)); }
+
+/* Top bar */
+.hud { background: rgba(6, 7, 26, 0.78); }
+.show-logo, .setup-logo { text-shadow: 0 0 18px rgba(218, 170, 0, 0.6); }
+.stat span { letter-spacing: 0.1em; text-transform: uppercase; font-size: 11px; }
+
+/* Your case */
+.player-case {
+  background: var(--panel); color: var(--gold); border: 3px solid var(--gold);
+  box-shadow: 0 0 28px rgba(218, 170, 0, 0.55), inset 0 0 18px rgba(218, 170, 0, 0.22);
+}
+.player-case::before { display: none; }
+.pips b.done { box-shadow: 0 0 10px var(--gold); }
+
+/* Prize board: glowing pills */
+.money-value {
+  background: rgba(6, 7, 26, 0.55); border: 2px solid var(--tier); border-radius: 999px;
+  box-shadow: 0 0 10px var(--tier); padding: 6px 14px;
+}
+.money-value.eliminated { box-shadow: none; border-color: var(--tier); opacity: 0.2; }
+
+/* Cases: neon outlines */
+.case {
+  background: linear-gradient(180deg, #1b1f52, #0d0f2c); color: #e8f6fb;
+  border: 2px solid rgba(41, 165, 200, 0.65); border-radius: 10px;
+  box-shadow: 0 0 14px rgba(41, 165, 200, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+.case::before { display: none; }
+.case::after { top: 12px; left: 18%; right: 18%; background: rgba(41, 165, 200, 0.5); }
+.case .case-num { background: none; color: inherit; margin-top: 6%; font-size: 1.15em; }
+.case:hover:not(.disabled):not(.opening) { box-shadow: 0 0 24px rgba(41, 165, 200, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.14); }
+.case.player-selected { outline: none; border-color: var(--gold); box-shadow: 0 0 22px rgba(218, 170, 0, 0.6); }
+.case.player-selected .case-num { background: none; color: var(--gold); }
+.case.revealed { background: rgba(6, 7, 26, 0.6); border-color: var(--tier, var(--low)); box-shadow: none; opacity: 0.55; }
+.case.opening { box-shadow: 0 0 0 3px var(--gold), 0 0 32px rgba(218, 170, 0, 0.8); }
+
+/* ---------- Banker offer bar ---------- */
+body.banker-active .hud { display: none; }
+.banker-bar {
+  position: sticky; top: 0; z-index: 25; outline: none;
+  padding: calc(14px + env(safe-area-inset-top)) clamp(12px, 3vw, 40px) 14px;
+  background: linear-gradient(180deg, #14061a, #0a0b22);
+  border-bottom: 3px solid #c73e55; box-shadow: 0 6px 30px rgba(199, 62, 85, 0.45);
+  animation: bar-in 0.35s ease-out;
+}
+@keyframes bar-in { from { transform: translateY(-100%); } to { transform: none; } }
+.banker-waiting {
+  display: flex; align-items: center; justify-content: center; gap: 14px; min-height: 84px;
+  font-weight: 800; font-size: clamp(18px, 3vw, 26px); letter-spacing: 0.12em; text-transform: uppercase;
+  color: #ff8fa1; text-shadow: 0 0 14px rgba(199, 62, 85, 0.9);
+}
+.ring-icon {
+  display: grid; place-items: center; width: 52px; height: 52px; border-radius: 50%;
+  background: #c73e55; color: #fff; box-shadow: 0 0 0 6px rgba(199, 62, 85, 0.3), 0 0 30px #c73e55;
+  animation: ring 0.6s ease-in-out infinite;
+}
+.banker-offer-content {
+  display: grid; grid-template-columns: minmax(140px, 220px) minmax(0, 1fr) minmax(140px, 220px);
+  align-items: center; gap: clamp(12px, 2.5vw, 28px); max-width: 1280px; margin: 0 auto;
+}
+.banker-bar .deal, .banker-bar .no-deal {
+  min-height: 84px; border: 0; border-radius: 14px; font-weight: 900; font-size: clamp(20px, 2.6vw, 30px);
+  letter-spacing: 0.08em; text-transform: uppercase; box-shadow: inset 0 -4px 0 rgba(0, 0, 0, 0.25);
+}
+.banker-bar .deal { background: #44bd33; color: #071d08; box-shadow: 0 0 28px rgba(68, 189, 51, 0.6), inset 0 -4px 0 rgba(0, 0, 0, 0.25); }
+.banker-bar .no-deal { background: #c73e55; color: #fff; box-shadow: 0 0 28px rgba(199, 62, 85, 0.7), inset 0 -4px 0 rgba(0, 0, 0, 0.25); }
+.banker-bar .offer-box {
+  margin: 0; min-height: 96px; display: grid; place-items: center; border-radius: 14px;
+  background: var(--ink-2); border: 3px solid var(--gold);
+  box-shadow: 0 0 36px rgba(218, 170, 0, 0.55), inset 0 0 30px rgba(218, 170, 0, 0.18);
+}
+.banker-bar .offer-box strong { font-size: clamp(40px, 6vw, 66px); color: var(--gold); text-shadow: 0 0 22px rgba(218, 170, 0, 0.75); }
+
+/* Side details beside the cases while the offer stands */
+.banker-info { display: none; }
+body.banker-active .banker-info { display: flex; flex-direction: column; gap: 12px; grid-column: 3; grid-row: 1; }
+body.banker-active .money-column { display: none; }
+body.banker-active .cases-container { opacity: 0.6; pointer-events: none; }
+.banker-info .offer-history { display: block; margin: 0; padding: 14px; border-radius: 12px; background: rgba(17, 20, 58, 0.85); border: 1px solid var(--line); }
+.banker-info .offer-history:empty { display: none; }
+.banker-info .offer-history .label { font-size: 11px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+.banker-info .offer-history .row { display: flex; justify-content: space-between; padding: 2px 0; font-variant-numeric: tabular-nums; }
+.banker-info .offer-history .row span { color: var(--muted); background: none; padding: 0; border-radius: 0; font-size: 14px; }
+.banker-info .banker-hint { margin: 0; padding: 14px; border-radius: 12px; background: rgba(218, 170, 0, 0.1); border: 1px solid rgba(218, 170, 0, 0.4); line-height: 1.4; }
+.banker-info .super-chest-benefit-button { margin: 0; box-shadow: 0 0 14px rgba(218, 170, 0, 0.35); }
+
+/* Offer ladder: prizes still in play with the offer slotted in */
+.offer-ladder { display: none; }
+body.banker-active .offer-ladder { display: flex; flex-direction: column; gap: 4px; grid-column: 1; grid-row: 1; }
+.ladder-title { font-size: 11px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+.ladder-row {
+  display: flex; justify-content: space-between; padding: 3px 12px; border-radius: 999px;
+  border: 2px solid var(--tier); box-shadow: 0 0 6px var(--tier);
+  font-weight: 800; font-stretch: 90%; font-size: 15px; font-variant-numeric: tabular-nums;
+}
+.ladder-row[data-tier="low"] { --tier: var(--low); }
+.ladder-row[data-tier="mid"] { --tier: var(--mid); }
+.ladder-row[data-tier="high"] { --tier: var(--high); }
+.ladder-offer {
+  margin: 6px -8px; padding: 4px 10px 6px; border-radius: 12px;
+  background: rgba(218, 170, 0, 0.14); border: 2px solid var(--gold); box-shadow: 0 0 22px rgba(218, 170, 0, 0.55);
+  color: var(--gold); font-variant-numeric: tabular-nums;
+}
+.ladder-offer small { display: block; font-size: 10px; font-weight: 800; letter-spacing: 0.2em; text-transform: uppercase; }
+.ladder-offer div { display: flex; justify-content: space-between; font-weight: 900; font-size: 20px; text-shadow: 0 0 12px rgba(218, 170, 0, 0.7); }
+
+/* Bonus game + cards pick up the neon trim */
+.super-chest-panel, .final-card, .result-card { box-shadow: 0 0 40px rgba(218, 170, 0, 0.25), 0 30px 80px rgba(0, 0, 0, 0.6); }
+
+/* ---------- Phones ---------- */
+@media (max-width: 719px) {
+  .stage-lights .beam-l, .stage-lights .beam-r { width: 40vw; }
+  .stage-lights .beam-c { width: 70vw; }
+  .money-value { border-radius: 999px; }
+
+  .banker-bar { padding: calc(10px + env(safe-area-inset-top)) 12px 12px; }
+  .banker-waiting { min-height: 64px; font-size: 16px; }
+  .ring-icon { width: 42px; height: 42px; }
+  .banker-offer-content { grid-template-columns: 1fr 1fr; grid-template-areas: "offer offer" "deal nodeal"; gap: 10px; }
+  .banker-bar .offer-box { grid-area: offer; min-height: 76px; }
+  .banker-bar .deal { grid-area: deal; min-height: 56px; }
+  .banker-bar .no-deal { grid-area: nodeal; min-height: 56px; }
+
+  body.banker-active .banker-info { margin-bottom: 14px; }
+  body.banker-active .money-column { display: none; }
+  body.banker-active .offer-ladder { grid-column: 1 / -1; grid-row: auto; }
+  .ladder-title { display: none; }
+}
