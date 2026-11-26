@@ -13,7 +13,7 @@
 ];*/
 
 const BASE_PRIZES = [
-   1, 10, 100, 500, 1000, 2000, 3000, 5000, 8000, 10000, 30000, 50000, 100000, 500000, 800000, 1000000, 1500000, 2000000, 2500000, 3000000, 4000000, 5000000, 6000000, 7000000, 8000000, 10000000,
+  0.01, 1, 10, 50, 100, 200, 300, 500, 800, 1000, 3000, 5000, 10000, 50000, 80000, 100000, 150000, 200000, 250000, 300000, 400000, 500000, 600000, 700000, 800000, 1000000,
 ];
 
 /* =========================================================
@@ -38,7 +38,7 @@ const SET_1 = [
 ];
 
 const SET_2 = [
-   100, 500, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 12000, 14000, 16000, 18000, 20000, 25000, 30000, 35000, 40000, 45000, 50000, 60000, 75000, 100000,
+  100, 500, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 12000, 14000, 16000, 18000, 20000, 25000, 30000, 35000, 40000, 45000, 50000, 60000, 75000, 100000,
 ];
 
 const SET_3 = [
@@ -49,8 +49,8 @@ const PRIZE_SETS = {
   standard: {
     label: "Standard",
     base: BASE_PRIZES,
-    ref: 10000000,
-    note: "26 values, scaled to your top prize.",
+    ref: 1000000,
+    note: "26 values from $0.01, scaled to your top prize.",
   },
   classic: {
     label: "Classic",
@@ -110,7 +110,7 @@ const ROUND_CASES = [6, 5, 4, 3, 2, 1, 1, 1, 1];
    GAME STATE
 ========================================================= */
 
-let maxPrize = 10000000;
+let maxPrize = 1000000;
 
 let topPrizeCount = 1;
 
@@ -437,7 +437,7 @@ function resetGame() {
         Hide Banker.
     */
 
-  bankerSection.classList.add("hidden");
+  hideBankerUi();
 
   bankerWaiting.classList.remove("hidden");
 
@@ -969,6 +969,8 @@ function getBankerHint() {
 
 async function showBanker() {
   waitingForDeal = true;
+  document.body.classList.add("banker-active");
+  closePrizes();
 
   const offer = calculateBankerOffer();
 
@@ -1012,7 +1014,9 @@ async function showBanker() {
 
   hideLegacyCounterOfferUI();
 
-  instruction.textContent = "THE BANKER HAS MADE AN OFFER";
+  instruction.textContent = "DEAL OR NO DEAL?";
+
+  renderOfferLadder(offer);
 
   renderOfferHistory();
 
@@ -1034,7 +1038,7 @@ async function showBanker() {
     bankerHintElement.classList.add("hidden");
   }
 
-  message.textContent = "DEAL OR NO DEAL?";
+  message.textContent = "THE CASES ARE LOCKED UNTIL YOU ANSWER.";
 }
 
 /* =========================================================
@@ -1123,7 +1127,7 @@ function startSuperChest() {
   }));
 
   waitingForDeal = true;
-  bankerSection.classList.add("hidden");
+  hideBankerUi();
   finalChoice.classList.add("hidden");
   superChestElement.classList.remove("hidden");
   superChestResultElement.classList.add("hidden");
@@ -1504,6 +1508,8 @@ function useSuperChestBenefit() {
   superChestBenefitUsed = true;
   superChestBenefitAvailable = false;
   bankerOffer.textContent = formatMoney(boostedOffer);
+  offerHistory[offerHistory.length - 1] = boostedOffer;
+  renderOfferLadder(boostedOffer);
   superChestBenefitButton.classList.add("hidden");
   addLog({
     type: "SUPER_CHEST_BENEFIT_USED",
@@ -1698,7 +1704,7 @@ function takeDeal() {
 
   waitingForDeal = false;
 
-  bankerSection.classList.add("hidden");
+  hideBankerUi();
 
   instruction.textContent = "DEAL!";
 
@@ -1762,7 +1768,7 @@ function continueGame(isAutomaticNoDeal = false) {
 
   waitingForDeal = false;
 
-  bankerSection.classList.add("hidden");
+  hideBankerUi();
 
   bankerWaiting.classList.add("hidden");
 
@@ -2354,13 +2360,59 @@ function refreshHud() {
 function renderOfferHistory() {
   const earlier = offerHistory.slice(0, -1);
   offerHistoryElement.innerHTML = earlier.length
-    ? '<span class="label">Earlier</span>' +
-      earlier.map((o) => `<span>${formatMoney(o)}</span>`).join("")
+    ? '<div class="label">Earlier offers</div>' +
+      earlier
+        .map((o, i) => `<div class="row"><span>Round ${i + 1}</span><strong>${formatMoney(o)}</strong></div>`)
+        .join("")
     : "";
 }
 
+/* =========================================================
+   NEON STUDIO: BANKER BAR + OFFER LADDER
+========================================================= */
+
+/* Hides the offer bar and restores the normal top bar */
+function hideBankerUi() {
+  bankerSection.classList.add("hidden");
+  document.body.classList.remove("banker-active");
+}
+
+/* Prizes still in play, highest first, with the offer slotted into its place */
+function renderOfferLadder(offer) {
+  const ladder = document.getElementById("offerLadder");
+  if (!ladder) return;
+
+  const remaining = [...prizes];
+  cases.forEach((c) => {
+    if (!c.opened) return;
+    const idx = remaining.indexOf(c.value);
+    if (idx !== -1) remaining.splice(idx, 1);
+  });
+  remaining.sort((a, b) => b - a);
+
+  const row = (v) =>
+    `<div class="ladder-row" data-tier="${getTier(v)}"><span class="money-symbol">$</span><span>${formatMoney(v).replace("$", "")}</span></div>`;
+  const offerRow =
+    `<div class="ladder-offer"><small>Current offer</small><div><span>$</span><span>${formatMoney(offer).replace("$", "")}</span></div></div>`;
+
+  let html = '<div class="ladder-title">Still in play</div>';
+  let placed = false;
+
+  remaining.forEach((v) => {
+    if (!placed && v < offer) {
+      html += offerRow;
+      placed = true;
+    }
+    html += row(v);
+  });
+
+  if (!placed) html += offerRow;
+
+  ladder.innerHTML = html;
+}
+
 function focusBanker() {
-  const panel = document.querySelector(".banker-panel");
+  const panel = document.getElementById("dealButton");
   if (panel) panel.focus({ preventScroll: true });
 }
 
@@ -2385,7 +2437,7 @@ function declareTopPrizeWin() {
   gameOver = true;
   waitingForDeal = false;
 
-  bankerSection.classList.add("hidden");
+  hideBankerUi();
   finalChoice.classList.add("hidden");
 
   playerCaseValue = maxPrize;
