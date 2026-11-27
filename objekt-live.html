@@ -2817,7 +2817,9 @@ function renderNameEditor(box) {
 }
 function renderBackEditor(box) {
   if (!D) return;
-  const base = hexOk(D.color) ? D.color : "#f3f1ea";
+  // for Zero cards the editor styles the white inside (the frame keeps the card's own colour)
+  const isZero = String(D.cls || "").toLowerCase() === "zero";
+  const base = isZero ? "#ffffff" : hexOk(D.color) ? D.color : "#f3f1ea";
   const gk = groupKey(D.m.artist, D.m.season, D.m.coll);
   const ck = classKey(D.cls);
   const own = overrides?.backs?.[D.key]?.style || null, shared = overrides?.backs?.[gk]?.style || null, byClass = ck ? overrides?.backs?.[ck]?.style || null : null;
@@ -2885,7 +2887,7 @@ function renderBackEditor(box) {
 
   const preview = () => {
     applyDetailStyle(st);
-    const ps = backStyle(D.key, D.color, st, D.cls);
+    const ps = backStyle(D.key, base, st, D.cls);
     for (const el of [wrap.querySelector("#bpCard"), wrap.querySelector("#bpStrip")]) { el.style.background = ps.bg; el.style.color = ps.fg; }
     const cols = styleColours(st, base), fg = textColour(st, base), r = worstContrast(fg, cols);
     const b = wrap.querySelector("#beContrast");
@@ -2909,7 +2911,9 @@ function renderBackEditor(box) {
   const flatHelp = () => {
     const h = wrap.querySelector("#beFlatHelp"), r = wrap.querySelector("#beFlatReset"); if (!h) return;
     const cosmo = `<b>${esc((base || "none").toUpperCase())}</b>`;
-    h.innerHTML = hexOk(st.color) ? `Your colour replaces Cosmo's (${cosmo}).` : `Using the card's own colour from Cosmo: ${cosmo}. Change it here if Cosmo has it wrong.`;
+    h.innerHTML = isZero
+      ? (hexOk(st.color) ? `Zero card: your colour fills the inside (normally white). The frame keeps the card's own colour.` : `Zero card: this is the white inside. The frame keeps the card's own colour (${esc(String(D.color || "").toUpperCase())}).`)
+      : hexOk(st.color) ? `Your colour replaces Cosmo's (${cosmo}).` : `Using the card's own colour from Cosmo: ${cosmo}. Change it here if Cosmo has it wrong.`;
     if (r) r.hidden = !hexOk(st.color);
   };
   flatHelp();
@@ -2987,13 +2991,14 @@ function applyDetailStyle(override) {
     el.style.background = st.bg; el.style.color = st.fg;
     el.style.setProperty("--pfg", st.fg); el.style.setProperty("--pbg", solid); el.style.setProperty("--bfg", st.fg);
   }
-  // Zero class backs are the other way round: the card colour is the outer frame and the inside is white
+  // Zero class backs are the other way round: the card's own colour is the outer frame, and the inside is
+  // white by default — the inside still follows the card back editor (flat colour, gradient, image, text colour)
   const zero = String(D.cls || "").toLowerCase() === "zero";
-  $("dBackFace").style.background = zero ? st.bg : "";
+  $("dBackFace").style.background = zero ? (hexOk(D.color) ? D.color : "#f2f2f2") : "";
   $("dBackFace").classList.toggle("zero", zero);
   if (zero) {
-    const bi = $("dBackIn");
-    bi.style.background = "#ffffff"; bi.style.color = "#111111"; bi.style.setProperty("--bfg", "#111111");
+    const inner = backStyle(D.key, "#ffffff", override, D.cls), bi = $("dBackIn");
+    bi.style.background = inner.bg; bi.style.color = inner.fg; bi.style.setProperty("--bfg", inner.fg);
   }
   const m = D.m, sw = (m.season || "").match(/^(.*?)(\d+)$/) || [null, m.season || "", ""];
   const backName = backNameOf(D.key, m.member);
