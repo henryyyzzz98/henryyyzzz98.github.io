@@ -404,7 +404,7 @@
   .sh { font-size: 12.5px; }
   .sh th, .sh td { border: 1px solid #000; padding: 4px 6px; }
   .sh th { font-family: var(--disp); font-weight: 800; font-size: 12.5px; letter-spacing: .02em; text-transform: uppercase; color: #fff; background: #000; }
-  .sh .cc { background: #fd7379; color: #111; }
+  .sh .cc { background: var(--sc, #fd7379); color: var(--scInk, #111); }
   .sh .pm { background: #303290; color: #fff; }
   .sh td.n { text-align: right; font-variant-numeric: tabular-nums; }
   .sh .shMem { font-weight: 700; } .sh .shUnit { font-style: italic; font-weight: 600; }
@@ -1701,6 +1701,16 @@ const UNITS = [
   { name: "Zenith", colour: "#a2bf9a", members: ["JiWoo", "SooMin", "YuBin", "YeonJi", "JooBin", "HaYeon"] },
   { name: "Moon", colour: "#e6cb86", members: ["Kaede", "SoHyun", "Lynn", "ShiOn", "Sullin", "JiYeon"] },
 ];
+// season code for the column headings (Atom01 → A, Cream02 → CC, Divine02 → DD) and the season's colour
+function seasonCode(season) {
+  const m = String(season || "").match(/^([A-Za-z])[A-Za-z]*?(\d+)$/);
+  return m ? m[1].toUpperCase().repeat(Math.max(1, parseInt(m[2], 10))) : "";
+}
+const SEASON_COLOURS = { cream02: "#fd7379", divine02: "#b400ff" };   // defaults; the admin can set any season's colour
+const seasonColour = season => {
+  const c = salesCfg?.seasons?.[season]?.colour;
+  return hexOk(c) ? c : SEASON_COLOURS[String(season || "").toLowerCase()] || "#fd7379";
+};
 const unitOf = m => UNITS.find(u => u.members.some(x => x.toLowerCase() === String(m).toLowerCase()));
 const sNo = m => { const i = TRIPLES_MEMBERS.findIndex(x => x.toLowerCase() === String(m).toLowerCase()); return i < 0 ? "" : `S${i + 1} `; };
 const memColour = m => MEMBER_COLOURS[Object.keys(MEMBER_COLOURS).find(k => k.toLowerCase() === String(m).toLowerCase())] || "#d9d7d0";
@@ -1717,7 +1727,8 @@ function salesSheet(ed, def, rows) {
   const waiting = rows.filter(r => !started.includes(r));
   const lead = started[0]?.got.sold || 0;
   const premColls = new Set(started.flatMap(r => Object.keys(r.got.premierColl || {})));
-  const premHead = premColls.size === 1 ? "CC" + parseInt([...premColls][0], 10) : "Premier";
+  const code = seasonCode(salesSeason) || "CC", sc = seasonColour(salesSeason), scInk = inkOn(sc);
+  const premHead = premColls.size === 1 ? code + parseInt([...premColls][0], 10) : "Premier";
   const tot = { coll: Object.fromEntries(colls.map(c => [c, 0])), sold: 0, prem: 0 };
   const pct = (p, t) => t ? (p / t * 100).toFixed(2) + "%" : "0.00%";
   const status = r => { const st = saleStatus(r.start);
@@ -1758,10 +1769,10 @@ function salesSheet(ed, def, rows) {
         ${k ? "" : `<td class="n shTeamTot" rowspan="${t.mem.length}" style="background:${t.u.colour}">${fmt(t.total)}</td>
                    <td class="n shTeamTot" rowspan="${t.mem.length}" style="background:${t.u.colour}">${teamRank.indexOf(t) + 1}</td>`}</tr>`; }).join("")).join("")}
     </tbody></table>` : "";
-  return `<div class="slEd">
+  return `<div class="slEd" style="--sc:${sc};--scInk:${scInk}">
     <div class="slEdHead"><h3>${def.name}<small>${def.from}Z–${def.to}Z</small></h3></div>
     <div class="shWrap"><div class="shScroll"><table class="sh">
-      <thead><tr><th class="shHead">Sale stats</th><th class="shHead"></th>${colls.map(c => `<th class="cc">CC${parseInt(c, 10)}</th>`).join("")}<th class="cc">Total</th>
+      <thead><tr><th class="shHead">Sale stats</th><th class="shHead"></th>${colls.map(c => `<th class="cc">${code}${parseInt(c, 10)}</th>`).join("")}<th class="cc">Total</th>
         <th class="shHead" colspan="2">Difference</th><th class="pm">${esc(premHead)}</th><th class="pm">% of Total</th><th class="shHead">Rank</th><th class="shHead">Status</th></tr></thead>
       <tbody>${body}</tbody>
       <tfoot><tr><td class="shHead" colspan="2">TOTAL:</td>${colls.map(c => `<td class="n cc">${fmt(tot.coll[c])}</td>`).join("")}<td class="n cc">${fmt(tot.sold)}</td>
@@ -1798,6 +1809,7 @@ function renderSalesAdmin() {
     <h3>🔒 Admin · sale times</h3>
     <div class="slAdRow">
       <label>Season <input id="slSeason" value="${esc(season)}" placeholder="e.g. Cream02" size="10"></label>
+      <label>Season colour <span style="display:flex;gap:6px;align-items:center"><input type="color" id="slColour" value="${esc(seasonColour(season))}" style="width:44px;height:36px;padding:2px"><input id="slColourHex" value="${esc(seasonColour(season).toUpperCase())}" size="8" maxlength="7"></span></label>
       <label>Edition <select id="slEd">${Object.entries(SALES_EDITIONS).map(([k, d]) => `<option value="${k}"${k === ed ? " selected" : ""}>${d.name} (${d.from}Z–${d.to}Z)</option>`).join("")}</select></label>
     </div>
     <div class="slAdRow" style="align-items:stretch"><label style="flex:1">Members, in sale order (comma-separated)
@@ -1807,7 +1819,7 @@ function renderSalesAdmin() {
     <div class="slAdRow">
       <button class="chip" id="slFill" type="button">Fill the blanks 24 h apart</button>
       <button class="chip" id="slClear" type="button">Clear this edition</button>
-      <button class="chip run" id="slSave" type="button">Save sale times</button>
+      <button class="chip run" id="slSave" type="button">Save sale times &amp; colour</button>
     </div>
     <div id="slMsg" class="note"></div>
     <h3 style="margin-top:22px">✎ Manual corrections</h3>
@@ -1822,6 +1834,9 @@ function renderSalesAdmin() {
     <div class="slAdRow"><button class="chip run" id="slAdjSave" type="button">Save corrections</button></div>
     <div id="slAdjMsg" class="note"></div>`;
   const readTimes = () => Object.fromEntries([...box.querySelectorAll("input[data-m]")].filter(i => i.value).map(i => [i.dataset.m, new Date(i.value).toISOString()]));
+  const syncColour = v => { if (/^#?[0-9a-f]{6}$/i.test(v)) { v = "#" + v.replace("#", "").toLowerCase(); $("slColour").value = v; $("slColourHex").value = v.toUpperCase(); } };
+  $("slColour").oninput = e => syncColour(e.target.value);
+  $("slColourHex").oninput = e => syncColour(e.target.value.trim());
   $("slEd").onchange = e => { box.dataset.ed = e.target.value; renderSalesAdmin(); };
   $("slMembers").onchange = () => {
     const list = $("slMembers").value.split(/[,\n]/).map(x => x.trim()).filter(Boolean);
@@ -1885,6 +1900,7 @@ function renderSalesAdmin() {
     if (season && season !== name && next.seasons[season] && !Object.keys(next.seasons[season].windows || {}).length) delete next.seasons[season];
     const sc = (next.seasons[name] ||= { windows: {} });
     sc.members = list; sc.windows ||= {}; sc.windows[ed] = readTimes();
+    sc.colour = $("slColour").value.toLowerCase();
     if (!Object.keys(sc.windows[ed]).length) delete sc.windows[ed];
     next.current = name; next.updated = new Date().toISOString();
     const btn = $("slSave"); btn.disabled = true; $("slMsg").textContent = "Saving…";
