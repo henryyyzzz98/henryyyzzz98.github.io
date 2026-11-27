@@ -1,7 +1,7 @@
 // ===================== More alternative regulations =====================
 // Pre-season testing · equal cars (all season, or equal at the start and then developed) · weather setting ·
 // refuelling · team orders · no safety car. Every option can be switched on/off in the custom regulations.
-const XR0 = { testing: 'off', equal: 'off', weather: 'real', refuel: 'off', orders: 'off', scr: 'era', sprint: 'on', dnf: 'on', standins: 'real', heatpts: 'weighted', express: 'off', pot: 'off', gamble: 'off', rnglaps: 'off', rotate: 'off', r107: 'off', yieldMode: 'fair' };
+const XR0 = { testing: 'off', equal: 'off', weather: 'real', refuel: 'off', orders: 'off', scr: 'era', sprint: 'on', dnf: 'on', standins: 'real', heatpts: 'weighted', express: 'off', pot: 'off', gamble: 'off', rnglaps: 'off', rotate: 'off', r107: 'off', yieldMode: 'fair', dist: 'real' };
 const xr = (G0, k) => { const r = (G0 && G0.regs) || {}; return r[k] == null ? XR0[k] : r[k]; };
 
 // ---------- settings form ----------
@@ -36,6 +36,7 @@ dkRegsForm = function (r, act) {
   <label class="small">Random laps${sel('rnglaps', [['off', 'Off'], ['on', 'On — at half distance a random number adds or removes 0–10 laps from the race']])}</label>
   <label class="small">Rotating drivers${sel('rotate', [['off', 'Off — drivers race for their own team'], ['on', 'On — no contracts: a lottery seats every driver in a different car each Grand Prix, and each driver drives every constructor\'s cars once before that constructor is off their list']])}</label>
   <label class="small">107% rule${sel('r107', [['off', 'Off — every car starts'], ['on', 'On — a car slower than 107% of the fastest Q1 time does not qualify for the race']])}</label>
+  <label class="small">Race distance${sel('dist', [['real', 'Real distance of each race'], ['cap', 'Modern limit — no race longer than 305 km (Monaco 260 km)']])}</label>
   <label class="small">Yield penalty laps (Yield GP format)${sel('yieldMode', [['fair', 'Take turns — the last car that hasn\'t yielded yet gets it; once everyone has, plain last place'], ['strict', 'Strict — always the car in last place, even if it already owes penalty laps']])}</label>`;
   const i = html.lastIndexOf('</div>');
   return html.slice(0, i) + more + html.slice(i);
