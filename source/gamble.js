@@ -135,7 +135,7 @@ dkRaceView = function (o) {
 // ---------- Random laps at half distance ----------
 function rngAllowed(race) {
   const r = G.rules || {};
-  return rngOn() && !race.sprint && !r.elimRace && !r.heats && !r.intruder && !r.poleElim && !r.groups && !r.endu && !r.hybrid && !r.forkRace;
+  return rngOn() && !race.sprint && !r.elimRace && !r.heats && !r.intruder && !r.poleElim && !r.groups && !r.endu && !r.hybrid && !r.forkRace && !r.endlessGP;
 }
 hxChain('onLap', (race, c, n) => {
   if (!race || !rngAllowed(race)) return;
