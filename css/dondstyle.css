@@ -571,3 +571,9 @@ body.banker-active .offer-ladder { display: flex; flex-direction: column; gap: 4
   body.banker-active .offer-ladder { grid-column: 1 / -1; grid-row: auto; }
   .ladder-title { display: none; }
 }
+
+/* Super Chest: pick your boost */
+.super-chest-case.opening { animation: shake 0.35s linear infinite; outline: 3px solid #daaa00; outline-offset: 2px; }
+.super-chest-case.revealed { background: var(--ink); color: var(--muted); opacity: 0.6; }
+.super-chest-case.picked.revealed { background: #daaa00; color: #1b1503; opacity: 1; outline: 3px solid #daaa00; outline-offset: 2px; box-shadow: 0 0 26px rgba(218, 170, 0, 0.7); transform: scale(1.08); }
+.super-chest-result strong { font-size: 24px; color: #daaa00; }
