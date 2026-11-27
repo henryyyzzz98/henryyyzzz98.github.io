@@ -6,7 +6,7 @@
 <title>Objekt Live by jyuubin318</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg: #0d0d12; --panel: #17171f; --line: #26262f; --text: #ececf1; --dim: #8b8b99;
@@ -360,7 +360,7 @@
   .tie { color: #8a5a00; }
 
   /* ----- First Class sales (cream card on dark, like the contest) ----- */
-  #sales { max-width: 1232px; margin: 20px auto 60px; background: var(--cream); border: 12px solid #ffffff; border-radius: 28px;
+  #sales { max-width: min(1760px, calc(100% - 48px)); margin: 20px auto 60px; background: var(--cream); border: 12px solid #ffffff; border-radius: 28px;
     padding: 22px 24px; color: var(--ink); --text: #111111; --dim: #5d5a52; --line: #d6d2c4; }
   #sales h2 { font-family: var(--disp); font-weight: 800; font-size: 26px; margin: 0; }
   .slHead { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
@@ -370,6 +370,8 @@
   .slTz button { background: transparent; color: var(--ink); border: 0; padding: 6px 12px; font: 600 13px var(--body, inherit); cursor: pointer; }
   .slTz button + button { border-left: 1.5px solid var(--ink); }
   .slTz button.on { background: var(--ink); color: var(--accent); }
+  .slSort { background: transparent; color: var(--ink); border: 1.5px solid var(--ink); border-radius: 999px; padding: 6px 12px; font: 700 13px var(--disp); cursor: pointer; }
+  .slSort[aria-pressed="true"] { background: var(--ink); color: var(--accent); }
   .slIntro { color: var(--dim); margin: 8px 0 14px; font-size: 14px; }
   .slEd { border-top: 2px solid var(--ink); padding-top: 12px; margin-top: 20px; }
   .slEdHead { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
@@ -395,6 +397,31 @@
   .slAdj { color: var(--dim); font-size: 12px; cursor: help; }
   .slMore summary { font-size: 12px; font-weight: 600; color: var(--dim); cursor: pointer; margin-top: 3px; }
   .slWhen.phoneOnly { display: none; margin-top: 4px; }
+  /* sales sheet (spreadsheet look) */
+  .shWrap { display: flex; gap: 14px; align-items: flex-start; margin-top: 10px; flex-wrap: wrap; }
+  .shScroll { overflow-x: auto; max-width: 100%; border-radius: 10px; background: #000; }
+  .sh { border-collapse: collapse; background: #000; color: #fff; font: 500 13px "Roboto Mono", ui-monospace, Menlo, monospace; white-space: nowrap; }
+  .sh { font-size: 12.5px; }
+  .sh th, .sh td { border: 1px solid #000; padding: 4px 6px; }
+  .sh th { font-family: var(--disp); font-weight: 800; font-size: 12.5px; letter-spacing: .02em; text-transform: uppercase; color: #fff; background: #000; }
+  .sh .cc { background: #fd7379; color: #111; }
+  .sh .pm { background: #303290; color: #fff; }
+  .sh td.n { text-align: right; font-variant-numeric: tabular-nums; }
+  .sh .shMem { font-weight: 700; } .sh .shUnit { font-style: italic; font-weight: 600; }
+  .sh .shTot { font-weight: 700; }
+  .sh .shDiff { color: #fd3b46; background: #000; text-align: right; font-weight: 600; }
+  .sh .shDiff.lead { color: #fff; font-style: italic; text-align: center; font-family: var(--disp); font-weight: 800; }
+  .sh .shRank { color: #111; text-align: center; font-weight: 700; }
+  .sh tfoot td { background: #000; font-weight: 700; padding-top: 8px; padding-bottom: 8px; }
+  .sh tfoot .shHead { font-family: var(--disp); font-weight: 800; text-align: center; }
+  .sh .shStCell { background: #000; }
+  .shSt { font: 700 11px var(--disp); color: #bdb9ad; }
+  .shSt.live { color: var(--accent); } .shSt.upcoming { color: #8f8b80; }
+  .shNote { font: 600 10px var(--disp); color: #8f8b80; }
+  .sh tr.shWait td.n { color: #6d6a62; text-align: center; background: #111; }
+  .shTeams th { background: #86b2dc; color: #111; }
+  .shTeams .shTeam { color: #111; text-align: center; font: italic 800 19px var(--disp); padding: 0 12px; }
+  .shTeams .shTeamTot { color: #111; font-weight: 700; font-size: 15px; text-align: center; }
   #slAdmin { margin-top: 26px; border-top: 2px dashed var(--ink); padding-top: 14px; }
   #slAdmin h3 { font-family: var(--disp); font-weight: 800; font-size: 18px; margin: 0 0 6px; }
   .slAdRow { display: flex; gap: 10px; flex-wrap: wrap; align-items: end; margin: 10px 0; }
@@ -670,6 +697,7 @@
     <h2>First Class sales</h2>
     <div class="slOpts">
       <label id="slPickWrap" hidden>Season <select id="slPick"></select></label>
+      <button type="button" class="slSort" id="slSort" aria-pressed="false" title="Show members in S-number order (S1, S2, S3…). Press again for the standings.">S1 → S24</button>
       <span class="slTz" role="group" aria-label="Show times in"><button type="button" data-tz="local">Your time</button><button type="button" data-tz="kst">KST</button></span>
     </div>
   </div>
@@ -1601,6 +1629,8 @@ async function openSales() {
 let salesTz = (() => { try { return localStorage.getItem("salesTz") === "kst" ? "kst" : "local"; } catch { return "local"; } })();
 const fmtWhen = ms => new Date(ms).toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
   ...(salesTz === "kst" ? { timeZone: "Asia/Seoul" } : {}) });
+// row order: standings (default) or S-number order (S1, S2, S3…), remembered in this browser
+let salesBySNo = (() => { try { return localStorage.getItem("salesOrder") === "s"; } catch { return false; } })();
 const tzName = () => salesTz === "kst" ? "KST" : "your time";
 const hm = ms => { const m = Math.max(1, Math.ceil(ms / 60000)); return m < 60 ? `${m}m` : `${Math.floor(m / 60)}h ${m % 60}m`; };
 function saleStatus(start, now = Date.now()) {
@@ -1626,6 +1656,8 @@ function withCorrections(got, adj, started) {
 const adjText = adj => Object.entries(adj || {}).filter(([, n]) => n).map(([k, n]) => `${n > 0 ? "+" : ""}${n} ${k === "premier" ? "Premier" : k}`).join(", ");
 const collList = def => Array.from({ length: def.to - def.from + 1 }, (_, i) => `${def.from + i}Z`);
 function renderSales() {
+  $("slSort").setAttribute("aria-pressed", salesBySNo);
+  $("slSort").onclick = () => { salesBySNo = !salesBySNo; try { localStorage.setItem("salesOrder", salesBySNo ? "s" : "rank"); } catch {} renderSales(); };
   document.querySelectorAll(".slTz [data-tz]").forEach(b => {
     b.classList.toggle("on", b.dataset.tz === salesTz);
     b.onclick = () => { salesTz = b.dataset.tz; try { localStorage.setItem("salesTz", salesTz); } catch {} renderSales(); };
@@ -1652,31 +1684,94 @@ function renderSales() {
         return { member, start, got: withCorrections(raw, conf.adjust?.[ed]?.[member], Date.now() >= start), adj: conf.adjust?.[ed]?.[member] };
       }).filter(r => Number.isFinite(r.start)).sort((a, b) => a.start - b.start);
       if (!rows.length) return "";
-      const sold = rows.reduce((a, r) => a + (r.got?.sold || 0), 0), prem = rows.reduce((a, r) => a + (r.got?.premier || 0), 0);
-      return `<div class="slEd">
-        <div class="slEdHead"><h3>${def.name}<small>${def.from}Z–${def.to}Z</small></h3>
-          <div class="slTot"><div><span class="lbl">Sold</span><b>${sold.toLocaleString()}</b></div><div><span class="lbl">Premier</span><b>${prem.toLocaleString()}</b></div></div></div>
-        <table class="slTable"><thead><tr><th>Member</th><th class="whenCol">Sale (${tzName()})</th><th>Status</th>${collList(def).map(c => `<th class="num collCol">${c}</th>`).join("")}<th class="num soldCol">Sold</th><th class="num premCol">Premier</th></tr></thead><tbody>
-        ${rows.map(r => {
-          const st = saleStatus(r.start), g = r.got;
-          const counted = g && st.k !== "upcoming";
-          const per = counted && g.perColl ? [...Object.entries(g.perColl).sort().map(([c, v]) => `<span>${esc(c)} <b>${v.sold.toLocaleString()}</b></span>`),
-            ...Object.entries(g.premierColl || {}).sort().map(([c, n]) => `<span>Premier ${esc(c)} <b>${n.toLocaleString()}</b></span>`)].join("") : "";
-          return `<tr class="${st.k}">
-            <td class="mem">${esc(r.member)}${g?.corrected ? ` <span class="slAdj" title="Includes manual corrections: ${esc(adjText(g.corrected))}">✎</span>` : ""}${per ? `<details class="slMore"><summary>By collection</summary><div class="slColls">${per}</div></details>` : ""}</td>
-            <td class="whenCol"><span class="slWhen">${fmtWhen(r.start)} – ${fmtWhen(r.start + SALE_MS)}</span></td>
-            <td class="stCell"><span class="slSt ${st.k}" data-start="${r.start}">${st.t}</span><div class="slWhen phoneOnly">${fmtWhen(r.start)}</div>${counted && g.stale ? `<div class="slWhen" title="${esc(g.error || "")}">${g.error && isAdmin() ? "⚠️ " + esc(g.error.slice(0, 80)) : "still counting…"}</div>` : ""}</td>
-            ${collList(def).map(c => `<td class="num collCol">${counted ? (g.perColl?.[c]?.sold || 0).toLocaleString() : st.k === "upcoming" ? "—" : "…"}</td>`).join("")}
-            <td class="num">${counted ? g.sold.toLocaleString() : st.k === "upcoming" ? "—" : "…"}</td>
-            <td class="num">${counted ? (g.premier || 0).toLocaleString() : st.k === "upcoming" ? "—" : "…"}</td></tr>`;
-        }).join("")}</tbody></table></div>`;
+      return salesSheet(ed, def, rows);
     }).join("") || `<p class="slIntro">No sale times set for ${esc(salesSeason)} yet.</p>`;
   }
   renderSalesAdmin();
 }
+/* ----- the sales sheet: ranked like the spreadsheet (member colours, units, gaps, Premier share, team totals) ----- */
+// tripleS member colours and units (Neptune / Sun / Zenith / Moon); S-numbers follow TRIPLES_MEMBERS
+const MEMBER_COLOURS = { SeoYeon: "#2faffc", HyeRin: "#920dfc", JiWoo: "#fefe33", ChaeYeon: "#98c651", YooYeon: "#cf066f", SooMin: "#fa82a4",
+  NaKyoung: "#6799a3", YuBin: "#ffe3e2", Kaede: "#fec844", DaHyun: "#fe9ad5", Kotone: "#fcdf2d", YeonJi: "#5c75fc", Nien: "#fd9448",
+  SoHyun: "#1925b2", Xinyu: "#d30e1d", Mayu: "#fc8d79", Lynn: "#aa61b6", JooBin: "#b8f558", HaYeon: "#57d9ba", ShiOn: "#fd418a",
+  ChaeWon: "#c7a3df", Sullin: "#7bba8d", SeoAh: "#d0f2fe", JiYeon: "#fdaa67" };
+const UNITS = [
+  { name: "Neptune", colour: "#9aaccb", members: ["SeoYeon", "NaKyoung", "DaHyun", "Kotone", "Nien", "SeoAh"] },
+  { name: "Sun", colour: "#e2b4c8", members: ["HyeRin", "ChaeYeon", "YooYeon", "Xinyu", "Mayu", "ChaeWon"] },
+  { name: "Zenith", colour: "#a2bf9a", members: ["JiWoo", "SooMin", "YuBin", "YeonJi", "JooBin", "HaYeon"] },
+  { name: "Moon", colour: "#e6cb86", members: ["Kaede", "SoHyun", "Lynn", "ShiOn", "Sullin", "JiYeon"] },
+];
+const unitOf = m => UNITS.find(u => u.members.some(x => x.toLowerCase() === String(m).toLowerCase()));
+const sNo = m => { const i = TRIPLES_MEMBERS.findIndex(x => x.toLowerCase() === String(m).toLowerCase()); return i < 0 ? "" : `S${i + 1} `; };
+const memColour = m => MEMBER_COLOURS[Object.keys(MEMBER_COLOURS).find(k => k.toLowerCase() === String(m).toLowerCase())] || "#d9d7d0";
+const inkOn = bg => contrast("#111111", bg) >= contrast("#ffffff", bg) ? "#111111" : "#ffffff";
+// Google Sheets' green → yellow → red colour scale, for the rank column
+function rankColour(i, n) {
+  const t = n <= 1 ? 0 : i / (n - 1), lerp = (a, b, k) => Math.round(a + (b - a) * k);
+  const [a, b, k] = t < .5 ? [[87, 187, 138], [255, 214, 102], t * 2] : [[255, 214, 102], [230, 124, 115], (t - .5) * 2];
+  return "#" + [0, 1, 2].map(j => lerp(a[j], b[j], k).toString(16).padStart(2, "0")).join("");
+}
+function salesSheet(ed, def, rows) {
+  const colls = collList(def), fmt = n => (n || 0).toLocaleString();
+  const started = rows.filter(r => r.got && Date.now() >= r.start).sort((a, b) => (b.got.sold || 0) - (a.got.sold || 0));
+  const waiting = rows.filter(r => !started.includes(r));
+  const lead = started[0]?.got.sold || 0;
+  const premColls = new Set(started.flatMap(r => Object.keys(r.got.premierColl || {})));
+  const premHead = premColls.size === 1 ? "CC" + parseInt([...premColls][0], 10) : "Premier";
+  const tot = { coll: Object.fromEntries(colls.map(c => [c, 0])), sold: 0, prem: 0 };
+  const pct = (p, t) => t ? (p / t * 100).toFixed(2) + "%" : "0.00%";
+  const status = r => { const st = saleStatus(r.start);
+    return `<span class="shSt ${st.k}" data-start="${r.start}" title="${esc(fmtWhen(r.start) + " – " + fmtWhen(r.start + SALE_MS) + " (" + tzName() + ")")}">${st.t}</span>`; };
+  const nameCell = r => { const bg = memColour(r.member);
+    return `<td class="shMem" style="background:${bg};color:${inkOn(bg)}">${esc(sNo(r.member) + r.member)}${r.got?.corrected && isAdmin() ? ` <span class="slAdj" title="Includes manual corrections: ${esc(adjText(r.got.corrected))}">✎</span>` : ""}</td>`; };
+  const unitCell = r => { const bg = memColour(r.member), u = unitOf(r.member);
+    return `<td class="shUnit" style="background:${bg};color:${inkOn(bg)}">${u ? esc(u.name) : ""}</td>`; };
+  const sIdx = m => { const i = TRIPLES_MEMBERS.findIndex(x => x.toLowerCase() === String(m).toLowerCase()); return i < 0 ? 999 : i; };
+  const rowHtml = new Map();
+  started.forEach((r, i) => {
+    const g = r.got, bg = memColour(r.member), ink = inkOn(bg);
+    colls.forEach(c => tot.coll[c] += g.perColl?.[c]?.sold || 0); tot.sold += g.sold || 0; tot.prem += g.premier || 0;
+    const above = i ? started[i - 1].got.sold - g.sold : 0, behind = lead - g.sold;
+    rowHtml.set(r, `<tr>${nameCell(r)}${unitCell(r)}
+      ${colls.map(c => `<td class="n" style="background:${bg};color:${ink}">${fmt(g.perColl?.[c]?.sold)}</td>`).join("")}
+      <td class="n shTot" style="background:${bg};color:${ink}">${fmt(g.sold)}</td>
+      ${i ? `<td class="shDiff">- ${fmt(above)}</td><td class="shDiff">- ${fmt(behind)}</td>` : `<td class="shDiff lead" colspan="2">LEADER</td>`}
+      <td class="n" style="background:${bg};color:${ink}">${fmt(g.premier)}</td>
+      <td class="n" style="background:${bg};color:${ink}">${pct(g.premier, g.sold)}</td>
+      <td class="n shRank" style="background:${rankColour(i, started.length)}">${i + 1}</td>
+      <td class="shStCell">${status(r)}${g.stale ? `<div class="shNote" title="${esc(g.error || "")}">${g.error && isAdmin() ? "⚠️ error" : "counting…"}</div>` : ""}</td></tr>`);
+  });
+  waiting.forEach(r => rowHtml.set(r, `<tr class="shWait">${nameCell(r)}${unitCell(r)}<td class="n" colspan="${colls.length + 6}">—</td><td class="shRank"></td><td class="shStCell">${status(r)}</td></tr>`));
+  const order = salesBySNo ? [...started, ...waiting].sort((a, b) => sIdx(a.member) - sIdx(b.member)) : [...started, ...waiting];
+  const body = order.map(r => rowHtml.get(r)).join("");
+  // teams: each unit's members with their copies, the unit total and its rank
+  const teams = UNITS.map(u => {
+    const mem = u.members.map(m => rows.find(r => r.member.toLowerCase() === m.toLowerCase())).filter(Boolean);
+    return { u, mem, total: mem.reduce((a, r) => a + (started.includes(r) ? r.got.sold || 0 : 0), 0) };
+  }).filter(t => t.mem.length);
+  const teamRank = [...teams].sort((a, b) => b.total - a.total);
+  const teamHtml = teams.length ? `<table class="sh shTeams"><thead><tr><th>Team</th><th>Team members</th><th>Copies</th><th>Team<br>total</th><th>Team<br>rank</th></tr></thead><tbody>
+    ${teams.map(t => t.mem.map((r, k) => { const bg = memColour(r.member);
+      return `<tr>${k ? "" : `<td class="shTeam" rowspan="${t.mem.length}" style="background:${t.u.colour}">${esc(t.u.name)}</td>`}
+        <td class="shMem" style="background:${bg};color:${inkOn(bg)}">${esc(sNo(r.member) + r.member)}</td>
+        <td class="n" style="background:${bg};color:${inkOn(bg)}">${started.includes(r) ? fmt(r.got.sold) : "—"}</td>
+        ${k ? "" : `<td class="n shTeamTot" rowspan="${t.mem.length}" style="background:${t.u.colour}">${fmt(t.total)}</td>
+                   <td class="n shTeamTot" rowspan="${t.mem.length}" style="background:${t.u.colour}">${teamRank.indexOf(t) + 1}</td>`}</tr>`; }).join("")).join("")}
+    </tbody></table>` : "";
+  return `<div class="slEd">
+    <div class="slEdHead"><h3>${def.name}<small>${def.from}Z–${def.to}Z</small></h3></div>
+    <div class="shWrap"><div class="shScroll"><table class="sh">
+      <thead><tr><th class="shHead">Sale stats</th><th class="shHead"></th>${colls.map(c => `<th class="cc">CC${parseInt(c, 10)}</th>`).join("")}<th class="cc">Total</th>
+        <th class="shHead" colspan="2">Difference</th><th class="pm">${esc(premHead)}</th><th class="pm">% of Total</th><th class="shHead">Rank</th><th class="shHead">Status</th></tr></thead>
+      <tbody>${body}</tbody>
+      <tfoot><tr><td class="shHead" colspan="2">TOTAL:</td>${colls.map(c => `<td class="n cc">${fmt(tot.coll[c])}</td>`).join("")}<td class="n cc">${fmt(tot.sold)}</td>
+        <td colspan="2"></td><td class="n pm">${fmt(tot.prem)}</td><td class="n pm">${pct(tot.prem, tot.sold)}</td><td colspan="2"></td></tr></tfoot>
+    </table></div>
+    ${teamHtml ? `<div class="shScroll">${teamHtml}</div>` : ""}</div></div>`;
+}
 function renderSalesStatus() {
-  document.querySelectorAll("#slEditions .slSt[data-start]").forEach(el => {
-    const st = saleStatus(+el.dataset.start); el.textContent = st.t; el.className = "slSt " + st.k;
+  document.querySelectorAll("#slEditions .shSt[data-start]").forEach(el => {
+    const st = saleStatus(+el.dataset.start); el.textContent = st.t; el.className = "shSt " + st.k;
   });
 }
 
