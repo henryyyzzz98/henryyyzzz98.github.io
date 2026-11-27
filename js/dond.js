@@ -1049,63 +1049,22 @@ superChestBenefitButton.addEventListener("click", useSuperChestBenefit);
 superChestContinueButton.addEventListener("click", finishSuperChest);
 
 /* ---------------------------------------------------------
-   CHEST DUEL
+   SUPER CHEST: PICK YOUR BOOST
 
-   You pick 10 of the 20 sealed chests. The Banker gets the
-   other 10. Chests are then paired off and opened, and the
-   higher total wins.
-
-   Why it is a fair 50-50: every chest is hidden and shuffled,
-   so any 10 chests are as good as any other 10. Nothing the
-   player can choose gives either side an edge.
-
-   The values add up to an ODD number, so the totals can never tie.
-   If you edit the list, keep the sum odd.
+   20 sealed cases hold +5% to +100%, in steps of 5%.
+   The player picks one. Whatever it holds becomes a
+   one-time boost they can apply to any later Banker offer.
 --------------------------------------------------------- */
 
-const SUPER_CHEST_VALUES = [
-  15, 10, 20, 20, 30, 30, 50, 50, 75, 75, 100, 100, 150, 150, 200, 200, 300,
-  400, 500, 1000,
-];
+const SUPER_CHEST_BOOSTS = Array.from({ length: 20 }, (_, i) => (i + 1) * 5);
 
-const SUPER_CHEST_PICKS = 10;
-
-let duelSwapUsed = false;
-let duelSwapSelection = null;
-
-const duelBar = document.getElementById("duelBar");
-const duelBarFill = document.getElementById("duelBarFill");
-const duelTaunt = document.getElementById("duelTaunt");
-const duelActions = document.getElementById("duelActions");
-const duelSecondaryButton = document.getElementById("duelSecondaryButton");
-const duelPrimaryButton = document.getElementById("duelPrimaryButton");
-
-duelSecondaryButton.addEventListener("click", pickForMe);
-duelPrimaryButton.addEventListener("click", () => {
-  if (superChestPhase === "pick") lockDuelPicks();
-  else if (superChestPhase === "swap") startDuelReveal();
-});
-
-function countOwner(owner) {
-  return superChestCases.filter((c) => c.owner === owner).length;
-}
-
-function padCase(n) {
-  return String(n).padStart(2, "0");
-}
+let superChestBoostPct = 0;
 
 function startSuperChest() {
-  if (SUPER_CHEST_VALUES.length !== SUPER_CHEST_CASE_COUNT) {
-    throw new Error("Super Chest must contain exactly 20 chests.");
-  }
-
-  if (SUPER_CHEST_VALUES.reduce((t, v) => t + v, 0) % 2 === 0) {
-    console.warn("Super Chest values add up to an even number: ties are possible.");
-  }
-
   superChestAvailable = true;
   superChestBenefitAvailable = false;
   superChestBenefitUsed = false;
+  superChestBoostPct = 0;
   superChestPlayerCases = [];
   superChestBankerCases = [];
   superChestPlayerTotal = 0;
@@ -1114,16 +1073,13 @@ function startSuperChest() {
   superChestBusy = false;
   superChestPendingCase = null;
   superChestPhase = "pick";
-  duelSwapUsed = false;
-  duelSwapSelection = null;
 
-  const values = shuffle([...SUPER_CHEST_VALUES]);
+  const values = shuffle([...SUPER_CHEST_BOOSTS]);
   superChestCases = values.map((value, index) => ({
     number: index + 1,
     value,
-    owner: null,
     revealed: false,
-    duel: null,
+    picked: false,
   }));
 
   waitingForDeal = true;
@@ -1132,36 +1088,21 @@ function startSuperChest() {
   superChestElement.classList.remove("hidden");
   superChestResultElement.classList.add("hidden");
   superChestContinueButton.classList.add("hidden");
-  duelBar.classList.add("hidden");
-  duelTaunt.textContent = "";
 
   instruction.textContent = "SUPER CHEST";
-  message.textContent =
-    "BEAT THE BANKER TO EARN A ONE-TIME +50% BANKER OFFER BENEFIT.";
+  message.textContent = "PICK ONE CASE TO WIN A BOOST FOR A FUTURE BANKER OFFER.";
+  superChestInstruction.textContent =
+    "Pick one case. Whatever it holds, from +5% to +100%, is your boost on a later Banker offer.";
 
-  superChestInstruction.textContent = pickPrompt();
   renderSuperChestCases();
-  updateSuperChestScoreboard();
-  updateDuelControls();
 
   addLog({
     type: "SUPER_CHEST_START",
     round: 3,
-    mode: "DUEL",
+    mode: "PICK_A_BOOST",
     caseCount: superChestCases.length,
-    values: superChestCases.map(({ number, value }) => ({
-      caseNumber: number,
-      value,
-    })),
+    values: superChestCases.map(({ number, value }) => ({ caseNumber: number, value })),
   });
-}
-
-function pickPrompt() {
-  const n = countOwner("player");
-
-  return n < SUPER_CHEST_PICKS
-    ? `Pick ${SUPER_CHEST_PICKS} chests. The Banker gets the rest. (${n} of ${SUPER_CHEST_PICKS})`
-    : "10 chests picked. Lock them in, or tap one to swap it out.";
 }
 
 function renderSuperChestCases() {
@@ -1169,235 +1110,60 @@ function renderSuperChestCases() {
 
   superChestCases.forEach((c) => {
     const button = document.createElement("button");
+    const num = String(c.number).padStart(2, "0");
+
     button.type = "button";
     button.className = "super-chest-case";
     button.dataset.miniCaseNumber = c.number;
-    button.textContent = c.revealed ? formatMoney(c.value) : padCase(c.number);
+    button.textContent = c.revealed ? `+${c.value}%` : num;
 
-    if (c.owner === "player") button.classList.add("owner-player");
-    if (c.owner === "banker") button.classList.add("owner-banker");
     if (c.revealed) button.classList.add("revealed");
-    if (c.duel) button.classList.add(`duel-${c.duel}`);
-    if (duelSwapSelection === c) button.classList.add("swap-pick");
+    if (c.picked) button.classList.add("picked");
 
-    const who = c.owner === "player" ? ", yours" : c.owner === "banker" ? ", the Banker's" : "";
     button.setAttribute(
       "aria-label",
-      c.revealed ? `Chest ${padCase(c.number)}${who}: ${formatMoney(c.value)}` : `Chest ${padCase(c.number)}${who}`,
+      c.revealed ? `Case ${num}: +${c.value}%${c.picked ? ", your pick" : ""}` : `Case ${num}`,
     );
 
-    const interactive =
-      !superChestBusy && (superChestPhase === "pick" || superChestPhase === "swap");
-
+    const interactive = superChestPhase === "pick" && !superChestBusy;
     button.disabled = !interactive;
-    if (interactive) button.addEventListener("click", () => handleSuperChestClick(c));
+    if (interactive) button.addEventListener("click", () => pickSuperChestCase(c));
 
     superChestCasesElement.appendChild(button);
   });
 }
 
-function updateDuelControls() {
-  const phase = superChestPhase;
-  const showing = phase === "pick" || phase === "swap";
-
-  duelActions.classList.toggle("hidden", !showing);
-  duelSecondaryButton.classList.toggle("hidden", phase !== "pick");
-
-  if (phase === "pick") {
-    duelPrimaryButton.textContent = "Lock in picks";
-    duelPrimaryButton.disabled = countOwner("player") !== SUPER_CHEST_PICKS;
-  } else if (phase === "swap") {
-    duelPrimaryButton.textContent = "Start the duel";
-    duelPrimaryButton.disabled = false;
-  }
-}
-
-function handleSuperChestClick(c) {
-  if (superChestBusy) return;
-
-  if (superChestPhase === "pick") {
-    if (c.owner === "player") {
-      c.owner = null;
-    } else if (countOwner("player") < SUPER_CHEST_PICKS) {
-      c.owner = "player";
-    } else {
-      superChestInstruction.textContent =
-        "You already have 10 chests. Tap one of yours to put it back first.";
-      return;
-    }
-
-    superChestInstruction.textContent = pickPrompt();
-  } else if (superChestPhase === "swap") {
-    if (duelSwapUsed) {
-      superChestInstruction.textContent = "You've used your swap. Start the duel when you're ready.";
-      return;
-    }
-
-    if (c.owner === "player") {
-      duelSwapSelection = duelSwapSelection === c ? null : c;
-      superChestInstruction.textContent = duelSwapSelection
-        ? `Chest ${padCase(c.number)} selected. Now tap one of the Banker's chests to trade for it.`
-        : swapPrompt();
-    } else if (c.owner === "banker") {
-      if (!duelSwapSelection) {
-        superChestInstruction.textContent = "Tap one of your blue chests first.";
-        return;
-      }
-
-      const mine = duelSwapSelection;
-      mine.owner = "banker";
-      c.owner = "player";
-      duelSwapUsed = true;
-      duelSwapSelection = null;
-
-      addLog({
-        type: "SUPER_CHEST_SWAP",
-        round: 3,
-        gave: mine.number,
-        received: c.number,
-      });
-
-      superChestInstruction.textContent = `Swapped: Chest ${padCase(mine.number)} for Chest ${padCase(c.number)}. Nobody has seen inside either one.`;
-    }
-  }
-
-  renderSuperChestCases();
-  updateDuelControls();
-}
-
-function swapPrompt() {
-  return "Chests locked in. Want to trade one blind? Tap one of yours, then one of the Banker's. Or just start.";
-}
-
-function pickForMe() {
+async function pickSuperChestCase(c) {
   if (superChestPhase !== "pick" || superChestBusy) return;
-
-  const open = shuffle(superChestCases.filter((c) => c.owner === null));
-  while (countOwner("player") < SUPER_CHEST_PICKS && open.length) {
-    open.pop().owner = "player";
-  }
-
-  superChestInstruction.textContent = pickPrompt();
-  renderSuperChestCases();
-  updateDuelControls();
-}
-
-function lockDuelPicks() {
-  if (superChestPhase !== "pick" || countOwner("player") !== SUPER_CHEST_PICKS) {
-    return;
-  }
-
-  superChestCases.forEach((c) => {
-    if (c.owner === null) c.owner = "banker";
-  });
-
-  superChestPhase = "swap";
-
-  addLog({
-    type: "SUPER_CHEST_PICKS",
-    round: 3,
-    playerCaseNumbers: superChestCases.filter((c) => c.owner === "player").map((c) => c.number),
-  });
-
-  superChestInstruction.textContent = swapPrompt();
-  renderSuperChestCases();
-  updateDuelControls();
-}
-
-/* Pairs each of your chests with one of the Banker's, lowest stakes first. */
-function buildDuelPairs() {
-  const mine = superChestCases.filter((c) => c.owner === "player");
-  const theirs = shuffle(superChestCases.filter((c) => c.owner === "banker"));
-
-  return mine
-    .map((c, i) => ({ player: c, banker: theirs[i] }))
-    .sort((x, y) => x.player.value + x.banker.value - (y.player.value + y.banker.value));
-}
-
-function duelTauntFor(diff, step, total) {
-  if (step === total) {
-    return diff > 0 ? "It all comes down to this." : "Last chests. Don't blink.";
-  }
-
-  if (step === 1) return "Let's see what you picked.";
-  if (diff === 0) return "All square.";
-
-  const lead = Math.abs(diff);
-  const big = lead > 300;
-
-  if (diff > 0) {
-    return big ? "Enjoy the lead. It won't last." : "A lucky streak. For now.";
-  }
-
-  return big ? "The Banker always collects." : "Behind already?";
-}
-
-function updateDuelBar() {
-  const total = superChestPlayerTotal + superChestBankerTotal;
-  const pct = total === 0 ? 50 : (superChestPlayerTotal / total) * 100;
-
-  duelBar.classList.remove("hidden");
-  duelBarFill.style.width = `${pct}%`;
-}
-
-async function startDuelReveal() {
-  if (superChestPhase !== "swap" || superChestBusy) return;
 
   superChestBusy = true;
   superChestPhase = "reveal";
-  duelSwapSelection = null;
-  updateDuelControls();
-
-  const pairs = buildDuelPairs();
-  superChestPlayerCases = pairs.map((p) => p.player);
-  superChestBankerCases = pairs.map((p) => p.banker);
-
-  updateDuelBar();
+  c.picked = true;
   renderSuperChestCases();
 
-  for (let i = 0; i < pairs.length; i++) {
-    const { player: mine, banker: theirs } = pairs[i];
-    const step = i + 1;
+  const button = superChestCasesElement.querySelector(
+    `.super-chest-case[data-mini-case-number="${c.number}"]`,
+  );
+  if (button) button.classList.add("opening");
 
-    superChestInstruction.textContent = `Round ${step} of ${pairs.length}`;
-    duelTaunt.textContent = "";
+  superChestInstruction.textContent = `Opening case ${String(c.number).padStart(2, "0")}…`;
+  await delay(1200);
 
-    mine.duel = "active";
-    theirs.duel = "active";
+  c.revealed = true;
+  superChestBoostPct = c.value;
+  superChestBenefitAvailable = true;
+  superChestPlayerCases = [c];
+  renderSuperChestCases();
+
+  superChestInstruction.textContent = `Case ${String(c.number).padStart(2, "0")} holds +${c.value}%!`;
+  await delay(900);
+
+  /* Show what the other cases held */
+  for (const other of superChestCases) {
+    if (other.revealed) continue;
+    other.revealed = true;
     renderSuperChestCases();
-
-    /* Build the tension: slower as the stakes rise */
-    await delay(step < 6 ? 600 : step < pairs.length ? 1000 : 1700);
-
-    mine.revealed = true;
-    theirs.revealed = true;
-    mine.duel = mine.value > theirs.value ? "win" : "lose";
-    theirs.duel = theirs.value > mine.value ? "win" : "lose";
-
-    superChestPlayerTotal += mine.value;
-    superChestBankerTotal += theirs.value;
-
-    addLog({
-      type: "SUPER_CHEST_DUEL_ROUND",
-      round: 3,
-      step,
-      playerCase: { caseNumber: mine.number, value: mine.value },
-      bankerCase: { caseNumber: theirs.number, value: theirs.value },
-      playerTotal: superChestPlayerTotal,
-      bankerTotal: superChestBankerTotal,
-    });
-
-    renderSuperChestCases();
-    updateSuperChestScoreboard();
-    updateDuelBar();
-
-    duelTaunt.textContent = duelTauntFor(
-      superChestPlayerTotal - superChestBankerTotal,
-      step,
-      pairs.length,
-    );
-
-    await delay(step < pairs.length ? 700 : 400);
+    await delay(60);
   }
 
   await finishSuperChestAllocation();
@@ -1407,45 +1173,27 @@ async function finishSuperChestAllocation() {
   superChestPhase = "complete";
   superChestBusy = false;
 
-  const playerWins = superChestPlayerTotal > superChestBankerTotal;
-  const tie = superChestPlayerTotal === superChestBankerTotal;
-  superChestBenefitAvailable = playerWins;
-
   addLog({
     type: "SUPER_CHEST_RESULT",
     round: 3,
-    mode: "DUEL",
-    turns: superChestPlayerCases.length,
-    playerTotal: superChestPlayerTotal,
-    bankerTotal: superChestBankerTotal,
-    won: playerWins,
-    tie,
-    benefit: playerWins ? "+50% BANKER OFFER ONCE" : "NONE",
-    playerCases: superChestPlayerCases.map((c) => ({ caseNumber: c.number, value: c.value })),
-    bankerCases: superChestBankerCases.map((c) => ({ caseNumber: c.number, value: c.value })),
+    mode: "PICK_A_BOOST",
+    caseNumber: superChestPlayerCases[0] ? superChestPlayerCases[0].number : null,
+    boostPercent: superChestBoostPct,
+    benefit: `+${superChestBoostPct}% BANKER OFFER ONCE`,
   });
 
-  const totals = `You: ${formatMoney(superChestPlayerTotal)} &nbsp;|&nbsp; Banker: ${formatMoney(superChestBankerTotal)}`;
+  superChestBenefitButton.textContent = `Use Super Chest bonus (+${superChestBoostPct}%)`;
 
   superChestResultElement.classList.remove("hidden");
-  superChestResultElement.innerHTML = playerWins
-    ? `<strong>You win the Super Chest!</strong><br>${totals}<br><span>You've earned a one-time +50% Banker offer benefit.</span>`
-    : tie
-      ? `<strong>The Super Chest is a tie.</strong><br>${totals}<br><span>No benefit this time.</span>`
-      : `<strong>The Banker wins the Super Chest.</strong><br>${totals}<br><span>No benefit this time.</span>`;
+  superChestResultElement.innerHTML =
+    `<strong>Your boost: +${superChestBoostPct}%</strong><br>` +
+    `<span>Use it once on any later Banker offer. It can't take an offer above the biggest prize left.</span>`;
 
-  superChestInstruction.textContent = playerWins ? "You beat the Banker." : "The Banker takes this one.";
-  duelTaunt.textContent = playerWins ? "Well played." : "Better luck next time.";
-  updateDuelControls();
+  superChestInstruction.textContent = "The other cases are shown so you can see what you might have had.";
   superChestContinueButton.classList.remove("hidden");
 }
 
-function updateSuperChestScoreboard() {
-  const hidden = superChestPhase === "pick" || superChestPhase === "swap";
-
-  superChestPlayerTotalElement.textContent = hidden ? "?" : formatMoney(superChestPlayerTotal);
-  superChestBankerTotalElement.textContent = hidden ? "?" : formatMoney(superChestBankerTotal);
-}
+function updateSuperChestScoreboard() {}
 
 function finishSuperChest() {
   if (superChestPhase !== "complete") return;
@@ -1456,17 +1204,14 @@ function finishSuperChest() {
     type: "SUPER_CHEST_COMPLETE",
     round: 3,
     benefitAvailable: superChestBenefitAvailable,
-    playerTotal: superChestPlayerTotal,
-    bankerTotal: superChestBankerTotal,
-    playerCaseNumbers: superChestPlayerCases.map((c) => c.number),
-    bankerCaseNumbers: superChestBankerCases.map((c) => c.number),
+    boostPercent: superChestBoostPct,
   });
   round++;
   casesToOpen = ROUND_CASES[round - 1];
   openedCasesThisRound = 0;
   instruction.textContent = `OPEN ${casesToOpen} CASE${casesToOpen === 1 ? "" : "S"}`;
   message.textContent = superChestBenefitAvailable
-    ? "SUPER CHEST WON! YOUR +50% BENEFIT CAN BE USED ON ANY FUTURE BANKER OFFER ONCE."
+    ? `YOUR +${superChestBoostPct}% BOOST CAN BE USED ONCE ON ANY FUTURE BANKER OFFER.`
     : "SUPER CHEST COMPLETE. NO BENEFIT THIS TIME.";
   updateGameInfo();
 }
@@ -1490,7 +1235,7 @@ function useSuperChestBenefit() {
   */
 
   const topPrizeInPlay = getTopPrizeInPlay();
-  const uncappedOffer = smartRoundOffer(currentOffer * 1.5);
+  const uncappedOffer = smartRoundOffer(currentOffer * (1 + superChestBoostPct / 100));
   const boostedOffer = Math.min(uncappedOffer, topPrizeInPlay);
   const wasCapped = uncappedOffer > topPrizeInPlay;
 
@@ -1516,14 +1261,15 @@ function useSuperChestBenefit() {
     round,
     originalOffer: currentOffer,
     boostedOffer,
-    multiplier: 1.5,
+    multiplier: 1 + superChestBoostPct / 100,
+    boostPercent: superChestBoostPct,
     cappedAtTopPrize: wasCapped,
     topPrizeInPlay,
   });
   instruction.textContent = "SUPER CHEST BENEFIT ACTIVATED";
   message.textContent = wasCapped
     ? `THE BANKER'S OFFER HAS BEEN RAISED TO ${formatMoney(boostedOffer)}, THE TOP PRIZE STILL IN PLAY.`
-    : `THE BANKER'S OFFER HAS BEEN INCREASED BY 50%: ${formatMoney(boostedOffer)}.`;
+    : `THE BANKER'S OFFER HAS BEEN INCREASED BY ${superChestBoostPct}%: ${formatMoney(boostedOffer)}.`;
 }
 
 /* =========================================================
