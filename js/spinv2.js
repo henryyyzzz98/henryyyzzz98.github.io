@@ -239,8 +239,9 @@ function getCombination() {
 
 const BONUS_COST = 2;
 const BONUS_MIN_SPECIAL = 1;
+// Double cards are not listed here: in the bonus roll they fill every slot
+// that isn't a Premier, Unit, Motion, Special or Fail (no First cards).
 const BONUS_GROUPS = {
-  double: { guaranteed: 2, chance: 0.2, from: "atom01" },
   motion: { guaranteed: 2, chance: 0.2, from: "binary02" },
   unit: { guaranteed: 0, chance: 0.03, from: "binary02" },
   premier: { guaranteed: 0, chance: 0.02, from: "divine01" },
@@ -253,7 +254,7 @@ function groupAvailable(group, seasonId) {
 }
 
 function getBonusCombination(seasonId) {
-  const combo = { double: 0, motion: 0, unit: 0, premier: 0 };
+  const combo = { motion: 0, unit: 0, premier: 0 };
   for (const group in BONUS_GROUPS) {
     if (!groupAvailable(group, seasonId)) continue;
     const cfg = BONUS_GROUPS[group];
@@ -312,20 +313,25 @@ function generateBonusSet(pool, seasonId) {
   const base = getCombination();
   const bonus = getBonusCombination(seasonId);
   const specialCount = Math.max(base.special, BONUS_MIN_SPECIAL);
-  const bonusCount = Object.values(bonus).reduce((a, b) => a + b, 0);
-  const firstCount = SET_SIZE - specialCount - base.fail - bonusCount;
 
-  const firsts = shuffle(pool.first || []);
   const set = [];
-  ["premier", "unit", "motion", "double"].forEach((group) => {
+  ["premier", "unit", "motion"].forEach((group) => {
     set.push(...shuffle(pool[group] || []).slice(0, bonus[group]));
   });
   set.push(...shuffle(pool.special || []).slice(0, specialCount));
   set.push(...Array.from({ length: base.fail }, () => ({ ...FAIL_CARD })));
-  set.push(...firsts.slice(0, firstCount));
 
-  const spare = firsts.slice(firstCount);
-  while (set.length < SET_SIZE && spare.length) set.push(spare.shift());
+  // Every remaining slot is a Double card (no First cards in the bonus roll).
+  // If the season has fewer Doubles than slots left, Doubles repeat.
+  const doubles = pool.double || [];
+  let deck = [];
+  while (set.length < SET_SIZE && doubles.length) {
+    if (!deck.length) deck = shuffle(doubles);
+    set.push(deck.shift());
+  }
+  // Safety net only for a season with no Double cards at all.
+  const firsts = shuffle(pool.first || []);
+  while (set.length < SET_SIZE && firsts.length) set.push(firsts.shift());
 
   return numberSlots(set);
 }
@@ -485,7 +491,8 @@ function choose(index) {
   } else {
     collectBadge.hidden = true;
   }
-  bonusReady = round.mode === "main";
+  // A bonus roll is only offered after a successful (non-Fail) main roll.
+  bonusReady = round.mode === "main" && !isFail;
   lastRound = { set: OBJEKTS.slice(), chosenIndex: index };
 
   if (chosen.image) {
