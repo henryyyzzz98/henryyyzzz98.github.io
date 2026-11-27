@@ -636,7 +636,7 @@ function renderCases() {
 
   cases.forEach((gameCase) => {
     const button = document.createElement("button");
-    const label = String(gameCase.number).padStart(2, "0");
+    const label = String(gameCase.number);
     const showValue = gameCase.opened || gameOver;
 
     button.type = "button";
@@ -699,7 +699,7 @@ function handleCaseClick(gameCase) {
 
     gameCase.isPlayerCase = true;
 
-    playerCaseElement.textContent = String(playerCase).padStart(2, "0");
+    playerCaseElement.textContent = String(playerCase);
 
     /*
             Record player's case.
@@ -763,10 +763,7 @@ async function openCase(gameCase) {
 
   caseButton.classList.add("opening");
 
-  instruction.textContent = `OPENING CASE ${String(gameCase.number).padStart(
-    2,
-    "0",
-  )}...`;
+  instruction.textContent = `OPENING CASE ${String(gameCase.number)}...`;
 
   await delay(1200);
 
@@ -806,7 +803,7 @@ async function openCase(gameCase) {
   caseButton.classList.add("revealed");
 
   message.textContent =
-    `CASE ${String(gameCase.number).padStart(2, "0")} CONTAINS ` +
+    `CASE ${String(gameCase.number)} CONTAINS ` +
     `${formatMoney(gameCase.value)}.`;
 
   await delay(900);
@@ -1110,7 +1107,7 @@ function renderSuperChestCases() {
 
   superChestCases.forEach((c) => {
     const button = document.createElement("button");
-    const num = String(c.number).padStart(2, "0");
+    const num = String(c.number);
 
     button.type = "button";
     button.className = "super-chest-case";
@@ -1146,7 +1143,7 @@ async function pickSuperChestCase(c) {
   );
   if (button) button.classList.add("opening");
 
-  superChestInstruction.textContent = `Opening case ${String(c.number).padStart(2, "0")}…`;
+  superChestInstruction.textContent = `Opening case ${String(c.number)}…`;
   await delay(1200);
 
   c.revealed = true;
@@ -1155,7 +1152,7 @@ async function pickSuperChestCase(c) {
   superChestPlayerCases = [c];
   renderSuperChestCases();
 
-  superChestInstruction.textContent = `Case ${String(c.number).padStart(2, "0")} holds +${c.value}%!`;
+  superChestInstruction.textContent = `Case ${String(c.number)} holds +${c.value}%!`;
   await delay(900);
 
   /* Show what the other cases held */
