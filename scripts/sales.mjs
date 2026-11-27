@@ -103,7 +103,12 @@ async function scanMints(st, season, members, fromBlock, toBlock) {
   const retry = Object.keys(st.retry || {});
   if (retry.length) {
     const metas = await metaMany(retry);
-    for (const id of retry) { const m = metas.get(id); if (m === undefined) continue; keep(id, st.retry[id], m); delete st.retry[id]; }
+    for (const id of retry) {
+      const m = metas.get(id), r = st.retry[id];
+      if (m === undefined) continue;
+      if (m === null && (r.tries = (r.tries || 0) + 1) < 6) continue;   // COSMO may not know a brand-new copy yet: ask again next run
+      const { tries, ...mint } = r; keep(id, mint, m); delete st.retry[id];
+    }
   }
   function keep(id, mint, m) {
     // Premier objekts of this season: counted later if they came with a sale copy
@@ -123,7 +128,9 @@ async function scanMints(st, season, members, fromBlock, toBlock) {
     const metas = await metaMany(mints.map(x => x[0]));
     for (const [id, mint] of mints) {
       const m = metas.get(id);
-      if (m === undefined) (st.retry ||= {})[id] = mint; else keep(id, mint, m);
+      // undefined = couldn't ask COSMO; null = COSMO says "not found", which can happen for a few moments
+      // right after a mint during a rush. Either way, ask again on the next runs rather than dropping the copy.
+      if (m === undefined || m === null) (st.retry ||= {})[id] = mint; else keep(id, mint, m);
     }
     seen += mints.length; st.scanned = b + 1;
     if (logs.length < 300 && step < 20000) step *= 2;   // quiet stretch: take bigger steps
@@ -184,7 +191,7 @@ export async function main() {
     const st = state[sName] = { mints: {}, prem: {}, final: {}, blocks: {}, ...(state[sName] || {}) };
     delete st.copies; delete st.spin;   // from earlier versions
     // a newer version of this job keeps more (e.g. Premier): read the sale period again from the start, once
-    const STATE_VERSION = 2;
+    const STATE_VERSION = 3;   // 3: copies COSMO briefly didn't know are retried instead of dropped
     if (st.v !== STATE_VERSION) { delete st.scanned; st.prem = {}; st.final = {}; st.v = STATE_VERSION; log(`${sName}: re-reading the sales from the start (job updated)`); }
     const prevSeason = prevOut?.data?.[sName];
 
@@ -196,18 +203,22 @@ export async function main() {
       sales.push({ ed, def, member, start, end, key: `${ed}|${member}|${start}`,
         status: now < start ? "upcoming" : latestTime < end ? "live" : "ended" });
     }
-    const active = sales.filter(x => x.status !== "upcoming" && !st.final[x.key]);
+    // block ranges for every sale that has started (cached, so finished sales cost nothing)
+    const started = sales.filter(x => x.status !== "upcoming");
+    const active = started.filter(x => !st.final[x.key]);
     let scanErr = null;
-    if (active.length) {
+    if (started.length) {
       log(`${sName}: ${active.length} sale(s) to count`);
       try {
-        for (const x of active) {
+        for (const x of started) {
           x.b0 = st.blocks[new Date(x.start).toISOString()] ??= await blockAt(x.start, latest);
           x.b1 = x.status === "ended" ? (st.blocks[new Date(x.end).toISOString()] ??= await blockAt(x.end, latest)) : latest + 1;
         }
-        const from = Math.min(...active.map(x => x.b0)), to = Math.min(latest, Math.max(...active.map(x => x.b1 - 1)));
-        const members = [...new Set(sales.map(x => x.member))];
-        await scanMints(st, sName, members, from, to);
+        if (active.length || Object.keys(st.retry || {}).length) {
+          const from = Math.min(...started.map(x => x.b0)), to = Math.min(latest, Math.max(...started.map(x => x.b1 - 1)));
+          const members = [...new Set(sales.map(x => x.member))];
+          await scanMints(st, sName, members, from, to);
+        }
       } catch (e) { scanErr = e.message; log(`  scan failed: ${e.message}`); }
     }
 
@@ -219,7 +230,7 @@ export async function main() {
           status: x.status, sold: 0, perColl: {} };
         const old = prevSeason?.editions?.[ed]?.members?.find(m => m.member === x.member && m.start === row.start);
         if (x.status === "upcoming") { members.push(row); continue; }
-        if (st.final[x.key] && old && !Object.keys(st.mints).length) { members.push({ ...old, status: "ended" }); continue; }
+        if (st.final[x.key] && old && !Object.keys(st.mints).length) { const { stale, error, ...keepOld } = old; members.push({ ...keepOld, status: "ended" }); continue; }
         if (x.b0 == null) { members.push({ ...(old || row), status: x.status, stale: true, ...(scanErr ? { error: scanErr } : {}) }); continue; }
 
         // this member's sale copies minted inside her 24 hours (spins don't give out these, so every copy is a sale)
@@ -227,7 +238,8 @@ export async function main() {
         for (const [, mint] of inWindow) { (row.perColl[mint.c] ||= { sold: 0 }).sold++; row.sold++; }
         x.saleMints = inWindow.map(([, m]) => m);
         row.premier = 0; row.premierColl = {};
-        const scannedAll = (st.scanned ?? 0) >= Math.min(x.b1, latest + 1) && !Object.keys(st.retry || {}).length;
+        const waiting = Object.values(st.retry || {}).some(r => r.block >= x.b0 && r.block < x.b1);
+        const scannedAll = (st.scanned ?? 0) >= Math.min(x.b1, latest + 1) && !waiting;
         row.checked = scannedAll;
         if (!row.checked) row.stale = true;
         if (scanErr) row.error = scanErr;
