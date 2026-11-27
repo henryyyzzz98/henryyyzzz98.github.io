@@ -124,7 +124,8 @@ async function scanMints(st, season, members, fromBlock, toBlock) {
     let logs;
     try { logs = await rpc("eth_getLogs", [{ address: CONTRACT, fromBlock: "0x" + a.toString(16), toBlock: "0x" + b.toString(16), topics: [TRANSFER, ZERO32] }]); }
     catch (e) { if (step > 50) { step = Math.floor(step / 2); continue; } throw e; }
-    const mints = logs.map(l => [BigInt(l.topics[3]).toString(), { to: "0x" + l.topics[2].slice(26), block: Number(l.blockNumber), li: Number(l.logIndex), tx: l.transactionHash }]);
+    const mints = logs.map(l => [BigInt(l.topics[3]).toString(), { to: "0x" + l.topics[2].slice(26), block: Number(l.blockNumber), li: Number(l.logIndex), tx: l.transactionHash }])
+      .filter(([id]) => !st.mints[id] && !st.prem?.[id]);   // already found (e.g. when re-reading): no need to ask COSMO again
     const metas = await metaMany(mints.map(x => x[0]));
     for (const [id, mint] of mints) {
       const m = metas.get(id);
@@ -192,7 +193,8 @@ export async function main() {
     delete st.copies; delete st.spin;   // from earlier versions
     // a newer version of this job keeps more (e.g. Premier): read the sale period again from the start, once
     const STATE_VERSION = 3;   // 3: copies COSMO briefly didn't know are retried instead of dropped
-    if (st.v !== STATE_VERSION) { delete st.scanned; st.prem = {}; st.final = {}; st.v = STATE_VERSION; log(`${sName}: re-reading the sales from the start (job updated)`); }
+    // (copies already found are kept, so the figures never drop while it re-reads; it only adds what was missed)
+    if (st.v !== STATE_VERSION) { delete st.scanned; st.final = {}; st.v = STATE_VERSION; log(`${sName}: re-reading the sales from the start (job updated)`); }
     const prevSeason = prevOut?.data?.[sName];
 
     // every member's sale in this season, with its block range
