@@ -392,6 +392,7 @@
   .slTable .collCol { color: var(--dim); font-size: 13px; }
   .slTable th.collCol { color: var(--dim); }
   .slMore { display: none; }
+  .slAdj { color: var(--dim); font-size: 12px; cursor: help; }
   .slMore summary { font-size: 12px; font-weight: 600; color: var(--dim); cursor: pointer; margin-top: 3px; }
   .slWhen.phoneOnly { display: none; margin-top: 4px; }
   #slAdmin { margin-top: 26px; border-top: 2px dashed var(--ink); padding-top: 14px; }
@@ -1608,6 +1609,21 @@ function saleStatus(start, now = Date.now()) {
   return { k: "ended", t: "Ended" };
 }
 
+// admin corrections (sales-config.json → seasons[season].adjust[edition][member] = { "101Z": 1, premier: 1 })
+// are added on top of what the counter found, so the job never overwrites them
+function withCorrections(got, adj, started) {
+  if (!adj || !Object.keys(adj).length) return got;
+  if (!got && !started) return got;
+  const g = JSON.parse(JSON.stringify(got || { sold: 0, premier: 0, perColl: {}, premierColl: {} }));
+  g.perColl ||= {};
+  for (const [k, n] of Object.entries(adj)) {
+    if (k === "premier") g.premier = (g.premier || 0) + n;
+    else { (g.perColl[k] ||= { sold: 0 }).sold += n; g.sold = (g.sold || 0) + n; }
+  }
+  g.corrected = adj;
+  return g;
+}
+const adjText = adj => Object.entries(adj || {}).filter(([, n]) => n).map(([k, n]) => `${n > 0 ? "+" : ""}${n} ${k === "premier" ? "Premier" : k}`).join(", ");
 const collList = def => Array.from({ length: def.to - def.from + 1 }, (_, i) => `${def.from + i}Z`);
 function renderSales() {
   document.querySelectorAll(".slTz [data-tz]").forEach(b => {
@@ -1632,8 +1648,8 @@ function renderSales() {
       const starts = conf.windows?.[ed] || {};
       const rows = Object.entries(starts).map(([member, iso]) => {
         const start = Date.parse(iso);
-        const got = res?.editions?.[ed]?.members?.find(m => m.member === member && Date.parse(m.start) === start);
-        return { member, start, got };
+        const raw = res?.editions?.[ed]?.members?.find(m => m.member === member && Date.parse(m.start) === start);
+        return { member, start, got: withCorrections(raw, conf.adjust?.[ed]?.[member], Date.now() >= start), adj: conf.adjust?.[ed]?.[member] };
       }).filter(r => Number.isFinite(r.start)).sort((a, b) => a.start - b.start);
       if (!rows.length) return "";
       const sold = rows.reduce((a, r) => a + (r.got?.sold || 0), 0), prem = rows.reduce((a, r) => a + (r.got?.premier || 0), 0);
@@ -1647,7 +1663,7 @@ function renderSales() {
           const per = counted && g.perColl ? [...Object.entries(g.perColl).sort().map(([c, v]) => `<span>${esc(c)} <b>${v.sold.toLocaleString()}</b></span>`),
             ...Object.entries(g.premierColl || {}).sort().map(([c, n]) => `<span>Premier ${esc(c)} <b>${n.toLocaleString()}</b></span>`)].join("") : "";
           return `<tr class="${st.k}">
-            <td class="mem">${esc(r.member)}${per ? `<details class="slMore"><summary>By collection</summary><div class="slColls">${per}</div></details>` : ""}</td>
+            <td class="mem">${esc(r.member)}${g?.corrected ? ` <span class="slAdj" title="Includes manual corrections: ${esc(adjText(g.corrected))}">✎</span>` : ""}${per ? `<details class="slMore"><summary>By collection</summary><div class="slColls">${per}</div></details>` : ""}</td>
             <td class="whenCol"><span class="slWhen">${fmtWhen(r.start)} – ${fmtWhen(r.start + SALE_MS)}</span></td>
             <td class="stCell"><span class="slSt ${st.k}" data-start="${r.start}">${st.t}</span><div class="slWhen phoneOnly">${fmtWhen(r.start)}</div>${counted && g.stale ? `<div class="slWhen" title="${esc(g.error || "")}">${g.error && isAdmin() ? "⚠️ " + esc(g.error.slice(0, 80)) : "still counting…"}</div>` : ""}</td>
             ${collList(def).map(c => `<td class="num collCol">${counted ? (g.perColl?.[c]?.sold || 0).toLocaleString() : st.k === "upcoming" ? "—" : "…"}</td>`).join("")}
@@ -1665,6 +1681,13 @@ function renderSalesStatus() {
 }
 
 /* ----- admin: season, members and sale start times, saved to sales-config.json ----- */
+async function putSalesConfig(next, message) {
+  const branch = ls.get("ghBranch") || "main", path = "sales-config.json";
+  const cur = await gh(`/contents/${path}?ref=${encodeURIComponent(branch)}`);
+  const put = await gh(`/contents/${path}`, { method: "PUT", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ branch, message, content: b64enc(JSON.stringify(next, null, 1) + "\n"), ...(cur.ok ? { sha: cur.j.sha } : {}) }) });
+  if (!put.ok) throw new Error(`GitHub ${put.status}: ${put.j.message || "save failed"}`);
+}
 const toLocalInput = ms => { const d = new Date(ms); return new Date(d - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16); };
 function renderSalesAdmin() {
   const box = $("slAdmin");
@@ -1691,7 +1714,18 @@ function renderSalesAdmin() {
       <button class="chip" id="slClear" type="button">Clear this edition</button>
       <button class="chip run" id="slSave" type="button">Save sale times</button>
     </div>
-    <div id="slMsg" class="note"></div>`;
+    <div id="slMsg" class="note"></div>
+    <h3 style="margin-top:22px">✎ Manual corrections</h3>
+    <p class="slIntro" style="margin:4px 0 8px">For copies the counter missed (or counted wrongly) in ${esc(SALES_EDITIONS[ed].name)}. These are added on top of the counted figures and are never overwritten by the counter.</p>
+    <div class="slAdRow">
+      <label>Member <select id="slAdjMem">${Object.keys(starts).map(m => `<option>${esc(m)}</option>`).join("") || `<option value="">(set sale times first)</option>`}</select></label>
+      <label>Collection <select id="slAdjColl">${collList(SALES_EDITIONS[ed]).map(c => `<option>${c}</option>`).join("")}<option value="premier">Premier</option></select></label>
+      <label>Amount <input type="number" id="slAdjN" value="1" step="1" style="width:80px"></label>
+      <button class="chip" id="slAdjAdd" type="button">Add</button>
+    </div>
+    <div id="slAdjList"></div>
+    <div class="slAdRow"><button class="chip run" id="slAdjSave" type="button">Save corrections</button></div>
+    <div id="slAdjMsg" class="note"></div>`;
   const readTimes = () => Object.fromEntries([...box.querySelectorAll("input[data-m]")].filter(i => i.value).map(i => [i.dataset.m, new Date(i.value).toISOString()]));
   $("slEd").onchange = e => { box.dataset.ed = e.target.value; renderSalesAdmin(); };
   $("slMembers").onchange = () => {
@@ -1707,6 +1741,47 @@ function renderSalesAdmin() {
     $("slMsg").textContent = "Filled in. Check them, then press Save.";
   };
   $("slClear").onclick = () => box.querySelectorAll("input[data-m]").forEach(i => i.value = "");
+  // corrections: edited in a working copy, saved with their own button
+  box._adj ||= {};
+  const adjKey = `${season}|${ed}`;
+  const work = box._adj[adjKey] ||= JSON.parse(JSON.stringify(conf.adjust?.[ed] || {}));
+  const drawAdj = () => {
+    const rows = Object.entries(work).flatMap(([m, a]) => Object.entries(a).filter(([, n]) => n).map(([k, n]) => [m, k, n]));
+    $("slAdjList").innerHTML = rows.length ? `<table class="slTable" style="max-width:520px"><tbody>${rows.map(([m, k, n]) =>
+      `<tr><td class="mem">${esc(m)}</td><td>${k === "premier" ? "Premier" : esc(k)}</td><td class="num">${n > 0 ? "+" : ""}${n}</td>
+       <td class="num"><button class="linkish" data-rm="${esc(m)}|${esc(k)}" type="button">remove</button></td></tr>`).join("")}</tbody></table>`
+      : `<p class="slIntro">No corrections for this edition.</p>`;
+    $("slAdjList").querySelectorAll("[data-rm]").forEach(b => b.onclick = () => {
+      const [m, k] = b.dataset.rm.split("|"); delete work[m][k]; if (!Object.keys(work[m]).length) delete work[m]; drawAdj();
+      $("slAdjMsg").textContent = "Not saved yet: press Save corrections.";
+    });
+  };
+  drawAdj();
+  $("slAdjAdd").onclick = () => {
+    const m = $("slAdjMem").value, k = $("slAdjColl").value, n = parseInt($("slAdjN").value, 10);
+    if (!m) { $("slAdjMsg").textContent = "Set this edition's sale times first."; return; }
+    if (!n) { $("slAdjMsg").textContent = "Enter an amount such as 1 or -1."; return; }
+    const a = (work[m] ||= {}); a[k] = (a[k] || 0) + n; if (!a[k]) delete a[k]; if (!Object.keys(a).length) delete work[m];
+    drawAdj(); $("slAdjMsg").textContent = "Not saved yet: press Save corrections.";
+  };
+  $("slAdjSave").onclick = async () => {
+    if (!season || !salesCfg?.seasons?.[season]) { $("slAdjMsg").textContent = "Save the season's sale times first."; return; }
+    const next = JSON.parse(JSON.stringify(salesCfg));
+    const sc = next.seasons[season];
+    sc.adjust ||= {};
+    if (Object.keys(work).length) sc.adjust[ed] = JSON.parse(JSON.stringify(work)); else delete sc.adjust[ed];
+    if (!Object.keys(sc.adjust).length) delete sc.adjust;
+    next.updated = new Date().toISOString();
+    const btn = $("slAdjSave"); btn.disabled = true; $("slAdjMsg").textContent = "Saving…";
+    try {
+      await putSalesConfig(next, `Sales: ${season} ${SALES_EDITIONS[ed].name} corrections`);
+      salesCfg = next; delete box._adj[adjKey];
+      renderSales();
+      $("slAdjMsg").textContent = "✅ Saved. The figures above include them now; visitors see them once the site republishes (a minute or two).";
+    } catch (e) { $("slAdjMsg").textContent = "⚠️ " + e.message; }
+    btn.disabled = false;
+  };
+
   $("slSave").onclick = async () => {
     const name = $("slSeason").value.trim();
     if (!name) { $("slMsg").textContent = "Enter the season name first (e.g. Cream02)."; return; }
