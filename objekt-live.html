@@ -360,7 +360,8 @@
   .tie { color: #8a5a00; }
 
   /* ----- First Class sales (cream card on dark, like the contest) ----- */
-  #sales { max-width: min(1760px, calc(100% - 48px)); margin: 20px auto 60px; background: var(--cream); border: 12px solid #ffffff; border-radius: 28px;
+  /* as wide as the sheet needs (no empty space on the right), never narrower than the rest of the page */
+  #sales { width: fit-content; min-width: min(1232px, calc(100% - 48px)); max-width: calc(100% - 48px); margin: 20px auto 60px; background: var(--cream); border: 12px solid #ffffff; border-radius: 28px;
     padding: 22px 24px; color: var(--ink); --text: #111111; --dim: #5d5a52; --line: #d6d2c4; }
   #sales h2 { font-family: var(--disp); font-weight: 800; font-size: 26px; margin: 0; }
   .slHead { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
@@ -431,7 +432,7 @@
   #slAdmin .chip { color: var(--ink); border-color: var(--ink); background: transparent; }
   #slAdmin .chip.run { background: var(--ink); color: var(--accent); }
   @media (max-width: 640px) {
-    #sales { margin: 12px 8px 40px; padding: 16px 14px; border-width: 8px; border-radius: 22px; }
+    #sales { width: auto; min-width: 0; max-width: none; margin: 12px 8px 40px; padding: 16px 14px; border-width: 8px; border-radius: 22px; }
     .slTable { font-size: 13px; } .slTable th, .slTable td { padding: 7px 4px; }
     .slTable .whenCol { display: none; }
     .slWhen.phoneOnly { display: block; }
