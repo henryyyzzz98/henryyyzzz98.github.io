@@ -473,6 +473,7 @@
   .dBackIn .box .no b { font-size: 8cqw; font-weight: 500; letter-spacing: -.02em; letter-spacing: -.01em; line-height: 1; }
   .dBackIn .box .no span { font-size: 3.5cqw; }
   .dBackIn .box .sq { width: 32cqw; aspect-ratio: 1; background: #fff; flex: 0 0 auto; }
+  .dBackFace.zero .dBackIn .box .sq { background: transparent; border-left: max(1px, .14cqw) solid currentColor; }
   .dBackIn .grow { flex: 1 1 auto; }
   .dBackIn .foot { font-size: 3.4cqw; padding-top: 3cqw; }
   .dBackIn .vs { flex: 0 0 16cqw; display: flex; flex-direction: column; justify-content: space-between; align-items: flex-end; padding: 5.4cqw 3.4cqw 5.6cqw 0; min-height: 0; }
@@ -864,7 +865,7 @@ function getMeta(id) {
         if (uri.startsWith("ipfs://")) uri = "https://ipfs.io/ipfs/" + uri.slice(7);
         const m = await (await fetch(uri)).json();
         // Cosmo metadata: name "Atom02 ChaeWon 113Z #14908813", attributes Artist/Class/Member/Season/Collection
-        const season = attr(m, "Season"), member = attr(m, "Member"), coll = attr(m, "Collection");
+        const season = attr(m, "Season"), member = memberOf(m), coll = attr(m, "Collection");
         return {
           name: (season && member && coll) ? `${season} ${member} ${coll}` : (m.name || `Objekt #${id}`).replace(/\s*#\d+$/, ""),
           image: m.image || null,
@@ -879,6 +880,15 @@ function getMeta(id) {
   return metaCache.get(id);
 }
 const attr = (m, k) => (m.attributes || []).find(a => a.trait_type === k)?.value;
+// Unit objekts list every member and then the unit itself as "Member" (HyeRin, DaHyun, "S2 X S10"): use the
+// one that appears in the objekt's name ("Cream02 S2 X S10 601A #…"), or the last one if none does
+function memberOf(m) {
+  const vals = (m.attributes || []).filter(x => x.trait_type === "Member").map(x => String(x.value));
+  if (vals.length <= 1) return vals[0];
+  const name = String(m.name || "").replace(/\s*#\d+$/, "").toLowerCase();
+  const named = vals.filter(v => name.includes(v.toLowerCase())).sort((x, y) => y.length - x.length)[0];
+  return named || vals[vals.length - 1];
+}
 
 /* ===== Rendering ===== */
 function parseLog(log) {
@@ -2152,8 +2162,8 @@ function backStyle(key, base, override, cls) {
 }
 
 function queueChange(key, id, change) {
-  const field = "serial" in change ? "serials" : "dir" in change ? "dirs" : "backs";
-  const value = "serial" in change ? change.serial : "dir" in change ? change.dir : change.back;
+  const field = "serial" in change ? "serials" : "dir" in change ? "dirs" : "name" in change ? "names" : "backs";
+  const value = "serial" in change ? change.serial : "dir" in change ? change.dir : "name" in change ? change.name : change.back;
   const list = getPending().filter(c => !(c.key === key && c.field === field && c.id === id));
   // skip if it just puts back what's already published
   const cur = published?.[field]?.[key]?.[id] ?? null;
@@ -2360,7 +2370,7 @@ function renderAdminBar() {
       if (!confirm(`Discard ${n} unpublished change${n > 1 ? "s" : ""}?`)) return;
       setPending([]); overrides = overridesView(); if (D) D.be = null; renderAdminBar(); applyDetailStyle(); D && D.ids && (computeSerials(), renderSerials());
     });
-    if (D) renderBackEditor(box);
+    if (D) { renderBackEditor(box); renderNameEditor(box); }
     return;
   }
   box.innerHTML = `<button class="linkish" id="adOpen">🔒 Admin</button><div id="adForm" hidden>
@@ -2786,6 +2796,25 @@ async function uploadBackImage(key, file) {
   if (!put.ok) throw new Error(`GitHub ${put.status}: ${put.j.message || "upload failed"}`);
   return path + "?v=" + Date.now().toString(36);
 }
+// the name printed on a card back: an admin's own text (overrides.names[key].v) or the member from the metadata
+const backNameOf = (key, member) => overrides?.names?.[key]?.v || member || "";
+function renderNameEditor(box) {
+  if (!D) return;
+  const cur = overrides?.names?.[D.key]?.v || "";
+  box.querySelector("#bnBox")?.remove();
+  const wrap = document.createElement("div");
+  wrap.className = "be"; wrap.id = "bnBox";
+  wrap.innerHTML = `<h3>Name on the card back</h3>
+    <div class="row"><input type="text" id="bnName" value="${esc(cur)}" placeholder="${esc(D.m.member || "")}" maxlength="40" style="flex:1 1 200px;padding:8px 10px;border:1.5px solid var(--ink);border-radius:8px;font:700 15px var(--disp)">
+      <button type="button" class="chip" id="bnSave" style="color:var(--ink);border-color:var(--ink)">Use this name</button>
+      ${cur ? `<button type="button" class="linkish" id="bnReset">Use “${esc(D.m.member || "")}” again</button>` : ""}</div>
+    <div class="help">Changes only the NAME line and the sideways name on the back of ${esc(`${D.m.season || ""} ${D.m.member || ""} ${D.m.coll || ""}`.trim())}. Leave it empty to use the name from COSMO. Goes out with Publish, like your other changes.</div>`;
+  box.appendChild(wrap);
+  const preview = v => { const keep = overrides.names; overrides.names = { ...(keep || {}), [D.key]: { v } }; applyDetailStyle(); overrides.names = keep; };
+  $("bnName").oninput = e => preview(e.target.value.trim());
+  $("bnSave").onclick = () => { const v = $("bnName").value.trim(); queueChange(D.key, "v", { name: v && v !== D.m.member ? v : null }); applyDetailStyle(); setFlip(true); };
+  $("bnReset") && ($("bnReset").onclick = () => { queueChange(D.key, "v", { name: null }); applyDetailStyle(); });
+}
 function renderBackEditor(box) {
   if (!D) return;
   const base = hexOk(D.color) ? D.color : "#f3f1ea";
@@ -2851,7 +2880,8 @@ function renderBackEditor(box) {
     </div>
     <div class="help" id="beMsg">Previewing on this page only until you add it and publish.</div>`;
   box.querySelector("#beBox")?.remove();
-  box.appendChild(wrap);
+  const nameBox = box.querySelector("#bnBox");   // keep the card back editor above the name editor when it redraws
+  nameBox ? box.insertBefore(wrap, nameBox) : box.appendChild(wrap);
 
   const preview = () => {
     applyDetailStyle(st);
@@ -2957,17 +2987,26 @@ function applyDetailStyle(override) {
     el.style.background = st.bg; el.style.color = st.fg;
     el.style.setProperty("--pfg", st.fg); el.style.setProperty("--pbg", solid); el.style.setProperty("--bfg", st.fg);
   }
+  // Zero class backs are the other way round: the card colour is the outer frame and the inside is white
+  const zero = String(D.cls || "").toLowerCase() === "zero";
+  $("dBackFace").style.background = zero ? st.bg : "";
+  $("dBackFace").classList.toggle("zero", zero);
+  if (zero) {
+    const bi = $("dBackIn");
+    bi.style.background = "#ffffff"; bi.style.color = "#111111"; bi.style.setProperty("--bfg", "#111111");
+  }
   const m = D.m, sw = (m.season || "").match(/^(.*?)(\d+)$/) || [null, m.season || "", ""];
+  const backName = backNameOf(D.key, m.member);
   $("dBackIn").innerHTML = `
     <div class="bi">
-      <div class="sec"><span class="lbl">Name</span><span class="val">${esc(m.member || "")}</span></div>
+      <div class="sec"><span class="lbl">Name</span><span class="val">${esc(backName)}</span></div>
       <div class="sec"><span class="lbl">${clsLabel(D.artist)}</span><span class="val">${esc(D.cls || "—")}</span></div>
       <div class="sec"><span class="lbl">Season</span><span class="val">${esc(sw[1])}<span class="ol">${esc(sw[2])}</span></span></div>
       <div class="box"><div class="no"></div><div class="sq" aria-hidden="true"></div></div>
       <div class="grow"></div>
       <div class="foot">${esc(m.artist || "tripleS")} · Objekt</div>
     </div>
-    <div class="vs" aria-hidden="true"><span>${esc(m.member || "")}</span><span>${esc(m.artist || "tripleS")}</span></div>`;
+    <div class="vs" aria-hidden="true"><span>${esc(backName)}</span><span>${esc(m.artist || "tripleS")}</span></div>`;
 }
 function setFlip(back) {
   if (!D) return;
