@@ -7714,7 +7714,7 @@ deskGrid = function (sprint) {
 // ===================== More alternative regulations =====================
 // Pre-season testing · equal cars (all season, or equal at the start and then developed) · weather setting ·
 // refuelling · team orders · no safety car. Every option can be switched on/off in the custom regulations.
-const XR0 = { testing: 'off', equal: 'off', weather: 'real', refuel: 'off', orders: 'off', scr: 'era', sprint: 'on', dnf: 'on', standins: 'real', heatpts: 'weighted', express: 'off', pot: 'off', gamble: 'off', rnglaps: 'off', rotate: 'off', r107: 'off', yieldMode: 'fair' };
+const XR0 = { testing: 'off', equal: 'off', weather: 'real', refuel: 'off', orders: 'off', scr: 'era', sprint: 'on', dnf: 'on', standins: 'real', heatpts: 'weighted', express: 'off', pot: 'off', gamble: 'off', rnglaps: 'off', rotate: 'off', r107: 'off', yieldMode: 'fair', dist: 'real' };
 const xr = (G0, k) => { const r = (G0 && G0.regs) || {}; return r[k] == null ? XR0[k] : r[k]; };
 
 // ---------- settings form ----------
@@ -7749,6 +7749,7 @@ dkRegsForm = function (r, act) {
   <label class="small">Random laps${sel('rnglaps', [['off', 'Off'], ['on', 'On — at half distance a random number adds or removes 0–10 laps from the race']])}</label>
   <label class="small">Rotating drivers${sel('rotate', [['off', 'Off — drivers race for their own team'], ['on', 'On — no contracts: a lottery seats every driver in a different car each Grand Prix, and each driver drives every constructor\'s cars once before that constructor is off their list']])}</label>
   <label class="small">107% rule${sel('r107', [['off', 'Off — every car starts'], ['on', 'On — a car slower than 107% of the fastest Q1 time does not qualify for the race']])}</label>
+  <label class="small">Race distance${sel('dist', [['real', 'Real distance of each race'], ['cap', 'Modern limit — no race longer than 305 km (Monaco 260 km)']])}</label>
   <label class="small">Yield penalty laps (Yield GP format)${sel('yieldMode', [['fair', 'Take turns — the last car that hasn\'t yielded yet gets it; once everyone has, plain last place'], ['strict', 'Strict — always the car in last place, even if it already owes penalty laps']])}</label>`;
   const i = html.lastIndexOf('</div>');
   return html.slice(0, i) + more + html.slice(i);
@@ -12265,6 +12266,19 @@ viewTitle = function () {
 if (VIEW === 'title') render();
 const _sl_hqMenu = typeof hqMenu === 'function' ? hqMenu : null;
 if (_sl_hqMenu) hqMenu = function () { return _sl_hqMenu.apply(this, arguments).replace('<h3>Save</h3>', `<h3>Save · Slot ${SLOT}</h3>`); };
+// ===================== Race distance cap (custom regulation) =====================
+// Modern rule: the race is the fewest laps that cover 305 km (Monaco: 260 km). Only shortens — races that were
+// already shorter keep their real length.
+const distCap = (G0) => !!(G0 && G0.regs && G0.regs.dist === 'cap');
+const isMonaco = t => t.id === 'mon' || /monaco|monte.?carlo/i.test((t.id || '') + ' ' + (t.name || '') + ' ' + (t.short || ''));
+function capLaps(t) { const km = t.km || 5, lim = isMonaco(t) ? 260 : 305, n = Math.ceil(lim / km - 1e-9); return Math.min(t.laps, Math.max(1, n)); }
+const _dc_roundTrack = roundTrack;
+roundTrack = function (G0, i) {
+  const t = _dc_roundTrack.apply(this, arguments);
+  if (!distCap(G0) || !t || !t.laps) return t;
+  const n = capLaps(t); if (n >= t.laps) return t;
+  return Object.assign({}, t, { laps: n, realLaps: t.laps });
+};
 // ---------- TV-graphics track map (replaces dkDrawMap) ----------
 // Draws the traced layout exactly as stored; only styling is added around it.
 const MAPF = {};
