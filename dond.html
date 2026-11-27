@@ -18,11 +18,11 @@
         <h1 class="setup-logo"><span>Deal</span><i>or</i><span>No Deal</span></h1>
         <label for="prizeSet">Case values</label>
         <select id="prizeSet" class="select">
-          <option value="standard">Standard</option>
+          <option value="standard">Standard ($100 and up)</option>
           <option value="classic">Classic (1¢ and up)</option>
           <option value="custom">Custom (your own values)</option>
           <option value="set1">Actual Set 1 ($1 to $500,000)</option>
-          <option value="set2">Actual Set 2 ($1 to $100,000)</option>
+          <option value="set2">Actual Set 2 ($1 to $10,000,000)</option>
           <option value="set3">Actual Set 3 ($1 to $250,000)</option>
         </select>
         <p id="prizeSetNote" class="field-note"></p>
@@ -31,7 +31,7 @@
           <label for="maxPrize">Top prize</label>
           <div class="input-wrapper">
             <span>$</span>
-            <input type="number" id="maxPrize" value="1" min="1" step="1" inputmode="numeric" />
+            <input type="number" id="maxPrize" value="100000" min="1" step="1" inputmode="numeric" />
           </div>
           <div class="presets" role="group" aria-label="Quick amounts">
             <button type="button" data-amount="10000">$10,000</button>
@@ -48,7 +48,7 @@
 
         <label for="topCount">Cases holding the top prize</label>
         <div class="input-wrapper count-wrapper">
-          <input type="number" id="topCount" value="1" min="1" max="12" step="1" inputmode="numeric" />
+          <input type="number" id="topCount" value="1" min="1" max="10" step="1" inputmode="numeric" />
         </div>
         <p class="field-note">They replace the biggest prizes on the right side of the board, counting up from the bottom.</p>
         <p id="setupError" class="setup-error" role="alert"></p>
@@ -109,7 +109,7 @@
           <aside id="bankerInfo" class="banker-info" aria-label="Offer details">
             <div id="offerHistory" class="offer-history"></div>
             <div id="bankerHint" class="banker-hint hidden"></div>
-            <button id="superChestBenefitButton" class="super-chest-benefit-button hidden">Use Super Chest bonus (+50%)</button>
+            <button id="superChestBenefitButton" class="super-chest-benefit-button hidden">Use Super Chest bonus</button>
           </aside>
 
           <section class="cases-area">
@@ -128,20 +128,9 @@
         <div class="super-chest-overlay"></div>
         <div class="super-chest-panel">
           <h2>Super Chest</h2>
-          <p id="superChestInstruction">Pick 10 chests. The Banker gets the rest.</p>
-          <div class="super-chest-scoreboard">
-            <div class="sc-you"><span>You</span><strong id="superChestPlayerTotal">$0</strong></div>
-            <div class="super-chest-vs">vs</div>
-            <div class="sc-banker"><span>Banker</span><strong id="superChestBankerTotal">$0</strong></div>
-          </div>
-          <div id="duelBar" class="duel-bar hidden" aria-hidden="true"><div id="duelBarFill" class="duel-bar-fill"></div></div>
-          <p id="duelTaunt" class="duel-taunt" aria-live="polite"></p>
+          <p id="superChestInstruction">Pick one case to win your boost.</p>
           <div id="superChestCases" class="super-chest-cases"></div>
-          <p class="super-chest-side-label">Your picks turn blue. The rest go to the Banker. Higher total wins.</p>
-          <div id="duelActions" class="super-chest-decision duel-actions hidden">
-            <button id="duelSecondaryButton" type="button">Pick for me</button>
-            <button id="duelPrimaryButton" type="button">Lock in picks</button>
-          </div>
+          <p class="super-chest-side-label">Every case holds a boost from +5% to +100%.</p>
           <div id="superChestResult" class="super-chest-result hidden"></div>
           <button id="superChestContinueButton" class="super-chest-continue hidden">Continue game</button>
         </div>
