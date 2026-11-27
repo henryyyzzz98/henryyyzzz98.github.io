@@ -401,7 +401,7 @@
   /* sales sheet (spreadsheet look) */
   .shWrap { display: flex; gap: 14px; align-items: flex-start; margin-top: 10px; flex-wrap: wrap; }
   .shScroll { overflow-x: auto; max-width: 100%; border-radius: 10px; background: #000; }
-  .sh { border-collapse: collapse; background: #000; color: #fff; font: 500 13px "Roboto Mono", ui-monospace, Menlo, monospace; white-space: nowrap; }
+  .sh { border-collapse: collapse; background: #000; color: #fff; font: 500 13px var(--disp); white-space: nowrap; }
   .sh { font-size: 12.5px; }
   .sh th, .sh td { border: 1px solid #000; padding: 4px 6px; }
   .sh th { font-family: var(--disp); font-weight: 800; font-size: 12.5px; letter-spacing: .02em; text-transform: uppercase; color: #fff; background: #000; }
@@ -410,10 +410,11 @@
   .sh td.n { text-align: right; font-variant-numeric: tabular-nums; }
   .sh .shMem { font-weight: 700; } .sh .shUnit { font-style: italic; font-weight: 600; }
   .sh .shTot { font-weight: 700; }
+  .sh td, .sh th, .shSt, .shNote, .shTeams td { font-family: var(--disp); }
   .sh .shDiff { color: #fd3b46; background: #000; text-align: right; font-weight: 600; }
   .sh .shDiff.lead { color: #fff; font-style: italic; text-align: center; font-family: var(--disp); font-weight: 800; }
   .sh .shRank { color: #111; text-align: center; font-weight: 700; }
-  .sh tfoot td { background: #000; font-weight: 700; padding-top: 8px; padding-bottom: 8px; }
+  .sh tfoot td { background: #000; font-weight: 700; }
   .sh tfoot .shHead { font-family: var(--disp); font-weight: 800; text-align: center; }
   .sh .shStCell { background: #000; }
   .shSt { font: 700 11px var(--disp); color: #bdb9ad; }
