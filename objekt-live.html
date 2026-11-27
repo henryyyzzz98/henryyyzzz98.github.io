@@ -1752,7 +1752,7 @@ function salesSheet(ed, def, rows) {
       <td class="n shRank" style="background:${rankColour(i, started.length)}">${i + 1}</td>
       <td class="shStCell">${status(r)}${g.stale ? `<div class="shNote" title="${esc(g.error || "")}">${g.error && isAdmin() ? "⚠️ error" : "counting…"}</div>` : ""}</td></tr>`);
   });
-  waiting.forEach(r => rowHtml.set(r, `<tr class="shWait">${nameCell(r)}${unitCell(r)}<td class="n" colspan="${colls.length + 6}">—</td><td class="shRank"></td><td class="shStCell">${status(r)}</td></tr>`));
+  waiting.forEach(r => rowHtml.set(r, `<tr class="shWait">${nameCell(r)}${unitCell(r)}<td class="n" colspan="${colls.length + 5}">—</td><td class="shRank"></td><td class="shStCell">${status(r)}</td></tr>`));
   const order = salesBySNo ? [...started, ...waiting].sort((a, b) => sIdx(a.member) - sIdx(b.member)) : [...started, ...waiting];
   const body = order.map(r => rowHtml.get(r)).join("");
   // teams: each unit's members with their copies, the unit total and its rank
