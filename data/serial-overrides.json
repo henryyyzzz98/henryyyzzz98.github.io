@@ -1532,6 +1532,16 @@
     "mode": "flat",
     "text": "#2a7717"
    }
+  },
+  "artms-cream01--401z": {
+   "style": {
+    "mode": "image",
+    "text": "white",
+    "image": "images/backs/artms-cream01--401z.png?v=mwztz92c",
+    "fit": "cover",
+    "tint": 0,
+    "avg": "#2c2c8b"
+   }
   }
  },
  "names": {
